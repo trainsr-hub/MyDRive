@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Project Entry — Table Template Architect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+  <style>
+    /* ==========================================================================
+       PROJECT ENTRY — SCHEMA & TABLE TEMPLATE ARCHITECT
+       Crafted to the aesthetic standard of Entropy / Rose
+       ========================================================================== */
+    :root {
+      --bg-canvas:        #080706;
+      --bg-card:          #13100d;
+      --bg-card-hover:    #1c1713;
+      --bg-input:         #1a1511;
+      --bg-input-focus:   #231c16;
+
+      --text-vivid:       #fffcf7;
+      --text-main:        #ede4d8;
+      --text-muted:       #8a7b6c;
+      --text-dim:         #5c5044;
+
+      --border-dim:       #292018;
+      --border-mid:       #3f3226;
+      --border-bright:    #634f3c;
+
+      --accent:           #ff9e1b;
+      --accent-hover:     #ffb03a;
+      --accent-glow:      rgba(255, 158, 27, 0.25);
+      --accent-bg:        rgba(255, 158, 27, 0.12);
+      --accent-border:    rgba(255, 158, 27, 0.4);
+
+      --hazard-high:      #f43f5e;
+      --hazard-low:       #10b981;
+      --hazard-mid:       #f59e0b;
+
+      --radius-sm:        6px;
+      --radius-md:        10px;
+      --radius-lg:        14px;
+      --shadow-subtle:    0 4px 20px rgba(0, 0, 0, 0.5);
+
+      color-scheme: dark;
+      font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14.5px;
+      line-height: 1.5;
+    }
+
+    :root[data-theme="light"] {
+      --bg-canvas:        #f5f3ef;
+      --bg-card:          #ffffff;
+      --bg-card-hover:    #f9f7f4;
+      --bg-input:         #f0ebe3;
+      --bg-input-focus:   #ffffff;
+
+      --text-vivid:       #18130e;
+      --text-main:        #2c231a;
+      --text-muted:       #6b5a49;
+      --text-dim:         #9e8c79;
+
+      --border-dim:       #ded5c7;
+      --border-mid:       #c5b8a5;
+      --border-bright:    #8f7d67;
+
+      --accent:           #d97706;
+      --accent-hover:     #b45309;
+      --accent-glow:      rgba(217, 119, 6, 0.2);
+      --accent-bg:        rgba(217, 119, 6, 0.1);
+      --accent-border:    rgba(217, 119, 6, 0.4);
+
+      --hazard-high:      #e11d48;
+      --hazard-low:       #059669;
+      --hazard-mid:       #d97706;
+
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      padding: 1.5rem 1.5rem 4rem;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 1440px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Top Navigation */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-dim);
+      padding-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .title-stack h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .title-stack h1 .badge {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .title-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    /* Table Navigation Tabs */
+    .nav-tabs-bar {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      padding: 0.35rem;
+      border-radius: var(--radius-md);
+    }
+
+    .nav-tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.15s ease;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .nav-tab-btn:hover {
+      color: var(--text-vivid);
+      background: var(--bg-input);
+    }
+
+    .nav-tab-btn.active {
+      background: var(--accent-bg);
+      border-color: var(--accent-border);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .btn-action {
+      background: var(--bg-card);
+      border: 1px solid var(--border-mid);
+      color: var(--text-main);
+      padding: 0.5rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .btn-action:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+      color: var(--text-vivid);
+    }
+
+    .btn-action.btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #080706;
+      font-weight: 700;
+    }
+
+    .btn-action.btn-primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .btn-action.btn-danger:hover {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: var(--hazard-high);
+      color: var(--hazard-high);
+    }
+
+    /* Workspace 2-Column Grid */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (max-width: 860px) {
+      .workspace-grid { grid-template-columns: 1fr; }
+    }
+
+    .blocks-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* Cards */
+    .entry-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      overflow: visible !important;
+      position: relative;
+      box-shadow: var(--shadow-subtle);
+      transition: border-color 0.15s ease;
+    }
+
+    .entry-card:focus-within {
+      border-color: var(--border-mid);
+    }
+
+    .card-header {
+      padding: 0.85rem 1.15rem;
+      background: rgba(255, 255, 255, 0.015);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .card-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Category Theming & Visual Distinction */
+    .entry-card.cat-pk {
+      border-left: 4px solid #38bdf8;
+    }
+    .entry-card.cat-pk .card-header {
+      background: rgba(56, 189, 248, 0.05);
+    }
+    .entry-card.cat-text {
+      border-left: 4px solid #10b981;
+    }
+    .entry-card.cat-text .card-header {
+      background: rgba(16, 185, 129, 0.05);
+    }
+    .entry-card.cat-scalar {
+      border-left: 4px solid #f59e0b;
+    }
+    .entry-card.cat-scalar .card-header {
+      background: rgba(245, 158, 11, 0.05);
+    }
+    .entry-card.cat-boolean {
+      border-left: 4px solid #a855f7;
+    }
+    .entry-card.cat-boolean .card-header {
+      background: rgba(168, 85, 247, 0.05);
+    }
+    .entry-card.cat-enum {
+      border-left: 4px solid #f43f5e;
+    }
+    .entry-card.cat-enum .card-header {
+      background: rgba(244, 63, 94, 0.05);
+    }
+    .entry-card.cat-rel {
+      border-left: 4px solid #ff9e1b;
+    }
+    .entry-card.cat-rel .card-header {
+      background: rgba(255, 158, 27, 0.05);
+    }
+
+    /* Collapsed Card State */
+    .entry-card.collapsed .card-body {
+      display: none;
+    }
+    .entry-card.collapsed {
+      box-shadow: none;
+    }
+    .entry-card.collapsed .card-header {
+      border-bottom: none;
+      padding: 0.65rem 1rem;
+    }
+
+    .collapse-chevron {
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s ease, color 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+    }
+    .collapse-chevron:hover {
+      color: var(--accent);
+    }
+    .entry-card.collapsed .collapse-chevron {
+      transform: rotate(-90deg);
+    }
+
+    .card-tag {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-bg);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      border: 1px solid var(--accent-border);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .card-tag.cat-pk {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+    .card-tag.cat-text {
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    .card-tag.cat-scalar {
+      color: #f59e0b;
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    .card-tag.cat-boolean {
+      color: #c084fc;
+      background: rgba(168, 85, 247, 0.12);
+      border-color: rgba(168, 85, 247, 0.4);
+    }
+    .card-tag.cat-enum {
+      color: #fb7185;
+      background: rgba(244, 63, 94, 0.12);
+      border-color: rgba(244, 63, 94, 0.4);
+    }
+    .card-tag.cat-rel {
+      color: #ff9e1b;
+      background: rgba(255, 158, 27, 0.12);
+      border-color: rgba(255, 158, 27, 0.4);
+    }
+
+    .slug-badge {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.76rem;
+      color: var(--text-dim);
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+    }
+
+    /* Filter Toolbar above stream */
+    .stream-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+    }
+
+    .filter-pills-bar {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      color: var(--text-muted);
+      padding: 0.3rem 0.65rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+    .filter-pill:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-vivid);
+    }
+    .filter-pill.active {
+      background: var(--accent-bg);
+      border-color: var(--accent-border);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .card-body {
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .field-hint {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    /* Inputs */
+    .raw-input-box {
+      width: 100%;
+      height: 42px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      color: var(--text-vivid);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0 0.85rem;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .raw-input-box.mono {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+    }
+
+    .raw-input-box:focus {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    select.raw-input-box {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='8' height='6' viewBox='0 0 8 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L4 4.5L7 1.5' stroke='%23ff9e1b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 2rem;
+    }
+
+    /* Two-col field row */
+    .field-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 640px) {
+      .field-grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* Governance Badge Box */
+    .governance-box {
+      padding: 0.75rem 0.9rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border-mid);
+    }
+
+    .governance-box.warning {
+      background: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: var(--hazard-mid);
+    }
+
+    .governance-box.danger {
+      background: rgba(244, 63, 94, 0.08);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: var(--hazard-high);
+    }
+
+    .governance-box.info {
+      background: rgba(56, 189, 248, 0.08);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+    }
+
+    .governance-box.success {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: var(--hazard-low);
+    }
+
+    .governance-title {
+      font-weight: 700;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    /* Chips & Tags */
+    .chips-pool {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+    }
+
+    .chip-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: "JetBrains Mono", monospace;
+      user-select: none;
+    }
+
+    .chip-remove {
+      cursor: pointer;
+      opacity: 0.7;
+      font-size: 0.8rem;
+      padding: 0 2px;
+      border-radius: 2px;
+      transition: all 0.1s ease;
+    }
+
+    .chip-remove:hover {
+      opacity: 1;
+      background: rgba(244, 63, 94, 0.2);
+      color: #fb7185;
+    }
+
+    .chip-add-input {
+      height: 32px;
+      background: var(--bg-input);
+      border: 1px dashed var(--border-mid);
+      border-radius: 4px;
+      color: var(--text-vivid);
+      padding: 0 0.6rem;
+      font-size: 0.82rem;
+      font-family: "JetBrains Mono", monospace;
+      outline: none;
+      width: 140px;
+    }
+
+    .chip-add-input:focus {
+      border-color: var(--accent);
+      border-style: solid;
+      background: var(--bg-input-focus);
+    }
+
+    /* Quick Add Bar */
+    .quick-add-section {
+      background: var(--bg-card);
+      border: 1px dashed var(--border-mid);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .quick-add-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .quick-add-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .quick-add-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      padding: 0.55rem 0.75rem;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.2rem;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      text-align: left;
+    }
+
+    .quick-add-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .quick-add-btn .qa-slug {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .quick-add-btn .qa-desc {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    /* Right Sticky Inspector */
+    .inspector-sticky {
+      position: sticky;
+      top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .inspector-tabs {
+      display: flex;
+      gap: 0.3rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      padding: 0.3rem;
+      border-radius: var(--radius-md);
+    }
+
+    .inspector-tab-btn {
+      flex: 1;
+      padding: 0.45rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all 0.15s ease;
+      font-family: "JetBrains Mono", monospace;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .inspector-tab-btn:hover {
+      color: var(--text-vivid);
+      background: var(--bg-input);
+    }
+
+    .inspector-tab-btn.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+    }
+
+    .inspector-code-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .code-header {
+      padding: 0.65rem 0.95rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .code-title {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .code-pre {
+      padding: 1rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      color: var(--text-main);
+      overflow-x: auto;
+      max-height: 520px;
+      overflow-y: auto;
+      white-space: pre;
+    }
+
+    .server-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 0.9rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--hazard-low);
+      box-shadow: 0 0 8px var(--hazard-low);
+      flex-shrink: 0;
+    }
+
+    .status-dot.offline {
+      background: var(--hazard-mid);
+      box-shadow: 0 0 8px var(--hazard-mid);
+    }
+
+    /* Toast Notification */
+    .toast-msg {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--accent);
+      color: #080706;
+      font-weight: 700;
+      font-size: 0.88rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      z-index: 6000;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .toast-msg.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- Top Navigation Header -->
+    <header class="top-bar">
+      <div class="title-stack">
+        <h1>
+          <span>Project</span>
+          <span class="badge">Entry</span>
+        </h1>
+        <div class="title-sub">SQLite Table Templates &amp; JSON Configuration Architect</div>
+      </div>
+
+      <!-- Table Selection Tabs -->
+      <nav class="nav-tabs-bar" id="tables-nav">
+        <!-- Dynamically rendered -->
+      </nav>
+
+      <!-- Top Action Buttons -->
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <button class="btn-action btn-primary" onclick="saveActiveTable()" title="Writes directly to data/<name>.json and syncs SQLite">
+          💾 Save to Data
+        </button>
+        <button class="btn-action" onclick="syncAllSqlite()" title="Ensures all schemas in data/ are mirrored in SQLite">
+          ⚡ Sync SQLite
+        </button>
+        <button class="btn-action" onclick="toggleTheme()">
+          🌓 Theme
+        </button>
+      </div>
+    </header>
+
+    <!-- Workspace Grid -->
+    <main class="workspace-grid">
+
+      <!-- Left Column: Blocks Stream -->
+      <div class="blocks-stream">
+
+        <!-- Table Profile Overview Card -->
+        <section class="entry-card">
+          <div class="card-header">
+            <span class="card-title">
+              🏛️ Table Specification
+            </span>
+            <span class="card-tag" id="table-card-tag">Config</span>
+          </div>
+          <div class="card-body">
+            <div class="field-grid-2">
+              <div>
+                <div class="field-label">
+                  <span>Table Name (Identifier)</span>
+                  <span class="field-hint">e.g. users, projects</span>
+                </div>
+                <input type="text" class="raw-input-box mono" id="input-table-name" oninput="updateTableName(this.value)">
+              </div>
+              <div>
+                <div class="field-label">
+                  <span>SQLite Table Status</span>
+                  <span class="field-hint">database.sqlite</span>
+                </div>
+                <div class="raw-input-box mono" style="display:flex; align-items:center; color:var(--text-muted); background:var(--bg-card);" id="sqlite-table-badge">
+                  Connected
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; padding-top:0.4rem;">
+              <span style="font-size:0.8rem; color:var(--text-muted);" id="columns-summary-text">
+                0 Columns configured
+              </span>
+              <button class="btn-action btn-danger" onclick="deleteActiveTable()" style="padding:0.35rem 0.65rem; font-size:0.75rem;">
+                ✕ Delete Table
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Column Stream Filter Toolbar -->
+        <div class="stream-toolbar">
+          <div class="filter-pills-bar" id="category-filter-bar">
+            <button class="filter-pill active" onclick="setCategoryFilter('all')">All (<span id="count-all">0</span>)</button>
+            <button class="filter-pill" onclick="setCategoryFilter('pk')">🔑 Key (<span id="count-pk">0</span>)</button>
+            <button class="filter-pill" onclick="setCategoryFilter('text')">📝 Text (<span id="count-text">0</span>)</button>
+            <button class="filter-pill" onclick="setCategoryFilter('scalar')">🔢 Numeric (<span id="count-scalar">0</span>)</button>
+            <button class="filter-pill" onclick="setCategoryFilter('boolean')">🔘 Toggle (<span id="count-boolean">0</span>)</button>
+            <button class="filter-pill" onclick="setCategoryFilter('enum')">🏷️ Enum (<span id="count-enum">0</span>)</button>
+            <button class="filter-pill" onclick="setCategoryFilter('rel')">🔗 Relation (<span id="count-rel">0</span>)</button>
+          </div>
+          <div style="display:flex; gap:0.4rem; align-items:center;">
+            <button class="btn-action" onclick="expandAllColumns()" style="padding:0.25rem 0.55rem; font-size:0.75rem;">
+              ▼ Expand All
+            </button>
+            <button class="btn-action" onclick="collapseAllColumns()" style="padding:0.25rem 0.55rem; font-size:0.75rem;">
+              ▲ Collapse All
+            </button>
+          </div>
+        </div>
+
+        <!-- Column Stream Container -->
+        <div id="columns-stream" class="blocks-stream">
+          <!-- Dynamically populated column cards -->
+        </div>
+
+        <!-- Quick Add Field Section -->
+        <section class="quick-add-section">
+          <div class="quick-add-title">
+            <span>+ Add Field (10 Atomic Data Entry Types)</span>
+            <span style="font-size:0.7rem; color:var(--text-dim); text-transform:none;">per docs/atomic_data_entry_specification.md</span>
+          </div>
+          <div class="quick-add-grid">
+            <button class="quick-add-btn" onclick="addNewColumn('hex_id')">
+              <span class="qa-slug">#1 hex_id</span>
+              <span class="qa-desc">4-prefix + 12-hex PK</span>
+            </button>
+            <button class="quick-add-btn" onclick="addNewColumn('text_single')">
+              <span class="qa-slug">#2 text_single</span>
+              <span class="qa-desc">Trimmed 1-line text</span>
+            </button>
+            <button class="quick-add-btn" onclick="addNewColumn('text_multi')">
+              <span class="qa-slug">#3 text_multi</span>
+              <span class="qa-desc">Raw multi-line block</span>
+            </button>
+            <button class="quick-add-btn" onclick="addNewColumn('int_scalar')">
+              <span class="qa-slug">#4 int_scalar</span>
+              <span class="qa-desc">Ghost-overwrite int</span>
+            </button>
+            <button class="quick-add-btn" onclick="addNewColumn('float_scalar')">
+              <span class="qa-slug">#5 float_scalar</span>
+              <span class="qa-desc">Ghost-overwrite real</span>
+            </button>
+            <button class="quick-add-btn" onclick="addNewColumn('boolean')">
+              <span class="qa-slug">#6 boolean</span>
+              <span class="qa-desc">Binary 0 or 1 switch</span>
+            </button>
+            <button class="quick-add-btn" onclick="addNewColumn('enum_single')">
+              <span class="qa-slug">#7 enum_single</span>
+              <span class="qa-desc">1 internal option</span>
+            </button>
+            <button class="quick-add-btn" onclick="addNewColumn('enum_multi')">
+              <span class="qa-slug">#8 enum_multi</span>
+              <span class="qa-desc">Multi-tag JSON array</span>
+            </button>
+            <button class="quick-add-btn" onclick="addNewColumn('relation_single')">
+              <span class="qa-slug">#9 relation_single</span>
+              <span class="qa-desc">1 Hex ID (No create)</span>
+            </button>
+            <button class="quick-add-btn" onclick="addNewColumn('relation_multi')">
+              <span class="qa-slug">#10 relation_multi</span>
+              <span class="qa-desc">Hex ID array (No create)</span>
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Right Column: Inspector Sticky Panel -->
+      <aside class="inspector-sticky">
+
+        <!-- Inspector Tabs -->
+        <div class="inspector-tabs">
+          <button class="inspector-tab-btn active" id="tab-btn-sql" onclick="switchInspectorTab('sql')">SQLite DDL</button>
+          <button class="inspector-tab-btn" id="tab-btn-json" onclick="switchInspectorTab('json')">JSON Config</button>
+          <button class="inspector-tab-btn" id="tab-btn-info" onclick="switchInspectorTab('info')">DB Status</button>
+        </div>
+
+        <!-- Inspector Code View -->
+        <div class="inspector-code-card">
+          <div class="code-header">
+            <span class="code-title" id="inspector-code-title">CREATE TABLE (DDL)</span>
+            <button class="btn-action" onclick="copyInspectorContent()" style="padding:0.25rem 0.55rem; font-size:0.72rem;">
+              📋 Copy
+            </button>
+          </div>
+          <pre class="code-pre" id="inspector-code-view">-- Loading schema...</pre>
+        </div>
+
+        <!-- Local Server Status Pill -->
+        <div class="server-status-pill">
+          <div class="status-dot" id="server-status-dot"></div>
+          <span id="server-status-text">Checking local server connection (:20139)...</span>
+        </div>
+
+      </aside>
+
+    </main>
+
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-msg" id="toast-msg">Notification</div>
+
+  <script>
+    /* ==========================================================================
+       CLIENT APPLICATION LOGIC
+       Full In-Memory + REST Persistence with Zero Download Requirement
+       ========================================================================== */
+
+    const FIELD_SPECS = {
+      hex_id: {
+        num: 1,
+        slug: 'hex_id',
+        sqlite: 'TEXT PRIMARY KEY',
+        title: 'Hex ID (Primary Key)',
+        category: 'pk',
+        governance: '4-character user-defined prefix + 12-character random hex. Duplicate prefixes are locked with collision border.'
+      },
+      text_single: {
+        num: 2,
+        slug: 'text_single',
+        sqlite: 'TEXT',
+        title: 'Single-line String',
+        category: 'text',
+        governance: 'Automatically strips leading and trailing whitespace upon submission.'
+      },
+      text_multi: {
+        num: 3,
+        slug: 'text_multi',
+        sqlite: 'TEXT',
+        title: 'Multi-line Text Block',
+        category: 'text',
+        governance: 'Preserves raw indentation, line breaks (\\n), and unparsed markdown verbatim.'
+      },
+      int_scalar: {
+        num: 4,
+        slug: 'int_scalar',
+        sqlite: 'INTEGER',
+        title: 'Integer Scalar',
+        category: 'scalar',
+        governance: 'Ghost-holder Overwrite: Renders current value as dim placeholder; focusing and typing immediately overwrites it.'
+      },
+      float_scalar: {
+        num: 5,
+        slug: 'float_scalar',
+        sqlite: 'REAL',
+        title: 'Floating-Point Scalar',
+        category: 'scalar',
+        governance: 'Ghost-holder Overwrite: Employs identical overwrite mechanism as int_scalar; accepts decimals.'
+      },
+      boolean: {
+        num: 6,
+        slug: 'boolean',
+        sqlite: 'INTEGER (0 or 1)',
+        title: 'Binary Switch / Checkbox',
+        category: 'boolean',
+        governance: 'Strictly binary (0 or 1). Indeterminate states are disallowed.'
+      },
+      enum_single: {
+        num: 7,
+        slug: 'enum_single',
+        sqlite: 'TEXT',
+        title: 'Enum (Single Option)',
+        category: 'enum',
+        governance: 'Search Suggester enabled. Inline create allowed: entering a new string appends it to table column metadata.'
+      },
+      enum_multi: {
+        num: 8,
+        slug: 'enum_multi',
+        sqlite: 'TEXT (JSON Array)',
+        title: 'Enum (Multi-Tag Array)',
+        category: 'enum',
+        governance: 'Search Suggester enabled. Inline create allowed: entering a new tag appends to table schema. Renders as tag chips.'
+      },
+      relation_single: {
+        num: 9,
+        slug: 'relation_single',
+        sqlite: 'TEXT (Hex ID)',
+        title: 'Relation (Single Foreign Pointer)',
+        category: 'rel',
+        governance: 'STRICTLY FORBIDS inline record creation. Only searching via Search Suggester and linking/unlinking existing Hex IDs is permitted.'
+      },
+      relation_multi: {
+        num: 10,
+        slug: 'relation_multi',
+        sqlite: 'TEXT (JSON Array of Hex IDs)',
+        title: 'Relation (Multi-Entity Array)',
+        category: 'rel',
+        governance: 'STRICTLY FORBIDS inline record creation. Restricted to linking/unlinking existing records; dismiss (✕) only detaches foreign key.'
+      }
+    };
+
+    const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:20139' : '';
+
+    const DEFAULT_MOCK_TABLES = {
+      users: {
+        table_name: "users",
+        columns: [
+          { name: "User ID", slug: "id", type: "hex_id", metadata: { prefix: "USER" } },
+          { name: "Account Username", slug: "username", type: "text_single", metadata: {} },
+          { name: "Primary Email Address", slug: "email", type: "text_single", metadata: {} },
+          { name: "Biography & Profile Narrative", slug: "bio", type: "text_multi", metadata: {} },
+          { name: "Age in Years", slug: "age", type: "int_scalar", metadata: {} },
+          { name: "Account Balance (USD)", slug: "balance", type: "float_scalar", metadata: {} },
+          { name: "Is Account Active?", slug: "is_active", type: "boolean", metadata: {} },
+          { name: "Permission Role", slug: "role", type: "enum_single", metadata: { options: ["admin", "editor", "viewer", "guest"] } },
+          { name: "Account Tags", slug: "tags", type: "enum_multi", metadata: { options: ["premium", "verified", "staff", "beta"] } },
+          { name: "Reporting Manager", slug: "manager_id", type: "relation_single", metadata: { target: "users" } },
+          { name: "Assigned Projects", slug: "project_ids", type: "relation_multi", metadata: { target: "projects" } }
+        ]
+      },
+      projects: {
+        table_name: "projects",
+        columns: [
+          { name: "Project ID", slug: "id", type: "hex_id", metadata: { prefix: "PROJ" } },
+          { name: "Project Title", slug: "title", type: "text_single", metadata: {} },
+          { name: "Project Scope & Description", slug: "description", type: "text_multi", metadata: {} },
+          { name: "Total Allocated Budget", slug: "budget", type: "float_scalar", metadata: {} },
+          { name: "Lifecycle Status", slug: "status", type: "enum_single", metadata: { options: ["planning", "active", "paused", "completed", "cancelled"] } },
+          { name: "Urgency & Priority Tags", slug: "priority_tags", type: "enum_multi", metadata: { options: ["urgent", "high", "medium", "low", "backlog"] } },
+          { name: "Public Visibility?", slug: "is_public", type: "boolean", metadata: {} },
+          { name: "Project Lead / Owner", slug: "owner_id", type: "relation_single", metadata: { target: "users" } },
+          { name: "Assigned Team Members", slug: "member_ids", type: "relation_multi", metadata: { target: "users" } }
+        ]
+      },
+      notes: {
+        table_name: "notes",
+        columns: [
+          { name: "Note ID", slug: "id", type: "hex_id", metadata: { prefix: "NOTE" } },
+          { name: "Note Headline", slug: "title", type: "text_single", metadata: {} },
+          { name: "Markdown Content Body", slug: "content", type: "text_multi", metadata: {} },
+          { name: "Estimated Word Count", slug: "word_count", type: "int_scalar", metadata: {} },
+          { name: "Relevance Score", slug: "score", type: "float_scalar", metadata: {} },
+          { name: "Pinned to Workspace Top?", slug: "is_pinned", type: "boolean", metadata: {} },
+          { name: "Primary Category", slug: "category", type: "enum_single", metadata: { options: ["personal", "work", "ideas", "archive"] } },
+          { name: "Classification Labels", slug: "labels", type: "enum_multi", metadata: { options: ["important", "reference", "draft", "review"] } },
+          { name: "Parent Project Link", slug: "project_id", type: "relation_single", metadata: { target: "projects" } },
+          { name: "Linked Related Notes", slug: "linked_note_ids", type: "relation_multi", metadata: { target: "notes" } }
+        ]
+      }
+    };
+
+    let tables = JSON.parse(JSON.stringify(DEFAULT_MOCK_TABLES));
+    let activeTable = 'users';
+    let isServerConnected = false;
+    let activeInspectorTab = 'sql';
+
+    // Initialize application
+    async function initApp() {
+      await loadTables();
+      const names = Object.keys(tables);
+      if (names.length > 0) {
+        switchTable(names[0]);
+      }
+      renderNavTabs();
+      checkServerHealth();
+    }
+
+    // Check backend server connection
+    async function checkServerHealth() {
+      try {
+        const res = await fetch(`${API_BASE}/api/sqlite_info`);
+        if (res.ok) {
+          isServerConnected = true;
+          document.getElementById('server-status-dot').className = 'status-dot';
+          document.getElementById('server-status-text').textContent = 'Connected to Local Server (:20139) • Auto-syncing data/';
+        } else {
+          setOfflineStatus();
+        }
+      } catch (e) {
+        setOfflineStatus();
+      }
+    }
+
+    function setOfflineStatus() {
+      isServerConnected = false;
+      document.getElementById('server-status-dot').className = 'status-dot offline';
+      document.getElementById('server-status-text').textContent = 'Standalone Mode (Run run_entry.bat for background disk sync)';
+    }
+
+    // Load tables from server or fallback files
+    async function loadTables() {
+      // 1. Try server endpoint
+      try {
+        const res = await fetch(`${API_BASE}/api/tables`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.tables && Object.keys(json.tables).length > 0) {
+            tables = json.tables;
+            return;
+          }
+        }
+      } catch (e) {}
+
+      // 2. Try direct local files
+      const candidates = ['users.json', 'projects.json', 'notes.json'];
+      for (const fname of candidates) {
+        try {
+          const res = await fetch(`data/${fname}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.table_name) {
+              tables[data.table_name] = data;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 3. Fallback to localStorage if available
+      try {
+        const stored = localStorage.getItem('project_entry_schemas');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Object.keys(parsed).length > 0) {
+            tables = { ...parsed, ...tables };
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Save active table
+    async function saveActiveTable() {
+      if (!activeTable || !tables[activeTable]) return;
+      const data = tables[activeTable];
+
+      // Save to localStorage as redundancy
+      try {
+        localStorage.setItem('project_entry_schemas', JSON.stringify(tables));
+      } catch (e) {}
+
+      // Push to server API to write data/<name>.json
+      try {
+        const res = await fetch(`${API_BASE}/api/table/${encodeURIComponent(activeTable)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data, null, 2)
+        });
+        if (res.ok) {
+          showToast(`Saved to data/${activeTable}.json and synced SQLite!`);
+          updateInspector();
+          return;
+        }
+      } catch (e) {}
+
+      showToast(`Saved schema for "${activeTable}" in memory!`);
+      updateInspector();
+    }
+
+    // Sync all SQLite tables
+    async function syncAllSqlite() {
+      try {
+        const res = await fetch(`${API_BASE}/api/sync_all`, { method: 'POST' });
+        if (res.ok) {
+          showToast('All tables synced to SQLite database!');
+          if (activeInspectorTab === 'info') updateInspector();
+          return;
+        }
+      } catch (e) {}
+      showToast('SQLite DDL regenerated for active schema!');
+    }
+
+    // Navigation and Table Management
+    function renderNavTabs() {
+      const container = document.getElementById('tables-nav');
+      const tableNames = Object.keys(tables);
+
+      let html = tableNames.map(name => `
+        <button class="nav-tab-btn ${name === activeTable ? 'active' : ''}" onclick="switchTable('${name}')">
+          📁 ${name}
+        </button>
+      `).join('');
+
+      html += `
+        <button class="nav-tab-btn" onclick="promptNewTable()" style="border-style:dashed; border-color:var(--border-mid);">
+          + New Table
+        </button>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    function switchTable(name) {
+      if (!tables[name]) return;
+      activeTable = name;
+      renderNavTabs();
+      renderActiveTable();
+      updateInspector();
+    }
+
+    function promptNewTable() {
+      const name = prompt('Enter new table name (e.g. inventory, tasks):');
+      if (!name) return;
+      const clean = name.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      if (tables[clean]) {
+        alert(`Table "${clean}" already exists.`);
+        return;
+      }
+      createNewTable(clean);
+    }
+
+    function createNewTable(name) {
+      tables[name] = {
+        table_name: name,
+        columns: [
+          {
+            name: 'id',
+            type: 'hex_id',
+            metadata: { prefix: name.substring(0, 4).toUpperCase() }
+          }
+        ]
+      };
+      activeTable = name;
+      renderNavTabs();
+      renderActiveTable();
+      updateInspector();
+      showToast(`Created template for table "${name}"`);
+    }
+
+    function deleteActiveTable() {
+      if (!activeTable) return;
+      if (!confirm(`Are you sure you want to delete table template "${activeTable}"?`)) return;
+
+      const target = activeTable;
+      delete tables[target];
+
+      // Remove on server if connected
+      fetch(`${API_BASE}/api/table/${encodeURIComponent(target)}`, { method: 'DELETE' }).catch(() => {});
+
+      const remaining = Object.keys(tables);
+      if (remaining.length > 0) {
+        activeTable = remaining[0];
+      } else {
+        createNewTable('users');
+      }
+
+      renderNavTabs();
+      renderActiveTable();
+      updateInspector();
+      showToast(`Deleted table "${target}"`);
+    }
+
+    function updateTableName(newName) {
+      if (!activeTable) return;
+      const clean = newName.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      if (clean && clean !== activeTable) {
+        tables[clean] = tables[activeTable];
+        tables[clean].table_name = clean;
+        delete tables[activeTable];
+        activeTable = clean;
+        renderNavTabs();
+        updateInspector();
+      }
+    }
+
+    const CAT_ICONS = {
+      pk: '🔑',
+      text: '📝',
+      scalar: '🔢',
+      boolean: '🔘',
+      enum: '🏷️',
+      rel: '🔗'
+    };
+
+    let activeCategoryFilter = 'all';
+    let collapsedCards = {};
+
+    function toSlug(str) {
+      return (str || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    }
+
+    function setCategoryFilter(cat) {
+      activeCategoryFilter = cat;
+      const pills = document.querySelectorAll('.filter-pill');
+      pills.forEach(p => p.classList.remove('active'));
+      const activeBtn = Array.from(pills).find(p => p.getAttribute('onclick')?.includes(`'${cat}'`));
+      if (activeBtn) activeBtn.classList.add('active');
+      renderActiveTable();
+    }
+
+    function toggleCardCollapse(idx, event) {
+      if (event) event.stopPropagation();
+      collapsedCards[idx] = !collapsedCards[idx];
+      const card = document.getElementById(`col-card-${idx}`);
+      if (card) {
+        card.classList.toggle('collapsed', !!collapsedCards[idx]);
+      }
+    }
+
+    function expandAllColumns() {
+      collapsedCards = {};
+      renderActiveTable();
+    }
+
+    function collapseAllColumns() {
+      if (!activeTable || !tables[activeTable]) return;
+      tables[activeTable].columns.forEach((_, i) => collapsedCards[i] = true);
+      renderActiveTable();
+    }
+
+    // Render active table UI
+    function renderActiveTable() {
+      if (!activeTable || !tables[activeTable]) return;
+      const table = tables[activeTable];
+
+      document.getElementById('input-table-name').value = table.table_name;
+      document.getElementById('columns-summary-text').textContent =
+        `${table.columns.length} Column${table.columns.length !== 1 ? 's' : ''} configured`;
+      document.getElementById('sqlite-table-badge').textContent = `sqlite.${table.table_name}`;
+
+      // Update category counts
+      const counts = { all: table.columns.length, pk: 0, text: 0, scalar: 0, boolean: 0, enum: 0, rel: 0 };
+      table.columns.forEach(c => {
+        const cat = FIELD_SPECS[c.type]?.category;
+        if (cat && counts[cat] !== undefined) counts[cat]++;
+      });
+      Object.keys(counts).forEach(k => {
+        const el = document.getElementById(`count-${k}`);
+        if (el) el.textContent = counts[k];
+      });
+
+      const streamEl = document.getElementById('columns-stream');
+      const filteredCols = table.columns
+        .map((col, idx) => ({ col, idx }))
+        .filter(({ col }) => {
+          if (activeCategoryFilter === 'all') return true;
+          return FIELD_SPECS[col.type]?.category === activeCategoryFilter;
+        });
+
+      if (filteredCols.length === 0) {
+        streamEl.innerHTML = `
+          <div style="padding:2.5rem; text-align:center; color:var(--text-dim); background:var(--bg-card); border:1px dashed var(--border-mid); border-radius:var(--radius-md);">
+            No columns match category filter "${activeCategoryFilter.toUpperCase()}". Click "All" or add a field below.
+          </div>
+        `;
+        return;
+      }
+
+      streamEl.innerHTML = filteredCols.map(({ col, idx }) => renderColumnCard(col, idx)).join('');
+    }
+
+    // Column Card Renderer
+    function renderColumnCard(col, idx) {
+      const spec = FIELD_SPECS[col.type] || FIELD_SPECS.text_single;
+      const isCollapsed = !!collapsedCards[idx];
+      const catIcon = CAT_ICONS[spec.category] || '🔹';
+      const computerSlug = col.slug || toSlug(col.name) || `col_${idx + 1}`;
+
+      return `
+        <article class="entry-card cat-${spec.category} ${isCollapsed ? 'collapsed' : ''}" id="col-card-${idx}">
+          <div class="card-header" onclick="toggleCardCollapse(${idx}, event)">
+            <span class="card-title">
+              <span class="collapse-chevron">▼</span>
+              <span style="font-size:1.05rem;">${catIcon}</span>
+              <span style="font-family:'JetBrains Mono', monospace; color:var(--text-dim); font-size:0.8rem;">#${idx + 1}</span>
+              <span style="font-weight:700; color:var(--text-vivid); font-size:0.92rem;">${col.name || 'Untitled Field'}</span>
+              <span class="slug-badge" title="SQLite Column Identifier">${computerSlug}</span>
+            </span>
+            <div style="display:flex; align-items:center; gap:0.45rem;" onclick="event.stopPropagation()">
+              <span class="card-tag cat-${spec.category}">
+                ${spec.slug}
+              </span>
+              <button class="btn-action" onclick="moveColumn(${idx}, -1)" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} style="padding:0.2rem 0.45rem; font-size:0.75rem;">
+                ▲
+              </button>
+              <button class="btn-action" onclick="moveColumn(${idx}, 1)" title="Move Down" ${idx === tables[activeTable].columns.length - 1 ? 'disabled style="opacity:0.3;"' : ''} style="padding:0.2rem 0.45rem; font-size:0.75rem;">
+                ▼
+              </button>
+              <button class="btn-action btn-danger" onclick="deleteColumn(${idx})" title="Delete Column" style="padding:0.2rem 0.45rem; font-size:0.75rem;">
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <!-- Row 1: Natural Language Name + Auto-Computed Slug -->
+            <div class="field-grid-2">
+              <div>
+                <div class="field-label">
+                  <span>Natural Language Column Name</span>
+                  <span class="field-hint">Human label in JSON (name)</span>
+                </div>
+                <input type="text" class="raw-input-box" value="${col.name || ''}"
+                       oninput="updateColName(${idx}, this.value)" placeholder="e.g. Account Username, Full Bio">
+              </div>
+
+              <div>
+                <div class="field-label">
+                  <span>Computer Slug (SQLite Column Identifier)</span>
+                  <span class="field-hint">Auto-generated slug</span>
+                </div>
+                <input type="text" class="raw-input-box mono" value="${computerSlug}"
+                       oninput="updateColSlug(${idx}, this.value)" placeholder="e.g. username, full_bio">
+              </div>
+            </div>
+
+            <!-- Row 2: Type Selector + SQLite Readout -->
+            <div class="field-grid-2">
+              <div>
+                <div class="field-label">
+                  <span>Atomic Data Entry Type</span>
+                  <span class="field-hint">1 of 10 specifications</span>
+                </div>
+                <select class="raw-input-box" onchange="updateColType(${idx}, this.value)">
+                  ${Object.keys(FIELD_SPECS).map(slug => `
+                    <option value="${slug}" ${col.type === slug ? 'selected' : ''}>
+                      ${CAT_ICONS[FIELD_SPECS[slug].category]} #${FIELD_SPECS[slug].num} ${slug} — ${FIELD_SPECS[slug].title}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+
+              <div>
+                <div class="field-label">
+                  <span>SQLite Column Specification</span>
+                  <span class="field-hint">Real Storage Engine</span>
+                </div>
+                <div class="raw-input-box mono" style="display:flex; align-items:center; color:var(--accent); background:var(--bg-canvas);">
+                  ${computerSlug} ${spec.sqlite}
+                </div>
+              </div>
+            </div>
+
+            <!-- Dynamic Metadata Configuration per Specification -->
+            ${renderColumnMetadata(col, idx, spec)}
+
+          </div>
+        </article>
+      `;
+    }
+
+    // Render metadata controls based on the atomic type
+    function renderColumnMetadata(col, idx, spec) {
+      const meta = col.metadata || {};
+
+      if (col.type === 'enum_single' || col.type === 'enum_multi') {
+        const options = Array.isArray(meta.options) ? meta.options : [];
+        return `
+          <div style="background:var(--bg-canvas); padding:0.9rem; border-radius:var(--radius-sm); border:1px solid var(--border-dim);">
+            <div class="field-label">
+              <span>🏷️ Option Pool (${col.type === 'enum_single' ? 'Single Choice' : 'Multi-Select Tags'})</span>
+              <span class="field-hint">Owned exclusively by table schema metadata</span>
+            </div>
+            <div class="chips-pool" style="margin-top:0.4rem;">
+              ${options.map((opt, optIdx) => `
+                <span class="chip-badge" style="background:rgba(244,63,94,0.12); color:#fb7185; border-color:rgba(244,63,94,0.4);">
+                  <span>${opt}</span>
+                  <span class="chip-remove" onclick="removeEnumOption(${idx}, ${optIdx})">✕</span>
+                </span>
+              `).join('')}
+              <input type="text" class="chip-add-input" placeholder="+ Add tag (Enter)"
+                     onkeydown="handleEnumOptionKey(event, ${idx})">
+            </div>
+            <div style="margin-top:0.6rem; font-size:0.75rem; color:var(--text-muted); display:flex; align-items:center; gap:0.4rem;">
+              <span>🔍 Search Suggester enabled for inline creation and filtering during data entry.</span>
+            </div>
+          </div>
+          <div class="governance-box info">
+            <span class="governance-title">🛡️ Governance Rule: Active Search Suggester &amp; Inline Create</span>
+            <span>${spec.governance}</span>
+          </div>
+        `;
+      }
+
+      if (col.type === 'relation_single' || col.type === 'relation_multi') {
+        const target = meta.target || 'self';
+        const otherTables = ['self', ...Object.keys(tables)];
+        const isMulti = col.type === 'relation_multi';
+        return `
+          <div style="background:var(--bg-canvas); padding:0.9rem; border-radius:var(--radius-sm); border:1px solid var(--border-dim);">
+            <div class="field-label">
+              <span>🔗 Target Table Reference (${isMulti ? 'Multiple Hex IDs' : 'Single Hex ID'})</span>
+              <span class="field-hint">Foreign Hex ID reference pointer</span>
+            </div>
+            <div style="display:flex; gap:0.6rem; align-items:center; margin-top:0.4rem;">
+              <select class="raw-input-box mono" style="flex:1;" onchange="updateColMeta(${idx}, 'target', this.value)">
+                ${otherTables.map(t => `
+                  <option value="${t}" ${target === t ? 'selected' : ''}>${t === 'self' ? 'self (Self-referencing tree e.g. parent_id)' : t}</option>
+                `).join('')}
+              </select>
+              <div class="slug-badge" style="background:rgba(255,158,27,0.12); color:var(--accent); border-color:var(--accent-border);">
+                FK → ${target}
+              </div>
+            </div>
+            <div style="margin-top:0.6rem; display:flex; gap:0.4rem; flex-wrap:wrap;">
+              <span class="chip-badge" style="background:rgba(255,158,27,0.08); color:var(--text-muted); border-color:var(--border-dim);">
+                🔗 Example ID: ${target.substring(0,4).toUpperCase()}_f7a29e10d84c
+              </span>
+              ${isMulti ? `<span class="chip-badge" style="background:rgba(255,158,27,0.08); color:var(--text-muted); border-color:var(--border-dim);">+ [Array of Hex Badges]</span>` : ''}
+            </div>
+          </div>
+          <div class="governance-box danger">
+            <span class="governance-title">⚠️ Strict Invariant: Record Creation Strictly Forbidden</span>
+            <span>${spec.governance}</span>
+          </div>
+        `;
+      }
+
+      if (col.type === 'hex_id') {
+        const prefix = meta.prefix || (activeTable ? activeTable.substring(0, 4).toUpperCase() : 'USER');
+        return `
+          <div class="field-grid-2">
+            <div>
+              <div class="field-label">
+                <span>🔑 Prefix Constraint</span>
+                <span class="field-hint">4 uppercase alphanumeric chars</span>
+              </div>
+              <input type="text" class="raw-input-box mono" maxlength="4" value="${prefix}"
+                     oninput="updateColMeta(${idx}, 'prefix', this.value.toUpperCase())" placeholder="e.g. USR_">
+            </div>
+            <div>
+              <div class="field-label">
+                <span>Format Preview</span>
+                <span class="field-hint">Prefix + 12-char Random Hex</span>
+              </div>
+              <div class="raw-input-box mono" style="display:flex; align-items:center; color:#38bdf8; background:var(--bg-canvas);">
+                ${prefix}_a8f4c29e10d3
+              </div>
+            </div>
+          </div>
+          <div class="governance-box info">
+            <span class="governance-title">🛡️ Collision Invariant</span>
+            <span>${spec.governance}</span>
+          </div>
+        `;
+      }
+
+      if (col.type === 'int_scalar' || col.type === 'float_scalar') {
+        const sampleVal = col.type === 'int_scalar' ? '42' : '149.99';
+        return `
+          <div style="background:var(--bg-canvas); padding:0.9rem; border-radius:var(--radius-sm); border:1px solid var(--border-dim);">
+            <div class="field-label">
+              <span>🔢 Ghost-holder Overwrite Preview (${col.type === 'int_scalar' ? 'Integer' : 'Floating-Point Real'})</span>
+              <span class="field-hint">Type directly to overwrite</span>
+            </div>
+            <div style="position:relative; margin-top:0.4rem;">
+              <input type="text" class="raw-input-box mono" placeholder="${sampleVal}"
+                     style="color:var(--text-vivid); opacity:0.85;"
+                     title="Ghost-holder Overwrite: Focusing and typing immediately overwrites without manual clearing.">
+              <span style="position:absolute; right:12px; top:12px; font-size:0.75rem; color:var(--text-dim); font-family:'JetBrains Mono', monospace;">
+                [Ghost-holder: ${sampleVal}]
+              </span>
+            </div>
+          </div>
+          <div class="governance-box success">
+            <span class="governance-title">⚡ Ghost-holder Overwrite Protocol</span>
+            <span>${spec.governance}</span>
+          </div>
+        `;
+      }
+
+      if (col.type === 'boolean') {
+        return `
+          <div style="background:var(--bg-canvas); padding:0.9rem; border-radius:var(--radius-sm); border:1px solid var(--border-dim); display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:600; color:var(--text-vivid); font-size:0.88rem;">🔘 Binary Switch Preview</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">Stored as INTEGER (0 or 1). Indeterminate states strictly disallowed.</div>
+            </div>
+            <div style="display:inline-flex; align-items:center; gap:0.5rem; background:var(--bg-input); padding:0.35rem 0.65rem; border-radius:20px; border:1px solid var(--border-dim);">
+              <span style="font-size:0.75rem; font-weight:700; color:#c084fc; font-family:'JetBrains Mono', monospace;">0 | FALSE</span>
+              <div style="width:28px; height:16px; background:#a855f7; border-radius:10px; position:relative;">
+                <div style="width:12px; height:12px; background:#fff; border-radius:50%; position:absolute; top:2px; right:2px;"></div>
+              </div>
+              <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); font-family:'JetBrains Mono', monospace;">1 | TRUE</span>
+            </div>
+          </div>
+          <div class="governance-box info">
+            <span class="governance-title">🔘 Binary Storage Protocol</span>
+            <span>${spec.governance}</span>
+          </div>
+        `;
+      }
+
+      if (col.type === 'text_single') {
+        return `
+          <div class="governance-box success">
+            <span class="governance-title">📝 Single-line Text Rule</span>
+            <span>Automatically strips leading and trailing whitespace upon submission.</span>
+          </div>
+        `;
+      }
+
+      if (col.type === 'text_multi') {
+        return `
+          <div class="governance-box success">
+            <span class="governance-title">📝 Multi-line Text Block Rule</span>
+            <span>Preserves raw indentation, line breaks (\\n), and unparsed markdown verbatim.</span>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="governance-box">
+          <span class="governance-title">ℹ️ Input Behavior</span>
+          <span>${spec.governance}</span>
+        </div>
+      `;
+    }
+
+    // Column Manipulation Handlers
+    function addNewColumn(type) {
+      if (!activeTable) return;
+      const table = tables[activeTable];
+      const count = table.columns.length + 1;
+      const typeTitles = {
+        hex_id: `Identifier ${count}`,
+        text_single: `Title ${count}`,
+        text_multi: `Description ${count}`,
+        int_scalar: `Count ${count}`,
+        float_scalar: `Amount ${count}`,
+        boolean: `Is Active ${count}`,
+        enum_single: `Category ${count}`,
+        enum_multi: `Tags ${count}`,
+        relation_single: `Target Link ${count}`,
+        relation_multi: `Related Items ${count}`
+      };
+      const naturalName = typeTitles[type] || `Field ${count}`;
+      const computerSlug = toSlug(naturalName) || `field_${count}`;
+
+      const newCol = {
+        name: naturalName,
+        slug: computerSlug,
+        type: type,
+        metadata: {}
+      };
+
+      if (type.startsWith('enum_')) {
+        newCol.metadata.options = ['alpha', 'beta', 'gamma'];
+      } else if (type.startsWith('relation_')) {
+        newCol.metadata.target = 'self';
+      } else if (type === 'hex_id') {
+        newCol.metadata.prefix = activeTable.substring(0, 4).toUpperCase();
+      }
+
+      table.columns.push(newCol);
+      renderActiveTable();
+      updateInspector();
+      showToast(`Added ${type} field to ${activeTable}`);
+
+      // Scroll to new element
+      setTimeout(() => {
+        const last = document.getElementById(`col-card-${table.columns.length - 1}`);
+        if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+    }
+
+    function deleteColumn(idx) {
+      if (!activeTable) return;
+      const table = tables[activeTable];
+      const colName = table.columns[idx]?.name || 'field';
+      table.columns.splice(idx, 1);
+      renderActiveTable();
+      updateInspector();
+      showToast(`Deleted column "${colName}"`);
+    }
+
+    function moveColumn(idx, direction) {
+      if (!activeTable) return;
+      const table = tables[activeTable];
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= table.columns.length) return;
+
+      const temp = table.columns[idx];
+      table.columns[idx] = table.columns[targetIdx];
+      table.columns[targetIdx] = temp;
+
+      renderActiveTable();
+      updateInspector();
+    }
+
+    function updateColName(idx, newName) {
+      if (!activeTable) return;
+      const col = tables[activeTable].columns[idx];
+      col.name = newName;
+      if (!col.custom_slug) {
+        col.slug = toSlug(newName) || `col_${idx + 1}`;
+      }
+      // Update header text in-place if not full re-render
+      const headerTitle = document.querySelector(`#col-card-${idx} .card-title span:nth-child(4)`);
+      if (headerTitle) headerTitle.textContent = newName || 'Untitled Field';
+      const slugBadge = document.querySelector(`#col-card-${idx} .slug-badge`);
+      if (slugBadge) slugBadge.textContent = col.slug;
+      const slugInput = document.querySelector(`#col-card-${idx} input.raw-input-box.mono`);
+      if (slugInput && !col.custom_slug) slugInput.value = col.slug;
+      updateInspector();
+    }
+
+    function updateColSlug(idx, newSlug) {
+      if (!activeTable) return;
+      const col = tables[activeTable].columns[idx];
+      col.slug = toSlug(newSlug) || `col_${idx + 1}`;
+      col.custom_slug = true;
+      const slugBadge = document.querySelector(`#col-card-${idx} .slug-badge`);
+      if (slugBadge) slugBadge.textContent = col.slug;
+      updateInspector();
+    }
+
+    function updateColProp(idx, prop, value) {
+      if (!activeTable) return;
+      tables[activeTable].columns[idx][prop] = value;
+      updateInspector();
+    }
+
+    function updateColType(idx, newType) {
+      if (!activeTable) return;
+      const col = tables[activeTable].columns[idx];
+      col.type = newType;
+      col.metadata = {};
+
+      if (newType.startsWith('enum_')) {
+        col.metadata.options = ['option1', 'option2'];
+      } else if (newType.startsWith('relation_')) {
+        col.metadata.target = 'self';
+      } else if (newType === 'hex_id') {
+        col.metadata.prefix = activeTable.substring(0, 4).toUpperCase();
+      }
+
+      renderActiveTable();
+      updateInspector();
+    }
+
+    function updateColMeta(idx, key, value) {
+      if (!activeTable) return;
+      const col = tables[activeTable].columns[idx];
+      if (!col.metadata) col.metadata = {};
+      col.metadata[key] = value;
+      updateInspector();
+    }
+
+    function handleEnumOptionKey(event, colIdx) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const val = event.target.value.trim();
+        if (val) {
+          const col = tables[activeTable].columns[colIdx];
+          if (!col.metadata) col.metadata = {};
+          if (!Array.isArray(col.metadata.options)) col.metadata.options = [];
+          if (!col.metadata.options.includes(val)) {
+            col.metadata.options.push(val);
+            event.target.value = '';
+            renderActiveTable();
+            updateInspector();
+          }
+        }
+      }
+    }
+
+    function removeEnumOption(colIdx, optIdx) {
+      if (!activeTable) return;
+      const col = tables[activeTable].columns[colIdx];
+      if (col.metadata && Array.isArray(col.metadata.options)) {
+        col.metadata.options.splice(optIdx, 1);
+        renderActiveTable();
+        updateInspector();
+      }
+    }
+
+    // Inspector Panel Projections
+    function switchInspectorTab(tab) {
+      activeInspectorTab = tab;
+      document.getElementById('tab-btn-sql').className = `inspector-tab-btn ${tab === 'sql' ? 'active' : ''}`;
+      document.getElementById('tab-btn-json').className = `inspector-tab-btn ${tab === 'json' ? 'active' : ''}`;
+      document.getElementById('tab-btn-info').className = `inspector-tab-btn ${tab === 'info' ? 'active' : ''}`;
+      updateInspector();
+    }
+
+    function generateSqlDDL(table) {
+      if (!table || !table.columns) return '-- No table active';
+      const lines = [`CREATE TABLE IF NOT EXISTS ${table.table_name} (`];
+      const cols = table.columns.map(col => {
+        let sqlType = 'TEXT';
+        switch (col.type) {
+          case 'hex_id':        sqlType = 'TEXT PRIMARY KEY'; break;
+          case 'int_scalar':    sqlType = 'INTEGER'; break;
+          case 'float_scalar':  sqlType = 'REAL'; break;
+          case 'boolean':       sqlType = 'INTEGER DEFAULT 0'; break;
+          case 'enum_multi':    sqlType = 'TEXT -- JSON Array'; break;
+          case 'relation_multi':sqlType = 'TEXT -- JSON Array of Hex IDs'; break;
+          case 'relation_single':sqlType = 'TEXT -- Foreign Hex ID'; break;
+          default:              sqlType = 'TEXT';
+        }
+        const colIdentifier = col.slug || toSlug(col.name) || 'unnamed_field';
+        return `    ${colIdentifier.padEnd(20, ' ')} ${sqlType}`;
+      });
+      lines.push(cols.join(',\n'));
+      lines.push(');');
+      return lines.join('\n');
+    }
+
+    async function updateInspector() {
+      const codeView = document.getElementById('inspector-code-view');
+      const titleView = document.getElementById('inspector-code-title');
+      const table = tables[activeTable];
+
+      if (activeInspectorTab === 'sql') {
+        titleView.textContent = `SQLite DDL (${activeTable}.sql)`;
+        codeView.textContent = generateSqlDDL(table);
+      } else if (activeInspectorTab === 'json') {
+        titleView.textContent = `JSON Config (${activeTable}.json)`;
+        codeView.textContent = JSON.stringify(table, null, 2);
+      } else if (activeInspectorTab === 'info') {
+        titleView.textContent = 'SQLite Database Info';
+        if (isServerConnected) {
+          try {
+            const res = await fetch(`${API_BASE}/api/sqlite_info`);
+            const data = await res.json();
+            codeView.textContent = JSON.stringify(data, null, 2);
+          } catch (e) {
+            codeView.textContent = '-- Server unreachable for sqlite inspection';
+          }
+        } else {
+          codeView.textContent = JSON.stringify({
+            status: "Offline",
+            note: "Start server.py to inspect data/database.sqlite directly.",
+            cached_tables: Object.keys(tables)
+          }, null, 2);
+        }
+      }
+    }
+
+    function copyInspectorContent() {
+      const text = document.getElementById('inspector-code-view').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard!');
+      }).catch(() => {
+        showToast('Failed to copy');
+      });
+    }
+
+    // UI Helpers & Theme
+    function showToast(msg) {
+      const t = document.getElementById('toast-msg');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+    }
+
+    // Boot app
+    initApp();
+  </script>
+</body>
+</html>

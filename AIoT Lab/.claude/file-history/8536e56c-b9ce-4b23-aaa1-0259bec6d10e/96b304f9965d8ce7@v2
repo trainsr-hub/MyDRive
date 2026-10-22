@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Quantum Hourglass · 10,000 Hours</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #0f0b1a 0%, #030206 100%);
+  font-family: 'Segoe UI', system-ui, sans-serif; color: #f5f3ff; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+
+.hud {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 24px; z-index: 10;
+}
+.header { text-align: center; }
+.sub-title { font-size: 11px; letter-spacing: .35em; text-transform: uppercase; color: #f59e0b; font-weight: 700; }
+.main-title { font-size: 22px; font-weight: 800; letter-spacing: .12em; color: #fff; text-shadow: 0 0 20px rgba(245,158,11,0.5); }
+
+/* ── Epoch Telemetry Deck ── */
+.epoch-deck {
+  position: absolute; right: 30px; top: 50%; transform: translateY(-50%);
+  background: rgba(18, 12, 30, 0.85); border: 1.5px solid rgba(245,158,11,0.3);
+  border-radius: 16px; padding: 18px 24px; display: flex; flex-direction: column; gap: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6); pointer-events: auto; min-width: 200px;
+}
+.epoch-label { font-size: 10px; letter-spacing: .25em; text-transform: uppercase; color: #fde68a; }
+.epoch-hours { font-size: 32px; font-weight: 900; font-family: monospace; color: #fbbf24; text-shadow: 0 0 16px rgba(251,191,36,0.5); }
+.epoch-tier { font-size: 12px; font-weight: 700; color: #e9d5ff; letter-spacing: .08em; }
+.progress-track { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #f59e0b, #ec4899); width: 0%; transition: width .3s ease; }
+
+/* ── Command Bar ── */
+.controls { pointer-events: auto; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+.btn {
+  min-height: 52px; padding: 0 22px; background: rgba(24, 15, 38, 0.85);
+  border: 1.5px solid rgba(245,158,11,0.35); border-radius: 12px; color: #fef3c7;
+  font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  cursor: pointer; transition: all .15s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:hover { background: #3b1f5c; border-color: #f59e0b; color: #fff; box-shadow: 0 0 24px rgba(245,158,11,0.5); transform: translateY(-2px); }
+.btn:active { transform: translateY(1px); }
+.btn.active { background: #b45309; border-color: #fde68a; color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="header">
+    <div class="sub-title">Crystallized Lifetime Mastery</div>
+    <div class="main-title">The Quantum Chrono-Hourglass</div>
+  </div>
+  <div class="epoch-deck">
+    <span class="epoch-label">Hours Invested</span>
+    <span class="epoch-hours" id="hoursVal">0</span>
+    <span class="epoch-tier" id="tierVal">Apprentice (Tier 0)</span>
+    <div class="progress-track"><div class="progress-fill" id="pFill"></div></div>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="bankHours(10)">⏳ Bank 10 Hours</button>
+    <button class="btn" onclick="bankHours(100)">⚡ Bank 100 Hours</button>
+    <button class="btn" onclick="bankHours(1000)">👑 Bank 1,000 Hours</button>
+    <button class="btn" id="flowBtn" onclick="toggleFlow()">🌌 Live Focus Flow</button>
+    <button class="btn" onclick="resetHours()">🔄 Reset Horizon</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const hoursValEl = document.getElementById('hoursVal'), tierValEl = document.getElementById('tierVal');
+const pFillEl = document.getElementById('pFill');
+let W, H, cx, cy, hours = 0, targetHours = 0, grains = [], sparks = [], isFlowing = false, flowTimer = null, audioCtx = null;
+const MAX_HOURS = 10000;
+
+function playTick(pitch = 1.0) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'triangle'; osc.frequency.setValueAtTime(540 * pitch, t);
+    osc.frequency.exponentialRampToValueAtTime(1080 * pitch, t + 0.06);
+    gain.gain.setValueAtTime(0.08, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.06);
+  } catch(e) {}
+}
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; cx = W / 2; cy = H / 2; }
+window.addEventListener('resize', resize);
+resize();
+
+function bankHours(n) {
+  targetHours = Math.min(MAX_HOURS, targetHours + n);
+  for (let i = 0; i < Math.min(40, n / 2); i++) spawnGrain();
+  playTick(1.0 + (targetHours / MAX_HOURS) * 0.8);
+}
+
+function toggleFlow() {
+  isFlowing = !isFlowing;
+  document.getElementById('flowBtn').classList.toggle('active', isFlowing);
+  if (isFlowing) flowTimer = setInterval(() => bankHours(5), 180);
+  else clearInterval(flowTimer);
+}
+
+function resetHours() { targetHours = 0; hours = 0; grains = []; sparks = []; }
+
+function spawnGrain() {
+  grains.push({
+    x: cx + (Math.random() - 0.5) * 6, y: cy - 20,
+    vy: 2 + Math.random() * 4, vx: (Math.random() - 0.5) * 0.8,
+    size: 2 + Math.random() * 2, color: Math.random() > 0.3 ? '#fbbf24' : '#e879f9'
+  });
+}
+
+function updateUI() {
+  hours += (targetHours - hours) * 0.1;
+  const rounded = Math.round(hours);
+  hoursValEl.textContent = rounded.toLocaleString();
+  const pct = (hours / MAX_HOURS) * 100;
+  pFillEl.style.width = `${pct}%`;
+
+  if (hours >= 10000) tierValEl.textContent = '🌟 TRANSCENDENT MASTER';
+  else if (hours >= 7500) tierValEl.textContent = '⚔️ Grandmaster (Tier IV)';
+  else if (hours >= 5000) tierValEl.textContent = '🔮 Adept Scholar (Tier III)';
+  else if (hours >= 2500) tierValEl.textContent = '📜 Journeyman (Tier II)';
+  else if (hours >= 1000) tierValEl.textContent = '🔨 Initiate (Tier I)';
+  else tierValEl.textContent = '🌱 Apprentice (Tier 0)';
+}
+
+function draw() {
+  ctx.fillStyle = 'rgba(15, 11, 26, 0.28)';
+  ctx.fillRect(0, 0, W, H);
+  updateUI();
+
+  const hw = 140, hh = 380;
+  // Glass contour
+  ctx.save();
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.25)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  // Upper Bulb
+  ctx.moveTo(cx - hw, cy - hh / 2);
+  ctx.bezierCurveTo(cx - hw, cy - 30, cx - 12, cy - 20, cx - 8, cy);
+  // Lower Bulb
+  ctx.bezierCurveTo(cx - 12, cy + 20, cx - hw, cy + 30, cx - hw, cy + hh / 2);
+  ctx.lineTo(cx + hw, cy + hh / 2);
+  ctx.bezierCurveTo(cx + hw, cy + 30, cx + 12, cy + 20, cx + 8, cy);
+  ctx.bezierCurveTo(cx + 12, cy - 20, cx + hw, cy - 30, cx + hw, cy - hh / 2);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Draw Milestone Markers along lower glass
+  const milestones = [1000, 2500, 5000, 7500, 10000];
+  ctx.font = '9px monospace';
+  ctx.fillStyle = 'rgba(254, 243, 199, 0.4)';
+  milestones.forEach(m => {
+    const my = cy + hh / 2 - (m / MAX_HOURS) * (hh / 2 - 30);
+    ctx.beginPath(); ctx.moveTo(cx + hw - 14, my); ctx.lineTo(cx + hw - 4, my); ctx.stroke();
+    ctx.fillText(`${m / 1000}k h`, cx + hw + 6, my + 3);
+  });
+  ctx.restore();
+
+  // Crystal Monolith growth in bottom bulb
+  const crystalMaxH = hh / 2 - 40;
+  const crystalH = (hours / MAX_HOURS) * crystalMaxH;
+  const baseW = 110, baseY = cy + hh / 2 - 10;
+
+  if (crystalH > 2) {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, baseY, 0, baseY - crystalH);
+    grad.addColorStop(0, '#78350f'); grad.addColorStop(0.5, '#d97706'); grad.addColorStop(1, '#fef08a');
+    ctx.fillStyle = grad;
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.moveTo(cx - baseW * 0.5, baseY);
+    ctx.lineTo(cx - baseW * 0.25 * (1 - crystalH / crystalMaxH), baseY - crystalH);
+    ctx.lineTo(cx, baseY - crystalH - 12);
+    ctx.lineTo(cx + baseW * 0.25 * (1 - crystalH / crystalMaxH), baseY - crystalH);
+    ctx.lineTo(cx + baseW * 0.5, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Geometric facet lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, baseY - crystalH - 12); ctx.lineTo(cx, baseY); ctx.stroke();
+    ctx.restore();
+  }
+
+  // Dropping Chrono Grains
+  for (let i = grains.length - 1; i >= 0; i--) {
+    const g = grains[i];
+    g.y += g.vy; g.x += g.vx; g.vy += 0.25;
+    ctx.beginPath(); ctx.arc(g.x, g.y, g.size, 0, Math.PI * 2);
+    ctx.fillStyle = g.color; ctx.shadowColor = g.color; ctx.shadowBlur = 8; ctx.fill();
+
+    const targetFloor = baseY - crystalH;
+    if (g.y >= targetFloor) {
+      grains.splice(i, 1);
+      // Spark splash
+      for (let s = 0; s < 4; s++) {
+        const a = Math.random() * Math.PI, sp = 1 + Math.random() * 3;
+        sparks.push({ x: g.x, y: targetFloor, vx: Math.cos(a) * sp, vy: -Math.sin(a) * sp, life: 1 });
+      }
+    }
+  }
+
+  // Sparks
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i]; s.x += s.vx; s.y += s.vy; s.life -= 0.05;
+    if (s.life <= 0) { sparks.splice(i, 1); continue; }
+    ctx.save(); ctx.globalAlpha = s.life; ctx.beginPath(); ctx.arc(s.x, s.y, 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#fef08a'; ctx.fill(); ctx.restore();
+  }
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

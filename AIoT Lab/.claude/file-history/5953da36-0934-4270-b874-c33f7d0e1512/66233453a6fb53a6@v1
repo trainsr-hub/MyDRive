@@ -1,0 +1,268 @@
+// path: src/apps/vinyl-angel/store/useVinylStore.ts
+
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import type { VinylLocalTheme, VinylPlayerSettings, VinylSessionStats, ShopItem, PlaylistItem, Tier2EventEntry } from '../types';
+import { useInventoryStore } from '../../../store/useInventoryStore';
+
+export const SHOP_CATALOG: ShopItem[] = [
+  {
+    id: 'angel-roll-ticket',
+    name: 'Angel Roll Ticket 🎟️',
+    description: 'Dimensional summoning ticket forged from 25 Celestial Discs. Used in the Grand Dimensional Nexus (Modern Day world) where valuable objects of all dimensions converge.',
+    category: 'ticket',
+    priceDiscs: 25,
+    rewardTicket: 'angel-roll',
+    isLocked: false,
+    iconName: 'Ticket',
+    color: '#ffd86b',
+    perkEffect: 'Summons celestial artifacts & relics in Modern Day.',
+    consumable: true,
+  },
+  {
+    id: 'solar-flora-ticket',
+    name: 'Solar Flora Ticket 🌻',
+    description: 'Extracted from the high-yield solar crops of Farm Beta. Awaiting Modern Day convergence.',
+    category: 'ticket',
+    priceDiscs: 50,
+    isLocked: true,
+    lockReason: 'Dimension Locked: Farm Alpha/Beta Nexus',
+    iconName: 'Sparkles',
+    color: '#fbbf24',
+    perkEffect: 'Flora bio-essence synthesizer.',
+  },
+  {
+    id: 'codex-relic-ticket',
+    name: 'Codex Relic Ticket 📖',
+    description: 'Ancient cipher tablet from the Artifact Codex archive. Sealed until dimensional breach.',
+    category: 'ticket',
+    priceDiscs: 50,
+    isLocked: true,
+    lockReason: 'Dimension Locked: Artifact Codex Matrix',
+    iconName: 'Shield',
+    color: '#a78bfa',
+    perkEffect: 'Decodes lost hazard protocols.',
+  },
+  {
+    id: 'golden-stylus',
+    name: 'Golden Stylus 🪽',
+    description: 'A handcrafted needle forged in celestial gold. Bestows gilded glow across the player interface.',
+    category: 'cosmetic',
+    priceDiscs: 100,
+    isLocked: true,
+    lockReason: 'Modern Day Nexus Crafting Required',
+    iconName: 'Sparkles',
+    color: '#ffd86b',
+    perkEffect: 'Gilded player borders and audio visual sparkle effects.',
+  },
+  {
+    id: 'abyssal-needle',
+    name: 'Abyssal Needle ✦',
+    description: 'A needle crafted from collapsed dark matter. Unlocks cosmic event horizon pulses.',
+    category: 'cosmetic',
+    priceDiscs: 150,
+    isLocked: true,
+    lockReason: 'Modern Day Nexus Crafting Required',
+    iconName: 'Moon',
+    color: '#a78bfa',
+    perkEffect: 'Deep void pulses on each track transition.',
+  },
+  {
+    id: 'time-multiplier-2x',
+    name: 'Harmonic Catalyst (Boost)',
+    description: 'Doubles the resonance generated for rated songs.',
+    category: 'booster',
+    priceDiscs: 60,
+    isLocked: true,
+    lockReason: 'Modern Day Nexus Crafting Required',
+    iconName: 'Zap',
+    color: '#38bdf8',
+    perkEffect: 'Multiplies harmonic disc output.',
+    consumable: true,
+  },
+];
+
+interface VinylStoreState {
+  // Currencies
+  discs: number;
+  angelRollTickets: number;
+
+  // Theming & Cosmetics
+  localTheme: VinylLocalTheme;
+  unlockedThemes: VinylLocalTheme[];
+  purchasedItemIds: string[];
+  equippedStylus: string | null;
+  boosterCharges: number;
+
+  // Settings & Session Stats
+  settings: VinylPlayerSettings;
+  stats: VinylSessionStats;
+
+  // Inter-tab Transfer State
+  queuedTrackForGameplay: PlaylistItem | null;
+
+  // Resilient Offline Event Outbox
+  offlineOutbox: Tier2EventEntry[];
+
+  // Actions
+  earnDiscs: (count: number) => void;
+  spendDiscs: (count: number) => boolean;
+  addAngelTickets: (count: number) => void;
+  spendAngelTickets: (count: number) => boolean;
+
+  setLocalTheme: (theme: VinylLocalTheme) => void;
+  unlockTheme: (theme: VinylLocalTheme) => void;
+  buyShopItem: (item: ShopItem) => boolean;
+  equipStylus: (stylusId: string | null) => void;
+  consumeBoosterCharge: () => boolean;
+  addBoosterCharges: (charges: number) => void;
+  updateSettings: (partial: Partial<VinylPlayerSettings>) => void;
+  incrementRatingStats: (discsEarned?: number) => void;
+  recordSyncCompleted: () => void;
+  hasItem: (itemId: string) => boolean;
+  setQueuedTrackForGameplay: (track: PlaylistItem | null) => void;
+  enqueueOfflineEvent: (evt: Tier2EventEntry) => void;
+  clearOfflineOutbox: () => void;
+  removeOfflineEvents: (timestamps: string[]) => void;
+}
+
+export const useVinylStore = create<VinylStoreState>()(
+  persist(
+    (set, get) => ({
+      discs: 0,
+      angelRollTickets: 0,
+      localTheme: 'celestial-gold',
+      unlockedThemes: ['celestial-gold', 'obsidian-abyss'],
+      purchasedItemIds: [],
+      equippedStylus: 'golden-stylus',
+      boosterCharges: 0,
+      settings: {
+        autoplay: true,
+        defaultPassScore: '4+',
+        soundEffects: true,
+        autoSync: false,
+      },
+      stats: {
+        sessionRatingsCount: 0,
+        totalDiscsEarned: 0,
+        lastSyncTimestamp: null,
+      },
+      queuedTrackForGameplay: null,
+      offlineOutbox: [],
+
+      earnDiscs: (count: number) => {
+        const amount = Math.max(0, count);
+        set((s) => ({ discs: s.discs + amount }));
+        // Sync to universal inventory
+        useInventoryStore.getState().addDiscs(amount);
+      },
+
+      spendDiscs: (count: number) => {
+        if (get().discs < count) return false;
+        set((s) => ({ discs: s.discs - count }));
+        useInventoryStore.getState().spendDiscs(count);
+        return true;
+      },
+
+      addAngelTickets: (count: number) => {
+        const amount = Math.max(0, count);
+        set((s) => ({ angelRollTickets: s.angelRollTickets + amount }));
+        useInventoryStore.getState().addAngelTickets(amount);
+      },
+
+      spendAngelTickets: (count: number) => {
+        if (get().angelRollTickets < count) return false;
+        set((s) => ({ angelRollTickets: s.angelRollTickets - count }));
+        useInventoryStore.getState().spendAngelTickets(count);
+        return true;
+      },
+
+      setLocalTheme: (theme) => {
+        if (get().unlockedThemes.includes(theme)) {
+          set({ localTheme: theme });
+        }
+      },
+
+      unlockTheme: (theme) => {
+        if (!get().unlockedThemes.includes(theme)) {
+          set((s) => ({ unlockedThemes: [...s.unlockedThemes, theme] }));
+        }
+      },
+
+      buyShopItem: (item) => {
+        if (item.isLocked) return false;
+
+        const price = item.priceDiscs ?? 25;
+        if (get().discs < price) return false;
+
+        // Deduct Discs
+        get().spendDiscs(price);
+
+        if (item.id === 'angel-roll-ticket') {
+          get().addAngelTickets(1);
+          set((s) => ({
+            purchasedItemIds: [...s.purchasedItemIds, item.id],
+          }));
+          return true;
+        }
+
+        return false;
+      },
+
+      equipStylus: (stylusId) => set({ equippedStylus: stylusId }),
+
+      consumeBoosterCharge: () => {
+        const current = get().boosterCharges;
+        if (current > 0) {
+          set({ boosterCharges: current - 1 });
+          return true;
+        }
+        return false;
+      },
+
+      addBoosterCharges: (charges) =>
+        set((s) => ({ boosterCharges: s.boosterCharges + charges })),
+
+      updateSettings: (partial) =>
+        set((s) => ({ settings: { ...s.settings, ...partial } })),
+
+      incrementRatingStats: (discsEarned = 3) =>
+        set((s) => ({
+          stats: {
+            ...s.stats,
+            sessionRatingsCount: s.stats.sessionRatingsCount + 1,
+            totalDiscsEarned: s.stats.totalDiscsEarned + discsEarned,
+          },
+        })),
+
+      recordSyncCompleted: () =>
+        set((s) => ({
+          stats: {
+            ...s.stats,
+            lastSyncTimestamp: new Date().toLocaleTimeString(),
+          },
+        })),
+
+      hasItem: (itemId) => get().purchasedItemIds.includes(itemId),
+
+      setQueuedTrackForGameplay: (track) => set({ queuedTrackForGameplay: track }),
+
+      enqueueOfflineEvent: (evt) =>
+        set((s) => ({
+          offlineOutbox: [...(s.offlineOutbox || []), evt],
+        })),
+
+      clearOfflineOutbox: () => set({ offlineOutbox: [] }),
+
+      removeOfflineEvents: (timestamps) => {
+        const tsSet = new Set(timestamps);
+        set((s) => ({
+          offlineOutbox: (s.offlineOutbox || []).filter((e) => !tsSet.has(e.timestamp)),
+        }));
+      },
+    }),
+    {
+      name: 'universe25-vinyl-angel-store',
+    }
+  )
+);

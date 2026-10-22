@@ -1,0 +1,195 @@
+import React from 'react';
+import { rutGonTime } from '../core/rutGonTime';
+import { GachaAnimationWorker } from './tabs/gacha/workers/GachaAnimationWorker/GachaAnimationWorker';
+import { Clock, Sparkles, Bot, Square, Zap, Unlock, Flame, TrendingUp, Dices } from 'lucide-react';
+
+export interface AutoGachaHudProps {
+  isActive: boolean;
+  isBlackHolePlaying: boolean;
+  currentRollIndex: number; // 0 to 9
+  totalRolls?: number; // default 10
+  currentDinoName: string;
+  currentDinoImage?: string;
+  currentCostSeconds: number;
+  currentEvo1Ferocity: number;
+  remainingJurassicTime: number;
+  newlyUnlockedDinos: string[];
+  dropRatePercent?: number | null;
+  rankClimb?: { prevRank: number; newRank: number; wasFirstBuy: boolean } | null;
+  onSkipBlackHole: () => void;
+  onStopAutoGacha: () => void;
+}
+
+export const AutoGachaHud: React.FC<AutoGachaHudProps> = ({
+  isActive,
+  isBlackHolePlaying,
+  currentRollIndex,
+  totalRolls = 10,
+  currentDinoName,
+  currentDinoImage,
+  currentCostSeconds,
+  currentEvo1Ferocity,
+  remainingJurassicTime,
+  newlyUnlockedDinos,
+  dropRatePercent,
+  rankClimb,
+  onSkipBlackHole,
+  onStopAutoGacha,
+}) => {
+  if (!isActive) return null;
+
+  // 1. Black Hole Initial Cosmic Stage
+  if (isBlackHolePlaying) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/95 backdrop-blur-md">
+        {/* Top Header Badge */}
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-[#120e1c]/90 border border-amber-400/60 px-5 py-2 rounded-full shadow-[0_0_25px_rgba(255,215,0,0.35)] z-20">
+          <Bot className="w-5 h-5 text-amber-400 animate-spin" />
+          <span className="text-sm font-mono font-black text-amber-200 tracking-wider uppercase">
+            Initiating 10x Auto-Gacha • Sorting 10 Specimens By Strength
+          </span>
+        </div>
+
+        {/* Animation Worker Stage */}
+        <div className="w-full h-full">
+          <GachaAnimationWorker
+            animationSrc="/animations/black-hole.html"
+            onComplete={onSkipBlackHole}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Active Telemetry HUD Bar (FIXED permanently at top of viewport so camera scrolling never hides it)
+  return (
+    <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] w-[96%] max-w-7xl pointer-events-auto">
+      <div className="bg-gradient-to-r from-[#0d0a17]/98 via-[#161024]/98 to-[#0d0a17]/98 border-2 border-emerald-400 rounded-2xl shadow-[0_0_35px_rgba(16,185,129,0.45)] backdrop-blur-2xl p-3.5 flex flex-col gap-2.5 transition-all">
+        {/* Main Command Row */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          {/* Section 1: Roll Indicator & Progress Dots */}
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 bg-emerald-950/90 border-2 border-emerald-400 px-3.5 py-1.5 rounded-xl text-emerald-300 font-mono font-black text-xs shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+              <Bot className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span>ROLL {Math.min(currentRollIndex + 1, totalRolls)} / {totalRolls}</span>
+            </div>
+
+            {/* Visual Dot Progress */}
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: totalRolls }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`w-2.5 h-2.5 rounded-full transition-all ${
+                    idx < currentRollIndex
+                      ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]'
+                      : idx === currentRollIndex
+                      ? 'bg-amber-400 scale-125 animate-ping shadow-[0_0_10px_rgba(251,191,36,1)]'
+                      : 'bg-white/20'
+                  }`}
+                  title={`Roll ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Section 2: Active Specimen Identity */}
+          {currentDinoName && (
+            <div className="flex items-center gap-2.5 bg-[#181224] border border-amber-500/50 px-3 py-1.5 rounded-xl text-xs font-mono shadow-sm">
+              {currentDinoImage && (
+                <img
+                  src={currentDinoImage}
+                  alt={currentDinoName}
+                  className="w-7 h-7 object-contain rounded border-2 border-amber-400 shadow-md"
+                />
+              )}
+              <div className="flex flex-col text-left">
+                <span className="font-black text-white text-xs tracking-wide">{currentDinoName}</span>
+                <span className="flex items-center gap-1 text-[10px] text-amber-300 font-bold" title="Evolution 1 Ferocity">
+                  <Flame className="w-3 h-3 text-amber-400" />
+                  Evo 1: {currentEvo1Ferocity.toLocaleString()} Fero
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Section 3: RANKING CLIMB METRIC */}
+          {rankClimb && (
+            <div className="flex items-center gap-2 bg-[#221606] border-2 border-amber-400 px-3.5 py-1.5 rounded-xl text-amber-300 font-mono shadow-[0_0_15px_rgba(251,191,36,0.4)]">
+              <TrendingUp className="w-4 h-4 text-amber-400 animate-bounce" />
+              <div className="flex flex-col text-left">
+                <span className="text-[9px] uppercase tracking-wider text-amber-400 font-extrabold leading-none">Rank Climb</span>
+                <div className="flex items-center gap-1.5 text-xs font-black leading-tight mt-0.5">
+                  {rankClimb.wasFirstBuy ? (
+                    <>
+                      <span className="text-gray-400 font-mono text-[10px]">LOCKED</span>
+                      <span className="text-amber-400 font-bold text-xs">➔</span>
+                      <span className="text-emerald-300 font-black text-xs drop-shadow-[0_0_6px_rgba(52,211,153,0.8)]">EVO 1</span>
+                    </>
+                  ) : rankClimb.newRank > rankClimb.prevRank ? (
+                    <>
+                      <span className="text-amber-400/70 font-mono text-[10px]">EVO {rankClimb.prevRank}</span>
+                      <span className="text-amber-400 font-bold text-xs">➔</span>
+                      <span className="text-amber-200 font-black text-xs drop-shadow-[0_0_8px_rgba(255,215,0,0.8)]">EVO {rankClimb.newRank}</span>
+                    </>
+                  ) : (
+                    <span className="text-amber-200 font-extrabold text-xs">EVO {rankClimb.newRank} (Count+)</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Section 4: GACHA DROP RATE METRIC */}
+          {dropRatePercent !== undefined && dropRatePercent !== null && (
+            <div className="flex items-center gap-2 bg-[#081826] border-2 border-cyan-400 px-3.5 py-1.5 rounded-xl text-cyan-300 font-mono shadow-[0_0_12px_rgba(34,211,238,0.35)]">
+              <Dices className="w-4 h-4 text-cyan-400" />
+              <div className="flex flex-col text-left">
+                <span className="text-[9px] uppercase tracking-wider text-cyan-400 font-extrabold leading-none">Gacha Rate</span>
+                <span className="text-xs font-black text-white leading-tight mt-0.5">{dropRatePercent.toFixed(2)}%</span>
+              </div>
+            </div>
+          )}
+
+          {/* Section 5: COST DEDUCTION */}
+          <div className="flex items-center gap-2 bg-[#250912] border-2 border-rose-500 px-3.5 py-1.5 rounded-xl text-rose-300 font-mono shadow-[0_0_15px_rgba(244,63,94,0.4)]">
+            <Zap className="w-4 h-4 text-rose-400 animate-pulse" />
+            <div className="flex flex-col text-left">
+              <span className="text-[9px] uppercase tracking-wider text-rose-400 font-extrabold leading-none">Dino Cost</span>
+              <span className="text-xs font-black text-rose-200 leading-tight mt-0.5">-{rutGonTime(currentCostSeconds, 'seconds')}</span>
+            </div>
+          </div>
+
+          {/* Section 6: TIME REMAINING */}
+          <div className="flex items-center gap-2 bg-[#091524] border-2 border-sky-400 px-3.5 py-1.5 rounded-xl text-sky-300 font-mono shadow-[0_0_15px_rgba(56,189,248,0.4)]">
+            <Clock className="w-4 h-4 text-sky-400 animate-pulse" />
+            <div className="flex flex-col text-left">
+              <span className="text-[9px] uppercase tracking-wider text-sky-400 font-extrabold leading-none">Time Left</span>
+              <span className="text-xs font-black text-white leading-tight mt-0.5">{rutGonTime(remainingJurassicTime, 'seconds')}</span>
+            </div>
+          </div>
+
+          {/* Section 7: STOP BUTTON */}
+          <button
+            type="button"
+            onClick={onStopAutoGacha}
+            className="flex items-center gap-1.5 bg-rose-950 hover:bg-rose-900 border-2 border-rose-400 text-rose-200 px-3 py-2 rounded-xl font-mono font-black text-xs cursor-pointer transition-all shadow-[0_0_12px_rgba(244,63,94,0.4)] hover:scale-105 active:scale-95"
+            title="Stop Auto-Gacha Sequence"
+          >
+            <Square className="w-3.5 h-3.5 fill-rose-400" />
+            <span>STOP</span>
+          </button>
+        </div>
+
+        {/* Section 8: Newly Unlocked Pool Dinos Banner (if any) */}
+        {newlyUnlockedDinos && newlyUnlockedDinos.length > 0 && (
+          <div className="flex items-center gap-2 bg-gradient-to-r from-amber-950/70 via-emerald-950/70 to-amber-950/70 border border-amber-400/60 px-3 py-1 rounded-xl text-[11px] font-mono font-bold text-amber-300 animate-pulse">
+            <Unlock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="text-emerald-300">NEW SPECIES ADDED TO GACHA POOL:</span>
+            <span className="text-white underline underline-offset-2">{newlyUnlockedDinos.join(', ')}</span>
+            <Sparkles className="w-3 h-3 text-amber-400 shrink-0 ml-auto" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

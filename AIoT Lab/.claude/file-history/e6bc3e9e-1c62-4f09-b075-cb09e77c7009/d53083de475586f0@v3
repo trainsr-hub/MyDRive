@@ -1,0 +1,616 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cinzel+Decorative:wght@400;700;900&display=swap');
+@import "tailwindcss";
+@import "./apps/heraclitus/animations/twoPhaseStyles.css";
+@import "./apps/heraclitus/styles/heraclitusAnimations.css";
+@import "./apps/heraclitus/styles/yellowPoolTwoPhase.css";
+
+/*
+ * Universe 25 — Global Styles
+ * Gate of Babylon inspired design system with imperial aesthetics
+ */
+
+:root {
+  /* Gate of Babylon Color Palette */
+  --bg-primary: #070609;
+  --bg-secondary: #0a080e;
+  --bg-card: #120f18;
+  --bg-elevated: #1a1424;
+  --text-primary: #f5f0e8;
+  --text-secondary: #9c93a8;
+  --text-muted: #685c78;
+  --accent: #d4af37;
+  --accent-hover: #ffd86b;
+  --accent-soft: rgba(212, 175, 55, 0.15);
+  --accent-crimson: #841822;
+  --border: #2b2238;
+  --border-hover: #524124;
+  --glow: rgba(212, 175, 55, 0.25);
+
+  /* Status Colors */
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.15);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.15);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.15);
+
+  /* Spacing & Borders */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-gold-sm: 0 0 10px rgba(212, 175, 55, 0.3);
+  --shadow-gold-md: 0 0 18px rgba(212, 175, 55, 0.4);
+  --shadow-portal: 0 8px 40px rgba(212, 175, 55, 0.2);
+}
+
+.font-cinzel {
+  font-family: 'Cinzel', serif;
+}
+
+.font-cinzel-dec {
+  font-family: 'Cinzel Decorative', serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--bg-primary);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--glow);
+}
+
+/* Smooth Hardware-Accelerated Micro-Transitions */
+button, a, .interactive {
+  transition: color 0.08s ease-out, background-color 0.08s ease-out, border-color 0.08s ease-out, transform 0.06s ease-out, opacity 0.08s ease-out, box-shadow 0.08s ease-out;
+  user-select: none;
+}
+
+button:active:not(:disabled), .interactive:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Backdrop Gradient - Gate of Babylon Style */
+.portal-backdrop {
+  background: radial-gradient(circle at 50% -10%, rgba(212, 175, 55, 0.12) 0%, rgba(132, 24, 34, 0.08) 35%, #070609 80%);
+}
+
+.gold-text-gradient {
+  background: linear-gradient(135deg, #ffd86b 0%, #d4af37 50%, #aa8214 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Card Hover Effects - Golden Border Glow */
+.card-glow, .golden-border-glow {
+  border: 1px solid var(--border);
+  transition: border-color 0.1s ease-out, box-shadow 0.1s ease-out, transform 0.1s ease-out;
+}
+
+.card-glow:hover, .golden-border-glow:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 18px var(--glow), inset 0 0 12px rgba(212, 175, 55, 0.08);
+  transform: translateY(-2px);
+}
+
+.shadow-gold-sm {
+  box-shadow: var(--shadow-gold-sm);
+}
+
+.shadow-gold-md {
+  box-shadow: var(--shadow-gold-md);
+}
+
+.shadow-portal {
+  box-shadow: var(--shadow-portal);
+}
+
+/* Glassmorphism Effect */
+.glass {
+  background: rgba(26, 26, 36, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Shimmer Animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(124, 109, 240, 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+}
+
+/* Pulse Glow - Gold Edition */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px var(--glow);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--glow), 0 0 30px var(--glow);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s infinite ease-in-out;
+}
+
+/* Success Glow */
+@keyframes success-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px var(--success-soft);
+    border-color: var(--success);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(52, 211, 153, 0.3);
+    border-color: var(--success);
+  }
+}
+
+.success-glow {
+  animation: success-pulse 2s infinite ease-in-out;
+}
+
+/* ============================================================================= */
+/* IDE TOP-RIGHT HUD CSS ANIMATIONS — GATE OF BABYLON CYBER-IMPERIAL TELEMETRY  */
+/* ============================================================================= */
+
+@keyframes ide-hud-border-glow {
+  0%, 100% {
+    border-color: rgba(212, 175, 55, 0.45);
+    box-shadow: 0 0 18px rgba(212, 175, 55, 0.25), inset 0 0 12px rgba(212, 175, 55, 0.08);
+  }
+  50% {
+    border-color: rgba(255, 216, 107, 0.9);
+    box-shadow: 0 0 28px rgba(212, 175, 55, 0.45), 0 0 50px rgba(132, 24, 34, 0.25), inset 0 0 20px rgba(255, 216, 107, 0.15);
+  }
+}
+
+@keyframes ide-scanline-sweep {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.85;
+  }
+  70% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(200%);
+    opacity: 0;
+  }
+}
+
+@keyframes ide-chrono-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ide-energy-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 4px rgba(255, 216, 107, 0.6));
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 12px rgba(255, 216, 107, 1)) drop-shadow(0 0 20px rgba(245, 158, 11, 0.8));
+  }
+}
+
+@keyframes ide-number-flicker {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(255, 216, 107, 0.7), 0 0 20px rgba(212, 175, 55, 0.4);
+  }
+  50% {
+    text-shadow: 0 0 16px rgba(255, 255, 255, 0.95), 0 0 30px rgba(255, 216, 107, 0.8);
+  }
+}
+
+.ide-hud-widget {
+  position: relative;
+  background: linear-gradient(135deg, rgba(22, 17, 30, 0.95) 0%, rgba(10, 8, 14, 0.98) 50%, rgba(26, 15, 28, 0.95) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.5);
+  border-radius: 16px;
+  animation: ide-hud-border-glow 3.5s infinite ease-in-out;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  overflow: hidden;
+  user-select: none;
+}
+
+.ide-hud-widget::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 216, 107, 0.9) 50%, transparent 100%);
+  animation: shimmer 2.5s infinite linear;
+}
+
+.ide-scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, rgba(212, 175, 55, 0.08) 50%, transparent 100%);
+  height: 35%;
+  animation: ide-scanline-sweep 4s infinite linear;
+}
+
+.ide-chrono-icon {
+  animation: ide-energy-pulse 2.2s infinite ease-in-out;
+}
+
+.ide-chrono-ring {
+  animation: ide-chrono-spin 14s infinite linear;
+}
+
+.ide-hazard-glow {
+  animation: ide-number-flicker 3s infinite ease-in-out;
+}
+
+/* Floating Animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.float {
+  animation: float 3s infinite ease-in-out;
+}
+
+/* Fade In Animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+/* Utility: hide app containers when not active (keep-alive) */
+.app-hidden {
+  display: none !important;
+}
+.app-visible {
+  display: block;
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.status-badge.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.status-badge.success {
+  background: var(--success-soft);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+/* Enhanced Button Styles */
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  padding: 12px 24px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px var(--glow);
+  transition: transform 0.08s ease-out, background-color 0.08s ease-out, box-shadow 0.08s ease-out;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--glow);
+}
+
+.btn-primary:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 12px 24px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.08s ease-out, background-color 0.08s ease-out, border-color 0.08s ease-out;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+
+.btn-secondary:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ----------------------------------------------------------------------------- */
+/* HAZARD BADGE VFX ANIMATIONS - Gate of Babylon 15-Tier Rank System            */
+/* ----------------------------------------------------------------------------- */
+
+/* 1. S-TIER EVOLUTIONARY STAGES (S1 -> S4) */
+@keyframes s1-ember-pulse {
+  0%, 100% { border-color: rgba(212, 175, 55, 0.45); box-shadow: 0 0 6px rgba(212, 175, 55, 0.2); }
+  50% { border-color: rgba(253, 224, 71, 0.85); box-shadow: 0 0 14px rgba(212, 175, 55, 0.5); }
+}
+
+.badge-s1 {
+  background: linear-gradient(135deg, #161208 0%, #291e07 100%);
+  border: 1px solid #b89025;
+  color: #fde047;
+  animation: s1-ember-pulse 3s infinite ease-in-out;
+  text-shadow: 0 0 6px rgba(253, 224, 71, 0.6);
+}
+
+@keyframes s2-energy-sweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.badge-s2 {
+  background: linear-gradient(90deg, #1c1103 0%, #452405 25%, #f59e0b 50%, #452405 75%, #1c1103 100%);
+  background-size: 200% 100%;
+  border: 1px solid #f59e0b;
+  color: #fffbeb;
+  animation: s2-energy-sweep 3s infinite linear;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.45), inset 0 0 6px rgba(245, 158, 11, 0.25);
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+}
+
+@keyframes s3-molten-flare {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(249, 115, 22, 0.65), inset 0 0 8px rgba(251, 146, 60, 0.35);
+    border-color: #fb923c;
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(234, 88, 12, 0.95), 0 0 35px rgba(249, 115, 22, 0.5), inset 0 0 12px rgba(253, 186, 116, 0.7);
+    border-color: #ffffff;
+  }
+}
+
+.badge-s3 {
+  background: linear-gradient(135deg, #2b0b02 0%, #5a1904 50%, #8c2503 100%);
+  border: 1.5px solid #fb923c;
+  color: #fff7ed;
+  animation: s3-molten-flare 2s infinite ease-in-out;
+  text-shadow: 0 0 10px #fb923c, 0 0 18px #ea580c;
+}
+
+@keyframes s4-transmutation-surge {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.75), 0 0 32px rgba(212, 175, 55, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.4);
+    border-color: #ffd700;
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 30px rgba(239, 68, 68, 1), 0 0 50px rgba(255, 215, 0, 0.85), inset 0 0 16px rgba(255, 255, 255, 0.8);
+    border-color: #ffffff;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.75), 0 0 32px rgba(212, 175, 55, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.4);
+    border-color: #ffd700;
+  }
+}
+
+.badge-s4 {
+  background: linear-gradient(135deg, #3d0505 0%, #700a0a 40%, #ad1515 75%, #ffd700 100%);
+  border: 1.5px solid #ffffff;
+  color: #ffffff;
+  animation: s4-transmutation-surge 1.4s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 900;
+  text-shadow: 0 0 8px #ffffff, 0 0 16px #ef4444;
+}
+
+/* 2. RANK Ψ: UNFROZEN TIDES */
+@keyframes tide-slide-primary {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes tide-slide-secondary {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes tide-glow-pulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.55), inset 0 0 12px rgba(3, 105, 161, 0.5); }
+  50% { box-shadow: 0 0 28px rgba(14, 165, 233, 0.9), inset 0 0 18px rgba(255, 255, 255, 0.4); }
+}
+
+.badge-psi {
+  background: #021827;
+  border: 1.5px solid #7dd3fc;
+  color: #ffffff;
+  animation: tide-glow-pulse 3s infinite ease-in-out;
+  text-shadow: 0 0 6px #0284c7, 0 0 12px #ffffff;
+}
+
+.vfx-tide-layer-1 {
+  animation: tide-slide-primary 6s linear infinite;
+}
+
+.vfx-tide-layer-2 {
+  animation: tide-slide-secondary 4s linear infinite;
+}
+
+/* 3. RANK Ø: STATIC BLACK HOLE + HAWKING & PENROSE */
+@keyframes hawking-radiation-wave {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.85;
+    box-shadow: 0 0 4px #ffffff, inset 0 0 4px #ffffff;
+  }
+  50% {
+    opacity: 0.4;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+    box-shadow: 0 0 18px rgba(255, 255, 255, 0);
+  }
+}
+
+@keyframes penrose-ergosphere-shimmer {
+  0%, 100% {
+    opacity: 0.6;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.7), inset 0 0 4px rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 16px rgba(255, 255, 255, 1), inset 0 0 8px rgba(255, 255, 255, 0.9);
+  }
+}
+
+@keyframes penrose-jet-flare {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scaleY(0.9);
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
+  }
+  50% {
+    opacity: 0.95;
+    transform: scaleY(1.3);
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 1));
+  }
+}
+
+.badge-null {
+  background: #000000;
+  border: 1.5px solid #ffffff;
+  color: #ffffff;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.2);
+  text-shadow: 0 0 8px #ffffff, 0 0 16px rgba(255, 255, 255, 0.95);
+}
+
+.vfx-hawking-wave-1 {
+  animation: hawking-radiation-wave 2.2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+}
+
+.vfx-hawking-wave-2 {
+  animation: hawking-radiation-wave 2.2s cubic-bezier(0.1, 0.8, 0.3, 1) 1.1s infinite;
+}
+
+.vfx-penrose-ergosphere {
+  animation: penrose-ergosphere-shimmer 2s infinite ease-in-out;
+}
+
+.vfx-penrose-jets {
+  animation: penrose-jet-flare 1.8s infinite ease-in-out;
+}
+
+/* 4. RANK ✦: THE STAR - ROTATING CORONAL FLARES */
+@keyframes star-flare-rotation {
+  0% { transform: rotate(0deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1.2); }
+}
+
+@keyframes star-burst-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.85), 0 0 45px rgba(234, 179, 8, 0.55), inset 0 0 12px #ffd700;
+    border-color: #ffd700;
+  }
+  50% {
+    box-shadow: 0 0 38px rgba(255, 215, 0, 1), 0 0 70px rgba(255, 245, 160, 0.8), inset 0 0 18px #ffffff;
+    border-color: #ffffff;
+  }
+}
+
+.badge-star {
+  background: #050401;
+  border: 1.5px solid #ffd700;
+  color: #ffd700;
+  animation: star-burst-pulse 1.8s infinite alternate ease-in-out;
+  text-shadow: 0 0 8px #ffd700, 0 0 16px #ffffff;
+}
+
+.vfx-star-corona-spin {
+  animation: star-flare-rotation 12s linear infinite;
+}

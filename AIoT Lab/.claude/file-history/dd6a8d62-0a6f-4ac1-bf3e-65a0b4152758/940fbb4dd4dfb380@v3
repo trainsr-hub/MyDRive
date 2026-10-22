@@ -1,0 +1,54 @@
+; PlatformIO Project Configuration File for VGWD025K3 ~ Codex of Time (Walpurgis Driver)
+[platformio]
+default_envs = esp32-s3-devkitc-1
+
+[env:esp32-s3-devkitc-1]
+platform = espressif32
+board = esp32-s3-devkitc-1
+framework = arduino
+monitor_speed = 2000000
+upload_speed = 921600
+
+build_flags =
+    -D ARDUINO_USB_CDC_ON_BOOT=1
+    -D ARDUINO_USB_MODE=1
+
+; Access shared DRY packages from AIoT Lab monorepo root
+lib_extra_dirs =
+    ../../../packages/ui/audio
+    ../../../packages/ui/display
+    ../../../packages/sensor/distance
+    ../../../packages/actuator/dc_motor
+    ../../../packages/actuator/stepper_motor
+    ../../../packages/gamepad
+    ../../../packages
+
+lib_deps =
+    adafruit/Adafruit GC9A01A @ ^1.1.0
+    adafruit/Adafruit GFX Library @ ^1.11.9
+    olikraus/U8g2_for_Adafruit_GFX @ ^1.8.0
+    miguelbalboa/MFRC522 @ ^1.4.11
+    bblanchon/ArduinoJson @ ^7.0.4
+
+[env:esp32dev]
+platform = espressif32
+board = esp32dev
+framework = arduino
+monitor_speed = 2000000
+upload_speed = 921600
+
+lib_extra_dirs =
+    ../../../packages/ui/audio
+    ../../../packages/ui/display
+    ../../../packages/sensor/distance
+    ../../../packages/actuator/dc_motor
+    ../../../packages/actuator/stepper_motor
+    ../../../packages/gamepad
+    ../../../packages
+
+lib_deps =
+    adafruit/Adafruit GC9A01A @ ^1.1.0
+    adafruit/Adafruit GFX Library @ ^1.11.9
+    olikraus/U8g2_for_Adafruit_GFX @ ^1.8.0
+    miguelbalboa/MFRC522 @ ^1.4.11
+    bblanchon/ArduinoJson @ ^7.0.4

@@ -1,0 +1,9 @@
+# Legacy Claude Directory (Deprecated)
+.claude/
+.vscode/
+
+# Python cache & runtime logs
+__pycache__/
+*.pyc
+*.log
+.env

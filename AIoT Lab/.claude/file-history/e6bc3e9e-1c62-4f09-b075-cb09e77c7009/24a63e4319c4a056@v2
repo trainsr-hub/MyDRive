@@ -1,0 +1,188 @@
+// path: src/apps/heraclitus/components/ChronoGachaRollPanel.tsx
+// Tier 4 Presentation Component: Single-Button Chrono Duration Gacha (<180 lines)
+
+import React, { useState } from 'react'
+import { Sparkles, Ticket, Dices, ShoppingCart, Gift, Trophy } from 'lucide-react'
+import { useInventoryStore } from '../../../store/useInventoryStore'
+import { rollChronoDuration } from '../core/chronoGachaEngine'
+import type { GachaRollResult } from '../core/chronoGachaEngine'
+
+interface ChronoGachaRollPanelProps {
+  isDepositing: boolean
+  onRoll: (result: GachaRollResult) => void
+}
+
+export const ChronoGachaRollPanel: React.FC<ChronoGachaRollPanelProps> = ({
+  isDepositing,
+  onRoll,
+}) => {
+  const chronoTickets = useInventoryStore((s) => s.chronoTickets ?? 15)
+  const discs = useInventoryStore((s) => s.discs)
+  const addChronoTickets = useInventoryStore((s) => s.addChronoTickets)
+  const spendChronoTickets = useInventoryStore((s) => s.spendChronoTickets)
+  const spendDiscs = useInventoryStore((s) => s.spendDiscs)
+
+  const [lastPull, setLastPull] = useState<GachaRollResult | null>(null)
+  const [ticketNotice, setTicketNotice] = useState<string | null>(null)
+
+  const handleRoll = () => {
+    if (isDepositing) return
+
+    if (chronoTickets < 1) {
+      setTicketNotice('No Chrono Tickets! Claim a free refill or exchange discs below.')
+      setTimeout(() => setTicketNotice(null), 3000)
+      return
+    }
+
+    const success = spendChronoTickets(1)
+    if (!success) return
+
+    const result = rollChronoDuration()
+    setLastPull(result)
+    onRoll(result)
+  }
+
+  const handleBuyTickets = () => {
+    if (discs < 50) {
+      // If not enough discs, give helpful notice
+      setTicketNotice('Need at least 50 Discs to forge 5 Chrono Tickets. Use the free refill below!')
+      setTimeout(() => setTicketNotice(null), 3500)
+      return
+    }
+    spendDiscs(50)
+    addChronoTickets(5)
+    setTicketNotice('Forged 5 Chrono Tickets from 50 Discs!')
+    setTimeout(() => setTicketNotice(null), 3000)
+  }
+
+  const handleFreeRefill = () => {
+    addChronoTickets(10)
+    setTicketNotice('Claimed +10 Free Chrono Tickets!')
+    setTimeout(() => setTicketNotice(null), 3000)
+  }
+
+  return (
+    <div className="p-5 rounded-2xl bg-[#0f0b17]/95 border border-[#2d223c] shadow-2xl space-y-4">
+      {/* ── Header: Ticket Ledger & Refill Actions ─────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#241a33] pb-3">
+        {/* Ticket Balance Display */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ffd86b]/20 to-[#f97316]/20 border border-[#ffd86b]/40 flex items-center justify-center">
+            <Ticket className="w-5 h-5 text-[#ffd86b]" />
+          </div>
+          <div>
+            <div className="text-[10px] font-cinzel font-bold text-[#8a7c9d] uppercase tracking-wider">
+              Chrono Tickets Vault
+            </div>
+            <div className="font-mono text-lg font-black text-white flex items-center gap-2">
+              <span>{chronoTickets}</span>
+              <span className="text-xs font-normal text-[#ffd86b]">Available</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Refill / Exchange Actions */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleBuyTickets}
+            disabled={isDepositing}
+            className="px-3 py-1.5 rounded-xl bg-[#181124] hover:bg-[#251b38] border border-[#37294d] hover:border-[#ffd86b] text-xs font-mono text-[#cbd5e1] hover:text-white transition flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Exchange 50 Discs for 5 Tickets"
+          >
+            <ShoppingCart className="w-3.5 h-3.5 text-amber-400" />
+            <span>Buy 5 (50 💿)</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleFreeRefill}
+            disabled={isDepositing}
+            className="px-3 py-1.5 rounded-xl bg-[#181124] hover:bg-[#251b38] border border-[#37294d] hover:border-emerald-500 text-xs font-mono text-emerald-400 hover:text-emerald-300 transition flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Claim +10 Free Tickets"
+          >
+            <Gift className="w-3.5 h-3.5" />
+            <span>+10 Free Refill</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Ticket / Action Notice */}
+      {ticketNotice && (
+        <div className="text-xs font-mono text-[#ffd86b] bg-[#ffd86b]/10 border border-[#ffd86b]/20 px-3 py-1.5 rounded-lg text-center animate-in fade-in">
+          {ticketNotice}
+        </div>
+      )}
+
+      {/* ── THE SINGLE MONOLITHIC GACHA BUTTON ─────────────────────────── */}
+      <button
+        type="button"
+        onClick={handleRoll}
+        disabled={isDepositing || chronoTickets < 1}
+        className={`w-full min-h-[72px] rounded-2xl p-4 transition-all duration-200 cursor-pointer flex items-center justify-between relative overflow-hidden select-none active:scale-[0.99] group shadow-2xl ${
+          isDepositing
+            ? 'bg-gradient-to-r from-[#2a1738] via-[#4d2418] to-[#2a1738] border-2 border-[#f97316] shadow-[0_0_30px_rgba(249,115,22,0.4)]'
+            : 'bg-gradient-to-r from-[#d4af37] via-[#ffd86b] to-[#b38f22] border-2 border-[#fff0a8] shadow-gold-md hover:brightness-110'
+        } ${chronoTickets < 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        {/* Shimmer Effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+
+        {/* Left Side: Roll Icon & Label */}
+        <div className="flex items-center gap-4 relative z-10 text-left">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shadow-inner ${
+            isDepositing
+              ? 'bg-[#1a0f24] border-[#f97316] text-[#f97316]'
+              : 'bg-[#181124] border-[#d4af37] text-[#ffd86b]'
+          }`}>
+            <Dices className={`w-6 h-6 ${isDepositing ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'}`} />
+          </div>
+          <div>
+            <div className={`font-cinzel font-black text-base sm:text-lg tracking-wider ${
+              isDepositing ? 'text-white' : 'text-black'
+            }`}>
+              {isDepositing ? 'CHRONO FLUX SPOOLING...' : 'ROLL CHRONO FLUX'}
+            </div>
+            <div className={`text-xs font-mono font-bold ${
+              isDepositing ? 'text-[#f97316]' : 'text-[#68470a]'
+            }`}>
+              {isDepositing
+                ? 'ACCUMULATING KINETIC STREAM'
+                : '1 Ticket • Random Duration 15m to 5 Days'}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Rarity Preview Badge */}
+        <div className="relative z-10 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/40 border border-white/20 backdrop-blur-sm text-xs font-mono text-white">
+          <Sparkles className="w-3.5 h-3.5 text-[#ffd86b]" />
+          <span>INSTANT CRITICAL BLAST</span>
+        </div>
+      </button>
+
+      {/* ── Latest Roll Outcome Banner ─────────────────────────────────── */}
+      {lastPull && (
+        <div
+          className="p-3 rounded-xl border flex items-center justify-between text-xs font-mono animate-in fade-in slide-in-from-top-2 duration-300"
+          style={{
+            borderColor: lastPull.color,
+            background: `linear-gradient(90deg, ${lastPull.bgGlow} 0%, rgba(15,11,23,0.95) 100%)`,
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <Trophy className="w-4 h-4" style={{ color: lastPull.color }} />
+            <span className="font-bold uppercase tracking-wider" style={{ color: lastPull.color }}>
+              [{lastPull.tier}]
+            </span>
+            <span className="text-white font-medium">{lastPull.label}:</span>
+            <span className="font-bold text-white text-sm" style={{ textShadow: `0 0 10px ${lastPull.color}` }}>
+              +{lastPull.formatted}
+            </span>
+          </div>
+          <span className="text-[10px] text-[#cbd5e1] hidden md:inline">
+            Channeled to Two-Phase Engine & SQLite
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}

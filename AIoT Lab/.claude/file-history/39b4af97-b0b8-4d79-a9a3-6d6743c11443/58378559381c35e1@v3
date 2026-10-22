@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Prescripts — Data Entry &amp; Quote Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+  <style>
+    /* ==========================================================================
+       PRESCRIPTS — DATA ENTRY INTERFACE (SUGGESTOR OVERHAUL)
+       Zero-clipping, clean full-width suggestors with multi-choice support.
+       ========================================================================== */
+    :root {
+      --bg-canvas:        #080706;
+      --bg-card:          #13100d;
+      --bg-card-hover:    #1c1713;
+      --bg-input:         #1a1511;
+      --bg-input-focus:   #231c16;
+
+      --text-vivid:       #fffcf7;
+      --text-main:        #ede4d8;
+      --text-muted:       #8a7b6c;
+      --text-dim:         #5c5044;
+
+      --border-dim:       #292018;
+      --border-mid:       #3f3226;
+      --border-bright:    #634f3c;
+
+      --accent:           #ff9e1b;
+      --accent-hover:     #ffb03a;
+      --accent-glow:      rgba(255, 158, 27, 0.25);
+      --accent-bg:        rgba(255, 158, 27, 0.12);
+      --accent-border:    rgba(255, 158, 27, 0.4);
+
+      --hazard-high:      #f43f5e;
+
+      --radius-sm:        6px;
+      --radius-md:        10px;
+      --radius-lg:        14px;
+      --shadow-subtle:    0 4px 20px rgba(0, 0, 0, 0.5);
+
+      color-scheme: dark;
+      font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14.5px;
+      line-height: 1.5;
+    }
+
+    :root[data-theme="light"] {
+      --bg-canvas:        #f5f3ef;
+      --bg-card:          #ffffff;
+      --bg-card-hover:    #f9f7f4;
+      --bg-input:         #f0ebe3;
+      --bg-input-focus:   #ffffff;
+
+      --text-vivid:       #18130e;
+      --text-main:        #2c231a;
+      --text-muted:       #6b5a49;
+      --text-dim:         #9e8c79;
+
+      --border-dim:       #ded5c7;
+      --border-mid:       #c5b8a5;
+      --border-bright:    #8f7d67;
+
+      --accent:           #d97706;
+      --accent-hover:     #b45309;
+      --accent-glow:      rgba(217, 119, 6, 0.2);
+      --accent-bg:        rgba(217, 119, 6, 0.1);
+      --accent-border:    rgba(217, 119, 6, 0.4);
+
+      --hazard-high:      #e11d48;
+
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      padding: 2rem 1.5rem 4rem;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 1400px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+
+    /* Top Navigation */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-dim);
+      padding-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .title-stack h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .title-stack h1 .badge {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .title-stack p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .btn-action {
+      background: var(--bg-card);
+      border: 1px solid var(--border-mid);
+      color: var(--text-main);
+      padding: 0.55rem 0.95rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s ease;
+    }
+
+    .btn-action:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+      color: var(--text-vivid);
+      transform: translateY(-1px);
+    }
+
+    .btn-action.btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #080706;
+      font-weight: 700;
+    }
+
+    .btn-action.btn-primary:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* Workspace Grid */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1fr 440px;
+      gap: 1.75rem;
+      align-items: start;
+      overflow: visible;
+    }
+
+    @media (max-width: 1024px) {
+      .workspace-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Form Stream */
+    .blocks-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      overflow: visible;
+    }
+
+    /* CRITICAL FIX: overflow: visible so dropdowns never clip */
+    .entry-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      overflow: visible !important;
+      position: relative;
+      box-shadow: var(--shadow-subtle);
+      transition: border-color 0.2s ease;
+    }
+
+    .entry-card:focus-within {
+      border-color: var(--border-mid);
+      z-index: 50; /* Stacks focused card above sibling cards */
+    }
+
+    .card-header {
+      padding: 0.9rem 1.25rem;
+      background: rgba(255, 255, 255, 0.015);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .card-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+    }
+
+    .card-tag {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-bg);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      border: 1px solid var(--accent-border);
+      text-transform: uppercase;
+    }
+
+    .card-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      overflow: visible !important;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .field-hint {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    /* Standard Inputs */
+    .raw-input-box {
+      width: 100%;
+      height: 48px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      color: var(--text-vivid);
+      font-family: inherit;
+      font-size: 0.92rem;
+      padding: 0 1rem;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .raw-input-box:focus {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .raw-textarea-box {
+      width: 100%;
+      min-height: 110px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      color: var(--text-vivid);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.88rem;
+      padding: 0.85rem 1rem;
+      outline: none;
+      resize: vertical;
+      line-height: 1.6;
+      transition: all 0.15s ease;
+    }
+
+    .raw-textarea-box:focus {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* ==========================================================================
+       SUGGESTOR MONOLITH COMPONENT (Exact Master UI Template)
+       ========================================================================== */
+    .suggestor-host {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      overflow: visible !important;
+    }
+
+    .searcher-monolith {
+      width: 100%;
+      height: 48px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      padding: 0 0.85rem;
+      gap: 0.65rem;
+      transition: all 0.15s ease;
+    }
+
+    .searcher-monolith:focus-within {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .searcher-icon {
+      color: var(--accent);
+      font-size: 1rem;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .searcher-input {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-vivid);
+      font-size: 0.92rem;
+      font-family: inherit;
+    }
+
+    .searcher-clear {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: var(--text-muted);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .searcher-clear:hover {
+      background: var(--hazard-high);
+      color: #fff;
+    }
+
+    /* Active Selected Chips Row (Displays choices cleanly under the suggestor) */
+    .selected-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      min-height: 0;
+    }
+
+    .selected-chips-row:empty {
+      display: none;
+    }
+
+    .chip-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      user-select: none;
+      animation: fadeIn 0.15s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-2px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chip-remove {
+      cursor: pointer;
+      opacity: 0.7;
+      font-size: 0.75rem;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+
+    .chip-remove:hover {
+      opacity: 1;
+      background: rgba(244, 63, 94, 0.2);
+      color: #fb7185;
+    }
+
+    /* Dropdown Menus (Floating, Unclipped, High Z-Index) */
+    .notion-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85);
+      z-index: 1000 !important;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      max-height: 280px;
+    }
+
+    .notion-dropdown-menu.open {
+      display: flex;
+    }
+
+    .dropdown-group-header {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.4rem 0.75rem 0.25rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-dim);
+    }
+
+    .dropdown-options-list {
+      overflow-y: auto;
+      padding: 0.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-height: 220px;
+    }
+
+    .dropdown-opt-row {
+      padding: 0.6rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.1s ease;
+      gap: 0.5rem;
+    }
+
+    .dropdown-opt-row:hover {
+      background: var(--bg-input-focus);
+      color: var(--accent);
+    }
+
+    .dropdown-opt-row.selected {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      color: var(--accent);
+    }
+
+    .opt-label-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      flex: 1 1 auto;
+      gap: 2px;
+    }
+
+    .opt-title {
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--text-vivid);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .opt-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .opt-check {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .opt-context {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-style: italic;
+      opacity: 0.65;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .opt-delete-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-dim);
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .opt-delete-btn:hover {
+      background: rgba(244, 63, 94, 0.18);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #fb7185;
+    }
+
+    .dropdown-create-row {
+      padding: 0.65rem 0.75rem;
+      background: var(--accent-bg);
+      border-top: 1px solid var(--accent-border);
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.15s ease;
+    }
+
+    .dropdown-create-row:hover {
+      background: var(--accent);
+      color: #080706;
+    }
+
+    /* Inspector Sticky */
+    .inspector-sticky {
+      position: sticky;
+      top: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .inspector-header {
+      padding: 0.85rem 1.25rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .live-json-display {
+      padding: 1rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: var(--text-main);
+      background: var(--bg-canvas);
+      max-height: 540px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Toast */
+    .toast-msg {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--accent);
+      color: #080706;
+      font-weight: 700;
+      font-size: 0.88rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .toast-msg.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- Top Navigation -->
+    <header class="top-bar">
+      <div class="title-stack">
+        <h1>
+          <span>Prescripts</span>
+          <span class="badge">CQRS Engine</span>
+        </h1>
+        <p>Morning Wisdom &amp; Curation Interface — Authoring Layer for 4AM ESP32 &amp; Obsidian</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-action" onclick="toggleTheme()">🌓 Theme</button>
+        <button class="btn-action" onclick="clearForm()">↺ Reset</button>
+        <button class="btn-action" onclick="exportJSON()">📥 Export JSON</button>
+        <button class="btn-action btn-primary" onclick="saveQuote()">💾 Save Quote</button>
+      </div>
+    </header>
+
+    <!-- Workspace Grid -->
+    <div class="workspace-grid">
+
+      <!-- LEFT: Data Entry Fields -->
+      <div class="blocks-stream">
+
+        <!-- 1. QUOTE CONTENT -->
+        <section class="entry-card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <span class="card-title">1. Quote Core &amp; Context</span>
+            </div>
+            <span class="card-tag">Required</span>
+          </div>
+          <div class="card-body">
+            <div>
+              <div class="field-label">
+                <span>Main Quote Content (Multi-Line)</span>
+                <span class="field-hint">Preserves line breaks</span>
+              </div>
+              <textarea class="raw-textarea-box" id="input-main-content" placeholder="Enter wisdom quote, poem, or reflection..." oninput="updateField('main_content', this.value)"></textarea>
+            </div>
+            <div>
+              <div class="field-label">
+                <span>Genesis Context &amp; Interpretation</span>
+                <span class="field-hint">Situational backdrop</span>
+              </div>
+              <textarea class="raw-textarea-box" id="input-context" style="min-height: 80px;" placeholder="Genesis context, medium, or why this quote matters..." oninput="updateField('context', this.value)"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. FLEXIBLE DATE SUGGESTOR -->
+        <section class="entry-card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <span class="card-title">2. Flexible Date</span>
+            </div>
+            <span class="card-tag">Suggestor</span>
+          </div>
+          <div class="card-body">
+            <div class="suggestor-host" id="date-host">
+              <div class="field-label">
+                <span>Temporal Coordinate</span>
+                <span class="field-hint">Type year e.g. 2020, range 2020~2023-05, or date</span>
+              </div>
+              <div class="searcher-monolith">
+                <span class="searcher-icon">📅</span>
+                <input type="text" class="searcher-input" id="input-date" placeholder="Type year e.g. 2020, range 2020~2023-05, or 2026-10-02..." oninput="handleDateInput(this.value)" onfocus="handleDateInput(this.value)" onkeydown="handleDateKey(event)">
+                <button class="searcher-clear" onclick="clearDateInput()">✕</button>
+              </div>
+              <div class="notion-dropdown-menu" id="date-dropdown">
+                <div class="dropdown-options-list" id="date-options-list"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. SPEAKER SUGGESTOR (MULTI-CHOICE) -->
+        <section class="entry-card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <span class="card-title">3. Attribution &amp; Speaker</span>
+            </div>
+            <span class="card-tag">Suggestor (Multi)</span>
+          </div>
+          <div class="card-body">
+            <div class="suggestor-host" id="speaker-host">
+              <div class="field-label">
+                <span>Select or Create Speakers</span>
+                <span class="field-hint">Type to filter / Press Enter to add</span>
+              </div>
+              <!-- Clean Suggestor Input Bar -->
+              <div class="searcher-monolith">
+                <span class="searcher-icon">👤</span>
+                <input type="text" class="searcher-input" id="speaker-input" placeholder="Type to filter or create speaker (press Enter)..." oninput="filterSpeakerDropdown(this.value)" onfocus="filterSpeakerDropdown(this.value)" onkeydown="handleSpeakerKey(event)">
+                <button class="searcher-clear" onclick="clearSpeakerInput()">✕</button>
+              </div>
+              <!-- Active Selected Speaker Chips (Multi-Choice) -->
+              <div class="selected-chips-row" id="speaker-chips"></div>
+              <!-- Floating Unclipped Dropdown -->
+              <div class="notion-dropdown-menu" id="speaker-dropdown">
+                <div class="dropdown-options-list" id="speaker-options-list"></div>
+                <div class="dropdown-create-row" id="speaker-create-row" style="display: none;" onclick="createSpeakerOption()">
+                  <span>+ Create new speaker entity "</span><span id="speaker-create-query"></span><span>"</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. RESPONSE QUOTES SUGGESTOR (MULTI-CHOICE) -->
+        <section class="entry-card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <span class="card-title">4. Response Quotes (Preference)</span>
+            </div>
+            <span class="card-tag">Suggestor (Multi)</span>
+          </div>
+          <div class="card-body">
+            <div class="suggestor-host" id="pref-host">
+              <div class="field-label">
+                <span>Referenced &amp; Linked Response Quotes</span>
+                <span class="field-hint">Search quotes by content or author</span>
+              </div>
+              <!-- Clean Suggestor Input Bar -->
+              <div class="searcher-monolith">
+                <span class="searcher-icon">💬</span>
+                <input type="text" class="searcher-input" id="pref-input" placeholder="Search existing quotes by content text..." oninput="filterPrefDropdown(this.value)" onfocus="filterPrefDropdown(this.value)" onkeydown="handlePrefKey(event)">
+                <button class="searcher-clear" onclick="clearPrefInput()">✕</button>
+              </div>
+              <!-- Active Selected Response Chips (Multi-Choice) -->
+              <div class="selected-chips-row" id="pref-chips"></div>
+              <!-- Floating Unclipped Dropdown -->
+              <div class="notion-dropdown-menu" id="pref-dropdown">
+                <div class="dropdown-options-list" id="pref-options-list"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. TAGS SUGGESTOR (MULTI-CHOICE) -->
+        <section class="entry-card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <span class="card-title">5. Tags &amp; Taxonomy</span>
+            </div>
+            <span class="card-tag">Suggestor (Multi)</span>
+          </div>
+          <div class="card-body">
+            <div class="suggestor-host" id="tag-host">
+              <div class="field-label">
+                <span>Manager's Domain Tags</span>
+                <span class="field-hint">Search pool or create new (press Enter)</span>
+              </div>
+              <!-- Clean Suggestor Input Bar -->
+              <div class="searcher-monolith">
+                <span class="searcher-icon">🏷️</span>
+                <input type="text" class="searcher-input" id="tag-input" placeholder="Search available tags or type new + Enter..." oninput="filterTagDropdown(this.value)" onfocus="filterTagDropdown(this.value)" onkeydown="handleTagKey(event)">
+                <button class="searcher-clear" onclick="clearTagInput()">✕</button>
+              </div>
+              <!-- Active Selected Tag Chips (Multi-Choice) -->
+              <div class="selected-chips-row" id="tag-chips"></div>
+              <!-- Floating Unclipped Dropdown -->
+              <div class="notion-dropdown-menu" id="tag-dropdown">
+                <div class="dropdown-options-list" id="tag-options-list"></div>
+                <div class="dropdown-create-row" id="tag-create-row" style="display: none;" onclick="createTagOption()">
+                  <span>+ Create new tag "</span><span id="tag-create-query"></span><span>"</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. BACKLINKS & SENTIMENT -->
+        <section class="entry-card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <span class="card-title">6. Backlinks &amp; Tone</span>
+            </div>
+            <span class="card-tag">Metadata</span>
+          </div>
+          <div class="card-body">
+            <div>
+              <div class="field-label">
+                <span>External Reference URL / Backlink</span>
+                <span class="field-hint">e.g. lyrics URL, paper, book link</span>
+              </div>
+              <input type="text" class="raw-input-box" id="input-backlink" placeholder="https://..." oninput="updateBacklink(this.value)">
+            </div>
+            <div>
+              <div class="field-label">
+                <span>Sentiment / Philosophical Resonance</span>
+                <span class="field-hint">Free text e.g. stoic, nostalgic, analytical</span>
+              </div>
+              <input type="text" class="raw-input-box" id="input-sentiment" placeholder="analytical" oninput="updateField('sentiment', this.value)">
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- RIGHT: LIVE STATE INSPECTOR -->
+      <aside class="inspector-sticky">
+        <div class="inspector-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-weight: 700; font-size: 0.9rem; color: var(--text-vivid);">Live State Preview</span>
+            <span class="card-tag" id="live-index-badge">IDX: 1</span>
+          </div>
+          <button class="btn-action" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="copyJSON()">📋 Copy</button>
+        </div>
+        <pre class="live-json-display" id="live-json-pre">{ /* Loading live state... */ }</pre>
+      </aside>
+
+    </div>
+
+  </div>
+
+  <!-- Toast Message -->
+  <div class="toast-msg" id="toast">State Updated</div>
+
+  <script>
+    // ==============================================================================
+    // PRESCRIPTS CLIENT CONTROLLER — UNIFIED SUGGESTOR ENGINE
+    // ==============================================================================
+
+    let activeQuote = {
+      id: "",
+      index: 1,
+      main_content: "",
+      context: "",
+      date: "",
+      source_speaker: [],
+      preference: [],
+      backlink: [],
+      tags: [],
+      sentiment: ""
+    };
+
+    let availableSpeakers = [
+      { id: "0047FB356CE65652", name: "Faust", bio: "Strategic Analytical Intellect" },
+      { id: "0047FB356CE62F42", name: "Vinyl Angel", bio: "Lyricism from Koi no Koe" },
+      { id: "0047FB356CE60001", name: "The Manager", bio: "Visionary & Commander" },
+      { id: "0047FB356CE60002", name: "Marcus Aurelius", bio: "Stoic Emperor & Philosopher" }
+    ];
+
+    let availableQuotes = {
+      "0047FB356CE62F42": {
+        id: "0047FB356CE62F42",
+        index: 1,
+        main_content: "Static hum, thrum—needle drops,\nSpinning echo, time just stops.",
+        context: "Lyricism from 'Koi no Koe' by Vinyl Angel.",
+        date: "2026-09-30",
+        speaker_name: "Vinyl Angel"
+      },
+      "0047FB356CE65652": {
+        id: "0047FB356CE65652",
+        index: 2,
+        main_content: "The universe is built on a plan, the profound symmetry of which is somehow present in every inner corner of human thought.",
+        context: "Reflections on cybernetics and distributed consciousness.",
+        date: "2026-09-30",
+        speaker_name: "Faust"
+      }
+    };
+
+    let availableTags = ["cybernetics", "symmetry", "entropy", "sovereignty", "lyricism", "memory", "music", "morning-ritual", "stoic"];
+
+    function generateHexId() {
+      const now = Date.now();
+      const rand = Math.floor(Math.random() * 0xFFFF);
+      return (now.toString(16) + rand.toString(16)).toUpperCase().padStart(16, '0').slice(0, 16);
+    }
+
+    function updateField(field, value) {
+      activeQuote[field] = value;
+      if (!activeQuote.id && activeQuote.main_content.trim()) {
+        activeQuote.id = generateHexId();
+      }
+      renderLiveJSON();
+    }
+
+    function updateBacklink(val) {
+      activeQuote.backlink = val.trim() ? [val.trim()] : [];
+      renderLiveJSON();
+    }
+
+    function renderLiveJSON() {
+      const pre = document.getElementById('live-json-pre');
+      pre.textContent = JSON.stringify(activeQuote, null, 2);
+      document.getElementById('live-index-badge').textContent = `IDX: ${activeQuote.index}`;
+    }
+
+    function fireToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    function closeAllDropdowns() {
+      document.querySelectorAll('.notion-dropdown-menu').forEach(dd => dd.classList.remove('open'));
+    }
+
+    // ==============================================================================
+    // 2. FLEXIBLE DATE SUGGESTOR
+    // ==============================================================================
+    function handleDateInput(val) {
+      activeQuote.date = val.trim();
+      renderLiveJSON();
+
+      const dropdown = document.getElementById('date-dropdown');
+      const list = document.getElementById('date-options-list');
+      const q = val.trim().toLowerCase();
+
+      closeAllDropdowns();
+      dropdown.classList.add('open');
+
+      const currentYear = new Date().getFullYear();
+      let suggestions = [];
+
+      if (!q) {
+        suggestions = [
+          `${currentYear}`,
+          `${currentYear}-10`,
+          `${currentYear}-10-02`,
+          `2020~${currentYear}`,
+          `2020`
+        ];
+      } else {
+        if (/^\d{1,4}$/.test(q)) {
+          suggestions.push(q);
+          suggestions.push(`${q}-01`);
+          suggestions.push(`${q}-05`);
+          suggestions.push(`${q}~${currentYear}`);
+        } else if (/^\d{4}-/.test(q)) {
+          suggestions.push(q);
+          suggestions.push(`${q}-01`);
+          suggestions.push(`${q}-15`);
+        } else {
+          suggestions.push(q);
+        }
+      }
+
+      list.innerHTML = suggestions.slice(0, 6).map(s => `
+        <div class="dropdown-opt-row" onclick="selectDate('${s}')">
+          <div class="opt-label-group">
+            <span class="opt-title" style="color:var(--accent); font-family:'JetBrains Mono';">📅 ${s}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function selectDate(val) {
+      document.getElementById('input-date').value = val;
+      activeQuote.date = val;
+      document.getElementById('date-dropdown').classList.remove('open');
+      renderLiveJSON();
+    }
+
+    function clearDateInput() {
+      document.getElementById('input-date').value = "";
+      activeQuote.date = "";
+      document.getElementById('date-dropdown').classList.remove('open');
+      renderLiveJSON();
+    }
+
+    function handleDateKey(e) {
+      if (e.key === 'Enter') {
+        document.getElementById('date-dropdown').classList.remove('open');
+      } else if (e.key === 'Escape') {
+        document.getElementById('date-dropdown').classList.remove('open');
+      }
+    }
+
+    // ==============================================================================
+    // 3. SPEAKER SUGGESTOR (MULTI-CHOICE)
+    // ==============================================================================
+    function renderSpeakerChips() {
+      const container = document.getElementById('speaker-chips');
+      container.innerHTML = activeQuote.source_speaker.map(sid => {
+        const found = availableSpeakers.find(s => s.id === sid);
+        const name = found ? found.name : sid;
+        return `
+          <span class="chip-badge">
+            <span>👤 ${name}</span>
+            <span class="chip-remove" onclick="event.stopPropagation(); removeSpeaker('${sid}')">✕</span>
+          </span>
+        `;
+      }).join('');
+    }
+
+    function filterSpeakerDropdown(q) {
+      const dropdown = document.getElementById('speaker-dropdown');
+      const list = document.getElementById('speaker-options-list');
+      const createRow = document.getElementById('speaker-create-row');
+      const query = (q || "").trim().toLowerCase();
+
+      closeAllDropdowns();
+      dropdown.classList.add('open');
+
+      const matches = availableSpeakers.filter(s => s.name.toLowerCase().includes(query));
+
+      if (matches.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">No matching speakers in pool.</div>';
+      } else {
+        list.innerHTML = matches.map(s => {
+          const isSelected = activeQuote.source_speaker.includes(s.id);
+          return `
+            <div class="dropdown-opt-row ${isSelected ? 'selected' : ''}" onclick="toggleSpeaker('${s.id}')">
+              <div class="opt-label-group">
+                <div class="opt-title-row">
+                  <span class="opt-check">${isSelected ? '✓' : '+'}</span>
+                  <span class="opt-title">${s.name}</span>
+                </div>
+                ${s.bio ? `<span class="opt-context">${s.bio}</span>` : ''}
+              </div>
+              <button class="opt-delete-btn" title="Delete from pool" onclick="event.stopPropagation(); deleteSpeakerPool('${s.id}')">✕</button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (query && !availableSpeakers.some(s => s.name.toLowerCase() === query)) {
+        createRow.style.display = 'flex';
+        document.getElementById('speaker-create-query').textContent = q.trim();
+      } else {
+        createRow.style.display = 'none';
+      }
+    }
+
+    function toggleSpeaker(id) {
+      if (activeQuote.source_speaker.includes(id)) {
+        activeQuote.source_speaker = activeQuote.source_speaker.filter(s => s !== id);
+      } else {
+        activeQuote.source_speaker.push(id);
+      }
+      renderSpeakerChips();
+      renderLiveJSON();
+      filterSpeakerDropdown(document.getElementById('speaker-input').value);
+    }
+
+    function removeSpeaker(id) {
+      activeQuote.source_speaker = activeQuote.source_speaker.filter(s => s !== id);
+      renderSpeakerChips();
+      renderLiveJSON();
+      filterSpeakerDropdown(document.getElementById('speaker-input').value);
+    }
+
+    function clearSpeakerInput() {
+      document.getElementById('speaker-input').value = "";
+      filterSpeakerDropdown("");
+    }
+
+    function createSpeakerOption() {
+      const input = document.getElementById('speaker-input');
+      const name = input.value.trim();
+      if (!name) return;
+
+      const newId = generateHexId();
+      const newSpk = { id: newId, name: name, bio: "" };
+      availableSpeakers.push(newSpk);
+      activeQuote.source_speaker.push(newId);
+
+      fetch('/api/speaker', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSpk)
+      }).catch(() => {});
+
+      input.value = "";
+      renderSpeakerChips();
+      renderLiveJSON();
+      filterSpeakerDropdown("");
+      fireToast("Created Speaker: " + name);
+    }
+
+    function handleSpeakerKey(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const input = document.getElementById('speaker-input');
+        const q = input.value.trim();
+        if (q) {
+          const match = availableSpeakers.find(s => s.name.toLowerCase() === q.toLowerCase());
+          if (match) {
+            toggleSpeaker(match.id);
+            input.value = "";
+          } else {
+            createSpeakerOption();
+          }
+        }
+      } else if (e.key === 'Escape') {
+        document.getElementById('speaker-dropdown').classList.remove('open');
+      }
+    }
+
+    function deleteSpeakerPool(id) {
+      availableSpeakers = availableSpeakers.filter(s => s.id !== id);
+      activeQuote.source_speaker = activeQuote.source_speaker.filter(s => s !== id);
+      renderSpeakerChips();
+      filterSpeakerDropdown(document.getElementById('speaker-input').value);
+      renderLiveJSON();
+      fireToast("Deleted speaker from pool");
+    }
+
+    // ==============================================================================
+    // 4. RESPONSE QUOTES SUGGESTOR (MULTI-CHOICE)
+    // ==============================================================================
+    function renderPrefChips() {
+      const container = document.getElementById('pref-chips');
+      container.innerHTML = activeQuote.preference.map(qid => {
+        const q = availableQuotes[qid];
+        const snippet = q ? q.main_content.split('\n')[0].substring(0, 36) + '...' : qid.substring(0, 8);
+        return `
+          <span class="chip-badge" title="${q ? q.main_content : qid}">
+            <span>💬 ${snippet}</span>
+            <span class="chip-remove" onclick="event.stopPropagation(); removePref('${qid}')">✕</span>
+          </span>
+        `;
+      }).join('');
+    }
+
+    function filterPrefDropdown(q) {
+      const dropdown = document.getElementById('pref-dropdown');
+      const list = document.getElementById('pref-options-list');
+      const query = (q || "").trim().toLowerCase();
+
+      closeAllDropdowns();
+      dropdown.classList.add('open');
+
+      const matches = Object.values(availableQuotes).filter(quote => {
+        return quote.main_content.toLowerCase().includes(query) ||
+               (quote.context && quote.context.toLowerCase().includes(query)) ||
+               (quote.speaker_name && quote.speaker_name.toLowerCase().includes(query));
+      });
+
+      if (matches.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">No matching quotes found.</div>';
+        return;
+      }
+
+      list.innerHTML = matches.map(quote => {
+        const isSelected = activeQuote.preference.includes(quote.id);
+        const firstLine = quote.main_content.split('\n')[0];
+        return `
+          <div class="dropdown-opt-row ${isSelected ? 'selected' : ''}" onclick="togglePref('${quote.id}')">
+            <div class="opt-label-group">
+              <div class="opt-title-row">
+                <span class="opt-check">${isSelected ? '✓' : '+'}</span>
+                <span class="opt-title">“${firstLine}”</span>
+              </div>
+              <span class="opt-context">${quote.speaker_name || 'Author'} · ${quote.date} · ${quote.context || ''}</span>
+            </div>
+            <span style="font-family:'JetBrains Mono'; font-size:0.7rem; color:var(--text-dim);">#${quote.id.substring(0,8)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function togglePref(id) {
+      if (activeQuote.preference.includes(id)) {
+        activeQuote.preference = activeQuote.preference.filter(q => q !== id);
+      } else {
+        activeQuote.preference.push(id);
+      }
+      renderPrefChips();
+      renderLiveJSON();
+      filterPrefDropdown(document.getElementById('pref-input').value);
+    }
+
+    function removePref(id) {
+      activeQuote.preference = activeQuote.preference.filter(q => q !== id);
+      renderPrefChips();
+      renderLiveJSON();
+      filterPrefDropdown(document.getElementById('pref-input').value);
+    }
+
+    function clearPrefInput() {
+      document.getElementById('pref-input').value = "";
+      filterPrefDropdown("");
+    }
+
+    function handlePrefKey(e) {
+      if (e.key === 'Escape') {
+        document.getElementById('pref-dropdown').classList.remove('open');
+      }
+    }
+
+    // ==============================================================================
+    // 5. TAGS SUGGESTOR (MULTI-CHOICE)
+    // ==============================================================================
+    function renderTagChips() {
+      const container = document.getElementById('tag-chips');
+      container.innerHTML = activeQuote.tags.map(tag => `
+        <span class="chip-badge">
+          <span># ${tag}</span>
+          <span class="chip-remove" onclick="event.stopPropagation(); removeTag('${tag}')">✕</span>
+        </span>
+      `).join('');
+    }
+
+    function filterTagDropdown(q) {
+      const dropdown = document.getElementById('tag-dropdown');
+      const list = document.getElementById('tag-options-list');
+      const createRow = document.getElementById('tag-create-row');
+      const query = (q || "").trim().toLowerCase();
+
+      closeAllDropdowns();
+      dropdown.classList.add('open');
+
+      const matches = availableTags.filter(t => t.toLowerCase().includes(query));
+
+      if (matches.length === 0 && !query) {
+        list.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">No tags in pool.</div>';
+      } else {
+        list.innerHTML = matches.map(tag => {
+          const isSelected = activeQuote.tags.includes(tag);
+          return `
+            <div class="dropdown-opt-row ${isSelected ? 'selected' : ''}" onclick="toggleTag('${tag}')">
+              <div class="opt-label-group">
+                <div class="opt-title-row">
+                  <span class="opt-check">${isSelected ? '✓' : '+'}</span>
+                  <span class="opt-title"># ${tag}</span>
+                </div>
+              </div>
+              <button class="opt-delete-btn" title="Delete from pool" onclick="event.stopPropagation(); deleteTagPool('${tag}')">✕</button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (query && !availableTags.some(t => t.toLowerCase() === query)) {
+        createRow.style.display = 'flex';
+        document.getElementById('tag-create-query').textContent = q.trim();
+      } else {
+        createRow.style.display = 'none';
+      }
+    }
+
+    function toggleTag(tag) {
+      if (activeQuote.tags.includes(tag)) {
+        activeQuote.tags = activeQuote.tags.filter(t => t !== tag);
+      } else {
+        activeQuote.tags.push(tag);
+      }
+      renderTagChips();
+      renderLiveJSON();
+      filterTagDropdown(document.getElementById('tag-input').value);
+    }
+
+    function removeTag(tag) {
+      activeQuote.tags = activeQuote.tags.filter(t => t !== tag);
+      renderTagChips();
+      renderLiveJSON();
+      filterTagDropdown(document.getElementById('tag-input').value);
+    }
+
+    function clearTagInput() {
+      document.getElementById('tag-input').value = "";
+      filterTagDropdown("");
+    }
+
+    function createTagOption() {
+      const input = document.getElementById('tag-input');
+      const val = input.value.replace(/#/g, '').trim().toLowerCase();
+      if (!val) return;
+
+      if (!availableTags.includes(val)) {
+        availableTags.push(val);
+      }
+      if (!activeQuote.tags.includes(val)) {
+        activeQuote.tags.push(val);
+      }
+
+      input.value = "";
+      renderTagChips();
+      renderLiveJSON();
+      filterTagDropdown("");
+      fireToast("Added tag: " + val);
+    }
+
+    function handleTagKey(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const input = document.getElementById('tag-input');
+        const q = input.value.replace(/#/g, '').trim().toLowerCase();
+        if (q) {
+          if (availableTags.includes(q)) {
+            toggleTag(q);
+            input.value = "";
+          } else {
+            createTagOption();
+          }
+        }
+      } else if (e.key === 'Escape') {
+        document.getElementById('tag-dropdown').classList.remove('open');
+      }
+    }
+
+    function deleteTagPool(tag) {
+      availableTags = availableTags.filter(t => t !== tag);
+      activeQuote.tags = activeQuote.tags.filter(t => t !== tag);
+      renderTagChips();
+      filterTagDropdown(document.getElementById('tag-input').value);
+      renderLiveJSON();
+      fireToast("Deleted tag from pool: " + tag);
+    }
+
+    // ==============================================================================
+    // SAVE & EXPORT PIPELINE
+    // ==============================================================================
+    async function saveQuote() {
+      if (!activeQuote.main_content.trim()) {
+        alert("Please provide the main quote content before saving.");
+        return;
+      }
+
+      if (!activeQuote.id) activeQuote.id = generateHexId();
+      if (!activeQuote.date) activeQuote.date = new Date().toISOString().split('T')[0];
+
+      try {
+        const res = await fetch('/api/quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(activeQuote)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          fireToast(`Saved Quote #${data.index} to SQLite & Projections!`);
+          activeQuote.index = data.index + 1;
+          activeQuote.id = "";
+          activeQuote.main_content = "";
+          activeQuote.context = "";
+          activeQuote.preference = [];
+          document.getElementById('input-main-content').value = "";
+          document.getElementById('input-context').value = "";
+          renderPrefChips();
+          renderLiveJSON();
+          fetchBackendData();
+          return;
+        }
+      } catch (err) {
+        console.warn("Local server offline, using fallback:", err);
+      }
+
+      exportJSON();
+      fireToast("Saved locally (Server offline). Downloaded JSON.");
+    }
+
+    function clearForm() {
+      activeQuote = {
+        id: "",
+        index: activeQuote.index,
+        main_content: "",
+        context: "",
+        date: "",
+        source_speaker: [],
+        preference: [],
+        backlink: [],
+        tags: [],
+        sentiment: ""
+      };
+      document.getElementById('input-main-content').value = "";
+      document.getElementById('input-context').value = "";
+      document.getElementById('input-date').value = "";
+      document.getElementById('input-backlink').value = "";
+      document.getElementById('input-sentiment').value = "";
+      renderSpeakerChips();
+      renderPrefChips();
+      renderTagChips();
+      renderLiveJSON();
+    }
+
+    function exportJSON() {
+      if (!activeQuote.id) activeQuote.id = generateHexId();
+      const str = JSON.stringify(activeQuote, null, 2);
+      const blob = new Blob([str], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `prescript-${activeQuote.id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function copyJSON() {
+      navigator.clipboard.writeText(JSON.stringify(activeQuote, null, 2)).then(() => {
+        fireToast("Copied JSON state to clipboard!");
+      });
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const cur = html.getAttribute('data-theme') || 'dark';
+      const nxt = cur === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', nxt);
+      localStorage.setItem('prescripts-theme', nxt);
+    }
+
+    async function fetchBackendData() {
+      try {
+        const taxRes = await fetch('/api/taxonomy');
+        if (taxRes.ok) {
+          const tax = await taxRes.json();
+          if (tax.speakers && tax.speakers.length > 0) availableSpeakers = tax.speakers;
+          if (tax.tags && tax.tags.length > 0) availableTags = tax.tags;
+        }
+
+        const qRes = await fetch('/api/quotes');
+        if (qRes.ok) {
+          const quotes = await qRes.json();
+          if (Object.keys(quotes).length > 0) availableQuotes = quotes;
+        }
+
+        const idxRes = await fetch('/api/next_index');
+        if (idxRes.ok) {
+          const data = await idxRes.json();
+          activeQuote.index = data.next_index;
+        }
+      } catch (e) {
+        console.log("Using cached/embedded taxonomy pools.");
+      }
+
+      renderSpeakerChips();
+      renderPrefChips();
+      renderTagChips();
+      renderLiveJSON();
+    }
+
+    // Global click listener to close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#date-host')) {
+        document.getElementById('date-dropdown').classList.remove('open');
+      }
+      if (!e.target.closest('#speaker-host')) {
+        document.getElementById('speaker-dropdown').classList.remove('open');
+      }
+      if (!e.target.closest('#pref-host')) {
+        document.getElementById('pref-dropdown').classList.remove('open');
+      }
+      if (!e.target.closest('#tag-host')) {
+        document.getElementById('tag-dropdown').classList.remove('open');
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('prescripts-theme');
+      if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+      fetchBackendData();
+    });
+  </script>
+</body>
+</html>

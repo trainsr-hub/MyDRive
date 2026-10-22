@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quote Presentation Studio — Rendering &amp; Layout Testbed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap">
+  <style>
+    :root {
+      --bg-canvas:        #080706;
+      --bg-card:          #13100d;
+      --bg-card-hover:    #1c1713;
+      --bg-input:         #1a1511;
+      --text-vivid:       #fffcf7;
+      --text-main:        #ede4d8;
+      --text-muted:       #8a7b6c;
+      --text-dim:         #5c5044;
+      --border-dim:       #292018;
+      --border-mid:       #3f3226;
+      --border-bright:    #634f3c;
+      --accent:           #ff9e1b;
+      --accent-bg:        rgba(255, 158, 27, 0.12);
+      --accent-border:    rgba(255, 158, 27, 0.4);
+      --radius-sm:        6px;
+      --radius-md:        10px;
+      --radius-lg:        14px;
+      font-family: "IBM Plex Sans", -apple-system, sans-serif;
+      color-scheme: dark;
+    }
+
+    :root[data-theme="light"] {
+      --bg-canvas:        #f5f3ef;
+      --bg-card:          #ffffff;
+      --bg-card-hover:    #f9f7f4;
+      --bg-input:         #f0ebe3;
+      --text-vivid:       #18130e;
+      --text-main:        #2c231a;
+      --text-muted:       #6b5a49;
+      --text-dim:         #9e8c79;
+      --border-dim:       #ded5c7;
+      --border-mid:       #c5b8a5;
+      --border-bright:    #8f7d67;
+      --accent:           #d97706;
+      --accent-bg:        rgba(217, 119, 6, 0.1);
+      --accent-border:    rgba(217, 119, 6, 0.4);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      padding: 2rem 1.5rem 5rem;
+      display: flex;
+      justify-content: center;
+      line-height: 1.6;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 980px;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Top Controls Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-dim);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .title-group h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .title-group p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .btn:hover { background: var(--bg-card-hover); border-color: var(--border-bright); }
+    .btn-primary { background: var(--accent-bg); border-color: var(--accent-border); color: var(--accent); }
+    .btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+
+    select.select-picker {
+      padding: 0.45rem 0.8rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      color: var(--text-vivid);
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Presentation Layout Switcher */
+    .layout-tabs {
+      display: flex;
+      gap: 0.4rem;
+      background: var(--bg-input);
+      padding: 0.3rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-dim);
+    }
+
+    /* ==========================================================================
+       LAYOUT 1: EDITORIAL CARD (Magazine / Classic Book Style)
+       ========================================================================== */
+    .card-editorial {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 3rem;
+      position: relative;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .card-editorial .quote-header-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-dim);
+      padding-bottom: 0.75rem;
+    }
+
+    .card-editorial .quote-body {
+      font-family: "IBM Plex Serif", Georgia, serif;
+      font-size: 1.35rem;
+      line-height: 1.7;
+      color: var(--text-vivid);
+      position: relative;
+    }
+
+    .card-editorial .quote-body::before {
+      content: "“";
+      font-size: 4rem;
+      position: absolute;
+      left: -2rem;
+      top: -1.5rem;
+      color: var(--accent);
+      opacity: 0.25;
+      font-family: serif;
+      pointer-events: none;
+    }
+
+    .card-editorial .context-box {
+      background: var(--bg-input);
+      border-left: 3px solid var(--accent);
+      padding: 1rem 1.25rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 0.92rem;
+      color: var(--text-main);
+      font-style: italic;
+    }
+
+    .card-editorial .footer-attribution {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-dim);
+    }
+
+    .card-editorial .source-line {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .card-editorial .source-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+    }
+
+    .card-editorial .source-origin {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    /* ==========================================================================
+       LAYOUT 2: MINIMALIST ZEN CARD (Notion / Ambient Frame)
+       ========================================================================== */
+    .card-zen {
+      background: var(--bg-card);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-md);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .card-zen .zen-top {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .card-zen .zen-content {
+      font-size: 1.15rem;
+      color: var(--text-vivid);
+      font-weight: 500;
+      line-height: 1.65;
+    }
+
+    .card-zen .zen-context {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      padding-top: 0.5rem;
+      border-top: 1px dashed var(--border-dim);
+    }
+
+    .card-zen .zen-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+    }
+
+    /* ==========================================================================
+       LAYOUT 3: ESP32 HARDWARE DISPLAY SIMULATOR (E-Paper 2.9" / 4.2")
+       ========================================================================== */
+    .epaper-device {
+      width: 100%;
+      max-width: 680px;
+      margin: 0 auto;
+      background: #e8e6e1;
+      color: #1a1a1a;
+      border: 8px solid #333333;
+      border-radius: 12px;
+      padding: 1.75rem 2rem;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+      font-family: "JetBrains Mono", monospace;
+      position: relative;
+    }
+
+    .epaper-device .epaper-status-bar {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 2px solid #1a1a1a;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .epaper-device .epaper-body {
+      font-family: "IBM Plex Serif", Georgia, serif;
+      font-size: 1.2rem;
+      line-height: 1.6;
+      color: #000000;
+      margin-bottom: 1.25rem;
+    }
+
+    .epaper-device .epaper-context {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.8rem;
+      background: rgba(0, 0, 0, 0.05);
+      padding: 0.6rem 0.8rem;
+      border-left: 3px solid #000;
+      margin-bottom: 1.25rem;
+      color: #333;
+    }
+
+    .epaper-device .epaper-footer {
+      border-top: 2px solid #1a1a1a;
+      padding-top: 0.6rem;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    /* Badges & Chips */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      padding: 0.25rem 0.6rem;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      color: var(--text-main);
+    }
+    .chip-accent {
+      background: var(--accent-bg);
+      border-color: var(--accent-border);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .badge-fallback {
+      font-size: 0.68rem;
+      opacity: 0.6;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Top Control Bar -->
+    <header class="top-bar">
+      <div class="title-group">
+        <h1><span>🎨</span> Quote Presentation Studio</h1>
+        <p>Testing metadata visibility: Content, Context, Specific · Container, Fallback Date, and Themes</p>
+      </div>
+
+      <div class="controls-row">
+        <!-- Quote Picker -->
+        <select class="select-picker" id="quote-select" onchange="loadSelectedQuote(this.value)">
+          <option value="">Loading quotes...</option>
+        </select>
+        <button class="btn" onclick="pickRandomQuote()">🎲 Random</button>
+
+        <!-- Layout Selector Tabs -->
+        <div class="layout-tabs">
+          <button class="btn active" id="tab-editorial" onclick="switchLayout('editorial')">📖 Editorial</button>
+          <button class="btn" id="tab-zen" onclick="switchLayout('zen')">🧘 Minimal Zen</button>
+          <button class="btn" id="tab-epaper" onclick="switchLayout('epaper')">📟 E-Paper ESP32</button>
+        </div>
+
+        <button class="btn" onclick="toggleTheme()">🌓</button>
+      </div>
+    </header>
+
+    <!-- Metadata Inspect Pill Bar -->
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; font-size:0.75rem; align-items:center; background:var(--bg-card); padding:0.6rem 1rem; border-radius:var(--radius-sm); border:1px solid var(--border-dim);">
+      <span style="font-weight:700; color:var(--text-dim); text-transform:uppercase;">Shown Dimensions:</span>
+      <span class="chip">1. Content</span>
+      <span class="chip">2. Context</span>
+      <span class="chip">3. Specific + Container</span>
+      <span class="chip">4. Date (Fallback Enabled)</span>
+      <span class="chip">5. Theme(s)</span>
+    </div>
+
+    <!-- MAIN RENDER STAGE -->
+    <div id="render-stage">
+      <!-- Injected via JavaScript based on active layout -->
+    </div>
+
+    <!-- Raw Payload Drawer (Collapsible) -->
+    <details style="background:var(--bg-card); border:1px solid var(--border-dim); border-radius:var(--radius-md); padding:1rem; cursor:pointer;">
+      <summary style="font-size:0.85rem; font-weight:600; color:var(--text-muted); outline:none;">
+        🔍 Inspect Raw 5-Point Presentation Payload
+      </summary>
+      <pre id="raw-payload-json" style="font-family:'JetBrains Mono'; font-size:0.8rem; color:var(--accent); margin-top:1rem; overflow-x:auto;"></pre>
+    </details>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin.startsWith('http') ? window.location.origin : 'http://127.0.0.1:20137';
+    let quotesList = [];
+    let activeQuote = null;
+    let currentLayout = 'editorial';
+    let availableSpecifics = [];
+    let availableThemes = [];
+
+    // 1. Fetch Backend Quotes
+    async function init() {
+      try {
+        const [taxRes, qRes] = await Promise.all([
+          fetch(`${API_BASE}/api/taxonomy`).then(r => r.json()).catch(() => ({})),
+          fetch(`${API_BASE}/api/quotes/list`).then(r => r.json()).catch(() => [])
+        ]);
+
+        availableSpecifics = taxRes.specifics || [];
+        availableThemes = taxRes.themes || [];
+        quotesList = qRes || [];
+
+        populateSelect();
+
+        // Default to Quote #6 (or first available)
+        const target = quotesList.find(q => q.idx === 6) || quotesList[0];
+        if (target) loadSelectedQuote(target.id);
+      } catch (err) {
+        document.getElementById('render-stage').innerHTML = `<div style="color:var(--text-muted); padding:2rem; text-align:center;">Failed to connect to local Rose server at ${API_BASE}.</div>`;
+      }
+    }
+
+    function populateSelect() {
+      const select = document.getElementById('quote-select');
+      if (quotesList.length === 0) {
+        select.innerHTML = `<option>No quotes in database</option>`;
+        return;
+      }
+      select.innerHTML = quotesList.map(q => {
+        const snippet = q.main_content.split('\n')[0].substring(0, 32);
+        return `<option value="${q.id}">#${q.idx ?? q.index} — "${snippet}..."</option>`;
+      }).join('');
+    }
+
+    function loadSelectedQuote(qid) {
+      activeQuote = quotesList.find(q => q.id === qid) || quotesList[0];
+      if (!activeQuote) return;
+
+      document.getElementById('quote-select').value = activeQuote.id;
+      renderCurrentLayout();
+    }
+
+    function pickRandomQuote() {
+      if (quotesList.length === 0) return;
+      const rnd = quotesList[Math.floor(Math.random() * quotesList.length)];
+      loadSelectedQuote(rnd.id);
+    }
+
+    function switchLayout(layout) {
+      currentLayout = layout;
+      document.querySelectorAll('.layout-tabs .btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`tab-${layout}`).classList.add('active');
+      renderCurrentLayout();
+    }
+
+    // Resolve the 5-point presentation bundle
+    function getPresentationBundle(q) {
+      if (!q) return null;
+
+      // 1. Content
+      const content = q.main_content || "";
+
+      // 2. Context
+      const context = q.context || "";
+
+      // 3. Specific + Container
+      const specific = availableSpecifics.find(s => s.id === q.specific_id);
+      const specificName = specific ? specific.name : "—";
+      const containerName = specific && specific.container ? specific.container.name : (specific ? (specific.container_name || "—") : "—");
+
+      // 4. Effective Date with Non-Mutating Fallback
+      let effectiveDate = (q.date || "").trim();
+      let isFallbackDate = false;
+      if (!effectiveDate && specific && specific.date && specific.date.trim()) {
+        effectiveDate = specific.date.trim();
+        isFallbackDate = true;
+      }
+
+      // 5. Themes
+      const themes = (q.theme_ids || []).map(tid => {
+        const th = availableThemes.find(t => t.id === tid);
+        return th ? th.name : tid;
+      });
+
+      return {
+        idx: q.idx ?? q.index,
+        content,
+        context,
+        specificName,
+        containerName,
+        effectiveDate: effectiveDate || "—",
+        isFallbackDate,
+        themes: themes.length > 0 ? themes : ["General Wisdom"]
+      };
+    }
+
+    function renderCurrentLayout() {
+      const b = getPresentationBundle(activeQuote);
+      if (!b) return;
+
+      // Update Inspector Drawer
+      document.getElementById('raw-payload-json').textContent = JSON.stringify(b, null, 2);
+
+      const stage = document.getElementById('render-stage');
+
+      if (currentLayout === 'editorial') {
+        stage.innerHTML = `
+          <article class="card-editorial">
+            <div class="quote-header-meta">
+              <span class="chip-accent">QUOTE #${b.idx}</span>
+              <div style="display:flex; gap:0.4rem;">
+                ${b.themes.map(t => `<span class="chip">🏷️ ${t}</span>`).join('')}
+              </div>
+            </div>
+
+            <div class="quote-body">
+              ${b.content.replace(/\n/g, '<br>')}
+            </div>
+
+            ${b.context ? `
+              <div class="context-box">
+                ${b.context}
+              </div>
+            ` : ''}
+
+            <div class="footer-attribution">
+              <div class="source-line">
+                <span class="source-title">📍 ${b.specificName}</span>
+                <span class="source-origin">by ${b.containerName}</span>
+              </div>
+              <div style="font-family:'JetBrains Mono'; font-size:0.85rem; color:var(--text-muted);">
+                📅 ${b.effectiveDate} ${b.isFallbackDate ? '<span class="badge-fallback">(inherited from endpoint)</span>' : ''}
+              </div>
+            </div>
+          </article>
+        `;
+      } else if (currentLayout === 'zen') {
+        stage.innerHTML = `
+          <div class="card-zen">
+            <div class="zen-top">
+              <span style="font-family:'JetBrains Mono'; font-weight:700; color:var(--accent);">#${b.idx}</span>
+              <span style="color:var(--text-dim);">·</span>
+              <span style="font-weight:600; color:var(--text-vivid);">📍 ${b.specificName}</span>
+              <span style="color:var(--text-dim);">(${b.containerName})</span>
+              <span style="color:var(--text-dim);">·</span>
+              <span style="font-family:'JetBrains Mono'; font-size:0.8rem; color:var(--text-muted);">📅 ${b.effectiveDate}</span>
+              ${b.isFallbackDate ? '<span class="badge-fallback">(inherited)</span>' : ''}
+            </div>
+
+            <div class="zen-content">
+              ${b.content.replace(/\n/g, '<br>')}
+            </div>
+
+            ${b.context ? `
+              <div class="zen-context">
+                <strong>Context:</strong> ${b.context}
+              </div>
+            ` : ''}
+
+            <div class="zen-bottom">
+              <div style="display:flex; gap:0.35rem;">
+                ${b.themes.map(t => `<span class="chip" style="font-size:0.7rem;">🏷️ ${t}</span>`).join('')}
+              </div>
+              <span style="font-size:0.75rem; color:var(--text-dim);">Prescripts Studio · O(1) Cache</span>
+            </div>
+          </div>
+        `;
+      } else if (currentLayout === 'epaper') {
+        stage.innerHTML = `
+          <div class="epaper-device">
+            <div class="epaper-status-bar">
+              <span>TURSO CLOUD EDGE · QUOTE #${b.idx}</span>
+              <span>DATE: ${b.effectiveDate}</span>
+            </div>
+
+            <div class="epaper-body">
+              ${b.content.replace(/\n/g, '<br>')}
+            </div>
+
+            ${b.context ? `
+              <div class="epaper-context">
+                [CONTEXT]: ${b.context}
+              </div>
+            ` : ''}
+
+            <div class="epaper-footer">
+              <span>[SRC]: ${b.specificName} // ${b.containerName}</span>
+              <span>[TAG]: ${b.themes.join(', ')}</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const cur = html.getAttribute('data-theme') || 'dark';
+      const nxt = cur === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', nxt);
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

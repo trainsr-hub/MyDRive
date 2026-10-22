@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Black Hole Gacha Test</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    overflow: hidden;
+    background: #000;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.scene {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    perspective: 1000px;
+    background: radial-gradient(
+        circle at 50% 50%,
+        #211132 0%,
+        #0b0710 28%,
+        #020204 68%,
+        #000 100%
+    );
+}
+
+.stars {
+    position: absolute;
+    inset: 0;
+    opacity: .42;
+    background-image:
+        radial-gradient(circle, rgba(255,255,255,.9) 0 1px, transparent 1.3px),
+        radial-gradient(circle, rgba(198,160,255,.55) 0 1px, transparent 1.3px);
+    background-size: 91px 91px, 151px 151px;
+    background-position: 12px 19px, 61px 77px;
+}
+
+.vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle, transparent 35%, rgba(0,0,0,.62) 100%);
+}
+
+.distortion {
+    position: absolute;
+    width: 900px;
+    height: 900px;
+    border-radius: 50%;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(
+        circle,
+        transparent 0 17%,
+        rgba(178,90,255,.07) 25%,
+        transparent 43%
+    );
+    filter: blur(10px);
+}
+
+.distortion.active {
+    animation: distortionPulse 4.6s ease-in-out forwards;
+}
+
+@keyframes distortionPulse {
+    0% { opacity: 0; transform: scale(.8); }
+    12% { opacity: .85; transform: scale(1.03); }
+    28% { opacity: .55; transform: scale(1.10); }
+    46% { opacity: .15; transform: scale(.72); }
+    62% { opacity: 0; transform: scale(.40); }
+    76% { opacity: .75; transform: scale(.78); }
+    100% { opacity: 0; transform: scale(1.12); }
+}
+
+.black-hole {
+    position: absolute;
+    width: 360px;
+    height: 360px;
+    z-index: 40;
+    border-radius: 50%;
+    transform-style: preserve-3d;
+}
+
+.black-hole.hidden {
+    opacity: 0 !important;
+}
+
+.black-hole.expand {
+    animation: holeExpand 900ms cubic-bezier(.16,.95,.2,1) forwards;
+}
+
+.black-hole.collapse {
+    animation: holeCollapse 620ms cubic-bezier(.9,.03,.98,.17) forwards;
+}
+
+.black-hole.reappear {
+    animation: holeReappear 900ms cubic-bezier(.08,.86,.12,1) forwards;
+}
+
+@keyframes holeExpand {
+    0% { transform: scale(.88); }
+    60% { transform: scale(1.17); }
+    100% { transform: scale(1.04); }
+}
+
+@keyframes holeCollapse {
+    0% { transform: scale(1.04); filter: blur(0); }
+    34% { transform: scale(.80); filter: blur(1px); }
+    67% { transform: scale(.18); filter: blur(4px); }
+    100% { transform: scale(0); filter: blur(12px); opacity: 0; }
+}
+
+@keyframes holeReappear {
+    0% { transform: scale(0); opacity: 0; }
+    16% { transform: scale(.10); opacity: 1; }
+    40% { transform: scale(1.30); }
+    62% { transform: scale(.84); }
+    80% { transform: scale(1.08); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.core {
+    position: absolute;
+    inset: 25%;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        #000 0 57%,
+        #020105 67%,
+        rgba(35,6,53,.82) 78%,
+        transparent 100%
+    );
+    box-shadow:
+        0 0 20px #000,
+        0 0 55px rgba(99,38,166,.46),
+        0 0 120px rgba(84,26,154,.28);
+}
+
+.ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--diameter);
+    height: var(--diameter);
+    border-radius: 50%;
+    border: var(--thickness) solid transparent;
+    transform-origin: center center;
+    transform: translate(-50%, -50%) rotateX(var(--tilt)) rotateZ(0deg);
+    transform-style: preserve-3d;
+    mix-blend-mode: screen;
+    pointer-events: none;
+    opacity: var(--opacity);
+}
+
+.ring-1 {
+    --diameter: 350px;
+    --thickness: 4px;
+    --tilt: 69deg;
+    --opacity: .95;
+    border-top-color: rgba(208,157,255,.95);
+    border-right-color: rgba(131,57,231,.92);
+    border-bottom-color: rgba(94,34,184,.62);
+    filter: drop-shadow(0 0 8px rgba(168,88,255,.95));
+    animation: ringRotate1 1900ms linear infinite;
+}
+
+.ring-2 {
+    --diameter: 305px;
+    --thickness: 3px;
+    --tilt: 64deg;
+    --opacity: .88;
+    border-left-color: rgba(255,255,255,.92);
+    border-top-color: rgba(174,107,255,.92);
+    border-bottom-color: rgba(86,34,174,.60);
+    filter: drop-shadow(0 0 12px rgba(198,143,255,.95));
+    animation: ringRotate2 1250ms linear infinite reverse;
+}
+
+.ring-3 {
+    --diameter: 255px;
+    --thickness: 5px;
+    --tilt: 58deg;
+    --opacity: .82;
+    border-right-color: rgba(255,255,255,.78);
+    border-left-color: rgba(126,54,228,.95);
+    filter: blur(1px) drop-shadow(0 0 14px rgba(140,74,255,.94));
+    animation: ringRotate3 820ms linear infinite;
+}
+
+.ring-4 {
+    --diameter: 212px;
+    --thickness: 3px;
+    --tilt: 52deg;
+    --opacity: .70;
+    border-top-color: rgba(255,255,255,.85);
+    border-bottom-color: rgba(131,57,239,.90);
+    filter: drop-shadow(0 0 10px rgba(172,107,255,.85));
+    animation: ringRotate4 630ms linear infinite reverse;
+}
+
+@keyframes ringRotate1 {
+    from { transform: translate(-50%, -50%) rotateX(69deg) rotateZ(0deg); }
+    to { transform: translate(-50%, -50%) rotateX(69deg) rotateZ(360deg); }
+}
+
+@keyframes ringRotate2 {
+    from { transform: translate(-50%, -50%) rotateX(64deg) rotateZ(360deg); }
+    to { transform: translate(-50%, -50%) rotateX(64deg) rotateZ(0deg); }
+}
+
+@keyframes ringRotate3 {
+    from { transform: translate(-50%, -50%) rotateX(58deg) rotateZ(0deg); }
+    to { transform: translate(-50%, -50%) rotateX(58deg) rotateZ(360deg); }
+}
+
+@keyframes ringRotate4 {
+    from { transform: translate(-50%, -50%) rotateX(52deg) rotateZ(360deg); }
+    to { transform: translate(-50%, -50%) rotateX(52deg) rotateZ(0deg); }
+}
+
+.particle-field {
+    position: absolute;
+    inset: 0;
+    z-index: 28;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    opacity: 0;
+    background: radial-gradient(
+        circle at 30% 30%,
+        #fff 0 12%,
+        #dfcaff 32%,
+        #9a5eff 62%,
+        transparent 76%
+    );
+    box-shadow:
+        0 0 5px rgba(255,255,255,.95),
+        0 0 13px rgba(165,100,255,.8);
+    transform: translate(-50%,-50%) rotate(var(--angle)) translateX(var(--radius)) rotate(calc(var(--angle) * -1));
+}
+
+.particle.orbit {
+    animation: orbitChaos var(--orbit-time) cubic-bezier(.37,0,.63,1) forwards;
+}
+
+.particle.compress {
+    animation: particleCompression var(--compress-time) cubic-bezier(.15,.65,.06,1) forwards;
+}
+
+@keyframes orbitChaos {
+    0% {
+        opacity: 0;
+        transform: translate(-50%,-50%) rotate(var(--angle)) translateX(var(--radius)) rotate(calc(var(--angle) * -1)) scale(.2);
+    }
+    12% { opacity: var(--opacity); }
+    52% {
+        opacity: var(--opacity);
+        transform: translate(-50%,-50%) rotate(calc(var(--angle) + 150deg)) translateX(calc(var(--radius) * .96)) rotate(calc((var(--angle) + 150deg) * -1)) scale(1);
+    }
+    100% {
+        opacity: var(--opacity);
+        transform: translate(-50%,-50%) rotate(calc(var(--angle) + 340deg)) translateX(calc(var(--radius) * .78)) rotate(calc((var(--angle) + 340deg) * -1)) scale(.8);
+    }
+}
+
+@keyframes particleCompression {
+    0% {
+        opacity: 1;
+        transform: translate(-50%,-50%) rotate(var(--angle2)) translateX(var(--radius2)) rotate(calc(var(--angle2) * -1)) scale(1);
+    }
+    30% {
+        transform: translate(-50%,-50%) rotate(calc(var(--angle2) + 170deg)) translateX(calc(var(--radius2) * .45)) rotate(calc((var(--angle2) + 170deg) * -1)) scale(1.08);
+    }
+    66% {
+        transform: translate(-50%,-50%) rotate(calc(var(--angle2) + 350deg)) translateX(48px) rotate(calc((var(--angle2) + 350deg) * -1)) scale(.82);
+    }
+    88% {
+        opacity: .96;
+        transform: translate(-50%,-50%) rotate(calc(var(--angle2) + 430deg)) translateX(17px) rotate(calc((var(--angle2) + 430deg) * -1)) scale(.55);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%,-50%) scale(0);
+        filter: blur(8px);
+    }
+}
+
+.compression-core {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 210px;
+    height: 210px;
+    z-index: 35;
+    border-radius: 50%;
+    opacity: 0;
+    transform: translate(-50%,-50%) scale(.2);
+    background: radial-gradient(
+        circle,
+        white 0 3%,
+        rgba(222,194,255,.9) 8%,
+        rgba(150,78,255,.48) 19%,
+        rgba(86,29,170,.18) 35%,
+        transparent 64%
+    );
+    filter: blur(2px);
+    pointer-events: none;
+}
+
+.compression-core.active {
+    animation: coreCompression 1.25s cubic-bezier(.18,.7,.08,1) forwards;
+}
+
+@keyframes coreCompression {
+    0% { opacity: 0; transform: translate(-50%,-50%) scale(1.5); }
+    22% { opacity: .52; transform: translate(-50%,-50%) scale(1.15); }
+    58% { opacity: .9; transform: translate(-50%,-50%) scale(.78); }
+    84% { opacity: 1; transform: translate(-50%,-50%) scale(.25); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(.02); }
+}
+
+.supernova {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 26px;
+    height: 8px;
+    z-index: 90;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%,-50%) scaleX(0);
+}
+
+.supernova::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    height: 5px;
+    transform: translate(-50%,-50%);
+    border-radius: 999px;
+    background: white;
+    box-shadow:
+        0 0 7px #fff,
+        0 0 24px #fff,
+        0 0 60px rgba(215,185,255,.96),
+        0 0 120px rgba(125,53,255,.92);
+}
+
+.supernova::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    height: 46px;
+    transform: translate(-50%,-50%);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(171,106,255,.58),
+        rgba(255,255,255,.96),
+        rgba(171,106,255,.58),
+        transparent
+    );
+    filter: blur(10px);
+}
+
+.supernova.active {
+    animation: supernovaBurst 480ms cubic-bezier(.06,.88,.12,1) forwards;
+}
+
+@keyframes supernovaBurst {
+    0% { opacity: 0; transform: translate(-50%,-50%) scaleX(0); }
+    10% { opacity: 1; transform: translate(-50%,-50%) scaleX(.12); }
+    34% { opacity: 1; transform: translate(-50%,-50%) scaleX(5); }
+    62% { opacity: .95; transform: translate(-50%,-50%) scaleX(22); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scaleX(52); }
+}
+
+.shockwave {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 60px;
+    height: 60px;
+    z-index: 86;
+    border: 2px solid rgba(238,224,255,.95);
+    border-radius: 50%;
+    opacity: 0;
+    transform: translate(-50%,-50%) scale(0);
+}
+
+.shockwave.active {
+    animation: shockwave 720ms ease-out forwards;
+}
+
+@keyframes shockwave {
+    from { opacity: .95; transform: translate(-50%,-50%) scale(.2); }
+    to { opacity: 0; transform: translate(-50%,-50%) scale(17); }
+}
+
+.void {
+    position: absolute;
+    inset: 0;
+    z-index: 70;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.void.active {
+    animation: voidHold 1450ms linear forwards;
+}
+
+@keyframes voidHold {
+    0% { opacity: 0; }
+    15% { opacity: .96; }
+    78% { opacity: .96; }
+    100% { opacity: 0; }
+}
+
+.rebirth-ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 40px;
+    height: 40px;
+    z-index: 52;
+    border: 2px solid rgba(238,224,255,.9);
+    border-radius: 50%;
+    opacity: 0;
+    transform: translate(-50%,-50%) scale(0);
+}
+
+.rebirth-ring.active {
+    animation: rebirthRing 1s cubic-bezier(.08,.82,.12,1) forwards;
+}
+
+@keyframes rebirthRing {
+    0% { opacity: 0; transform: translate(-50%,-50%) scale(.05); filter: blur(5px); }
+    24% { opacity: 1; transform: translate(-50%,-50%) scale(.55); filter: blur(0); }
+    62% { opacity: .85; transform: translate(-50%,-50%) scale(2.2); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(4.8); filter: blur(4px); }
+}
+
+#matterOutLayer {
+    position: absolute;
+    inset: 0;
+    z-index: 55;
+    pointer-events: none;
+}
+
+.matter-out {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    opacity: 0;
+    background: radial-gradient(
+        circle at 30% 30%,
+        #fff 0 12%,
+        #dfcaff 32%,
+        #9959ed 62%,
+        transparent 78%
+    );
+    box-shadow:
+        0 0 5px #fff,
+        0 0 14px rgba(175,110,255,.92);
+    transform: translate(-50%,-50%) rotate(var(--angle)) translateX(3px);
+}
+
+.matter-out.active {
+    animation: matterOut var(--duration) cubic-bezier(.08,.84,.13,1) forwards;
+}
+
+@keyframes matterOut {
+    0% {
+        opacity: 0;
+        transform: translate(-50%,-50%) rotate(var(--angle)) translateX(3px) scale(.1);
+    }
+    10% { opacity: 1; }
+    75% { opacity: 1; }
+    100% {
+        opacity: 0;
+        transform: translate(-50%,-50%) rotate(var(--angle)) translateX(var(--distance)) scale(.42);
+    }
+}
+
+.start {
+    position: absolute;
+    left: 50%;
+    bottom: 38px;
+    z-index: 200;
+    transform: translateX(-50%);
+    padding: 13px 30px;
+    border-radius: 999px;
+    color: #fff;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(226,208,255,.3);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: background .2s ease, transform .2s ease, opacity .2s ease;
+}
+
+.start:hover {
+    background: rgba(255,255,255,.12);
+    transform: translateX(-50%) translateY(-2px);
+}
+
+.start:disabled {
+    opacity: .25;
+    cursor: default;
+}
+</style>
+</head>
+
+<body>
+
+<div class="scene">
+    <div class="stars"></div>
+    <div class="distortion" id="distortion"></div>
+
+    <div class="black-hole" id="blackHole">
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+        <div class="ring ring-3"></div>
+        <div class="ring ring-4"></div>
+        <div class="core"></div>
+    </div>
+
+    <div class="particle-field" id="particleField"></div>
+    <div class="compression-core" id="compressionCore"></div>
+    <div class="supernova" id="supernova"></div>
+    <div class="shockwave" id="shockwave"></div>
+    <div class="void" id="void"></div>
+    <div class="rebirth-ring" id="rebirthRing"></div>
+    <div id="matterOutLayer"></div>
+
+    <div class="vignette"></div>
+
+    <button class="start" id="start">SUMMON</button>
+</div>
+
+<script>
+const blackHole = document.getElementById("blackHole");
+const particleField = document.getElementById("particleField");
+const compressionCore = document.getElementById("compressionCore");
+const distortion = document.getElementById("distortion");
+const supernova = document.getElementById("supernova");
+const shockwave = document.getElementById("shockwave");
+const voidLayer = document.getElementById("void");
+const rebirthRing = document.getElementById("rebirthRing");
+const matterOutLayer = document.getElementById("matterOutLayer");
+const startButton = document.getElementById("start");
+
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+function restart(element, className) {
+    element.classList.remove(className);
+    void element.offsetWidth;
+    element.classList.add(className);
+}
+
+function spawnGravityParticles(count = 180) {
+    particleField.innerHTML = "";
+
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement("div");
+        const radius = 170 + Math.random() * 390;
+        const angle = Math.random() * 360;
+        const size = 1.5 + Math.random() * 5.5;
+        const opacity = .35 + Math.random() * .65;
+        const orbitTime = 900 + Math.random() * 1500;
+        const compressTime = 700 + Math.random() * 650;
+
+        p.className = "particle";
+        p.style.setProperty("--radius", `${radius}px`);
+        p.style.setProperty("--angle", `${angle}deg`);
+        p.style.setProperty("--size", `${size}px`);
+        p.style.setProperty("--opacity", opacity);
+        p.style.setProperty("--orbit-time", `${orbitTime}ms`);
+        p.style.setProperty("--compress-time", `${compressTime}ms`);
+
+        particleField.appendChild(p);
+    }
+
+    requestAnimationFrame(() => {
+        [...particleField.children].forEach((particle, i) => {
+            setTimeout(() => {
+                particle.classList.add("orbit");
+            }, Math.random() * 700 + i * 2);
+        });
+    });
+}
+
+async function compressParticles() {
+    await wait(850);
+    const particles = [...particleField.children];
+
+    particles.forEach((particle, i) => {
+        const radius = parseFloat(particle.style.getPropertyValue("--radius"));
+        const angle = parseFloat(particle.style.getPropertyValue("--angle"));
+
+        particle.style.setProperty("--radius2", `${radius}px`);
+        particle.style.setProperty("--angle2", `${angle + Math.random() * 90}deg`);
+
+        setTimeout(() => {
+            particle.classList.remove("orbit");
+            particle.classList.add("compress");
+        }, Math.random() * 450 + i * .7);
+    });
+}
+
+function spawnWhiteHoleMatter(count = 150) {
+    matterOutLayer.innerHTML = "";
+
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement("div");
+        const angle = Math.random() * 360;
+        const distance = 220 + Math.random() * 470;
+        const duration = 850 + Math.random() * 900;
+        const size = 1.5 + Math.random() * 6;
+
+        p.className = "matter-out";
+        p.style.setProperty("--angle", `${angle}deg`);
+        p.style.setProperty("--distance", `${distance}px`);
+        p.style.setProperty("--duration", `${duration}ms`);
+        p.style.setProperty("--size", `${size}px`);
+
+        matterOutLayer.appendChild(p);
+
+        setTimeout(() => {
+            p.classList.add("active");
+        }, 500 + Math.random() * 500);
+    }
+}
+
+async function play() {
+    startButton.disabled = true;
+
+    blackHole.className = "black-hole";
+    particleField.innerHTML = "";
+    matterOutLayer.innerHTML = "";
+
+    restart(distortion, "active");
+    await wait(90);
+
+    blackHole.classList.add("expand");
+    spawnGravityParticles(180);
+    await wait(1050);
+
+    await compressParticles();
+    await wait(260);
+
+    blackHole.classList.remove("expand");
+    blackHole.classList.add("collapse");
+    restart(compressionCore, "active");
+    await wait(500);
+
+    restart(supernova, "active");
+    restart(shockwave, "active");
+    await wait(470);
+
+    blackHole.classList.add("hidden");
+    restart(voidLayer, "active");
+    await wait(1100);
+
+    voidLayer.classList.remove("active");
+    restart(rebirthRing, "active");
+    blackHole.className = "black-hole reappear";
+    await wait(240);
+
+    spawnWhiteHoleMatter(150);
+    await wait(1200);
+
+    startButton.disabled = false;
+}
+
+startButton.addEventListener("click", play);
+</script>
+
+</body>
+</html>

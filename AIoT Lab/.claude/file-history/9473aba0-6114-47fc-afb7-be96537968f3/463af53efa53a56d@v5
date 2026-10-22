@@ -1,0 +1,227 @@
+// path: src/apps/golden-hour/components/gacha/RenderListAndDict.tsx
+
+import React, { useState, useEffect } from 'react';
+import type { PullItem } from '../../types';
+import { resolveItemMetaFromPacks } from '../../packs';
+import { RARITY_TABLE } from '../../store/useGoldenHourStore';
+import { HazardBadge } from '../../../../components/HazardBadge';
+import { Sparkles, Zap } from 'lucide-react';
+
+interface RenderListAndDictProps {
+  items: PullItem[];
+  dict: Record<string, number>;
+  onClose: () => void;
+}
+
+export const RenderListAndDict: React.FC<RenderListAndDictProps> = ({
+  items,
+  dict,
+  onClose,
+}) => {
+  const [visible, setVisible] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+
+  useEffect(() => {
+    if (items && items.length > 0) {
+      setVisible(true);
+      const timer = setTimeout(() => setShowContent(true), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [items]);
+
+  if (!visible) return null;
+
+  const handleClose = () => {
+    setShowContent(false);
+    setTimeout(() => {
+      setVisible(false);
+      onClose();
+    }, 300);
+  };
+
+  return (
+    <div
+      onClick={handleClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 overflow-y-auto cursor-pointer select-none"
+      style={{
+        background: 'radial-gradient(circle at center, rgba(28, 20, 36, 0.96) 0%, rgba(10, 8, 15, 0.98) 100%)',
+        backdropFilter: 'blur(16px)',
+      }}
+    >
+      {/* Central Content Box - Centered Horizontally */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-5xl my-auto p-4 md:p-6 rounded-3xl bg-[#120f18]/95 border border-[#d4af37]/50 shadow-2xl space-y-6 text-center transition-all duration-300 transform"
+        style={{
+          opacity: showContent ? 1 : 0,
+          transform: showContent ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(20px)',
+        }}
+      >
+        {/* Header Title - Centered */}
+        <div className="flex flex-col items-center justify-center gap-1 border-b border-white/10 pb-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-[#ffd86b] font-cinzel text-xl md:text-2xl font-black text-center">
+            <Sparkles className="w-6 h-6 animate-pulse" />
+            <span>Summoning Archives — Materialized Relics</span>
+          </div>
+          <p className="text-xs font-mono text-[#8c7a9e] text-center">
+            {items.length} Item{items.length !== 1 ? 's' : ''} Synthesized & Auto-Stored in Vault
+          </p>
+        </div>
+
+        {/* 🎴 Unboxed Cards Grid (Centered items) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[48vh] overflow-y-auto p-2 justify-items-center">
+          {items.map((item, index) => {
+            const baseKey = item.name.replace(/\s+\d+u$/, '').trim();
+            const meta = resolveItemMetaFromPacks(baseKey);
+            const rarityMeta = RARITY_TABLE[item.rarity] || RARITY_TABLE.common;
+
+            return (
+              <div
+                key={item.id || index}
+                className="relative w-full max-w-[240px] flex flex-col items-center justify-between p-3.5 rounded-2xl border transition-all duration-200 hover:scale-[1.03] overflow-hidden group shadow-lg text-center"
+                style={{
+                  borderColor: rarityMeta.borderColor,
+                  background: meta?.background || 'linear-gradient(135deg, #1c1424 0%, #100d16 100%)',
+                }}
+              >
+                {/* Rarity Aura & Rank Badge */}
+                <div className="w-full flex items-center justify-between z-10 text-[10px] font-mono">
+                  <span
+                    className="px-2 py-0.5 rounded font-bold uppercase"
+                    style={{
+                      backgroundColor: rarityMeta.bgColor,
+                      color: rarityMeta.color,
+                      border: `1px solid ${rarityMeta.borderColor}`,
+                    }}
+                  >
+                    {rarityMeta.label}
+                  </span>
+
+                  <HazardBadge score={item.score} rank={item.rank} size="sm" />
+                </div>
+
+                {/* Main Item Visual Icon / Image */}
+                <div className="my-2.5 relative z-10 w-24 h-24 rounded-xl overflow-hidden border border-white/10 shadow-md bg-black/40 flex items-center justify-center mx-auto">
+                  {meta?.cover ? (
+                    <img
+                      src={meta.cover}
+                      alt={item.name}
+                      className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <span className="text-4xl">{item.iconEmoji}</span>
+                  )}
+                </div>
+
+                {/* Item Name & Details - Centered */}
+                <div className="w-full z-10 space-y-1 text-center">
+                  <div className="font-cinzel text-xs font-bold text-white leading-tight truncate text-center" title={item.name}>
+                    {item.name}
+                  </div>
+                  <div className="text-[10px] font-mono text-[#8c7a9e] capitalize text-center">
+                    {item.category.replace('-', ' ')}
+                  </div>
+
+                  {/* Relic Stats Preview */}
+                  {item.category === 'relic' && item.stats && (
+                    <div className="flex items-center justify-center gap-2 pt-1 text-[10px] font-mono border-t border-white/10 text-center">
+                      <span className="text-emerald-400">ATK +{item.stats.find(s => s.name === 'ATK')?.value || 0}</span>
+                      <span className="text-sky-400">DEF +{item.stats.find(s => s.name === 'DEF')?.value || 0}</span>
+                    </div>
+                  )}
+
+                  {/* Energy Core Preview */}
+                  {item.category === 'energy-core' && item.energyCores && (
+                    <div className="flex items-center justify-center gap-1 pt-1 text-[10px] font-mono text-[#ffd86b] border-t border-white/10 text-center">
+                      <Zap className="w-3 h-3" />
+                      <span>+{item.energyCores[0]?.amount}u {item.energyCores[0]?.attribute.toUpperCase()}</span>
+                    </div>
+                  )}
+
+                  {/* DNA Resource Preview */}
+                  {item.category === 'dna' && item.dnaReward && (
+                    <div className="flex items-center justify-center gap-1 pt-1 text-[10px] font-mono text-purple-300 border-t border-white/10 text-center">
+                      <span>🧬 +{item.dnaReward} Purple DNA</span>
+                    </div>
+                  )}
+
+                  {/* Red Orbs Resource Preview */}
+                  {item.category === 'red-orbs' && item.redOrbsReward && (
+                    <div className="flex items-center justify-center gap-1 pt-1 text-[10px] font-mono text-rose-300 border-t border-white/10 text-center">
+                      <span>🔴 +{item.redOrbsReward} Red Orb{item.redOrbsReward > 1 ? 's' : ''}</span>
+                    </div>
+                  )}
+
+                  {/* Temporal Time Preview */}
+                  {item.category === 'time' && item.timeRewardSeconds && (
+                    <div className="flex items-center justify-center gap-1 pt-1 text-[10px] font-mono text-amber-300 border-t border-white/10 text-center">
+                      <span>⏳ +{(item.timeRewardSeconds / 86400).toFixed(1)} Day Time</span>
+                    </div>
+                  )}
+
+                  {/* Vinyl Stem Preview */}
+                  {item.stemCount && (
+                    <div className="flex items-center justify-center gap-1 pt-1 text-[10px] font-mono text-[#ffd86b] border-t border-white/10 text-center">
+                      <span>🪽 Koi no Koe Master Stem</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 📊 Aggregated Summary Dictionary Breakdown (Centered Horizontally) */}
+        <div className="max-w-md mx-auto w-full">
+          <div
+            className="p-4 rounded-2xl text-left shadow-2xl border mx-auto"
+            style={{
+              backgroundColor: 'rgba(18, 15, 24, 0.95)',
+              borderColor: '#d4af37',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.8), 0 0 15px rgba(212, 175, 55, 0.2)',
+            }}
+          >
+            <div className="text-xs font-mono font-bold text-[#ffd86b] uppercase tracking-wider mb-2 pb-1.5 border-b border-white/10 flex items-center justify-between">
+              <span>Item Breakdown Summary</span>
+              <span className="text-[10px] text-[#8c7a9e]">Sorted Descending</span>
+            </div>
+
+            <div className="max-h-36 overflow-y-auto space-y-1.5 font-mono text-xs">
+              {Object.entries(dict)
+                .sort(([keyA, valA], [keyB, valB]) => {
+                  if (valB !== valA) return valB - valA;
+                  return keyA.localeCompare(keyB);
+                })
+                .map(([key, count], idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between py-1 px-2 rounded-lg bg-white/5 border border-white/5"
+                  >
+                    <strong className="text-[#38bdf8] truncate max-w-[240px] text-xs" title={key}>
+                      {key}:
+                    </strong>
+                    <span className="text-[#ffd86b] font-bold text-sm bg-[#1c1424] px-2 py-0.5 rounded border border-[#ffd86b]/30">
+                      ×{count}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Instruction - Centered */}
+        <div
+          onClick={handleClose}
+          className="pt-2 text-center text-xs font-mono text-[#cbd5e1]/70 hover:text-[#ffd86b] transition-colors cursor-pointer select-none"
+        >
+          Click anywhere to continue
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RenderListAndDict;

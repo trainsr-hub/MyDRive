@@ -1,0 +1,119 @@
+import React, { useState } from 'react';
+import { useStudioStore } from '@/store/useStudioStore';
+import { NodeCard } from './NodeCard';
+import { Search, Grid } from 'lucide-react';
+
+export const MatrixGrid: React.FC = () => {
+  const {
+    categories,
+    nodes,
+    activeNodeIds,
+    selectedCategoryId,
+    setSelectedCategory,
+  } = useStudioStore();
+
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredNodes = nodes.filter((node) => {
+    const matchesCategory = selectedCategoryId === 'all' || node.category_id === selectedCategoryId;
+    const matchesSearch = !searchTerm.trim() ||
+      node.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      node.token.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (node.tags?.some((t) => t.toLowerCase().includes(searchTerm.toLowerCase())) ?? false);
+
+    return matchesCategory && matchesSearch;
+  });
+
+  const activeCategory = categories.find((c) => c.id === selectedCategoryId);
+
+  return (
+    <div className="flex flex-col flex-1 overflow-hidden">
+      {/* Nav Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 border-b border-hazard-border bg-hazard-card/60 shrink-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`flex items-center gap-1 px-3 py-1 rounded text-xs font-semibold whitespace-nowrap ${
+              selectedCategoryId === 'all'
+                ? 'bg-hazard-gold text-black'
+                : 'text-hazard-textMuted hover:text-white'
+            }`}
+          >
+            <Grid className="w-3.5 h-3.5" />
+            All ({nodes.length})
+          </button>
+
+          {categories.map((cat) => {
+            const catCount = nodes.filter((n) => n.category_id === cat.id).length;
+            const activeCount = nodes
+              .filter((n) => n.category_id === cat.id && activeNodeIds.includes(n.id))
+              .length;
+
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`flex items-center gap-1 px-3 py-1 rounded text-xs font-semibold whitespace-nowrap ${
+                  selectedCategoryId === cat.id
+                    ? 'bg-hazard-cardHover text-white border border-hazard-border'
+                    : 'text-hazard-textMuted hover:text-white'
+                }`}
+                style={selectedCategoryId === cat.id ? { borderColor: cat.color } : {}}
+              >
+                <span style={{ color: cat.color }}>●</span>
+                {cat.name} ({catCount})
+                {activeCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.2 text-[10px] font-mono rounded-full bg-hazard-gold text-black font-bold">
+                    {activeCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search */}
+        <div className="flex items-center gap-2 bg-hazard-void border border-hazard-border rounded px-2.5 py-1 min-w-[150px]">
+          <Search className="w-3.5 h-3.5 text-hazard-textMuted" />
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-transparent text-xs text-hazard-textBright placeholder:text-hazard-textMuted/60 outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Category Info */}
+      {activeCategory && (
+        <div className="flex items-center justify-between px-4 py-2 bg-hazard-void/50 border-b border-hazard-border/40 text-xs shrink-0">
+          <div className="flex items-center gap-2">
+            <span style={{ color: activeCategory.color }} className="font-bold">
+              {activeCategory.name}
+            </span>
+            <span className="text-hazard-textMuted">• {activeCategory.description}</span>
+          </div>
+          <span className="text-[11px] font-mono text-hazard-textMuted">
+            Mode: <span className="text-hazard-cyan font-bold uppercase">{activeCategory.selection_type} Selection</span>
+          </span>
+        </div>
+      )}
+
+      {/* Grid */}
+      <div className="flex-1 p-4 overflow-y-auto">
+        {filteredNodes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 text-center text-hazard-textMuted">
+            <p className="text-sm font-medium">No nodes match filter</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
+            {filteredNodes.map((node) => (
+              <NodeCard key={node.id} node={node} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

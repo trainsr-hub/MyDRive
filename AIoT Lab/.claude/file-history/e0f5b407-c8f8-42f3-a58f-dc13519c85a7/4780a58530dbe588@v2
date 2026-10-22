@@ -1,0 +1,66 @@
+/**
+ * Project Entry: Toolbar Component
+ * Handles Filter Bar, Column Counters, and Table Renaming
+ */
+import { state, showToast } from '../state.js';
+
+let onFilterChanged = null;
+let onTableRenamed = null;
+
+export function initToolbar(filterCallback, renameCallback) {
+  onFilterChanged = filterCallback;
+  onTableRenamed = renameCallback;
+
+  const nameDisplay = document.getElementById('table-name-display');
+  if (nameDisplay) {
+    nameDisplay.onclick = () => promptRenameTable();
+  }
+
+  renderFilterBar();
+  updateColCountLabel();
+}
+
+export function renderFilterBar() {
+  const container = document.getElementById('filter-bar');
+  if (!container) return;
+  const cats = ['all', 'pk', 'text', 'scalar', 'boolean', 'enum', 'rel'];
+  const icons = { all: '📊', pk: '🔑', text: '📝', scalar: '🔢', boolean: '🔘', enum: '🏷️', rel: '🔗' };
+
+  container.innerHTML = cats.map(cat => `
+    <button class="filter-btn ${cat === state.activeFilter ? 'active' : ''}" data-cat="${cat}">
+      ${icons[cat]} ${cat === 'all' ? 'All' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+    </button>
+  `).join('');
+
+  container.querySelectorAll('.filter-btn[data-cat]').forEach(btn => {
+    btn.onclick = () => {
+      setFilter(btn.getAttribute('data-cat'));
+    };
+  });
+}
+
+export function setFilter(cat) {
+  state.activeFilter = cat;
+  renderFilterBar();
+  if (onFilterChanged) onFilterChanged(cat);
+}
+
+export function updateColCountLabel() {
+  const t = state.tables[state.activeTable];
+  if (!t) return;
+  const lbl = document.getElementById('col-count-label');
+  const nameDisplay = document.getElementById('table-name-display');
+  if (lbl) lbl.textContent = `${t.columns.length} columns`;
+  if (nameDisplay) nameDisplay.textContent = t.table_name;
+}
+
+export function promptRenameTable() {
+  const current = state.tables[state.activeTable].table_name;
+  const next = prompt('Rename table:', current);
+  if (!next || next === current) return;
+  const clean = next.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  state.tables[state.activeTable].table_name = clean;
+  updateColCountLabel();
+  showToast(`Renamed to "${clean}"`);
+  if (onTableRenamed) onTableRenamed(clean);
+}

@@ -1,0 +1,271 @@
+{
+  "name": "Faust Telegram Remote Commander",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "c1f7b8a2-3e4d-4b5a-9a1b-0c1d2e3f4a5b",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "faust-telegram-command",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Faust Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sec-check",
+              "leftValue": "={{ $json.message.from.id }}",
+              "rightValue": 8016442589,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e2f8c9b3-4f5e-4c6b-8b2c-1d2e3f4a5b6c",
+      "name": "Verify Manager ID",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.message.text.trim().toLowerCase() }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "/status",
+              "outputKey": "status"
+            },
+            {
+              "value2": "/ping",
+              "outputKey": "ping"
+            },
+            {
+              "value2": "/briefing",
+              "outputKey": "briefing"
+            }
+          ]
+        },
+        "fallbackOutput": "default"
+      },
+      "id": "f3a9d0c4-5a6b-4d7c-9c3d-2e3f4a5b6c7d",
+      "name": "Command Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        680,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "⚡ <b>Faust Online:</b> Strategic command link established.\n\n• <b>Workstation:</b> Local Disk D (Sovereign Vault)\n• <b>n8n Engine:</b> Active on Port 5678\n• <b>Tunnel:</b> Cloudflare QUIC Active\n• <b>Status:</b> All daemons nominal, Manager.",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "replyToMessageId": "={{ $json.message.message_id }}"
+        }
+      },
+      "id": "a4b0e1d5-6b7c-4e8d-8d4e-3f4a5b6c7d8e",
+      "name": "Reply: Status",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        140
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Faust Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "⚡ <b>Pong:</b> Faust acoustic and command reflex responsive.",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "replyToMessageId": "={{ $json.message.message_id }}"
+        }
+      },
+      "id": "b5c1f2e6-7c8d-4f9e-9e5f-4a5b6c7d8e9f",
+      "name": "Reply: Ping",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        280
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Faust Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true",
+        "options": {}
+      },
+      "id": "c6d2a3f7-8d9e-4a0f-af60-5b6c7d8e9fa0",
+      "name": "Fetch Market Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=⚡ <b>Executive Market Intelligence:</b>\n\n• <b>Bitcoin:</b> ${{ $json.bitcoin.usd.toLocaleString() }} ({{ $json.bitcoin.usd_24h_change.toFixed(2) }}%)\n• <b>Ethereum:</b> ${{ $json.ethereum.usd.toLocaleString() }} ({{ $json.ethereum.usd_24h_change.toFixed(2) }}%)\n\n<i>Generated autonomously for the Manager.</i>",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "replyToMessageId": "={{ $('Telegram Trigger').item.json.message.message_id }}"
+        }
+      },
+      "id": "d7e3b4a8-9e0f-4b1a-b071-6c7d8e9fa0b1",
+      "name": "Reply: Briefing",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1180,
+        420
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Faust Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=🔄 <b>Prescript Received:</b> <i>\"{{ $json.message.text }}\"</i>\n\nDirecting to Faust cognition loop, Manager.",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "replyToMessageId": "={{ $json.message.message_id }}"
+        }
+      },
+      "id": "e8f4c5b9-0a1b-4c2b-c182-7d8e9fa0b1c2",
+      "name": "Reply: Directive Intake",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        560
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Faust Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verify Manager ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Manager ID": {
+      "main": [
+        [
+          {
+            "node": "Command Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Command Router": {
+      "main": [
+        [
+          {
+            "node": "Reply: Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Ping",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Market Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Directive Intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Market Data": {
+      "main": [
+        [
+          {
+            "node": "Reply: Briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

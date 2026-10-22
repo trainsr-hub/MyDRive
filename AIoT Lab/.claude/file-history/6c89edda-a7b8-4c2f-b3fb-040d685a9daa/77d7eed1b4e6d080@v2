@@ -1,0 +1,234 @@
+import React from 'react';
+import { ActionItem } from '../types';
+import {
+  FileEdit,
+  FolderPlus,
+  RefreshCw,
+  Trash2,
+  ShieldAlert,
+  CheckCircle2,
+  ArrowRight,
+  ExternalLink,
+} from 'lucide-react';
+
+interface ExceptionFeedProps {
+  items: ActionItem[];
+  onExecute: () => void;
+  isExecuting: boolean;
+}
+
+export const ExceptionFeed: React.FC<ExceptionFeedProps> = ({
+  items,
+  onExecute,
+  isExecuting,
+}) => {
+  // Filter out MATCH rows completely — Less is More!
+  const exceptions = items.filter((item) => item.action_type !== 'MATCH');
+
+  if (exceptions.length === 0) {
+    return (
+      <div
+        className="card"
+        style={{
+          padding: '4rem 2rem',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '1rem',
+          borderColor: 'var(--success-border)',
+          background: 'rgba(16, 185, 129, 0.04)',
+        }}
+      >
+        <div
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            background: 'var(--success-bg)',
+            color: 'var(--success)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid var(--success-border)',
+          }}
+        >
+          <CheckCircle2 size={26} />
+        </div>
+        <div>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
+            All Folders In Sync
+          </h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-dim)', maxWidth: '420px', margin: '0 auto' }}>
+            Every entity clone perfectly matches the archetype template. Zero drifted, missing, or extraneous folders.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const getActionBadge = (action: string) => {
+    switch (action) {
+      case 'RENAME':
+        return (
+          <span className="badge badge-rename" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            <FileEdit size={11} /> RENAME
+          </span>
+        );
+      case 'CREATE':
+        return (
+          <span className="badge badge-create" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            <FolderPlus size={11} /> MISSING FOLDER
+          </span>
+        );
+      case 'UPDATE_DESC':
+        return (
+          <span className="badge badge-update" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            <RefreshCw size={11} /> METADATA DRIFT
+          </span>
+        );
+      case 'PRUNE_EMPTY':
+        return (
+          <span className="badge badge-prune" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            <Trash2 size={11} /> UNWANTED EMPTY
+          </span>
+        );
+      case 'FLAG_RED':
+        return (
+          <span className="badge badge-anomaly" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            <ShieldAlert size={11} /> PROTECTED FOLDER
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* Hero Sync Banner */}
+      <div
+        className="card"
+        style={{
+          padding: '1.25rem 1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'var(--bg-card-hover)',
+          borderColor: 'var(--accent)',
+          boxShadow: '0 0 20px var(--accent-glow)',
+          flexWrap: 'wrap',
+          gap: '1rem',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ color: 'var(--accent)' }}>●</span>
+            {exceptions.length} {exceptions.length === 1 ? 'Mismatch' : 'Mismatches'} Detected
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '0.2rem' }}>
+            These folders differ from the archetype template. Applying updates will align them safely.
+          </div>
+        </div>
+
+        <button
+          onClick={onExecute}
+          disabled={isExecuting}
+          className="btn primary"
+          style={{
+            padding: '0.65rem 1.5rem',
+            fontSize: '13.5px',
+            fontWeight: 700,
+            background: 'var(--accent)',
+            color: '#000',
+            border: 'none',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            boxShadow: '0 0 14px var(--accent-glow)',
+          }}
+        >
+          {isExecuting ? 'Applying Changes...' : `⚡ Sync All Changes (${exceptions.length})`}
+        </button>
+      </div>
+
+      {/* The Exception Feed (ONLY what doesn't match!) */}
+      <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+        <div style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border-light)', background: 'var(--bg-canvas)', display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dim)' }}>
+            Differences Requiring Attention ({exceptions.length})
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+            All compliant folders hidden (Less is More)
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {exceptions.map((item, idx) => (
+            <div
+              key={idx}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '1rem 1.25rem',
+                borderBottom: idx < exceptions.length - 1 ? '1px solid var(--border-table)' : 'none',
+                gap: '1rem',
+                background: item.action_type === 'FLAG_RED' ? 'var(--danger-bg)' : 'transparent',
+              }}
+              className="table-row-hover"
+            >
+              {/* Left Column: What folder is it? */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  {getActionBadge(item.action_type)}
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--text-tertiary)' }}>
+                    {item.relative_path}
+                  </span>
+                </div>
+
+                {/* Change Description */}
+                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {item.action_type === 'RENAME' ? (
+                    <>
+                      <span style={{ textDecoration: 'line-through', opacity: 0.5 }}>{item.current_name}</span>
+                      <ArrowRight size={14} style={{ color: '#c084fc' }} />
+                      <span style={{ color: '#c084fc', fontWeight: 700 }}>{item.folder_name}</span>
+                    </>
+                  ) : item.action_type === 'CREATE' ? (
+                    <span style={{ color: 'var(--success)' }}>Will create folder "{item.folder_name}"</span>
+                  ) : item.action_type === 'UPDATE_DESC' ? (
+                    <span style={{ color: 'var(--warning)' }}>Update folder metadata to match template</span>
+                  ) : item.action_type === 'PRUNE_EMPTY' ? (
+                    <span style={{ color: 'var(--muted)' }}>Move empty folder "{item.folder_name}" to Trash</span>
+                  ) : (
+                    <span style={{ color: 'var(--danger)' }}>
+                      Folder contains {item.files_count} file(s) — Preserved untouched
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+                  {item.reason}
+                </div>
+              </div>
+
+              {/* Right Column: Target Link if exists */}
+              {item.target_id && (
+                <a
+                  href={`https://drive.google.com/drive/folders/${item.target_id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn subtle"
+                  style={{ padding: '0.35rem 0.6rem', fontSize: '12px', color: 'var(--text-dim)' }}
+                  title="Open folder in Google Drive"
+                >
+                  <ExternalLink size={13} />
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};

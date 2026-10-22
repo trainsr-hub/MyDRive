@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+"""
+Tier 2: Repository Layer
+Raw persistence handling for SQLite session histories and workspaces registry.
+Strictly zero business logic.
+"""
+
+import json
+import sqlite3
+from pathlib import Path
+from typing import List, Optional
+from datetime import datetime
+
+from domain import SessionMessage, TopicConfig
+
+
+PRIMARY_REGISTRY_PATH = Path(r"D:\My Heraclitus\Data Codex\Workplaces\workspaces.json")
+FALLBACK_REGISTRY_PATH = Path(r"D:\Program Data\n8n\workspaces.json")
+DB_PATH = Path(r"D:\Program Data\faust_daemon\sessions.db")
+
+
+class SessionRepository:
+    """ACID SQLite repository for thread-keyed conversational memory."""
+
+    def __init__(self, db_path: Path = DB_PATH) -> None:
+        self.db_path = db_path
+        self._init_db()
+
+    def _init_db(self) -> None:
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(str(self.db_path), timeout=5) as conn:
+            c = conn.cursor()
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    thread_id TEXT NOT NULL,
+                    message_id TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    timestamp TEXT NOT NULL
+                )
+            """)
+            c.execute("""
+                CREATE INDEX IF NOT EXISTS idx_thread_time
+                ON messages(thread_id, id DESC)
+            """)
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS active_sessions (
+                    thread_id TEXT PRIMARY KEY,
+                    session_id TEXT NOT NULL,
+                    updated_at REAL NOT NULL
+                )
+            """)
+            conn.commit()
+
+    def save_message(self, msg: SessionMessage) -> None:
+        """Appends a new turn into the conversation history."""
+        with sqlite3.connect(str(self.db_path), timeout=5) as conn:
+            c = conn.cursor()
+            c.execute("""
+                INSERT INTO messages (thread_id, message_id, role, content, timestamp)
+                VALUES (?, ?, ?, ?, ?)
+            """, (msg.thread_id, msg.message_id, msg.role, msg.content, msg.timestamp))
+            conn.commit()
+
+    def get_recent_history(self, thread_id: str, limit: int = 10) -> List[SessionMessage]:
+        """Retrieves recent turns in chronological order."""
+        with sqlite3.connect(str(self.db_path), timeout=5) as conn:
+            c = conn.cursor()
+            c.execute("""
+                SELECT role, content, timestamp, thread_id, message_id
+                FROM messages
+                WHERE thread_id = ?
+                ORDER BY id DESC
+                LIMIT ?
+            """, (str(thread_id), limit))
+            rows = c.fetchall()
+
+        rows.reverse()
+        return [
+            SessionMessage(
+                role=r[0], content=r[1], timestamp=r[2],
+                thread_id=r[3], message_id=r[4]
+            ) for r in rows
+        ]
+
+    def get_active_session(self, thread_id: str) -> Optional[str]:
+        """Retrieves active Claude CLI session ID for conversation resumption."""
+        with sqlite3.connect(str(self.db_path), timeout=5) as conn:
+            c = conn.cursor()
+            c.execute("SELECT session_id FROM active_sessions WHERE thread_id = ?", (str(thread_id),))
+            row = c.fetchone()
+            return row[0] if row else None
+
+    def set_active_session(self, thread_id: str, session_id: str) -> None:
+        """Saves or updates active session ID for a topic thread."""
+        if not session_id:
+            return
+        with sqlite3.connect(str(self.db_path), timeout=5) as conn:
+            c = conn.cursor()
+            import time
+            c.execute("""
+                INSERT INTO active_sessions (thread_id, session_id, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(thread_id) DO UPDATE SET
+                    session_id = excluded.session_id,
+                    updated_at = excluded.updated_at
+            """, (str(thread_id), str(session_id), time.time()))
+            conn.commit()
+
+    def clear_thread(self, thread_id: str) -> int:
+        """Atomically resets conversational memory and session continuity for a given thread."""
+        with sqlite3.connect(str(self.db_path), timeout=5) as conn:
+            c = conn.cursor()
+            c.execute("DELETE FROM messages WHERE thread_id = ?", (str(thread_id),))
+            deleted = c.rowcount
+            c.execute("DELETE FROM active_sessions WHERE thread_id = ?", (str(thread_id),))
+            conn.commit()
+            return deleted
+
+
+class WorkspaceRepository:
+    """Reads workspace configuration from sovereign registry."""
+
+    @staticmethod
+    def _get_registry_path() -> Path:
+        if PRIMARY_REGISTRY_PATH.exists():
+            return PRIMARY_REGISTRY_PATH
+        return FALLBACK_REGISTRY_PATH
+
+    @classmethod
+    def resolve_topic(cls, thread_id: str) -> TopicConfig:
+        """Maps incoming Telegram topic/thread_id to active workspace."""
+        path = cls._get_registry_path()
+        if not path.exists():
+            return TopicConfig(thread_id=thread_id, name="Default Blue AI", workspace=r"D:\My Drive\Blue AI")
+
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            t_data = data.get("topics", {}).get(str(thread_id))
+            if t_data:
+                return TopicConfig(
+                    thread_id=str(thread_id),
+                    name=t_data.get("name", "Unknown Topic"),
+                    workspace=t_data.get("workspace", r"D:\My Drive\Blue AI"),
+                    port=int(t_data.get("port", 28543))
+                )
+        except Exception:
+            pass
+
+        return TopicConfig(thread_id=thread_id, name="Blue AI Default", workspace=r"D:\My Drive\Blue AI")
+
+    @classmethod
+    def list_all_topics(cls) -> List[TopicConfig]:
+        """Returns all configured topics."""
+        path = cls._get_registry_path()
+        if not path.exists():
+            return []
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return [
+                TopicConfig(
+                    thread_id=str(tid),
+                    name=t.get("name", ""),
+                    workspace=t.get("workspace", ""),
+                    port=int(t.get("port", 28543))
+                ) for tid, t in data.get("topics", {}).items()
+            ]
+        except Exception:
+            return []

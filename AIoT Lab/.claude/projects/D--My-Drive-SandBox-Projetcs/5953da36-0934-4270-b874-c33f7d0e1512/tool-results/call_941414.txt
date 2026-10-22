@@ -1,0 +1,252 @@
+arc-jurassic-dino-catalog-design.md:5:The Arc Jurassic **Dinosaur Catalog** is a hierarchical, dynamic collection of creature cards organized by Universe 25 Hazard Tiers. The design balances compact information density with visual hierarchy, supporting real-time state changes (rank climbing, ferocity cascades, pool unlocks) while maintaining stable grid layout and dead-lock camera control.
+arc-jurassic-dino-catalog-design.md:11:- **Bar Chart Race Engine**: During evolution climbing, ferocity increments smoothly, rank position updates dynamically, and the focused dinosaur stays centered in the viewport
+arc-jurassic-dino-catalog-design.md:12:- **Dual-Mode Stats**: Static mode shows Health (left) and Damage (right) with tight icon affinity; climbing mode displays only active Ferocity with rank and drop rate telemetry
+arc-jurassic-dino-catalog-design.md:49:| **Mono** | Courier New | 600–700 | 12–14px / 10–12px | Stats, ferocity, rank values, telemetry |
+arc-jurassic-dino-catalog-design.md:99:   - Hidden during climbing: shows `#<rank>` and `🎲 <rate>%` in active bar instead
+arc-jurassic-dino-catalog-design.md:106:   - **Climbing Mode**: Ferocity only with rank and drop rate
+arc-jurassic-dino-catalog-design.md:262:- Center: Dinosaur name, rank pill, evo progress pill, drop rate pill
+arc-jurassic-dino-catalog-design.md:326:- [ ] **Bar Chart Race**: Ferocity incrementing, dynamic rank position, phase-based UI
+arc-jurassic-dino-catalog-design.md:367:    <HazardBadge score={minScore} rank={tier} size="lg" />
+arc-jurassic-dino-catalog-design.md:414:- **Progression dashboards** (ranks, tiers, milestones)
+universe-25\IMPROVEMENTS.md:122:   - Integrate the 15-tier rank system (D → ✦)
+universe-25\IMPROVEMENTS.md:130:   - `utils/rank.ts` - Global rank calculation
+universe-25\IMPROVEMENTS.md:132:   - `components/HazardBadge.tsx` - Reusable rank badges
+docs\U25 ~ Codex of Time_backup\01 ~ Codex of Time & Items Registry.md:46:The value of higher ranks is not more total minutes—it is the mastery of a **longer continuous attention span**.
+docs\U25 ~ Codex of Time_backup\01 ~ Codex of Time & Items Registry.md:61:Because lower ranks provide higher total raw time efficiency, an unconstrained player would naturally hoard Rank I cards indefinitely.
+docs\U25 ~ Codex of Time_backup\01 ~ Codex of Time & Items Registry.md:64:> **Max Storage Cap**: A player may hold a **maximum of 100 consumables per rank tier**.
+docs\U25 ~ Codex of Time_backup\01 ~ Codex of Time & Items Registry.md:94:Every rank tier features dedicated acoustic cues upon completion:
+universe-25\SETUP_COMPLETE.md:139:   - 15-tier rank system (D → C → B → A → S₁ → S₂ → S₃ → S₄ → Ψ → Ø → ✦)
+.claude\PROJECT_MANDATE.md:13:3. **Hard Inventory Cap**: Maximum **100 consumables per rank tier**. Overflows force consumption, fusion, or dissolution.
+.claude\PROJECT_MANDATE.md:29:    rank_tier INTEGER NOT NULL,          -- 0: Sprint (180s), 1: Spark (512s), 2: Flow (960s), 3: Surge (1800s), 4: Epoch (3218s)
+.claude\PROJECT_MANDATE.md:42:    rank_tier INTEGER NOT NULL,
+.claude\PROJECT_MANDATE.md:73:- `POST /api/v1/codex/fuse`: Fuse 2 identical rank cards. Calculate success, miracle EXEED proc, or Sand of Time dust output.
+universe-25\STATUS.md:172:   - 15-tier rank system: D → C → B → A → S₁-S₄ → Ψ → Ø → ✦
+universe-25\STATUS.md:174:   - Thematic colors per rank
+universe-25\STATUS.md:191:✓ src/utils/rank.ts
+docs\U25 ~ Codex of Time_backup\Trash\02 ~ Daily KPI & Quest Loop Mechanics.md:86:The Hazard Level is your live gauge of total accumulated discipline. It is rendered as an unranked decimal value `y`:
+docs\U25 ~ Codex of Time_backup\Old\01_GAMIFICATION_CORE_VISION.md:94:| **Power Creep** | Zero power creep; baseline never shifts | Infinite vertical collection depth |
+docs\U25 ~ Codex of Time_backup\Old\02_ECONOMIC_ENGINE_AND_MATHEMATICS.md:24:The player's personal Hazard Level is an unranked, continuous mathematical odometer derived from active Golden Hours:
+docs\U25 ~ Codex of Time_backup\Old\02_ECONOMIC_ENGINE_AND_MATHEMATICS.md:30:*(Note: In the pure Codex of Time kernel variant, the baseline equation is $y = \ln(x + 1)$; the $1.5$ multiplier is the tuned scale factor for the master UI)*.
+docs\U25 ~ Codex of Time_backup\Old\02_ECONOMIC_ENGINE_AND_MATHEMATICS.md:33:1. **Unranked Decimal Representation**:
+docs\U25 ~ Codex of Time_backup\Old\02_ECONOMIC_ENGINE_AND_MATHEMATICS.md:35:   - It has **no rank badge**, **no rank title**, and **no rank label** (e.g., never "Rank A", never "Bronze").
+docs\U25 ~ Codex of Time_backup\Old\02_ECONOMIC_ENGINE_AND_MATHEMATICS.md:38:   - Eliminates the psychological trap of "stuck at rank X" and avoids gamified title inflation.
+docs\U25 ~ Codex of Time_backup\Old\02_ECONOMIC_ENGINE_AND_MATHEMATICS.md:50:While the user remains an unranked decimal, **all gacha treasures, equipment, relics, and music tracks possess explicit Rank Tiers**.
+docs\U25 ~ Codex of Time_backup\Old\02_ECONOMIC_ENGINE_AND_MATHEMATICS.md:73:- **Player**: Unranked decimal odometer $\langle a.b \rangle$.
+docs\U25 ~ Codex of Time_backup\Old\02_ECONOMIC_ENGINE_AND_MATHEMATICS.md:74:- **Inventory & Vault**: Tiered, ranked, and showcased in prestige galleries.
+docs\U25 ~ Codex of Time_backup\Old\03_CODEX_OF_TIME_ENGINE.md:19:Codex Consumables are structured into five distinct rank tiers:
+docs\U25 ~ Codex of Time_backup\Old\03_CODEX_OF_TIME_ENGINE.md:44:**Why:** Higher rank consumables demand sustained cognitive stamina. The diminishing duration rewards the player with higher concentration density and rare drop multipliers, but forces strategic decisions on whether to fuse or run multiple shorter blocks.
+docs\U25 ~ Codex of Time_backup\Old\03_CODEX_OF_TIME_ENGINE.md:47:- **Cap**: Maximum **100 consumables per rank tier**.
+docs\U25 ~ Codex of Time_backup\Old\03_CODEX_OF_TIME_ENGINE.md:93:    rank_tier INTEGER NOT NULL,          -- 0: Sprint, 1: Spark, 2: Flow, 3: Surge, 4: Epoch
+docs\U25 ~ Codex of Time_backup\Old\03_CODEX_OF_TIME_ENGINE.md:106:    rank_tier INTEGER NOT NULL,
+docs\U25 ~ Codex of Time_backup\Old\03_CODEX_OF_TIME_ENGINE.md:139:- `POST /api/v1/codex/fuse`: Consumes 2 identical rank cards; executes fusion logic (Success / Miracle / Sand of Time).
+docs\U25 ~ Codex of Time_backup\Old\05_MASTER_GAME_GOLDEN_HOUR.md:61:     - *Pool*: Guaranteed $100\%$ drop rate for transcendent rank artifacts (`✦`, `∅`, `Ψ`).
+docs\U25 ~ Codex of Time_backup\Old\05_MASTER_GAME_GOLDEN_HOUR.md:65:  - **Multi-Attribute Energy Cores** (Solar, Void, Verdant, Celestial, Aether) as guaranteed baseline drops.
+docs\U25 ~ Codex of Time_backup\Old\05_MASTER_GAME_GOLDEN_HOUR.md:74:     - Shows rank badges, dynamic visual FX (black holes, prismatic pulses), and equipment stats.
+.claude\memory\div\game\gamification-master-game-vision.md:33:   - **Personal Hazard Level Odometer**: Calculated dynamically via $y = \ln(x + 1)$ ($x \ge 0$). Rendered strictly as an unranked decimal odometer $\langle a.b \rangle$. Spending time immediately reduces one's Hazard Level, creating real economic stakes.
+.claude\memory\div\game\arc-jurassic-gameplay-rules.md:27:- **Ferocity Cap**: Top 3 ferocity sum divided by 2.5 ($0.4\times$), with a minimum baseline floor of 200:
+.claude\memory\div\game\arc-jurassic-gameplay-rules.md:52:- An evolution step never requires more than 4 dinosaurs to advance by an EVO rank.
+.claude\memory\div\game\arc-jurassic-gameplay-rules.md:53:- Evolution thresholds by rank $e$:
+universe-25\src\utils\rank.ts:26:  rank: GlobalRankTier;
+universe-25\src\utils\rank.ts:55:  const rank = typeof scoreOrRank === 'number' ? getRankFromScore(scoreOrRank) : scoreOrRank;
+universe-25\src\utils\rank.ts:56:  return rank !== 'F' && (GLOBAL_RANKS as readonly string[]).includes(rank);
+universe-25\src\utils\rank.ts:61:    rank: '✦',
+universe-25\src\utils\rank.ts:69:    rank: 'Ø',
+universe-25\src\utils\rank.ts:77:    rank: 'Ψ',
+universe-25\src\utils\rank.ts:85:    rank: 'S₄',
+universe-25\src\utils\rank.ts:93:    rank: 'S₃',
+universe-25\src\utils\rank.ts:101:    rank: 'S₂',
+universe-25\src\utils\rank.ts:109:    rank: 'S₁',
+universe-25\src\utils\rank.ts:117:    rank: 'A+',
+universe-25\src\utils\rank.ts:125:    rank: 'A',
+universe-25\src\utils\rank.ts:133:    rank: 'B+',
+universe-25\src\utils\rank.ts:141:    rank: 'B',
+universe-25\src\utils\rank.ts:149:    rank: 'C+',
+universe-25\src\utils\rank.ts:157:    rank: 'C',
+universe-25\src\utils\rank.ts:165:    rank: 'D+',
+universe-25\src\utils\rank.ts:173:    rank: 'D',
+universe-25\src\utils\rank.ts:181:    rank: 'F',
+universe-25\src\utils\rank.ts:190:export function getRankBadgeStyle(rank: string): string {
+universe-25\src\utils\rank.ts:191:  const meta = RANK_THEMATIC_REGISTRY[rank as GlobalRankTier];
+universe-25\src\core\syncEngine.ts:56:  rank: number
+universe-25\src\core\syncEngine.ts:170:  const res = await execute<Record<string, { number: number; rank: number; ferocity?: number; updated_at?: string }>>('arc_progress', 'read_all')
+universe-25\src\core\syncEngine.ts:177:      rank: Number(d.rank || 0),
+universe-25\src\core\syncEngine.ts:193:      rank: Number(d.rank || 0),
+.claude\memory\div\backend\hazard-level-design.md:10:description: "Hazard Level is a personal odometer (just <a.b>), no rank tiers. Rank tiers are only for collection items. Formula: y = ln(x+1), floor 0."
+.claude\memory\div\backend\hazard-level-design.md:22:- **Display**: Simple decimal `<a.b>` (e.g., `4.7`, `11.3`). No rank title, no tier badge, no label.
+.claude\memory\div\backend\hazard-level-design.md:24:- **Philosophy**: A quiet personal odometer. The user sees the number and knows what it cost. No external validation, no "stuck at rank X" frustration.
+.claude\memory\div\backend\hazard-level-design.md:29:- The motivation is to push collection items to the highest rank, not to rank oneself.
+.claude\memory\div\backend\hazard-level-design.md:34:- **Rank Tiers** → Collection items → ranked, tiered, showcased in galleries
+.claude\memory\div\backend\hazard-level-design.md:36:**Why:** Avoids the psychological trap of feeling stuck at a named rank. The user competes with their own past effort, not a label. Items get the prestige system; the player stays free.
+.claude\memory\div\backend\hazard-level-design.md:38:**How to apply:** When building the Master Game's account display, show Hazard Level as a plain decimal. Never map it to a named tier. Reserve [[gamification-master-game-vision]] rank registries for gacha items and gallery sorting only.
+universe-25\src\components\ImperialHeader.tsx:7:import { getRankFromScore, hasTier } from '../utils/rank'
+universe-25\src\components\ImperialHeader.tsx:120:                    <HazardBadge score={hazardLevel} rank={currentRank} size="sm" showDetails={false} />
+universe-25\src\components\HazardBadge.tsx:5:import { getRankFromScore, RANK_THEMATIC_REGISTRY } from '../utils/rank';
+universe-25\src\components\HazardBadge.tsx:6:import type { GlobalRankTier } from '../utils/rank';
+universe-25\src\components\HazardBadge.tsx:10:  rank?: string;
+universe-25\src\components\HazardBadge.tsx:140:  rank,
+universe-25\src\components\HazardBadge.tsx:146:  const determinedRank = (rank || getRankFromScore(finalScore)) as GlobalRankTier;
+universe-25\src\components\HazardBadge.tsx:148:  // Only display rank badges for tiers that have been unlocked (D through ✦)
+universe-25\src\components\shared\AltarSlot.tsx:17:    rank: string;
+universe-25\src\components\shared\AltarSlot.tsx:74:            <span className="text-xs font-mono">Rank: {featuredItem.rank}</span>
+universe-25\src\apps\vinyl-angel\types.ts:60:  rankCategory: string;
+universe-25\src\apps\vinyl-angel\services\engine.ts:5:import { getRankFromScore } from '../../../utils/rank';
+universe-25\src\apps\vinyl-angel\services\engine.ts:277:      rankCategory: getRankFromScore(hazard),
+universe-25\src\apps\golden-hour\types.ts:7:export type { GlobalRankTier } from '../../utils/rank';
+universe-25\src\apps\golden-hour\types.ts:8:import type { GlobalRankTier } from '../../utils/rank';
+universe-25\src\apps\golden-hour\types.ts:91:  rank: GlobalRankTier;
+universe-25\src\apps\golden-hour\types.ts:92:  score: number;               // hazard score for rank calculation
+universe-25\src\components\shared\CodexGrid.tsx:9:  rank: string;
+universe-25\src\components\shared\CodexGrid.tsx:62:                <HazardBadge score={item.score} rank={item.rank} size="md" showDetails={true} />
+universe-25\src\components\shared\CodexGrid.tsx:64:              {!showDetails && item.score !== undefined && item.rank !== undefined && (
+universe-25\src\components\shared\CodexGrid.tsx:65:                <HazardBadge score={item.score} rank={item.rank} size="sm" />
+universe-25\src\components\shared\UniversalCard.tsx:9:  rank?: string;
+universe-25\src\components\shared\UniversalCard.tsx:24:  rank,
+universe-25\src\components\shared\UniversalCard.tsx:84:        {score !== undefined && rank !== undefined && (
+universe-25\src\components\shared\UniversalCard.tsx:91:              <div className="text-xs text-[#8c7a9e]">{rank}</div>
+universe-25\src\components\shared\UniversalCard.tsx:97:        {score !== undefined && rank !== undefined && (
+universe-25\src\components\shared\UniversalCard.tsx:98:          <HazardBadge score={score} rank={rank} size="sm" showDetails={false} />
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:16:import { GLOBAL_RANKS } from '../../../utils/rank';
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:168:      const matchRank = selectedRank === 'ALL' || item.rankCategory === selectedRank;
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:393:            {GLOBAL_RANKS.map((rank) => (
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:395:                key={rank}
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:396:                onClick={() => setSelectedRank(rank)}
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:398:                  selectedRank === rank
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:403:                {rank}
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:444:                  <HazardBadge score={item.hazard_level} rank={item.rankCategory} size="md" />
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:580:                      rank={inspectItem.rankCategory}
+universe-25\src\apps\arc-jurassic\ArcJurassic.tsx:67:  owned_dinos: Record<string, { number: number; rank: number; ferocity?: number }>;
+universe-25\src\apps\arc-jurassic\ArcJurassic.tsx:337:      const currentData = userProgress?.owned_dinos?.[targetUuid] || { number: 0, rank: 0 };
+universe-25\src\apps\arc-jurassic\ArcJurassic.tsx:382:      // 6. Update progress & rank
+universe-25\src\apps\arc-jurassic\ArcJurassic.tsx:392:        rank: newRank
+universe-25\src\apps\arc-jurassic\ArcJurassic.tsx:420:      // 8. Decrement remaining auto rolls (shutdown will be triggered AFTER up-evo / rank climb finishes)
+universe-25\src\apps\arc-jurassic\ArcJurassic.tsx:425:      // Ensure view is on List of Dinos so the user experiences the rank climb animation
+universe-25\src\apps\arc-jurassic\ArcJurassic.tsx:452:    // Disarm Auto Gacha & Buy AFTER the rank climb / up-evo sequence has completely finished
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:9:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:22:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:35:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:48:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:61:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:74:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:87:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:100:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:113:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:126:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:139:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:152:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:165:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:178:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:191:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:204:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:217:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:230:      "rank": "Ψ",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:243:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:256:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:269:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:282:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:295:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:308:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:321:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:334:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:347:      "rank": "Ψ",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:360:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:373:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:386:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:399:      "rank": "Ψ",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:412:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:425:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:438:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:451:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:464:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:477:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:490:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:503:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:516:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:529:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:542:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:555:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:568:      "rank": "Ψ",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:581:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:594:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:607:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:620:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:633:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:646:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:659:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:672:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:685:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:698:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:711:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:724:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:737:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:750:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:763:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:776:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:789:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:802:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:815:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:828:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:841:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:854:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:867:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:880:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:893:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:906:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:919:      "rank": "Ψ",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:932:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:945:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:958:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:971:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:984:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:997:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1010:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1023:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1036:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1049:      "rank": "✦",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1093:      "rank": "D",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1111:      "rank": "B",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1125:      "rank": "D",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1143:      "rank": "B",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1157:      "rank": "B",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1171:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1215:      "rank": "✦",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1259:      "rank": "B",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1273:      "rank": "D",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1291:      "rank": "D",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1309:      "rank": "Ψ",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1353:      "rank": "B",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1367:      "rank": "B",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1381:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1425:      "rank": "B",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1439:      "rank": "D",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1457:      "rank": "B",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1471:      "rank": "D",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1489:      "rank": "B",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1503:      "rank": "B",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1517:      "rank": "✦",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1561:      "rank": "B",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1575:      "rank": "D",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1593:      "rank": "D",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1611:      "rank": "D",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1629:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1673:      "rank": "D",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1691:      "rank": "Ψ",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1704:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1717:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1730:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1743:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1756:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1769:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1782:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1795:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1808:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1821:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1834:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1847:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1860:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1873:      "rank": "S₁",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1886:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1899:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1912:      "rank": "A+",
+backend\data\projects\universe_25\app_data\golden_hour\vault.json:1925:      "rank": "S₁",
+
+[Showing results with pagination = limit: 250]

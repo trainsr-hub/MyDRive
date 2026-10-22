@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relic Manifestation · Canvas Awakening</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #08040d; font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #f5f3ff; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+.hud {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 24px; z-index: 10;
+}
+.header { text-align: center; }
+.sub-title { font-size: 11px; letter-spacing: .35em; text-transform: uppercase; color: #c084fc; font-weight: 700; margin-bottom: 2px; }
+.main-title { font-size: 20px; font-weight: 800; letter-spacing: .12em; color: #fff; text-shadow: 0 0 16px rgba(192,132,252,0.5); }
+.relic-card {
+  position: absolute; right: 30px; top: 50%; transform: translateY(-50%);
+  background: rgba(18, 10, 30, 0.85); border: 1.5px solid rgba(192,132,252,0.35);
+  border-radius: 14px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;
+  pointer-events: auto; min-width: 220px; box-shadow: 0 0 24px rgba(0,0,0,0.6);
+}
+.card-lbl { font-size: 10px; letter-spacing: .2em; color: #e9d5ff; text-transform: uppercase; }
+.card-hrs { font-size: 32px; font-weight: 900; font-family: monospace; color: #fff; text-shadow: 0 0 14px rgba(192,132,252,0.8); }
+.card-tier { font-size: 11px; font-weight: 700; color: #c084fc; letter-spacing: .08em; }
+.controls { pointer-events: auto; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+.btn {
+  min-height: 52px; padding: 0 22px; background: rgba(28, 14, 46, 0.85);
+  border: 1.5px solid rgba(192,132,252,0.35); border-radius: 12px; color: #e9d5ff;
+  font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  cursor: pointer; transition: all .15s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:hover { background: #4a1d7c; border-color: #d8b4fe; color: #fff; box-shadow: 0 0 24px rgba(192,132,252,0.5); transform: translateY(-2px); }
+.btn:active { transform: translateY(1px); }
+.btn.active { background: #9333ea; border-color: #f3e8ff; color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="header">
+    <div class="sub-title">Astral Canvas Materialization</div>
+    <div class="main-title">The Relic Awakening Engine · 10,000h</div>
+  </div>
+  <div class="relic-card">
+    <span class="card-lbl">Manifestation Energy</span>
+    <span class="card-hrs" id="hoursVal">0 h</span>
+    <span class="card-tier" id="tierVal">Shrouded Void Canvas</span>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="bankHours(10)">🖌️ Restore Stroke (+10h)</button>
+    <button class="btn" onclick="bankHours(150)">✨ Astral Burnish (+150h)</button>
+    <button class="btn" onclick="bankHours(1000)">⚔️ Shatter Seal (+1,000h)</button>
+    <button class="btn" id="flowBtn" onclick="toggleFlow()">🌌 Living Brush Flow</button>
+    <button class="btn" onclick="cycleRelic()">🗡️ Cycle Relic Matrix</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const hoursValEl = document.getElementById('hoursVal'), tierValEl = document.getElementById('tierVal');
+let W, H, cx, cy, hours = 0, targetHours = 0, isFlowing = false, flowTimer = null, audioCtx = null, relicIdx = 0;
+const MAX_HOURS = 10000;
+const RELICS = [
+  { name: 'Chronos Void Blade', symbol: '🗡️', color: '#c084fc', glow: '#a855f7' },
+  { name: 'Aegis of 10,000 Dawns', symbol: '🛡️', color: '#fbbf24', glow: '#f59e0b' },
+  { name: 'Eye of Omniscience', symbol: '🔮', color: '#38bdf8', glow: '#0284c7' }
+];
+
+function playManifestTone(pitch = 1.0) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(320 * pitch, t);
+    osc.frequency.exponentialRampToValueAtTime(740 * pitch, t + 0.25);
+    gain.gain.setValueAtTime(0.08, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.25);
+  } catch(e) {}
+}
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; cx = W / 2; cy = H / 2; }
+window.addEventListener('resize', resize);
+resize();
+
+function bankHours(n) { targetHours = Math.min(MAX_HOURS, targetHours + n); playManifestTone(1.0 + (hours / MAX_HOURS)); }
+function toggleFlow() {
+  isFlowing = !isFlowing;
+  document.getElementById('flowBtn').classList.toggle('active', isFlowing);
+  if (isFlowing) flowTimer = setInterval(() => bankHours(6), 110);
+  else clearInterval(flowTimer);
+}
+function cycleRelic() { relicIdx = (relicIdx + 1) % RELICS.length; }
+
+function draw() {
+  ctx.fillStyle = 'rgba(8, 4, 13, 0.28)'; ctx.fillRect(0, 0, W, H);
+  hours += (targetHours - hours) * 0.08;
+  const rounded = Math.round(hours);
+  hoursValEl.textContent = `${rounded.toLocaleString()} h`;
+
+  const curRelic = RELICS[relicIdx];
+  if (hours >= 10000) tierValEl.textContent = `🌟 ${curRelic.name} (AWAKENED)`;
+  else if (hours >= 7500) tierValEl.textContent = `⚔️ Volumetric Resonant Artifact (75%)`;
+  else if (hours >= 5000) tierValEl.textContent = `🔮 Gilded Inlay Materialization (50%)`;
+  else if (hours >= 2500) tierValEl.textContent = `📜 Astral Contour Outlines (25%)`;
+  else tierValEl.textContent = 'Shrouded Void Canvas';
+
+  const fw = 280, fh = 380;
+  const fx = cx - fw / 2, fy = cy - fh / 2;
+  const t = Date.now() * 0.002;
+  const ratio = hours / MAX_HOURS;
+
+  // 1. Ornate Canvas Frame
+  ctx.save();
+  ctx.strokeStyle = hours > 5000 ? curRelic.color : 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(fx, fy, fw, fh, 16);
+  ctx.stroke();
+
+  // 2. Sealed Shadow inside frame
+  ctx.fillStyle = '#0f081c';
+  ctx.fill();
+
+  // 3. Relic Rendering (Progressively Materializing)
+  const isTranscendent = hours >= 10000;
+  const floatY = isTranscendent ? Math.sin(t * 3) * 14 : 0;
+  const scale = isTranscendent ? 1.15 : 1.0;
+
+  ctx.translate(cx, cy + floatY);
+  ctx.scale(scale, scale);
+
+  // Relic Icon / Blade / Shield
+  const alpha = Math.min(1.0, 0.15 + ratio * 0.85);
+  ctx.globalAlpha = alpha;
+  ctx.font = `${70 + ratio * 30}px 'Segoe UI', sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.shadowColor = curRelic.glow;
+  ctx.shadowBlur = 10 + ratio * 40;
+  ctx.fillText(curRelic.symbol, 0, 0);
+
+  // Floating Spark Embers when manifest
+  if (ratio > 0.3) {
+    for (let i = 0; i < 6; i++) {
+      const sa = t * 2 + i * 1.2;
+      const sr = (40 + ratio * 60) + Math.sin(t * 3 + i) * 10;
+      ctx.beginPath();
+      ctx.arc(Math.cos(sa) * sr, Math.sin(sa) * sr, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = curRelic.color;
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

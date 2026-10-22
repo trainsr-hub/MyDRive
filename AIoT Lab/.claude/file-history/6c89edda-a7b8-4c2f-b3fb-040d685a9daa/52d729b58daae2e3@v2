@@ -1,0 +1,241 @@
+import React from 'react';
+import { Zap, Moon, Sun, History, HardDrive, Settings2, FolderTree, Compass } from 'lucide-react';
+
+interface HeaderProps {
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
+  onOpenHistory: () => void;
+  onOpenConfig: () => void;
+  isScanning: boolean;
+  activeTab: 'reconciler' | 'navigator' | 'studio';
+  onTabChange: (tab: 'reconciler' | 'navigator' | 'studio') => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({
+  theme,
+  toggleTheme,
+  onOpenHistory,
+  onOpenConfig,
+  isScanning,
+  activeTab,
+  onTabChange,
+}) => {
+  return (
+    <header
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0.75rem 2rem',
+        borderBottom: '1px solid var(--border-light)',
+        background: 'var(--bg-card)',
+        gap: '1rem',
+        flexWrap: 'nowrap',
+        zIndex: 50,
+      }}
+    >
+      {/* Brand & Purpose */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--accent-bg)',
+            border: '1px solid var(--accent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--accent)',
+            boxShadow: '0 0 12px var(--accent-glow)',
+          }}
+        >
+          <Zap size={20} className={isScanning ? 'spinner' : ''} />
+        </div>
+
+        <div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              fontWeight: 700,
+              fontSize: '16px',
+              letterSpacing: '-0.02em',
+            }}
+          >
+            <span style={{ color: 'var(--accent)' }}>DRIVE</span>
+            <span style={{ color: 'var(--text-primary)' }}>ARCHITECT</span>
+            <span
+              className="badge"
+              style={{
+                background: 'var(--accent-bg)',
+                color: 'var(--accent)',
+                border: '1px solid var(--accent-glow)',
+              }}
+            >
+              Option A
+            </span>
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: '-1px' }}>
+            Declarative Desired-State Reconciler
+          </div>
+        </div>
+      </div>
+
+      {/* Mode Switcher Tabs */}
+      <div
+        style={{
+          display: 'flex',
+          background: 'var(--bg-canvas)',
+          borderRadius: 'var(--radius-full)',
+          border: '1px solid var(--border-light)',
+          padding: '3px',
+          gap: '3px',
+        }}
+      >
+        <button
+          onClick={() => onTabChange('reconciler')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            background: activeTab === 'reconciler' ? 'var(--accent)' : 'transparent',
+            color: activeTab === 'reconciler' ? '#000' : 'var(--text-secondary)',
+            border: 'none',
+            borderRadius: 'var(--radius-full)',
+            padding: '0.35rem 0.95rem',
+            fontSize: '12.5px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <Zap size={13} />
+          <span>Reconciler</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('navigator')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            background: activeTab === 'navigator' ? 'var(--accent)' : 'transparent',
+            color: activeTab === 'navigator' ? '#000' : 'var(--text-secondary)',
+            border: 'none',
+            borderRadius: 'var(--radius-full)',
+            padding: '0.35rem 0.95rem',
+            fontSize: '12.5px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <Compass size={13} />
+          <span>Drive Navigator</span>
+        </button>
+
+        <button
+          onClick={() => onTabChange('studio')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            background: activeTab === 'studio' ? 'var(--accent)' : 'transparent',
+            color: activeTab === 'studio' ? '#000' : 'var(--text-secondary)',
+            border: 'none',
+            borderRadius: 'var(--radius-full)',
+            padding: '0.35rem 0.95rem',
+            fontSize: '12.5px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <FolderTree size={13} />
+          <span>Template Studio</span>
+        </button>
+      </div>
+
+      {/* Sovereign Connectivity Telemetry */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '0.25rem 0.65rem',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--bg-canvas)',
+            border: '1px solid var(--border-light)',
+            fontSize: '11.5px',
+            color: 'var(--text-secondary)',
+          }}
+          title="Google Cloud Service Account Active"
+        >
+          <span
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: 'var(--success)',
+              boxShadow: '0 0 6px rgba(16, 185, 129, 0.6)',
+            }}
+          />
+          <span style={{ fontFamily: 'var(--font-mono)' }}>SA: trainjr@...</span>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '0.25rem 0.65rem',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--bg-canvas)',
+            border: '1px solid var(--border-light)',
+            fontSize: '11.5px',
+            color: 'var(--text-secondary)',
+          }}
+          title="ACID SQLite Storage Active on Local Disk D:\"
+        >
+          <HardDrive size={13} style={{ color: 'var(--accent)' }} />
+          <span style={{ fontFamily: 'var(--font-mono)' }}>SQLite WAL (Disk D:)</span>
+        </div>
+
+        {/* Configure Targets Button */}
+        <button
+          onClick={onOpenConfig}
+          className="btn"
+          style={{ padding: '0.4rem 0.75rem', fontSize: '12px' }}
+          title="Configure Permanent Target Folders"
+        >
+          <Settings2 size={14} />
+          <span>Targets</span>
+        </button>
+
+        {/* Audit History Button */}
+        <button
+          onClick={onOpenHistory}
+          className="btn"
+          style={{ padding: '0.4rem 0.75rem', fontSize: '12px' }}
+          title="View Reconciliation Audit History from SQLite"
+        >
+          <History size={14} />
+          <span>History</span>
+        </button>
+
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="btn icon-only"
+          title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          style={{ width: 34, height: 34 }}
+        >
+          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
+      </div>
+    </header>
+  );
+};

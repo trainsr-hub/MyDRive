@@ -1,0 +1,423 @@
+import { ComponentFolderNode, ComponentFileNode, ComponentEntry } from './componentScanner';
+import { MatrixDomainNode, MatrixStateDefinition } from '../types/schema';
+
+export interface MatchedSectionResult {
+  folderDisplayName: string;
+  folderRelPath: string;
+  fileDisplayName: string;
+  fileRelPath: string;
+  isMatrixDomain?: boolean;
+  domainId?: string;
+  matchedEntryKey: string;
+  matchedEntry: ComponentEntry;
+  matchedTokens: string[];
+  confidence: number; // 0 to 100
+  matchType: 'exact' | 'strong' | 'partial' | 'keyword';
+}
+
+export interface MatchedMatrixStateResult {
+  domainId: string;
+  domainDisplayName: string;
+  state: MatrixStateDefinition;
+  matchedTokens: string[];
+  confidence: number;
+}
+
+export interface TokenAnalysis {
+  original: string;
+  clean: string;
+  isMatched: boolean;
+  matchedSection?: string;
+  matchedFile?: string;
+  matchedEntryKey?: string;
+  matchedEntryName?: string;
+  color?: string;
+  isMatrixState?: boolean;
+  weight?: number;
+}
+
+export interface DecompiledPromptResult {
+  rawPrompt: string;
+  tokensCount: number;
+  matchedSections: MatchedSectionResult[];
+  matchedMatrixStates: MatchedMatrixStateResult[];
+  tokenAnalyses: TokenAnalysis[];
+  unmatchedTokens: string[];
+  matchedTokensCount: number;
+  matchPercentage: number;
+  detectedTelemetry: {
+    females: number;
+    males: number;
+    isSolo: boolean;
+    isPOV: boolean;
+  };
+  recommendedSelections: Record<string, string>;
+  recommendedMatrixBase: Record<string, string[]>;
+  recommendedMatrixUnlocked: Record<string, string[]>;
+}
+
+/**
+ * Strips weights, parentheses, and extra syntax from a token.
+ * E.g., `(masterpiece:1.2)` -> `{ clean: "masterpiece", weight: 1.2 }`
+ */
+export function sanitizeToken(raw: string): { clean: string; weight: number } {
+  let text = raw.trim();
+  let weight = 1.0;
+
+  // Check for (token:weight) or (token:1.2)
+  const weightMatch = text.match(/^\(?([a-zA-Z0-9_\-\s]+):([0-9.]+)\)?$/);
+  if (weightMatch) {
+    text = weightMatch[1].trim();
+    weight = parseFloat(weightMatch[2]) || 1.0;
+  } else {
+    // Strip leading/trailing (, ), [, ], {, }
+    text = text.replace(/^[([{<]+|[)\]}>]+$/g, '').trim();
+  }
+
+  return {
+    clean: text.toLowerCase().replace(/_/g, ' '),
+    weight,
+  };
+}
+
+/**
+ * Splits raw prompt into token segments separated by comma, newlines, or BREAK.
+ */
+export function extractRawTokens(promptText: string): string[] {
+  if (!promptText || !promptText.trim()) return [];
+
+  return promptText
+    .split(/[\n,]+/)
+    .map((t) => t.trim())
+    .filter((t) => t && t.toUpperCase() !== 'BREAK');
+}
+
+/**
+ * Decompiles and reverse-engineers a complete prompt string against the active
+ * components and matrix domains database.
+ */
+export function decompilePrompt(
+  promptText: string,
+  folders: ComponentFolderNode[] = [],
+  matrixDomains: MatrixDomainNode[] = []
+): DecompiledPromptResult {
+  const safeFolders = folders || [];
+  const safeDomains = matrixDomains || [];
+  const rawTokens = extractRawTokens(promptText);
+  const promptLower = (promptText || '').toLowerCase();
+
+  // 1. Gather all file nodes from Component Folders and Matrix Domains
+  interface FileContainer {
+    folderDisplayName: string;
+    folderRelPath: string;
+    file: ComponentFileNode;
+    isMatrixDomain: boolean;
+    domainId?: string;
+  }
+
+  const allContainers: FileContainer[] = [
+    ...safeFolders.flatMap((f) =>
+      (f.files || []).map((file) => ({
+        folderDisplayName: f.displayName,
+        folderRelPath: f.relPath,
+        file,
+        isMatrixDomain: false,
+      }))
+    ),
+    ...safeDomains.flatMap((d) =>
+      (d.files || []).map((file) => ({
+        folderDisplayName: d.displayName,
+        folderRelPath: d.relPath,
+        file,
+        isMatrixDomain: true,
+        domainId: d.domainId,
+      }))
+    ),
+  ];
+
+  const matchedSections: MatchedSectionResult[] = [];
+  const matchedMatrixStates: MatchedMatrixStateResult[] = [];
+  const matchedTokenIndices = new Set<number>();
+  const tokenAnalyses: TokenAnalysis[] = [];
+  const recommendedSelections: Record<string, string> = {};
+  const recommendedMatrixBase: Record<string, string[]> = {};
+  const recommendedMatrixUnlocked: Record<string, string[]> = {};
+
+  // Pre-process parsed input tokens
+  const parsedTokens = rawTokens.map((raw) => {
+    const { clean, weight } = sanitizeToken(raw);
+    return { raw, clean, weight };
+  });
+
+  // 2. First Pass: Matrix Domain States matching (e.g. emotion / posture base states)
+  for (const domain of matrixDomains) {
+    for (const state of domain.states) {
+      const stateIdClean = state.id.toLowerCase().replace(/_/g, ' ');
+      const stateLabelClean = state.label.toLowerCase();
+      const stateBaseTokens = state.basePrompt
+        ? state.basePrompt
+            .split(',')
+            .map((t) => sanitizeToken(t).clean)
+            .filter(Boolean)
+        : [];
+
+      const matchingTokensForState: string[] = [];
+
+      parsedTokens.forEach((tok, idx) => {
+        if (!tok.clean) return;
+        const matchesId = tok.clean === stateIdClean || tok.clean.includes(stateIdClean);
+        const matchesLabel = stateLabelClean.includes(tok.clean);
+        const matchesBasePrompt = stateBaseTokens.includes(tok.clean);
+
+        if (matchesId || matchesLabel || matchesBasePrompt) {
+          matchingTokensForState.push(tok.raw);
+          matchedTokenIndices.add(idx);
+        }
+      });
+
+      if (matchingTokensForState.length > 0) {
+        matchedMatrixStates.push({
+          domainId: domain.domainId,
+          domainDisplayName: domain.displayName,
+          state,
+          matchedTokens: Array.from(new Set(matchingTokensForState)),
+          confidence: Math.min(100, matchingTokensForState.length * 50),
+        });
+
+        if (!recommendedMatrixBase[domain.domainId]) {
+          recommendedMatrixBase[domain.domainId] = [];
+        }
+        if (!recommendedMatrixBase[domain.domainId].includes(state.id)) {
+          recommendedMatrixBase[domain.domainId].push(state.id);
+        }
+      }
+    }
+  }
+
+  // 3. Second Pass: Component Option Matching across all files
+  for (const container of allContainers) {
+    const { file, folderDisplayName, folderRelPath, isMatrixDomain, domainId } = container;
+    const optionKeys = Object.keys(file.entries);
+
+    let bestOptionKey: string | null = null;
+    let bestOptionEntry: ComponentEntry | null = null;
+    let bestScore = 0;
+    let bestMatchedTokens: string[] = [];
+    let bestMatchType: 'exact' | 'strong' | 'partial' | 'keyword' = 'partial';
+
+    for (const key of optionKeys) {
+      const entry = file.entries[key];
+      const entryTokens = entry.prompt
+        ? entry.prompt
+            .split(',')
+            .map((t) => sanitizeToken(t).clean)
+            .filter(Boolean)
+        : [];
+      const entryKeywords = (entry.keywords || []).map((k) => sanitizeToken(k).clean);
+      const entryTags = [
+        ...(entry.tags || []),
+        ...(entry.emotions || []),
+        ...(entry.postures || []),
+      ].map((t) => sanitizeToken(t).clean);
+
+      const entryNameClean = (entry.display_name || key).toLowerCase().replace(/_/g, ' ');
+      const entryKeyClean = key.toLowerCase().replace(/_/g, ' ');
+
+      const matchedTokens: string[] = [];
+      const matchedIdxs: number[] = [];
+      let score = 0;
+
+      // A. Check for multi-word exact prompt phrase in the input prompt
+      if (entry.prompt && entry.prompt.trim().length > 3) {
+        const cleanPromptPhrase = entry.prompt.toLowerCase().trim();
+        if (promptLower.includes(cleanPromptPhrase)) {
+          score += 100;
+          matchedTokens.push(entry.prompt);
+        }
+      }
+
+      // B. Token-by-token matching
+      parsedTokens.forEach((tok, idx) => {
+        if (!tok.clean || tok.clean.length < 2) return;
+
+        // Exact match with entry prompt token
+        if (entryTokens.includes(tok.clean)) {
+          score += 25;
+          matchedTokens.push(tok.raw);
+          matchedIdxs.push(idx);
+          return;
+        }
+
+        // Exact match with entry keywords
+        if (entryKeywords.includes(tok.clean)) {
+          score += 20;
+          matchedTokens.push(tok.raw);
+          matchedIdxs.push(idx);
+          return;
+        }
+
+        // Exact match with tags
+        if (entryTags.includes(tok.clean)) {
+          score += 15;
+          matchedTokens.push(tok.raw);
+          matchedIdxs.push(idx);
+          return;
+        }
+
+        // Substring / Name match
+        if (
+          tok.clean === entryNameClean ||
+          tok.clean === entryKeyClean ||
+          (tok.clean.length > 4 && (entryNameClean.includes(tok.clean) || entryKeyClean.includes(tok.clean)))
+        ) {
+          score += 15;
+          matchedTokens.push(tok.raw);
+          matchedIdxs.push(idx);
+          return;
+        }
+      });
+
+      if (score > bestScore && matchedTokens.length > 0) {
+        bestScore = score;
+        bestOptionKey = key;
+        bestOptionEntry = entry;
+        bestMatchedTokens = Array.from(new Set(matchedTokens));
+
+        // Determine match quality
+        if (score >= 100) {
+          bestMatchType = 'exact';
+        } else if (score >= 50 || matchedTokens.length >= 2) {
+          bestMatchType = 'strong';
+        } else if (entryKeywords.some((k) => matchedTokens.some((mt) => mt.toLowerCase().includes(k)))) {
+          bestMatchType = 'keyword';
+        } else {
+          bestMatchType = 'partial';
+        }
+      }
+    }
+
+    // If a confident match is found for this file
+    if (bestOptionKey && bestOptionEntry && bestScore >= 15) {
+      const confidence = Math.min(100, Math.round(bestScore >= 100 ? 100 : (bestScore / 75) * 100));
+
+      matchedSections.push({
+        folderDisplayName,
+        folderRelPath,
+        fileDisplayName: file.displayName,
+        fileRelPath: file.relPath,
+        isMatrixDomain,
+        domainId,
+        matchedEntryKey: bestOptionKey,
+        matchedEntry: bestOptionEntry,
+        matchedTokens: bestMatchedTokens,
+        confidence,
+        matchType: bestMatchType,
+      });
+
+      recommendedSelections[file.relPath] = bestOptionKey;
+
+      // Mark matched tokens
+      parsedTokens.forEach((tok, idx) => {
+        if (bestMatchedTokens.includes(tok.raw)) {
+          matchedTokenIndices.add(idx);
+        }
+      });
+    }
+  }
+
+  // 4. Build Token Analyses map for visual interactive inspector
+  const unmatchedTokens: string[] = [];
+
+  parsedTokens.forEach((tok, idx) => {
+    const isMatched = matchedTokenIndices.has(idx);
+
+    // Find which section matched this token
+    const matchingSection = matchedSections.find((s) => s.matchedTokens.includes(tok.raw));
+    const matchingState = matchedMatrixStates.find((ms) => ms.matchedTokens.includes(tok.raw));
+
+    if (isMatched) {
+      tokenAnalyses.push({
+        original: tok.raw,
+        clean: tok.clean,
+        isMatched: true,
+        matchedSection: matchingSection?.folderDisplayName || matchingState?.domainDisplayName,
+        matchedFile: matchingSection?.fileDisplayName,
+        matchedEntryKey: matchingSection?.matchedEntryKey,
+        matchedEntryName: matchingSection?.matchedEntry.display_name || matchingState?.state.label,
+        isMatrixState: Boolean(matchingState),
+        weight: tok.weight,
+        color: matchingState
+          ? 'cyan'
+          : matchingSection?.isMatrixDomain
+          ? 'purple'
+          : 'gold',
+      });
+    } else {
+      unmatchedTokens.push(tok.raw);
+      tokenAnalyses.push({
+        original: tok.raw,
+        clean: tok.clean,
+        isMatched: false,
+        weight: tok.weight,
+        color: 'slate',
+      });
+    }
+  });
+
+  // 5. Subject Telemetry Detection
+  let females = 0;
+  let males = 0;
+  let isPOV = false;
+
+  matchedSections.forEach(({ matchedEntry }) => {
+    if (Array.isArray(matchedEntry.subjects) && matchedEntry.subjects.length >= 2) {
+      const [f, m] = matchedEntry.subjects;
+      if (f < 0 || m < 0 || (matchedEntry.keywords && matchedEntry.keywords.includes('pov'))) {
+        isPOV = true;
+      } else {
+        females += f;
+        males += m;
+      }
+    }
+  });
+
+  // Check fallback keywords in raw tokens
+  if (promptLower.includes('1girl') || promptLower.includes('solo girl') || promptLower.includes('woman')) {
+    if (females === 0) females = 1;
+  }
+  if (promptLower.includes('2girls')) {
+    females = 2;
+  }
+  if (promptLower.includes('1boy') || promptLower.includes('man')) {
+    if (males === 0) males = 1;
+  }
+  if (promptLower.includes('pov') || promptLower.includes('point of view') || promptLower.includes('first-person')) {
+    isPOV = true;
+  }
+
+  const isSolo = females + males === 1;
+  const matchedTokensCount = matchedTokenIndices.size;
+  const matchPercentage = rawTokens.length > 0
+    ? Math.round((matchedTokensCount / rawTokens.length) * 100)
+    : 0;
+
+  return {
+    rawPrompt: promptText,
+    tokensCount: rawTokens.length,
+    matchedSections,
+    matchedMatrixStates,
+    tokenAnalyses,
+    unmatchedTokens,
+    matchedTokensCount,
+    matchPercentage,
+    detectedTelemetry: {
+      females,
+      males,
+      isSolo,
+      isPOV,
+    },
+    recommendedSelections,
+    recommendedMatrixBase,
+    recommendedMatrixUnlocked,
+  };
+}

@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "plugins": {
+    "ecc@ecc": [
+      {
+        "scope": "project",
+        "projectPath": "D:\\My Drive\\Blue AI",
+        "installPath": "C:\\Users\\Admin\\.claude\\plugins\\cache\\ecc\\ecc\\2.2.3",
+        "version": "2.2.3",
+        "installedAt": "2026-10-22T07:00:55.516Z",
+        "lastUpdated": "2026-10-22T07:00:55.516Z",
+        "gitCommitSha": "90606c8315ee09cafc303515c5f33024db6b9882"
+      },
+      {
+        "scope": "project",
+        "installPath": "C:\\Users\\Admin\\.claude\\plugins\\cache\\ecc\\ecc\\2.2.3",
+        "version": "2.2.3",
+        "installedAt": "2026-10-22T07:11:10.956Z",
+        "lastUpdated": "2026-10-22T07:11:10.956Z",
+        "gitCommitSha": "90606c8315ee09cafc303515c5f33024db6b9882",
+        "projectPath": "D:\\My Drive\\SandBox Projetcs"
+      }
+    ]
+  }
+}

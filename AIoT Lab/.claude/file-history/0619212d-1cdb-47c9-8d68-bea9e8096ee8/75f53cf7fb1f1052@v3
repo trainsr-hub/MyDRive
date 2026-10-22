@@ -1,0 +1,69 @@
+{
+  "table_name": "projects",
+  "columns": [
+    {
+      "name": "Project ID",
+      "slug": "id",
+      "type": "hex_id",
+      "metadata": {
+        "prefix": "PROJ"
+      }
+    },
+    {
+      "name": "Project Title",
+      "slug": "title",
+      "type": "text_single",
+      "metadata": {}
+    },
+    {
+      "name": "Project Scope & Description",
+      "slug": "description",
+      "type": "text_multi",
+      "metadata": {}
+    },
+    {
+      "name": "Total Allocated Budget",
+      "slug": "budget",
+      "type": "float_scalar",
+      "metadata": {}
+    },
+    {
+      "name": "Lifecycle Status",
+      "slug": "status",
+      "type": "enum_single",
+      "metadata": {
+        "options": ["planning", "active", "paused", "completed", "cancelled"]
+      }
+    },
+    {
+      "name": "Urgency & Priority Tags",
+      "slug": "priority_tags",
+      "type": "enum_multi",
+      "metadata": {
+        "options": ["urgent", "high", "medium", "low", "backlog"]
+      }
+    },
+    {
+      "name": "Public Visibility?",
+      "slug": "is_public",
+      "type": "boolean",
+      "metadata": {}
+    },
+    {
+      "name": "Project Lead / Owner",
+      "slug": "owner_id",
+      "type": "relation_single",
+      "metadata": {
+        "target": "users"
+      }
+    },
+    {
+      "name": "Assigned Team Members",
+      "slug": "member_ids",
+      "type": "relation_multi",
+      "metadata": {
+        "target": "users"
+      }
+    }
+  ]
+}

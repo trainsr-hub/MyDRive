@@ -1,0 +1,1986 @@
+{
+  "balance_seconds": 7656300.0,
+  "total_earned_seconds": 7656300.0,
+  "transactions": [
+    {
+      "id": "tx_f67279a70f",
+      "timestamp": "2026-10-18T18:08:32.845486",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_b7ca67d8b3",
+      "timestamp": "2026-10-18T18:08:17.910775",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_9e26c93f2b",
+      "timestamp": "2026-10-18T18:08:15.645804",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_dd87fac76f",
+      "timestamp": "2026-10-18T18:08:13.295050",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_0e45a9d300",
+      "timestamp": "2026-10-18T18:08:06.630063",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_eaee2261d7",
+      "timestamp": "2026-10-18T18:07:57.228909",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_e6e1fd4bbb",
+      "timestamp": "2026-10-18T18:07:53.443005",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_76f9e09915",
+      "timestamp": "2026-10-18T18:07:51.159120",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_6e3017e63e",
+      "timestamp": "2026-10-18T18:07:48.978092",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 7200.0,
+      "formatted": "2h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_5adea5c1bc",
+      "timestamp": "2026-10-18T18:07:46.261095",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_76940d375f",
+      "timestamp": "2026-10-18T18:07:43.944359",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_a24f5718af",
+      "timestamp": "2026-10-18T18:07:41.794305",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_cf4f21ea17",
+      "timestamp": "2026-10-18T18:07:39.794229",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 1800.0,
+      "formatted": "30m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_ed0c2aed05",
+      "timestamp": "2026-10-18T18:07:38.477039",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_14dbab5190",
+      "timestamp": "2026-10-18T18:07:35.723020",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_4f63637178",
+      "timestamp": "2026-10-18T18:07:32.778011",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_902f2044dd",
+      "timestamp": "2026-10-18T18:07:11.711348",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_3a7c1a13a2",
+      "timestamp": "2026-10-18T18:07:04.445292",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_809db5067e",
+      "timestamp": "2026-10-18T18:07:03.480598",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_a58d48779f",
+      "timestamp": "2026-10-18T18:07:00.548750",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_d525523449",
+      "timestamp": "2026-10-18T18:06:50.745492",
+      "source": "Cyber Voxel Defrag Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (cyber)"
+    },
+    {
+      "id": "tx_3ff0736195",
+      "timestamp": "2026-10-18T18:06:44.410733",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_827fc3f192",
+      "timestamp": "2026-10-18T18:06:39.712501",
+      "source": "Supernova Collapse Spool Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (supernova)"
+    },
+    {
+      "id": "tx_66e08eee60",
+      "timestamp": "2026-10-18T18:06:37.409693",
+      "source": "Cyber Voxel Defrag Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (cyber)"
+    },
+    {
+      "id": "tx_a05a6ce797",
+      "timestamp": "2026-10-18T18:06:34.843094",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_1cbf6e0b56",
+      "timestamp": "2026-10-18T18:06:31.576418",
+      "source": "Chronos Singularity Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (singularity)"
+    },
+    {
+      "id": "tx_2b60260827",
+      "timestamp": "2026-10-18T18:06:31.453029",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_b3e38aa028",
+      "timestamp": "2026-10-18T18:06:25.492968",
+      "source": "Supernova Collapse Spool Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (supernova)"
+    },
+    {
+      "id": "tx_9f475229c7",
+      "timestamp": "2026-10-18T18:06:22.243592",
+      "source": "Cyber Voxel Defrag Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (cyber)"
+    },
+    {
+      "id": "tx_3ce3fe6f83",
+      "timestamp": "2026-10-18T18:06:18.710442",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_7257c77922",
+      "timestamp": "2026-10-18T18:06:15.708247",
+      "source": "Chronos Singularity Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (singularity)"
+    },
+    {
+      "id": "tx_1408a837b6",
+      "timestamp": "2026-10-18T18:06:13.131593",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_c3747036f8",
+      "timestamp": "2026-10-18T18:06:10.242270",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_39efd6a541",
+      "timestamp": "2026-10-18T18:06:06.375091",
+      "source": "Chronos Singularity Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (singularity)"
+    },
+    {
+      "id": "tx_c7e314d712",
+      "timestamp": "2026-10-18T18:06:05.308817",
+      "source": "Chronos Singularity Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (singularity)"
+    },
+    {
+      "id": "tx_b71b04bcad",
+      "timestamp": "2026-10-18T18:06:02.926979",
+      "source": "Supernova Collapse Spool Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (supernova)"
+    },
+    {
+      "id": "tx_b4bc012c51",
+      "timestamp": "2026-10-18T18:06:01.643983",
+      "source": "Supernova Collapse Spool Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (supernova)"
+    },
+    {
+      "id": "tx_b9c2d2aacf",
+      "timestamp": "2026-10-18T18:05:59.324689",
+      "source": "Cyber Voxel Defrag Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (cyber)"
+    },
+    {
+      "id": "tx_0680c25bb2",
+      "timestamp": "2026-10-18T18:05:58.277021",
+      "source": "Cyber Voxel Defrag Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (cyber)"
+    },
+    {
+      "id": "tx_a8533d5a86",
+      "timestamp": "2026-10-18T18:05:53.308133",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_0a05c5b344",
+      "timestamp": "2026-10-18T18:05:50.908679",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_0d68dc4509",
+      "timestamp": "2026-10-18T18:05:49.742029",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_68950e118e",
+      "timestamp": "2026-10-18T18:05:48.673920",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_1685340918",
+      "timestamp": "2026-10-18T18:05:47.509515",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_270b747b97",
+      "timestamp": "2026-10-18T18:05:46.342176",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_106e33db85",
+      "timestamp": "2026-10-18T18:05:45.292697",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_5e9ca4fccc",
+      "timestamp": "2026-10-18T18:05:44.076240",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_deaa86153c",
+      "timestamp": "2026-10-18T18:05:42.740910",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_79c614b256",
+      "timestamp": "2026-10-18T18:05:40.641350",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_4816bf9ce0",
+      "timestamp": "2026-10-18T18:05:39.225309",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_0e570ef0db",
+      "timestamp": "2026-10-18T18:05:37.125777",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_d14a38d2fb",
+      "timestamp": "2026-10-18T18:05:32.822344",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_7ac0f8fec4",
+      "timestamp": "2026-10-18T18:05:29.543226",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_c59736f1b4",
+      "timestamp": "2026-10-18T18:05:28.228080",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_d71c35d1dc",
+      "timestamp": "2026-10-18T18:05:27.123742",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_4d68b5f3bc",
+      "timestamp": "2026-10-18T18:05:26.291897",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_92c8b54007",
+      "timestamp": "2026-10-18T18:05:25.408529",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_2b30ea92bd",
+      "timestamp": "2026-10-18T18:05:24.625715",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_b60b6bd88c",
+      "timestamp": "2026-10-18T18:05:23.292109",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_9f7dc74302",
+      "timestamp": "2026-10-18T18:05:21.790750",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_8746a9709a",
+      "timestamp": "2026-10-18T18:05:20.576940",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_8cb3e9ca77",
+      "timestamp": "2026-10-18T18:05:18.891124",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_fadcd1d868",
+      "timestamp": "2026-10-18T18:05:15.374586",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_e4e8b54986",
+      "timestamp": "2026-10-18T18:05:14.076440",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_24d2387c82",
+      "timestamp": "2026-10-18T18:05:12.623913",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_2d70968a89",
+      "timestamp": "2026-10-18T18:05:12.569344",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_9860fa9eff",
+      "timestamp": "2026-10-18T18:02:53.854286",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_4d41d0d09f",
+      "timestamp": "2026-10-18T18:02:51.372175",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_a926183208",
+      "timestamp": "2026-10-18T18:02:49.057878",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_2312b665aa",
+      "timestamp": "2026-10-18T18:02:46.189885",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_ad35189f6e",
+      "timestamp": "2026-10-18T18:02:44.207009",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_77d4859372",
+      "timestamp": "2026-10-18T18:02:41.804782",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_4fb3530d88",
+      "timestamp": "2026-10-18T18:02:39.742829",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_3f1802a5d9",
+      "timestamp": "2026-10-18T18:02:27.388765",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_5838c5c4a2",
+      "timestamp": "2026-10-18T18:02:22.639135",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_fb17eafb8b",
+      "timestamp": "2026-10-18T18:02:20.262979",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_327447e788",
+      "timestamp": "2026-10-18T18:02:20.252783",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_15faf4e1b4",
+      "timestamp": "2026-10-18T18:02:14.105201",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_2a03da3e96",
+      "timestamp": "2026-10-18T18:02:11.738231",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_2f781a8508",
+      "timestamp": "2026-10-18T18:02:09.987677",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_35b8189acc",
+      "timestamp": "2026-10-18T18:02:08.838291",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_dff47e716c",
+      "timestamp": "2026-10-18T18:02:06.873203",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_4b88284b8b",
+      "timestamp": "2026-10-18T18:02:05.721374",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_21b2200212",
+      "timestamp": "2026-10-18T18:02:04.504845",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_8acd6ac00d",
+      "timestamp": "2026-10-18T18:01:33.971866",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_be41467173",
+      "timestamp": "2026-10-18T18:01:28.822042",
+      "source": "Chronos Singularity Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (singularity)"
+    },
+    {
+      "id": "tx_b2f759fae1",
+      "timestamp": "2026-10-18T18:01:26.387511",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_aca6fcba92",
+      "timestamp": "2026-10-18T18:01:25.204749",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_8ab076eecd",
+      "timestamp": "2026-10-18T18:01:23.497771",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_6243576b3d",
+      "timestamp": "2026-10-18T18:01:20.403487",
+      "source": "Chronos Singularity Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (singularity)"
+    },
+    {
+      "id": "tx_3ef84b791a",
+      "timestamp": "2026-10-18T18:01:20.391987",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_109bfcc202",
+      "timestamp": "2026-10-18T18:01:14.638862",
+      "source": "Supernova Collapse Spool Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (supernova)"
+    },
+    {
+      "id": "tx_f8762fd42d",
+      "timestamp": "2026-10-18T18:01:11.239194",
+      "source": "Cyber Voxel Defrag Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (cyber)"
+    },
+    {
+      "id": "tx_96608bf647",
+      "timestamp": "2026-10-18T18:01:07.602570",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_0452bba0af",
+      "timestamp": "2026-10-18T18:01:04.904251",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_b1998ae7bb",
+      "timestamp": "2026-10-18T18:00:56.604073",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_2c54a1a152",
+      "timestamp": "2026-10-18T18:00:55.653405",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_ebbddcb55f",
+      "timestamp": "2026-10-18T18:00:53.843564",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_5ba01b997a",
+      "timestamp": "2026-10-18T18:00:52.387928",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 7200.0,
+      "formatted": "2h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_a4c7d3d370",
+      "timestamp": "2026-10-18T18:00:50.153270",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 1800.0,
+      "formatted": "30m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_9bd45b2c28",
+      "timestamp": "2026-10-18T18:00:27.921641",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_c4453a41c8",
+      "timestamp": "2026-10-18T18:00:26.805286",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_2964a12c4d",
+      "timestamp": "2026-10-18T18:00:25.353722",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_871a47d807",
+      "timestamp": "2026-10-18T18:00:04.522268",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_b9c7eb315c",
+      "timestamp": "2026-10-18T17:59:59.572984",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_3dfaf5d0cc",
+      "timestamp": "2026-10-18T17:59:58.085619",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_53e1aa5e50",
+      "timestamp": "2026-10-18T17:59:56.254103",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_ed56919270",
+      "timestamp": "2026-10-18T17:59:55.310102",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_4f0b02d77a",
+      "timestamp": "2026-10-18T17:59:55.299994",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_84a01a5ccb",
+      "timestamp": "2026-10-18T17:58:45.238181",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_f01e7598a4",
+      "timestamp": "2026-10-18T17:58:43.204049",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_86d41fab1f",
+      "timestamp": "2026-10-18T17:58:41.435922",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_12e9676c3c",
+      "timestamp": "2026-10-18T17:58:38.779219",
+      "source": "Chronos Singularity Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (singularity)"
+    },
+    {
+      "id": "tx_c790b699ac",
+      "timestamp": "2026-10-18T17:49:10.611437",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_703596ad6a",
+      "timestamp": "2026-10-18T17:49:09.095689",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_31fa9f9c4e",
+      "timestamp": "2026-10-18T17:49:07.778198",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_93ce3ff06c",
+      "timestamp": "2026-10-18T17:49:06.515561",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_d78fc96bca",
+      "timestamp": "2026-10-18T17:49:05.077239",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_5476363e7c",
+      "timestamp": "2026-10-18T17:49:02.860988",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_8607415942",
+      "timestamp": "2026-10-18T17:49:00.844452",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_d7459b93ba",
+      "timestamp": "2026-10-18T17:48:59.493554",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_65bd769989",
+      "timestamp": "2026-10-18T17:48:58.326356",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_057a53a8ee",
+      "timestamp": "2026-10-18T17:48:56.977138",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_3b9a260b4e",
+      "timestamp": "2026-10-18T17:48:55.858436",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_a8a9f19fb1",
+      "timestamp": "2026-10-18T17:48:54.692609",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_52ea732dc7",
+      "timestamp": "2026-10-18T17:48:53.609420",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_168950e9dd",
+      "timestamp": "2026-10-18T17:48:52.551548",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_655b6dce4d",
+      "timestamp": "2026-10-18T17:48:51.461084",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_baeb0f94af",
+      "timestamp": "2026-10-18T17:48:51.286033",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_c8bcc8a19d",
+      "timestamp": "2026-10-18T17:48:51.282151",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_bf0ecdba4c",
+      "timestamp": "2026-10-18T17:48:47.459053",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_d91c992248",
+      "timestamp": "2026-10-18T17:48:46.278730",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_4e0377d6d2",
+      "timestamp": "2026-10-18T17:48:45.011790",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_172cd73151",
+      "timestamp": "2026-10-18T17:48:43.793953",
+      "source": "Prism Crystal Fracture Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (prismatic)"
+    },
+    {
+      "id": "tx_77b86a6d00",
+      "timestamp": "2026-10-18T17:48:41.012367",
+      "source": "Chronos Singularity Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (singularity)"
+    },
+    {
+      "id": "tx_cc40750499",
+      "timestamp": "2026-10-18T17:48:34.694571",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_c41131aad3",
+      "timestamp": "2026-10-18T17:48:32.858956",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_a18697c288",
+      "timestamp": "2026-10-18T17:48:31.196746",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_0ed050f552",
+      "timestamp": "2026-10-18T17:43:06.721976",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_39e4c93075",
+      "timestamp": "2026-10-18T17:42:55.740160",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_ebfd3180ec",
+      "timestamp": "2026-10-18T17:42:54.904157",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_6d49006975",
+      "timestamp": "2026-10-18T17:42:54.020878",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_01bcb16207",
+      "timestamp": "2026-10-18T17:42:53.241894",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_079f68f01e",
+      "timestamp": "2026-10-18T17:42:52.424650",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_73f3c8d25b",
+      "timestamp": "2026-10-18T17:42:51.404348",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_d7ecf7cc80",
+      "timestamp": "2026-10-18T17:42:50.504567",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_3e5db6ceaa",
+      "timestamp": "2026-10-18T17:42:49.704514",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_5c6dc4cb0d",
+      "timestamp": "2026-10-18T17:42:48.676228",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_ca75d8db3a",
+      "timestamp": "2026-10-18T17:42:45.370015",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_b5340e5040",
+      "timestamp": "2026-10-18T17:42:42.644570",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_af9700e0b6",
+      "timestamp": "2026-10-18T17:42:41.555655",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 7200.0,
+      "formatted": "2h 0m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_a39ba525cc",
+      "timestamp": "2026-10-18T17:42:39.590830",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 1800.0,
+      "formatted": "30m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_4168808dfe",
+      "timestamp": "2026-10-18T17:42:38.357161",
+      "source": "Chrono Spool & Shatter Engine",
+      "category": "grind",
+      "seconds": 1800.0,
+      "formatted": "30m 0s",
+      "speed": 1.0,
+      "notes": "Kinetic Two-Phase Deposit (spool_shatter)"
+    },
+    {
+      "id": "tx_f74fd13c06",
+      "timestamp": "2026-10-18T17:35:32.147717",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_86d1c26d7b",
+      "timestamp": "2026-10-18T17:35:31.088055",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_609532b31f",
+      "timestamp": "2026-10-18T17:34:26.061182",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_7d6e6f6107",
+      "timestamp": "2026-10-18T17:34:24.927708",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_35d9a0e789",
+      "timestamp": "2026-10-18T17:34:24.002673",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_2d6ca5f62f",
+      "timestamp": "2026-10-18T17:34:20.544424",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_c60a301669",
+      "timestamp": "2026-10-18T17:34:18.844732",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_d45e416b2a",
+      "timestamp": "2026-10-18T17:34:17.628956",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_68a55c943f",
+      "timestamp": "2026-10-18T17:34:14.793601",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_eda6620325",
+      "timestamp": "2026-10-18T17:34:13.377012",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_ebf097a255",
+      "timestamp": "2026-10-18T17:34:11.028652",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_05f3bba351",
+      "timestamp": "2026-10-18T17:34:09.977278",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_667afba576",
+      "timestamp": "2026-10-18T17:34:08.860221",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_e99acdfb1a",
+      "timestamp": "2026-10-18T17:34:07.743531",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_44f2e908d8",
+      "timestamp": "2026-10-18T17:34:06.830282",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 7200.0,
+      "formatted": "2h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_1cd512caa8",
+      "timestamp": "2026-10-18T17:34:05.976732",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 1800.0,
+      "formatted": "30m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_d7c58d87ed",
+      "timestamp": "2026-10-18T17:34:04.793379",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 7200.0,
+      "formatted": "2h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_250d05e287",
+      "timestamp": "2026-10-18T17:34:03.811919",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_47568da041",
+      "timestamp": "2026-10-18T17:34:02.510014",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_5b1efc46ad",
+      "timestamp": "2026-10-18T17:34:01.800450",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_1a70f4ae0a",
+      "timestamp": "2026-10-18T17:32:08.328320",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_412c0ef054",
+      "timestamp": "2026-10-18T17:31:53.275581",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_7cc2caacaf",
+      "timestamp": "2026-10-18T17:31:51.874559",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_d2ffc444b1",
+      "timestamp": "2026-10-18T17:31:50.475405",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_aebc7384c5",
+      "timestamp": "2026-10-18T17:31:49.191287",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_64685eeefb",
+      "timestamp": "2026-10-18T17:31:48.177483",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_3ed38b9699",
+      "timestamp": "2026-10-18T17:31:46.907905",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_c4e3095858",
+      "timestamp": "2026-10-18T17:31:45.559601",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_78d0315e5c",
+      "timestamp": "2026-10-18T17:31:42.879140",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_31a6313b60",
+      "timestamp": "2026-10-18T17:31:16.844388",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_73b28f8bf7",
+      "timestamp": "2026-10-18T17:31:15.575874",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_973ce39603",
+      "timestamp": "2026-10-18T17:31:14.274984",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_c2059b1d1a",
+      "timestamp": "2026-10-18T17:31:12.990541",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_e29da7f6ab",
+      "timestamp": "2026-10-18T17:31:11.657796",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_998a2b31e8",
+      "timestamp": "2026-10-18T17:31:10.357601",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_7a781222ec",
+      "timestamp": "2026-10-18T17:31:08.913306",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_a988fde749",
+      "timestamp": "2026-10-18T17:31:06.289978",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_a3b7e8e365",
+      "timestamp": "2026-10-18T17:31:04.692254",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_d064026a4c",
+      "timestamp": "2026-10-18T17:31:03.291031",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_328d3a5bd2",
+      "timestamp": "2026-10-18T17:27:56.553802",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_ad6b67c677",
+      "timestamp": "2026-10-18T17:27:54.778673",
+      "source": "Chrono Two-Phase Deposit",
+      "category": "grind",
+      "seconds": 21600.0,
+      "formatted": "6h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_81dbab6952",
+      "timestamp": "2026-10-18T17:17:33.768976",
+      "source": "Manual Deposit",
+      "category": "grind",
+      "seconds": 7200.0,
+      "formatted": "2h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_3fd39ab4a5",
+      "timestamp": "2026-10-18T16:58:46.360028",
+      "source": "Manual Deposit",
+      "category": "grind",
+      "seconds": 25200.0,
+      "formatted": "7h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_ebb61b0e72",
+      "timestamp": "2026-10-18T16:58:40.314700",
+      "source": "Manual Deposit",
+      "category": "grind",
+      "seconds": 4500.0,
+      "formatted": "1h 15m 0s",
+      "speed": 1.0,
+      "notes": null
+    },
+    {
+      "id": "tx_136158495d",
+      "timestamp": "2026-10-18T09:22:23.549649",
+      "source": "Manual Deposit",
+      "category": "grind",
+      "seconds": 3600000.0,
+      "formatted": "41d 16h 0m 0s",
+      "speed": 1.0,
+      "notes": null
+    }
+  ]
+}

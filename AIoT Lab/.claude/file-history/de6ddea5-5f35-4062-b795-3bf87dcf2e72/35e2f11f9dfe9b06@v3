@@ -1,0 +1,245 @@
+import React, { useState } from 'react';
+import { useInventoryStore } from '../../../store/useInventoryStore';
+import { LOADED_GACHA_PACKS, type RawDeckPack } from '../packs';
+import { Sparkles, Scissors, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
+
+interface ShredderUniversalTicketProps {
+  onRollPack?: (deck: RawDeckPack) => void;
+}
+
+export const ShredderUniversalTicket: React.FC<ShredderUniversalTicketProps> = ({ onRollPack }) => {
+  const { shredderTickets, addShredderTickets } = useInventoryStore();
+  const [selectedPackId, setSelectedPackId] = useState<string>(LOADED_GACHA_PACKS[0]?.id || '');
+  const [isShredding, setIsShredding] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  const showStatus = (text: string, type: 'success' | 'error') => {
+    setStatusMessage({ text, type });
+    setTimeout(() => setStatusMessage(null), 3000);
+  };
+
+  const handleUniversalOpen = () => {
+    const targetPack = LOADED_GACHA_PACKS.find((p) => p.id === selectedPackId);
+    if (!targetPack) {
+      showStatus('Please select a valid card pack.', 'error');
+      return;
+    }
+
+    if (shredderTickets < 1) {
+      showStatus('Zero Shredder Tickets available! Forge or acquire more.', 'error');
+      return;
+    }
+
+    setIsShredding(true);
+
+    setTimeout(() => {
+      setIsShredding(false);
+      if (onRollPack) {
+        onRollPack(targetPack);
+      }
+    }, 450);
+  };
+
+  return (
+    <div className="w-full bg-[#0b0f19] border border-[#1e293b] rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+      {/* Background Tri-Color Ambient Glow */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-600/10 via-amber-500/10 to-red-600/10 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Header & Description */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#1e293b] relative z-10">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-600 via-amber-500 to-red-600 p-[1px]">
+            <div className="bg-[#0b0f19] p-2 rounded-[11px] flex items-center justify-center">
+              <Scissors className="w-5 h-5 text-amber-400" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-cinzel text-base font-bold text-white tracking-wide">
+                A8 Universal Shredder Ticket
+              </h3>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                ANY PACK PASS
+              </span>
+            </div>
+            <p className="text-xs text-[#94a3b8] font-mono">
+              DIN 66399 P-5 Cross-Cut Micro-Ticket • Dimension: 52 × 74 mm
+            </p>
+          </div>
+        </div>
+
+        {/* Balance & Developer Mint */}
+        <div className="flex items-center gap-2 self-stretch sm:self-auto justify-between sm:justify-end">
+          <div className="flex items-center gap-2 bg-[#131b2e] px-3 py-1.5 rounded-xl border border-[#233554]">
+            <FileText className="w-4 h-4 text-blue-400" />
+            <span className="text-xs text-[#94a3b8] font-mono">Tickets:</span>
+            <strong className="text-sm font-mono text-amber-400 font-bold">{shredderTickets}</strong>
+          </div>
+          <button
+            onClick={() => {
+              addShredderTickets(5);
+              showStatus('+5 A8 Shredder Tickets minted!', 'success');
+            }}
+            className="px-2.5 py-1.5 rounded-xl bg-[#1e293b] hover:bg-[#334155] border border-[#475569] text-[11px] font-mono text-[#cbd5e1] hover:text-white transition-colors"
+            title="Forge 5 Free Tickets for Testing"
+          >
+            +5 Forge
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area: Visual A8 Ticket + Pack Dispatcher */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-5 relative z-10 items-center">
+        {/* Visual A8 Paper Ticket (52x74mm proportions) */}
+        <div className="md:col-span-5 flex justify-center">
+          <div
+            className={`w-[180px] h-[256px] rounded-lg relative transition-all duration-300 select-none shadow-2xl flex flex-col justify-between p-3.5 border border-slate-600/50 ${
+              isShredding ? 'scale-95 opacity-50 blur-[1px]' : 'hover:scale-105'
+            }`}
+            style={{
+              background: 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)',
+              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 0 15px 0 rgba(30, 136, 229, 0.2)',
+            }}
+          >
+            {/* Top Serrated Edge (Shredder Teeth) */}
+            <div className="absolute -top-1.5 left-0 right-0 flex justify-between px-1 overflow-hidden pointer-events-none">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="w-2 h-2 bg-[#0b0f19] rotate-45 transform -translate-y-1" />
+              ))}
+            </div>
+
+            {/* Tri-Color Stripe Top Header */}
+            <div>
+              <div className="flex h-1.5 w-full rounded-full overflow-hidden mb-2 shadow-inner">
+                <div className="w-1/3 bg-blue-500" title="Blue: Dominion" />
+                <div className="w-1/3 bg-amber-400" title="Yellow: Valor" />
+                <div className="w-1/3 bg-red-500" title="Red: Sovereignty" />
+              </div>
+
+              <div className="flex items-center justify-between text-[9px] font-mono text-slate-400">
+                <span>ISO 216 / A8</span>
+                <span className="text-amber-400 font-bold">№ {String(shredderTickets).padStart(4, '0')}</span>
+              </div>
+            </div>
+
+            {/* Center Emblem / Watermark */}
+            <div className="my-auto text-center space-y-1">
+              <div className="inline-flex p-2 rounded-full bg-slate-800/80 border border-slate-600/50 mb-1">
+                <Scissors className="w-6 h-6 text-amber-400" />
+              </div>
+              <div className="font-cinzel text-xs font-bold text-white tracking-widest uppercase">
+                SHREDDER PASS
+              </div>
+              <div className="text-[9px] font-mono text-blue-400 font-medium tracking-tight">
+                Tri-Color Sovereign Seal
+              </div>
+            </div>
+
+            {/* Bottom Barcode & Security Microprint */}
+            <div>
+              <div className="border-t border-dashed border-slate-600/60 pt-2 flex items-center justify-between">
+                {/* Fake Barcode Lines */}
+                <div className="flex items-center gap-[2px] h-4">
+                  <div className="w-[2px] h-full bg-slate-300" />
+                  <div className="w-[1px] h-full bg-slate-300" />
+                  <div className="w-[3px] h-full bg-slate-300" />
+                  <div className="w-[1px] h-full bg-slate-300" />
+                  <div className="w-[2px] h-full bg-slate-300" />
+                  <div className="w-[4px] h-full bg-slate-300" />
+                  <div className="w-[1px] h-full bg-slate-300" />
+                </div>
+                <span className="text-[8px] font-mono text-red-400 font-bold uppercase">
+                  P-5 CROSS-CUT
+                </span>
+              </div>
+            </div>
+
+            {/* Bottom Serrated Edge */}
+            <div className="absolute -bottom-1.5 left-0 right-0 flex justify-between px-1 overflow-hidden pointer-events-none">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="w-2 h-2 bg-[#0b0f19] rotate-45 transform translate-y-1" />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Action Panel: Select ANY Card Pack to Open with A8 Ticket */}
+        <div className="md:col-span-7 space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-mono text-[#cbd5e1] flex items-center gap-2">
+              <span>Target Card Pack:</span>
+              <span className="text-[10px] text-amber-400 font-semibold">(Universal Ticket Overrides Cost)</span>
+            </label>
+            <select
+              value={selectedPackId}
+              onChange={(e) => setSelectedPackId(e.target.value)}
+              className="w-full bg-[#131b2e] border border-[#233554] focus:border-blue-500 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono outline-none transition-colors"
+            >
+              {LOADED_GACHA_PACKS.map((pack) => (
+                <option key={pack.id} value={pack.id}>
+                  {pack.title} ({pack.cards_per_pull} Cards — Standard Cost: {pack.cost.amount} {pack.cost.currency})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tri-Color Trait Breakdown */}
+          <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-mono">
+            <div className="p-2 rounded-xl bg-blue-950/40 border border-blue-800/40 text-blue-300">
+              <strong className="block text-blue-400 font-bold">BLUE</strong>
+              Dominion Core
+            </div>
+            <div className="p-2 rounded-xl bg-amber-950/40 border border-amber-800/40 text-amber-300">
+              <strong className="block text-amber-400 font-bold">YELLOW</strong>
+              Valor Matrix
+            </div>
+            <div className="p-2 rounded-xl bg-red-950/40 border border-red-800/40 text-red-300">
+              <strong className="block text-red-400 font-bold">RED</strong>
+              Sovereign Blade
+            </div>
+          </div>
+
+          {/* Execution Button */}
+          <button
+            onClick={handleUniversalOpen}
+            disabled={isShredding || shredderTickets < 1}
+            className={`w-full py-3 px-4 rounded-xl font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${
+              shredderTickets >= 1
+                ? 'bg-gradient-to-r from-blue-600 via-amber-500 to-red-600 hover:from-blue-500 hover:via-amber-400 hover:to-red-500 text-white shadow-amber-500/20 active:scale-[0.99]'
+                : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>
+              {isShredding
+                ? 'Shredding A8 Paper...'
+                : shredderTickets >= 1
+                ? 'Shred 1x A8 Ticket & Open Selected Pack'
+                : 'Insufficient Shredder Tickets'}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Status Alert */}
+      {statusMessage && (
+        <div
+          className={`mt-4 p-3 rounded-xl border text-xs font-mono flex items-center gap-2 animate-in fade-in ${
+            statusMessage.type === 'success'
+              ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
+              : 'bg-rose-950/60 border-rose-500/50 text-rose-300'
+          }`}
+        >
+          {statusMessage.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+          )}
+          <span>{statusMessage.text}</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ShredderUniversalTicket;

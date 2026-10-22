@@ -1,0 +1,2210 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Prescripts Studio — Navigation &amp; Curation Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+  <style>
+    /* ==========================================================================
+       PRESCRIPTS STUDIO — SINGLE-PAGE CRUD & NAVIGATION HUB
+       ========================================================================== */
+    :root {
+      --bg-canvas:        #080706;
+      --bg-card:          #13100d;
+      --bg-card-hover:    #1c1713;
+      --bg-input:         #1a1511;
+      --bg-input-focus:   #231c16;
+
+      --text-vivid:       #fffcf7;
+      --text-main:        #ede4d8;
+      --text-muted:       #8a7b6c;
+      --text-dim:         #5c5044;
+
+      --border-dim:       #292018;
+      --border-mid:       #3f3226;
+      --border-bright:    #634f3c;
+
+      --accent:           #ff9e1b;
+      --accent-hover:     #ffb03a;
+      --accent-glow:      rgba(255, 158, 27, 0.25);
+      --accent-bg:        rgba(255, 158, 27, 0.12);
+      --accent-border:    rgba(255, 158, 27, 0.4);
+
+      --hazard-high:      #f43f5e;
+      --hazard-low:       #10b981;
+
+      --radius-sm:        6px;
+      --radius-md:        10px;
+      --radius-lg:        14px;
+      --shadow-subtle:    0 4px 20px rgba(0, 0, 0, 0.5);
+
+      color-scheme: dark;
+      font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14.5px;
+      line-height: 1.5;
+    }
+
+    :root[data-theme="light"] {
+      --bg-canvas:        #f5f3ef;
+      --bg-card:          #ffffff;
+      --bg-card-hover:    #f9f7f4;
+      --bg-input:         #f0ebe3;
+      --bg-input-focus:   #ffffff;
+
+      --text-vivid:       #18130e;
+      --text-main:        #2c231a;
+      --text-muted:       #6b5a49;
+      --text-dim:         #9e8c79;
+
+      --border-dim:       #ded5c7;
+      --border-mid:       #c5b8a5;
+      --border-bright:    #8f7d67;
+
+      --accent:           #d97706;
+      --accent-hover:     #b45309;
+      --accent-glow:      rgba(217, 119, 6, 0.2);
+      --accent-bg:        rgba(217, 119, 6, 0.1);
+      --accent-border:    rgba(217, 119, 6, 0.4);
+
+      --hazard-high:      #e11d48;
+      --hazard-low:       #059669;
+
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      padding: 1.5rem 1.5rem 4rem;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 1440px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Top Navigation */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-dim);
+      padding-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .title-stack h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .title-stack h1 .badge {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs-bar {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      padding: 0.35rem;
+      border-radius: var(--radius-md);
+    }
+
+    .nav-tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.15s ease;
+    }
+
+    .nav-tab-btn:hover {
+      color: var(--text-vivid);
+      background: var(--bg-input);
+    }
+
+    .nav-tab-btn.active {
+      background: var(--accent-bg);
+      border-color: var(--accent-border);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .btn-action {
+      background: var(--bg-card);
+      border: 1px solid var(--border-mid);
+      color: var(--text-main);
+      padding: 0.5rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s ease;
+    }
+
+    .btn-action:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+      color: var(--text-vivid);
+    }
+
+    .btn-action.btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #080706;
+      font-weight: 700;
+    }
+
+    .btn-action.btn-danger:hover {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: var(--hazard-high);
+      color: var(--hazard-high);
+    }
+
+    /* Views Host */
+    .view-container {
+      display: none;
+      animation: fadeIn 0.15s ease;
+    }
+
+    .view-container.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Form & Workspace */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .workspace-grid { grid-template-columns: 1fr; }
+    }
+
+    .blocks-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .entry-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      overflow: visible !important;
+      position: relative;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .entry-card:focus-within {
+      border-color: var(--border-mid);
+      z-index: 50;
+    }
+
+    .card-header {
+      padding: 0.85rem 1.15rem;
+      background: rgba(255, 255, 255, 0.015);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .card-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+    }
+
+    .card-tag {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-bg);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      border: 1px solid var(--accent-border);
+      text-transform: uppercase;
+    }
+
+    .card-body {
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .field-hint {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    /* Inputs */
+    .raw-input-box {
+      width: 100%;
+      height: 44px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      color: var(--text-vivid);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0 0.85rem;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .raw-input-box:focus {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .raw-textarea-box {
+      width: 100%;
+      min-height: 100px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      color: var(--text-vivid);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.88rem;
+      padding: 0.85rem;
+      outline: none;
+      resize: vertical;
+      line-height: 1.6;
+      transition: all 0.15s ease;
+    }
+
+    .raw-textarea-box:focus {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* Single Selector Styles */
+    .notion-combobox-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      overflow: visible !important;
+    }
+
+    .notion-combobox-trigger {
+      width: 100%;
+      min-height: 44px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .notion-combobox-trigger:hover,
+    .notion-combobox-trigger.active {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .selected-val-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .combobox-chevron {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      transition: transform 0.2s ease;
+    }
+
+    .notion-combobox-trigger.active .combobox-chevron {
+      transform: rotate(180deg);
+      color: var(--accent);
+    }
+
+    /* Suggestor Monolith */
+    .suggestor-host {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      overflow: visible !important;
+    }
+
+    .searcher-monolith {
+      width: 100%;
+      height: 44px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      padding: 0 0.85rem;
+      gap: 0.65rem;
+      transition: all 0.15s ease;
+    }
+
+    .searcher-monolith:focus-within {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .searcher-icon {
+      color: var(--accent);
+      font-size: 1rem;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .searcher-input {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-vivid);
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+
+    .searcher-clear {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: var(--text-muted);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    /* Selected Chips */
+    .selected-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .selected-chips-row:empty { display: none; }
+
+    .chip-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      user-select: none;
+    }
+
+    .chip-remove {
+      cursor: pointer;
+      opacity: 0.7;
+      font-size: 0.75rem;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+
+    .chip-remove:hover {
+      opacity: 1;
+      background: rgba(244, 63, 94, 0.2);
+      color: #fb7185;
+    }
+
+    /* Dropdown Menus */
+    .notion-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85);
+      z-index: 1000 !important;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      max-height: 260px;
+    }
+
+    .notion-dropdown-menu.open { display: flex; }
+
+    .dropdown-options-list {
+      overflow-y: auto;
+      padding: 0.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-height: 200px;
+    }
+
+    .dropdown-opt-row {
+      padding: 0.55rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.1s ease;
+      gap: 0.5rem;
+    }
+
+    .dropdown-opt-row:hover {
+      background: var(--bg-input-focus);
+      color: var(--accent);
+    }
+
+    .dropdown-opt-row.selected {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      color: var(--accent);
+    }
+
+    .opt-label-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      flex: 1 1 auto;
+      gap: 2px;
+    }
+
+    .opt-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .opt-title {
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--text-vivid);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .opt-context {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-style: italic;
+      opacity: 0.65;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .opt-delete-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-dim);
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .opt-delete-btn:hover {
+      background: rgba(244, 63, 94, 0.18);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #fb7185;
+    }
+
+    .dropdown-create-row {
+      padding: 0.6rem 0.75rem;
+      background: var(--accent-bg);
+      border-top: 1px solid var(--accent-border);
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .dropdown-create-row:hover {
+      background: var(--accent);
+      color: #080706;
+    }
+
+    /* CRUD Grid & Table Views */
+    .crud-view-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .crud-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+    }
+
+    .crud-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .crud-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-dim);
+    }
+
+    .crud-table td {
+      padding: 0.85rem 1rem;
+      font-size: 0.88rem;
+      border-bottom: 1px solid var(--border-dim);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    .crud-table tr:last-child td { border-bottom: none; }
+    .crud-table tr:hover td { background: var(--bg-card-hover); }
+
+    /* Tree View for Themes */
+    .theme-tree-node {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 0.85rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.4rem;
+      transition: all 0.15s ease;
+    }
+
+    .theme-tree-node:hover {
+      border-color: var(--border-mid);
+      background: var(--bg-card-hover);
+    }
+
+    .theme-tree-node.child-level-1 { margin-left: 1.5rem; border-left: 3px solid var(--accent); }
+    .theme-tree-node.child-level-2 { margin-left: 3rem; border-left: 3px solid var(--hazard-low); }
+
+    /* Inspector Sticky */
+    .inspector-sticky {
+      position: sticky;
+      top: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .inspector-header {
+      padding: 0.75rem 1.15rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .live-json-display {
+      padding: 1rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.76rem;
+      line-height: 1.5;
+      color: var(--text-main);
+      background: var(--bg-canvas);
+      max-height: 520px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Modal Drawer for Create/Edit */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 5000;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-md);
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      animation: modalPop 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalPop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .modal-footer {
+      padding: 0.85rem 1.25rem;
+      background: rgba(255, 255, 255, 0.015);
+      border-top: 1px solid var(--border-dim);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.6rem;
+    }
+
+    /* Toast */
+    .toast-msg {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--accent);
+      color: #080706;
+      font-weight: 700;
+      font-size: 0.88rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      z-index: 6000;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .toast-msg.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- Top Navigation -->
+    <header class="top-bar">
+      <div class="title-stack">
+        <h1>
+          <span>Prescripts</span>
+          <span class="badge">Studio</span>
+        </h1>
+      </div>
+      <!-- Tab Navigation Buttons -->
+      <nav class="nav-tabs-bar">
+        <button class="nav-tab-btn active" onclick="switchView('quotes-view', this)">📜 Quote Entry</button>
+        <button class="nav-tab-btn" onclick="switchView('containers-view', this)">🏛️ Containers</button>
+        <button class="nav-tab-btn" onclick="switchView('specifics-view', this)">📍 Specifics</button>
+        <button class="nav-tab-btn" onclick="switchView('themes-view', this)">🌲 Themes Tree</button>
+        <button class="nav-tab-btn" onclick="switchView('archive-view', this)">📚 Archive</button>
+      </nav>
+      <div class="header-actions">
+        <button class="btn-action" onclick="toggleTheme()">🌓 Theme</button>
+      </div>
+    </header>
+
+    <!-- ======================================================================
+         VIEW 1: QUOTE CURATION & ENTRY FORM
+         ====================================================================== -->
+    <main class="view-container active" id="quotes-view">
+      <div class="workspace-grid">
+
+        <!-- Form Stream -->
+        <div class="blocks-stream">
+
+          <!-- 1. QUOTE CONTENT -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">1. Quote Core &amp; Reflection</span>
+              <span class="card-tag">Required</span>
+            </div>
+            <div class="card-body">
+              <div>
+                <div class="field-label">
+                  <span>Main Quote Content (Multi-Line)</span>
+                  <span class="field-hint">Preserves line breaks</span>
+                </div>
+                <textarea class="raw-textarea-box" id="input-main-content" placeholder="Enter wisdom quote, poem, or reflection..." oninput="updateField('main_content', this.value)"></textarea>
+              </div>
+              <div>
+                <div class="field-label">
+                  <span>Genesis Context &amp; Reflection</span>
+                  <span class="field-hint">Situational backdrop</span>
+                </div>
+                <textarea class="raw-textarea-box" id="input-context" style="min-height: 70px;" placeholder="Why this quote was saved, situation, or personal reflection..." oninput="updateField('context', this.value)"></textarea>
+              </div>
+            </div>
+          </section>
+
+          <!-- 2. FLEXIBLE DATE SUGGESTOR -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">2. Flexible Date</span>
+              <span class="card-tag">Suggestor</span>
+            </div>
+            <div class="card-body">
+              <div class="suggestor-host" id="date-host">
+                <div class="field-label">
+                  <span>Temporal Coordinate</span>
+                  <span class="field-hint">Type year e.g. 2020, range 2020~2023-05, or date</span>
+                </div>
+                <div class="searcher-monolith">
+                  <span class="searcher-icon">📅</span>
+                  <input type="text" class="searcher-input" id="input-date" placeholder="Type year e.g. 2020, range 2020~2023-05, or 2026-10-02..." oninput="handleDateInput(this.value)" onfocus="handleDateInput(this.value)" onkeydown="handleDateKey(event)">
+                  <button class="searcher-clear" onclick="clearDateInput()">✕</button>
+                </div>
+                <div class="notion-dropdown-menu" id="date-dropdown">
+                  <div class="dropdown-options-list" id="date-options-list"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. SPECIFIC ENDPOINT SINGLE SELECTOR -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">3. Specific Endpoint (Work / Character / Diary / Wisdom)</span>
+              <span class="card-tag">Single Select</span>
+            </div>
+            <div class="card-body">
+              <div class="notion-combobox-wrap" id="specific-combo-wrap">
+                <div class="field-label">
+                  <span>Select Specific Endpoint (Click to browse or search)</span>
+                  <span class="field-hint">Auto-fills default tags</span>
+                </div>
+                <div class="notion-combobox-trigger" id="specific-combo-trigger" onclick="toggleSpecificDropdown()">
+                  <span id="specific-selected-val" style="color:var(--text-muted); font-size:0.9rem;">Select specific endpoint...</span>
+                  <div style="display:flex; align-items:center; gap:0.4rem;">
+                    <button class="opt-delete-btn" id="specific-clear-btn" style="display:none;" title="Clear selection" onclick="event.stopPropagation(); clearSpecificSelection()">✕</button>
+                    <span class="combobox-chevron">▼</span>
+                  </div>
+                </div>
+                <div class="notion-dropdown-menu" id="specific-combo-menu">
+                  <div style="padding: 0.5rem; border-bottom: 1px solid var(--border-dim); background:var(--bg-input);">
+                    <input type="text" class="searcher-input" id="specific-search-input" style="height:32px; font-size:0.88rem; width:100%; border:none; outline:none;" placeholder="Filter endpoints or origins (e.g. Diary, Infant Joy, Blake)..." oninput="filterSpecificDropdown(this.value)" onkeydown="handleSpecificKey(event)">
+                  </div>
+                  <div class="dropdown-options-list" id="specific-options-list"></div>
+                  <div class="dropdown-create-row" id="specific-create-row" style="display: none;" onclick="openModal('specific-modal')">
+                    <span>+ Create new specific endpoint "</span><span id="specific-create-query"></span><span>"</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 4. THEMES TREE MULTI-SELECT -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">4. Themes Tree (child_of Hierarchy)</span>
+              <span class="card-tag">Themes</span>
+            </div>
+            <div class="card-body">
+              <div class="suggestor-host" id="theme-host">
+                <div class="field-label">
+                  <span>Assign Themes from your Tree</span>
+                  <span class="field-hint">Search parent or child themes</span>
+                </div>
+                <div class="searcher-monolith">
+                  <span class="searcher-icon">🌲</span>
+                  <input type="text" class="searcher-input" id="theme-input" placeholder="Type to search themes or create new..." oninput="filterThemeDropdown(this.value)" onfocus="filterThemeDropdown(this.value)" onkeydown="handleThemeKey(event)">
+                  <button class="searcher-clear" onclick="clearThemeInput()">✕</button>
+                </div>
+                <div class="selected-chips-row" id="theme-chips"></div>
+                <div class="notion-dropdown-menu" id="theme-dropdown">
+                  <div class="dropdown-options-list" id="theme-options-list"></div>
+                  <div class="dropdown-create-row" id="theme-create-row" style="display: none;" onclick="openModal('theme-modal')">
+                    <span>+ Create new theme in tree "</span><span id="theme-create-query"></span><span>"</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 5. USAGE MULTI-SELECT WITH CONFLICT MATRIX -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">5. Usage Purpose &amp; Morning Mode</span>
+              <span class="card-tag">Usage</span>
+            </div>
+            <div class="card-body">
+              <div class="field-label">
+                <span>Select usage intent (Conflicting modes auto-deselect)</span>
+                <span class="field-hint" id="active-usage-count">0 active</span>
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:0.5rem;" id="usage-pills-container">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+          </section>
+
+          <!-- 6. RESPONSE QUOTES & BACKLINKS -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">6. Relations &amp; Deep Links</span>
+              <span class="card-tag">Graph</span>
+            </div>
+            <div class="card-body">
+              <div class="suggestor-host" id="pref-host">
+                <div class="field-label">
+                  <span>Response Quotes (Preference)</span>
+                  <span class="field-hint">Search quotes by text</span>
+                </div>
+                <div class="searcher-monolith">
+                  <span class="searcher-icon">💬</span>
+                  <input type="text" class="searcher-input" id="pref-input" placeholder="Search existing quotes by content text..." oninput="filterPrefDropdown(this.value)" onfocus="filterPrefDropdown(this.value)">
+                  <button class="searcher-clear" onclick="clearPrefInput()">✕</button>
+                </div>
+                <div class="selected-chips-row" id="pref-chips"></div>
+                <div class="notion-dropdown-menu" id="pref-dropdown">
+                  <div class="dropdown-options-list" id="pref-options-list"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="field-label">
+                  <span>External Reference URL / Obsidian URI</span>
+                  <span class="field-hint">e.g. obsidian://open... or https://...</span>
+                </div>
+                <input type="text" class="raw-input-box" id="input-backlink" placeholder="https://... or obsidian://open?vault=Main_03..." oninput="updateBacklink(this.value)">
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- RIGHT: LIVE STATE INSPECTOR -->
+        <aside class="inspector-sticky">
+          <div class="inspector-header">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-vivid);">Live State Preview</span>
+              <span class="card-tag" id="live-index-badge">IDX: 1</span>
+            </div>
+            <div style="display:flex; gap:0.4rem;">
+              <button class="btn-action" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="clearForm()">↺ Reset</button>
+              <button class="btn-action btn-primary" style="padding: 0.3rem 0.8rem; font-size: 0.75rem;" onclick="saveQuote()">💾 Save Quote</button>
+            </div>
+          </div>
+          <pre class="live-json-display" id="live-json-pre">{ /* Loading live state... */ }</pre>
+        </aside>
+
+      </div>
+    </main>
+
+
+    <!-- ======================================================================
+         VIEW 2: CONTAINERS STUDIO (CRUD)
+         ====================================================================== -->
+    <main class="view-container" id="containers-view">
+      <div class="crud-view-wrap">
+        <div class="crud-header-bar">
+          <div>
+            <h2 style="font-size:1.15rem; font-weight:700; color:var(--text-vivid);">Containers (Table 2: Origins &amp; Creators)</h2>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-top:0.2rem;">Manage macro origins, authors, franchises, and worlds (Prefix: 0002...)</p>
+          </div>
+          <button class="btn-action btn-primary" onclick="openCreateContainerModal()">+ New Container</button>
+        </div>
+
+        <table class="crud-table" id="containers-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Default Tags</th>
+              <th>Notes</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="containers-table-body">
+            <!-- Rendered via JS -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+
+    <!-- ======================================================================
+         VIEW 3: SPECIFICS STUDIO (CRUD)
+         ====================================================================== -->
+    <main class="view-container" id="specifics-view">
+      <div class="crud-view-wrap">
+        <div class="crud-header-bar">
+          <div>
+            <h2 style="font-size:1.15rem; font-weight:700; color:var(--text-vivid);">Specific Endpoints (Table 3: Works &amp; Characters)</h2>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-top:0.2rem;">Manage specific works, characters, diary, and wisdom endpoints (Prefix: 0003...)</p>
+          </div>
+          <button class="btn-action btn-primary" onclick="openCreateSpecificModal()">+ New Specific</button>
+        </div>
+
+        <table class="crud-table" id="specifics-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Endpoint Name</th>
+              <th>Container (Origin)</th>
+              <th>Category</th>
+              <th>Default Tags</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="specifics-table-body">
+            <!-- Rendered via JS -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+
+    <!-- ======================================================================
+         VIEW 4: THEMES TREE STUDIO (CRUD)
+         ====================================================================== -->
+    <main class="view-container" id="themes-view">
+      <div class="crud-view-wrap">
+        <div class="crud-header-bar">
+          <div>
+            <h2 style="font-size:1.15rem; font-weight:700; color:var(--text-vivid);">Themes Tree (Table 4: child_of Hierarchy)</h2>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-top:0.2rem;">Your sovereign conceptual tree with progressive parent-child relationships (Prefix: 0004...)</p>
+          </div>
+          <button class="btn-action btn-primary" onclick="openCreateThemeModal(null)">+ Add Root Theme</button>
+        </div>
+
+        <div id="themes-tree-container" style="display:flex; flex-direction:column; gap:0.4rem;">
+          <!-- Tree Nodes Rendered via JS -->
+        </div>
+      </div>
+    </main>
+
+
+    <!-- ======================================================================
+         VIEW 5: QUOTES ARCHIVE & EXPLORER (CRUD)
+         ====================================================================== -->
+    <main class="view-container" id="archive-view">
+      <div class="crud-view-wrap">
+        <div class="crud-header-bar">
+          <div>
+            <h2 style="font-size:1.15rem; font-weight:700; color:var(--text-vivid);">Quotes Archive (Table 1: All Quotes)</h2>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-top:0.2rem;">Inspect, edit, and manage all saved wisdom quotes in SQLite</p>
+          </div>
+          <input type="text" class="raw-input-box" id="archive-search" placeholder="Search archive quotes..." style="width:280px; height:38px; font-size:0.85rem;" oninput="filterArchive(this.value)">
+        </div>
+
+        <table class="crud-table" id="archive-table">
+          <thead>
+            <tr>
+              <th>IDX</th>
+              <th>Main Content</th>
+              <th>Specific Endpoint</th>
+              <th>Date</th>
+              <th>Themes / Tags</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="archive-table-body">
+            <!-- Rendered via JS -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+  </div>
+
+
+  <!-- ======================================================================
+       MODAL DRAWERS FOR IN-PLACE CREATE & EDIT
+       ====================================================================== -->
+
+  <!-- Container Modal -->
+  <div class="modal-overlay" id="container-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="container-modal-title" style="font-size:1rem; font-weight:700; color:var(--text-vivid);">Container Entity</h3>
+        <button class="opt-delete-btn" onclick="closeModal('container-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modal-container-id">
+        <div>
+          <label class="field-label">Container Name (e.g. William Blake, Neon Genesis Evangelion, The Manager)</label>
+          <input type="text" class="raw-input-box" id="modal-container-name" placeholder="Name...">
+        </div>
+        <div>
+          <label class="field-label">Type (e.g. author, anime, personal, book, band)</label>
+          <input type="text" class="raw-input-box" id="modal-container-type" placeholder="Type...">
+        </div>
+        <div>
+          <label class="field-label">Default Tags (comma separated)</label>
+          <input type="text" class="raw-input-box" id="modal-container-tags" placeholder="poetry, romanticism">
+        </div>
+        <div>
+          <label class="field-label">Notes / Description</label>
+          <textarea class="raw-textarea-box" id="modal-container-notes" style="min-height:60px;" placeholder="Optional context..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-action" onclick="closeModal('container-modal')">Cancel</button>
+        <button class="btn-action btn-primary" onclick="saveContainerModal()">Save Container</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Specific Modal -->
+  <div class="modal-overlay" id="specific-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="specific-modal-title" style="font-size:1rem; font-weight:700; color:var(--text-vivid);">Specific Endpoint</h3>
+        <button class="opt-delete-btn" onclick="closeModal('specific-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modal-specific-id">
+        <div>
+          <label class="field-label">Endpoint Name (e.g. Infant Joy, Asuka Langley Soryu, Diary, Wisdom, Thought on)</label>
+          <input type="text" class="raw-input-box" id="modal-specific-name" placeholder="Name...">
+        </div>
+        <div>
+          <label class="field-label">Parent Container (Origin / Creator)</label>
+          <select class="raw-input-box" id="modal-specific-container" style="height:44px;">
+            <!-- Containers populated via JS -->
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Category (e.g. poem, music, character, diary, wisdom, thought)</label>
+          <input type="text" class="raw-input-box" id="modal-specific-category" placeholder="poem, character...">
+        </div>
+        <div>
+          <label class="field-label">Default Tags (comma separated)</label>
+          <input type="text" class="raw-input-box" id="modal-specific-tags" placeholder="innocence, joy">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-action" onclick="closeModal('specific-modal')">Cancel</button>
+        <button class="btn-action btn-primary" onclick="saveSpecificModal()">Save Specific</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme Modal -->
+  <div class="modal-overlay" id="theme-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="theme-modal-title" style="font-size:1rem; font-weight:700; color:var(--text-vivid);">Theme Node</h3>
+        <button class="opt-delete-btn" onclick="closeModal('theme-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modal-theme-id">
+        <div>
+          <label class="field-label">Theme Name (e.g. Entropy, Symmetry, Stillness, Ego)</label>
+          <input type="text" class="raw-input-box" id="modal-theme-name" placeholder="Name...">
+        </div>
+        <div>
+          <label class="field-label">Child Of (Parent Theme in Tree)</label>
+          <select class="raw-input-box" id="modal-theme-parent" style="height:44px;">
+            <option value="">-- Root Level (No Parent) --</option>
+            <!-- Themes populated via JS -->
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Notes / Definition</label>
+          <input type="text" class="raw-input-box" id="modal-theme-notes" placeholder="Optional definition...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-action" onclick="closeModal('theme-modal')">Cancel</button>
+        <button class="btn-action btn-primary" onclick="saveThemeModal()">Save Theme</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Message -->
+  <div class="toast-msg" id="toast">State Updated</div>
+
+
+  <!-- ======================================================================
+       APPLICATION JAVASCRIPT LOGIC
+       ====================================================================== -->
+  <script>
+    const API_BASE = window.location.origin.startsWith('http') ? window.location.origin : 'http://127.0.0.1:20137';
+
+    // State (Zero sentiment, clean relational IDs)
+    let activeQuote = {
+      id: "",
+      index: 1,
+      main_content: "",
+      context: "",
+      date: "",
+      specific_id: null,
+      theme_ids: [],
+      usage_ids: [],
+      preference: [],
+      backlinks: []
+    };
+
+    // Master Cache
+    let availableContainers = [];
+    let availableSpecifics = [];
+    let availableThemes = [];
+    let availableUsages = [
+      { id: "00050001A1088D80", name: "Rewrite Craft", description: "Sentence rhythm & prose training", icon: "✍️", conflicts_with: ["00050001A1088D83"] },
+      { id: "00050001A1088D81", name: "Diary Prompt", description: "Creative catalyst for morning writing", icon: "💡", conflicts_with: [] },
+      { id: "00050001A1088D82", name: "Memory Anchor", description: "Core realization from personal history", icon: "⚓", conflicts_with: ["00050001A1088D84"] },
+      { id: "00050001A1088D83", name: "Daily Rule", description: "Actionable principle & meta-habit", icon: "📜", conflicts_with: ["00050001A1088D80"] },
+      { id: "00050001A1088D84", name: "Perspective / Levity", description: "Cosmic scale / meme / curiosity", icon: "🪐", conflicts_with: ["00050001A1088D82"] }
+    ];
+    let availableQuotes = {};
+    let allQuotesList = [];
+
+    // Hex Generator
+    function generateHexId(prefix = "0001") {
+      const now = Date.now();
+      const hexTs = now.toString(16).toUpperCase().padStart(12, '0').slice(-12);
+      const cleanPrefix = String(prefix).toUpperCase().padStart(4, '0').slice(0, 4);
+      return `${cleanPrefix}${hexTs}`;
+    }
+
+    // View Switcher
+    function switchView(viewId, btn) {
+      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+      if (btn) btn.classList.add('active');
+
+      if (viewId === 'containers-view') renderContainersTable();
+      if (viewId === 'specifics-view') renderSpecificsTable();
+      if (viewId === 'themes-view') renderThemesTree();
+      if (viewId === 'archive-view') renderArchiveTable();
+    }
+
+    function fireToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    function closeAllDropdowns() {
+      document.querySelectorAll('.notion-dropdown-menu').forEach(dd => dd.classList.remove('open'));
+      document.querySelectorAll('.notion-combobox-trigger').forEach(tr => tr.classList.remove('active'));
+    }
+
+    function updateField(field, value) {
+      activeQuote[field] = value;
+      if (!activeQuote.id && activeQuote.main_content.trim()) {
+        activeQuote.id = generateHexId("0001");
+      }
+      renderLiveJSON();
+    }
+
+    function updateBacklink(val) {
+      activeQuote.backlinks = val.trim() ? [val.trim()] : [];
+      renderLiveJSON();
+    }
+
+    function renderLiveJSON() {
+      const pre = document.getElementById('live-json-pre');
+      pre.textContent = JSON.stringify(activeQuote, null, 2);
+      document.getElementById('live-index-badge').textContent = `IDX: ${activeQuote.index}`;
+    }
+
+    // ==============================================================================
+    // 2. DATE SUGGESTOR
+    // ==============================================================================
+    function handleDateInput(val) {
+      activeQuote.date = val.trim();
+      renderLiveJSON();
+
+      const dropdown = document.getElementById('date-dropdown');
+      const list = document.getElementById('date-options-list');
+      const q = val.trim().toLowerCase();
+
+      closeAllDropdowns();
+      dropdown.classList.add('open');
+
+      const currentYear = new Date().getFullYear();
+      let suggestions = [];
+
+      if (!q) {
+        suggestions = [`${currentYear}`, `${currentYear}-10`, `${currentYear}-10-02`, `2020~${currentYear}`, `2020`];
+      } else {
+        if (/^\d{1,4}$/.test(q)) {
+          suggestions.push(q, `${q}-01`, `${q}-05`, `${q}~${currentYear}`);
+        } else if (/^\d{4}-/.test(q)) {
+          suggestions.push(q, `${q}-01`, `${q}-15`);
+        } else {
+          suggestions.push(q);
+        }
+      }
+
+      list.innerHTML = suggestions.slice(0, 6).map(s => `
+        <div class="dropdown-opt-row" onclick="selectDate('${s}')">
+          <span style="color:var(--accent); font-family:'JetBrains Mono'; font-weight:600;">📅 ${s}</span>
+        </div>
+      `).join('');
+    }
+
+    function selectDate(val) {
+      document.getElementById('input-date').value = val;
+      activeQuote.date = val;
+      document.getElementById('date-dropdown').classList.remove('open');
+      renderLiveJSON();
+    }
+
+    function clearDateInput() {
+      document.getElementById('input-date').value = "";
+      activeQuote.date = "";
+      document.getElementById('date-dropdown').classList.remove('open');
+      renderLiveJSON();
+    }
+
+    function handleDateKey(e) {
+      if (e.key === 'Enter' || e.key === 'Escape') {
+        document.getElementById('date-dropdown').classList.remove('open');
+      }
+    }
+
+    // ==============================================================================
+    // 3. SPECIFIC SINGLE SELECTOR
+    // ==============================================================================
+    function toggleSpecificDropdown() {
+      const menu = document.getElementById('specific-combo-menu');
+      const trigger = document.getElementById('specific-combo-trigger');
+      if (!menu || !trigger) return;
+      const isOpen = menu.classList.contains('open');
+      closeAllDropdowns();
+      if (!isOpen) {
+        menu.classList.add('open');
+        trigger.classList.add('active');
+        const searchInput = document.getElementById('specific-search-input');
+        if (searchInput) {
+          searchInput.value = "";
+          filterSpecificDropdown("");
+          searchInput.focus();
+        }
+      }
+    }
+
+    function selectSpecific(id) {
+      activeQuote.specific_id = id;
+
+      const s = availableSpecifics.find(item => item.id === id);
+      if (s) {
+        renderSpecificBadge(s);
+        // Pre-fill default usage IDs from this specific endpoint
+        if (s.default_usage_ids && s.default_usage_ids.length > 0) {
+          activeQuote.usage_ids = [...s.default_usage_ids];
+          renderUsagePills();
+          fireToast(`Selected: ${s.name} (Auto-set default usage)`);
+        } else {
+          activeQuote.usage_ids = [];
+          renderUsagePills();
+          fireToast(`Selected: ${s.name} · ${s.container ? s.container.name : ''}`);
+        }
+      }
+
+      closeAllDropdowns();
+      renderLiveJSON();
+    }
+
+    function clearSpecificSelection() {
+      activeQuote.specific_id = null;
+      activeQuote.usage_ids = [];
+      renderSpecificBadge(null);
+      renderUsagePills();
+      renderLiveJSON();
+    }
+
+    function renderSpecificBadge(s) {
+      const badge = document.getElementById('specific-selected-val');
+      const clearBtn = document.getElementById('specific-clear-btn');
+      if (s) {
+        const cname = s.container ? s.container.name : '';
+        badge.innerHTML = `<span class="selected-val-badge">📍 ${s.name} · <span style="opacity:0.75; font-weight:normal;">${cname}</span></span>`;
+        if (clearBtn) clearBtn.style.display = 'inline-flex';
+      } else {
+        badge.innerHTML = `<span style="color:var(--text-muted); font-size:0.9rem;">Select specific endpoint...</span>`;
+        if (clearBtn) clearBtn.style.display = 'none';
+      }
+    }
+
+    function filterSpecificDropdown(q) {
+      const list = document.getElementById('specific-options-list');
+      const createRow = document.getElementById('specific-create-row');
+      const query = (q || "").trim().toLowerCase();
+
+      const matches = availableSpecifics.filter(s => {
+        const sName = (s.name || "").toLowerCase();
+        const cName = (s.container && s.container.name) ? s.container.name.toLowerCase() : '';
+        return sName.includes(query) || cName.includes(query);
+      });
+
+      if (matches.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">No matching endpoints.</div>';
+      } else {
+        list.innerHTML = matches.map(s => {
+          const isSelected = activeQuote.specific_id === s.id;
+          const cname = (s.container && s.container.name) ? ` · ${s.container.name}` : '';
+          return `
+            <div class="dropdown-opt-row ${isSelected ? 'selected' : ''}" onclick="selectSpecific('${s.id}')">
+              <div class="opt-label-group">
+                <div class="opt-title-row">
+                  ${isSelected ? '<span class="opt-check">✓</span>' : ''}
+                  <span class="opt-title">${s.name}</span>
+                  <span class="opt-context">${cname}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (query && !availableSpecifics.some(s => (s.name || "").toLowerCase() === query)) {
+        createRow.style.display = 'flex';
+        document.getElementById('specific-create-query').textContent = q.trim();
+      } else {
+        createRow.style.display = 'none';
+      }
+    }
+
+    function handleSpecificKey(e) {
+      if (e.key === 'Enter') {
+        const q = (document.getElementById('specific-search-input').value || "").trim();
+        const match = availableSpecifics.find(s => (s.name || "").toLowerCase() === q.toLowerCase());
+        if (match) selectSpecific(match.id);
+        else openCreateSpecificModal(q);
+      } else if (e.key === 'Escape') {
+        closeAllDropdowns();
+      }
+    }
+
+    // ==============================================================================
+    // 4. THEMES TREE MULTI-SELECT
+    // ==============================================================================
+    function renderThemeChips() {
+      const container = document.getElementById('theme-chips');
+      container.innerHTML = activeQuote.theme_ids.map(tid => {
+        const th = availableThemes.find(t => t.id === tid);
+        const name = th ? th.name : tid;
+        const parent = (th && th.parent_name) ? ` (${th.parent_name})` : '';
+        return `
+          <span class="chip-badge">
+            <span>🌲 ${name}${parent}</span>
+            <span class="chip-remove" onclick="event.stopPropagation(); removeTheme('${tid}')">✕</span>
+          </span>
+        `;
+      }).join('');
+    }
+
+    function filterThemeDropdown(q) {
+      const dropdown = document.getElementById('theme-dropdown');
+      const list = document.getElementById('theme-options-list');
+      const createRow = document.getElementById('theme-create-row');
+      const query = (q || "").trim().toLowerCase();
+
+      closeAllDropdowns();
+      dropdown.classList.add('open');
+
+      const matches = availableThemes.filter(t => t.name.toLowerCase().includes(query) || (t.parent_name && t.parent_name.toLowerCase().includes(query)));
+
+      if (matches.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">No matching themes in tree.</div>';
+      } else {
+        list.innerHTML = matches.map(t => {
+          const isSelected = activeQuote.theme_ids.includes(t.id);
+          const parent = t.parent_name ? ` · ${t.parent_name}` : ' · [Root]';
+          return `
+            <div class="dropdown-opt-row ${isSelected ? 'selected' : ''}" onclick="toggleThemeSelect('${t.id}')">
+              <div class="opt-label-group">
+                <div class="opt-title-row">
+                  <span class="opt-check">${isSelected ? '✓' : '+'}</span>
+                  <span class="opt-title">${t.name}</span>
+                  <span class="opt-context">${parent}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (query && !availableThemes.some(t => t.name.toLowerCase() === query)) {
+        createRow.style.display = 'flex';
+        document.getElementById('theme-create-query').textContent = q.trim();
+      } else {
+        createRow.style.display = 'none';
+      }
+    }
+
+    function toggleThemeSelect(id) {
+      if (activeQuote.theme_ids.includes(id)) {
+        activeQuote.theme_ids = activeQuote.theme_ids.filter(t => t !== id);
+      } else {
+        activeQuote.theme_ids.push(id);
+      }
+      renderThemeChips();
+      renderLiveJSON();
+      filterThemeDropdown(document.getElementById('theme-input').value);
+    }
+
+    function removeTheme(id) {
+      activeQuote.theme_ids = activeQuote.theme_ids.filter(t => t !== id);
+      renderThemeChips();
+      renderLiveJSON();
+    }
+
+    function clearThemeInput() {
+      document.getElementById('theme-input').value = "";
+      filterThemeDropdown("");
+    }
+
+    function handleThemeKey(e) {
+      if (e.key === 'Enter') {
+        const q = (document.getElementById('theme-input').value || "").trim();
+        const match = availableThemes.find(t => t.name.toLowerCase() === q.toLowerCase());
+        if (match) toggleThemeSelect(match.id);
+        else openCreateThemeModal(null, q);
+      } else if (e.key === 'Escape') {
+        closeAllDropdowns();
+      }
+    }
+
+    // ==============================================================================
+    // 5. USAGE MULTI-SELECT WITH CONFLICT RULES
+    // ==============================================================================
+    function renderUsagePills() {
+      const container = document.getElementById('usage-pills-container');
+      container.innerHTML = availableUsages.map(opt => {
+        const isActive = activeQuote.usage_ids.includes(opt.id);
+        const icon = opt.icon || '🏷️';
+        return `
+          <div class="btn-action ${isActive ? 'btn-primary' : ''}" style="cursor:pointer; font-size:0.82rem;" title="${opt.description || ''}" onclick="toggleUsage('${opt.id}')">
+            <span>${icon} ${opt.name}</span>
+            ${isActive ? '<span>✓</span>' : ''}
+          </div>
+        `;
+      }).join('');
+      document.getElementById('active-usage-count').textContent = `${activeQuote.usage_ids.length} selected`;
+    }
+
+    function toggleUsage(id) {
+      const opt = availableUsages.find(o => o.id === id);
+      if (!opt) return;
+
+      if (activeQuote.usage_ids.includes(id)) {
+        activeQuote.usage_ids = activeQuote.usage_ids.filter(u => u !== id);
+      } else {
+        // Enforce conflict matrix: auto-remove conflicting choices!
+        const conflicts = opt.conflicts_with || [];
+        if (conflicts.length > 0) {
+          activeQuote.usage_ids = activeQuote.usage_ids.filter(u => !conflicts.includes(u));
+          fireToast(`Resolved conflict for ${opt.name}`);
+        }
+        activeQuote.usage_ids.push(id);
+      }
+      renderUsagePills();
+      renderLiveJSON();
+    }
+
+    // ==============================================================================
+    // 6. RESPONSE QUOTES
+    // ==============================================================================
+    function renderPrefChips() {
+      const container = document.getElementById('pref-chips');
+      container.innerHTML = activeQuote.preference.map(qid => {
+        const q = availableQuotes[qid];
+        const snippet = q ? q.main_content.split('\n')[0].substring(0, 36) + '...' : qid.substring(0, 8);
+        return `
+          <span class="chip-badge" title="${q ? q.main_content : qid}">
+            <span>💬 ${snippet}</span>
+            <span class="chip-remove" onclick="event.stopPropagation(); removePref('${qid}')">✕</span>
+          </span>
+        `;
+      }).join('');
+    }
+
+    function filterPrefDropdown(q) {
+      const dropdown = document.getElementById('pref-dropdown');
+      const list = document.getElementById('pref-options-list');
+      const query = (q || "").trim().toLowerCase();
+
+      closeAllDropdowns();
+      dropdown.classList.add('open');
+
+      const matches = Object.values(availableQuotes).filter(quote => {
+        return quote.main_content.toLowerCase().includes(query) ||
+               (quote.context && quote.context.toLowerCase().includes(query));
+      });
+
+      if (matches.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">No matching quotes found.</div>';
+        return;
+      }
+
+      list.innerHTML = matches.map(quote => {
+        const isSelected = activeQuote.preference.includes(quote.id);
+        const firstLine = quote.main_content.split('\n')[0];
+        return `
+          <div class="dropdown-opt-row ${isSelected ? 'selected' : ''}" onclick="togglePref('${quote.id}')">
+            <div class="opt-label-group">
+              <div class="opt-title-row">
+                <span class="opt-check">${isSelected ? '✓' : '+'}</span>
+                <span class="opt-title">“${firstLine}”</span>
+              </div>
+              <span class="opt-context">${quote.date} · ${quote.context || ''}</span>
+            </div>
+            <span style="font-family:'JetBrains Mono'; font-size:0.7rem; color:var(--text-dim);">#${quote.id.substring(0,8)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function togglePref(id) {
+      if (activeQuote.preference.includes(id)) activeQuote.preference = activeQuote.preference.filter(q => q !== id);
+      else activeQuote.preference.push(id);
+      renderPrefChips();
+      renderLiveJSON();
+      filterPrefDropdown(document.getElementById('pref-input').value);
+    }
+
+    function removePref(id) {
+      activeQuote.preference = activeQuote.preference.filter(q => q !== id);
+      renderPrefChips();
+      renderLiveJSON();
+    }
+
+    function clearPrefInput() {
+      document.getElementById('pref-input').value = "";
+      filterPrefDropdown("");
+    }
+
+    // ==============================================================================
+    // SAVE QUOTE (DIRECT SQLITE)
+    // ==============================================================================
+    async function saveQuote() {
+      if (!activeQuote.main_content.trim()) {
+        alert("Please provide the main quote content before saving.");
+        return;
+      }
+
+      if (!activeQuote.id) activeQuote.id = generateHexId("0001");
+      if (!activeQuote.date) activeQuote.date = new Date().toISOString().split('T')[0];
+
+      try {
+        const res = await fetch(`${API_BASE}/api/quote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(activeQuote)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          fireToast(`✓ Saved Quote #${data.index} to SQLite!`);
+          activeQuote.index = data.index + 1;
+          activeQuote.id = "";
+          activeQuote.main_content = "";
+          activeQuote.context = "";
+          activeQuote.preference = [];
+          document.getElementById('input-main-content').value = "";
+          document.getElementById('input-context').value = "";
+          renderPrefChips();
+          renderLiveJSON();
+          fetchBackendData();
+          return;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          fireToast("Server Error: " + (errData.error || res.statusText));
+        }
+      } catch (err) {
+        fireToast("❌ Error: Local Server unreachable.");
+      }
+    }
+
+    function clearForm() {
+      activeQuote = {
+        id: "",
+        index: activeQuote.index,
+        main_content: "",
+        context: "",
+        date: "",
+        specific_id: null,
+        theme_ids: [],
+        usage_ids: [],
+        preference: [],
+        backlinks: []
+      };
+      document.getElementById('input-main-content').value = "";
+      document.getElementById('input-context').value = "";
+      document.getElementById('input-date').value = "";
+      document.getElementById('input-backlink').value = "";
+      renderSpecificBadge(null);
+      renderThemeChips();
+      renderUsagePills();
+      renderPrefChips();
+      renderLiveJSON();
+    }
+
+    // ==============================================================================
+    // CRUD STUDIO LOGIC (VIEWS 2, 3, 4, 5)
+    // ==============================================================================
+
+    // --- CONTAINERS (VIEW 2) ---
+    function renderContainersTable() {
+      const tbody = document.getElementById('containers-table-body');
+      tbody.innerHTML = availableContainers.map(c => `
+        <tr>
+          <td style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--text-dim);">${c.id}</td>
+          <td style="font-weight:700; color:var(--text-vivid);">${c.name}</td>
+          <td><span class="card-tag">${c.type || 'origin'}</span></td>
+          <td>${(c.default_tags || []).map(t => `<span class="chip-badge" style="font-size:0.75rem;">#${t}</span>`).join(' ')}</td>
+          <td style="color:var(--text-muted); font-size:0.82rem;">${c.notes || ''}</td>
+          <td style="text-align:right;">
+            <button class="btn-action" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="openEditContainerModal('${c.id}')">✏️ Edit</button>
+            <button class="btn-action btn-danger" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="deleteContainer('${c.id}')">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openCreateContainerModal() {
+      document.getElementById('container-modal-title').textContent = "+ Create New Container";
+      document.getElementById('modal-container-id').value = generateHexId("0002");
+      document.getElementById('modal-container-name').value = "";
+      document.getElementById('modal-container-type').value = "author";
+      document.getElementById('modal-container-tags').value = "";
+      document.getElementById('modal-container-notes').value = "";
+      openModal('container-modal');
+    }
+
+    function openEditContainerModal(id) {
+      const c = availableContainers.find(item => item.id === id);
+      if (!c) return;
+      document.getElementById('container-modal-title').textContent = "✏️ Edit Container";
+      document.getElementById('modal-container-id').value = c.id;
+      document.getElementById('modal-container-name').value = c.name;
+      document.getElementById('modal-container-type').value = c.type || "";
+      document.getElementById('modal-container-tags').value = (c.default_tags || []).join(', ');
+      document.getElementById('modal-container-notes').value = c.notes || "";
+      openModal('container-modal');
+    }
+
+    async function saveContainerModal() {
+      const id = document.getElementById('modal-container-id').value;
+      const name = document.getElementById('modal-container-name').value.trim();
+      const type = document.getElementById('modal-container-type').value.trim();
+      const tags = document.getElementById('modal-container-tags').value.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+      const notes = document.getElementById('modal-container-notes').value.trim();
+
+      if (!name) return alert("Container name is required.");
+
+      const payload = { id, name, type, default_tags: tags, notes };
+      const res = await fetch(`${API_BASE}/api/container`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        closeModal('container-modal');
+        fireToast(`Saved Container: ${name}`);
+        await fetchBackendData();
+        renderContainersTable();
+      }
+    }
+
+    async function deleteContainer(id) {
+      if (!confirm("Are you sure you want to delete this container? Specifics under it will be deleted.")) return;
+      const res = await fetch(`${API_BASE}/api/container/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        fireToast("Container deleted");
+        await fetchBackendData();
+        renderContainersTable();
+      }
+    }
+
+    // --- SPECIFICS (VIEW 3) ---
+    function renderSpecificsTable() {
+      const tbody = document.getElementById('specifics-table-body');
+      tbody.innerHTML = availableSpecifics.map(s => {
+        const cname = s.container ? s.container.name : s.container_name || '';
+        return `
+          <tr>
+            <td style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--text-dim);">${s.id}</td>
+            <td style="font-weight:700; color:var(--text-vivid);">📍 ${s.name}</td>
+            <td><span class="selected-val-badge">${cname}</span></td>
+            <td><span class="card-tag">${s.category || 'endpoint'}</span></td>
+            <td>${(s.default_tags || []).map(t => `<span class="chip-badge" style="font-size:0.75rem;">#${t}</span>`).join(' ')}</td>
+            <td style="text-align:right;">
+              <button class="btn-action" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="openEditSpecificModal('${s.id}')">✏️ Edit</button>
+              <button class="btn-action btn-danger" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="deleteSpecific('${s.id}')">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function populateContainerSelect(selectedCid) {
+      const sel = document.getElementById('modal-specific-container');
+      sel.innerHTML = availableContainers.map(c => `
+        <option value="${c.id}" ${c.id === selectedCid ? 'selected' : ''}>${c.name} (${c.type || 'origin'})</option>
+      `).join('');
+    }
+
+    function openCreateSpecificModal(prefillName = "") {
+      document.getElementById('specific-modal-title').textContent = "+ Create Specific Endpoint";
+      document.getElementById('modal-specific-id').value = generateHexId("0003");
+      document.getElementById('modal-specific-name').value = prefillName;
+      document.getElementById('modal-specific-category').value = "work";
+      document.getElementById('modal-specific-tags').value = "";
+      populateContainerSelect(availableContainers.length > 0 ? availableContainers[0].id : "");
+      openModal('specific-modal');
+    }
+
+    function openEditSpecificModal(id) {
+      const s = availableSpecifics.find(item => item.id === id);
+      if (!s) return;
+      document.getElementById('specific-modal-title').textContent = "✏️ Edit Specific Endpoint";
+      document.getElementById('modal-specific-id').value = s.id;
+      document.getElementById('modal-specific-name').value = s.name;
+      document.getElementById('modal-specific-category').value = s.category || "";
+      document.getElementById('modal-specific-tags').value = (s.default_tags || []).join(', ');
+      populateContainerSelect(s.container_id);
+      openModal('specific-modal');
+    }
+
+    async function saveSpecificModal() {
+      const id = document.getElementById('modal-specific-id').value;
+      const name = document.getElementById('modal-specific-name').value.trim();
+      const container_id = document.getElementById('modal-specific-container').value;
+      const category = document.getElementById('modal-specific-category').value.trim();
+      const tags = document.getElementById('modal-specific-tags').value.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+
+      if (!name || !container_id) return alert("Name and Parent Container are required.");
+
+      const payload = { id, name, container_id, category, default_tags: tags };
+      const res = await fetch(`${API_BASE}/api/specific`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        closeModal('specific-modal');
+        fireToast(`Saved Specific: ${name}`);
+        await fetchBackendData();
+        renderSpecificsTable();
+      }
+    }
+
+    async function deleteSpecific(id) {
+      if (!confirm("Are you sure you want to delete this specific endpoint?")) return;
+      const res = await fetch(`${API_BASE}/api/specific/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        fireToast("Specific endpoint deleted");
+        await fetchBackendData();
+        renderSpecificsTable();
+      }
+    }
+
+    // --- THEMES TREE (VIEW 4) ---
+    function renderThemesTree() {
+      const container = document.getElementById('themes-tree-container');
+      if (availableThemes.length === 0) {
+        container.innerHTML = `<div style="padding:1.5rem; text-align:center; color:var(--text-muted);">No themes yet. Click "+ Add Root Theme" to start your tree.</div>`;
+        return;
+      }
+
+      // Render roots and nested children recursively
+      const roots = availableThemes.filter(t => !t.child_of);
+      const childrenMap = {};
+      availableThemes.forEach(t => {
+        if (t.child_of) {
+          if (!childrenMap[t.child_of]) childrenMap[t.child_of] = [];
+          childrenMap[t.child_of].push(t);
+        }
+      });
+
+      function renderNodeHTML(node, level = 0) {
+        const levelClass = level === 1 ? 'child-level-1' : (level >= 2 ? 'child-level-2' : '');
+        const children = childrenMap[node.id] || [];
+        let html = `
+          <div class="theme-tree-node ${levelClass}">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span style="color:var(--accent); font-weight:bold;">${level === 0 ? '📁' : '↳ 🏷️'}</span>
+              <span style="font-weight:700; color:var(--text-vivid); font-size:0.92rem;">${node.name}</span>
+              ${node.notes ? `<span style="color:var(--text-muted); font-size:0.78rem; font-style:italic;">— ${node.notes}</span>` : ''}
+            </div>
+            <div style="display:flex; gap:0.35rem;">
+              <button class="btn-action" style="padding:0.2rem 0.45rem; font-size:0.72rem;" onclick="openCreateThemeModal('${node.id}')">+ Add Child</button>
+              <button class="btn-action" style="padding:0.2rem 0.45rem; font-size:0.72rem;" onclick="openEditThemeModal('${node.id}')">✏️</button>
+              <button class="btn-action btn-danger" style="padding:0.2rem 0.45rem; font-size:0.72rem;" onclick="deleteThemeNode('${node.id}')">🗑️</button>
+            </div>
+          </div>
+        `;
+        children.forEach(child => {
+          html += renderNodeHTML(child, level + 1);
+        });
+        return html;
+      }
+
+      let treeHTML = "";
+      roots.forEach(root => {
+        treeHTML += renderNodeHTML(root, 0);
+      });
+      container.innerHTML = treeHTML;
+    }
+
+    function populateParentThemeSelect(selectedParentId) {
+      const sel = document.getElementById('modal-theme-parent');
+      let options = `<option value="">-- Root Level (No Parent) --</option>`;
+      availableThemes.forEach(t => {
+        options += `<option value="${t.id}" ${t.id === selectedParentId ? 'selected' : ''}>${t.name}</option>`;
+      });
+      sel.innerHTML = options;
+    }
+
+    function openCreateThemeModal(parentId = null, prefillName = "") {
+      document.getElementById('theme-modal-title').textContent = parentId ? "+ Add Child Sub-Theme" : "+ Add Root Theme";
+      document.getElementById('modal-theme-id').value = generateHexId("0004");
+      document.getElementById('modal-theme-name').value = prefillName;
+      document.getElementById('modal-theme-notes').value = "";
+      populateParentThemeSelect(parentId);
+      openModal('theme-modal');
+    }
+
+    function openEditThemeModal(id) {
+      const t = availableThemes.find(item => item.id === id);
+      if (!t) return;
+      document.getElementById('theme-modal-title').textContent = "✏️ Edit Theme Node";
+      document.getElementById('modal-theme-id').value = t.id;
+      document.getElementById('modal-theme-name').value = t.name;
+      document.getElementById('modal-theme-notes').value = t.notes || "";
+      populateParentThemeSelect(t.child_of);
+      openModal('theme-modal');
+    }
+
+    async function saveThemeModal() {
+      const id = document.getElementById('modal-theme-id').value;
+      const name = document.getElementById('modal-theme-name').value.trim();
+      const child_of = document.getElementById('modal-theme-parent').value || null;
+      const notes = document.getElementById('modal-theme-notes').value.trim();
+
+      if (!name) return alert("Theme name is required.");
+
+      const payload = { id, name, child_of, notes };
+      const res = await fetch(`${API_BASE}/api/theme`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        closeModal('theme-modal');
+        fireToast(`Saved Theme: ${name}`);
+        await fetchBackendData();
+        renderThemesTree();
+      }
+    }
+
+    async function deleteThemeNode(id) {
+      if (!confirm("Delete this theme? Any child themes will be unlinked to root level.")) return;
+      const res = await fetch(`${API_BASE}/api/theme/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        fireToast("Theme deleted");
+        await fetchBackendData();
+        renderThemesTree();
+      }
+    }
+
+    // --- ARCHIVE (VIEW 5) ---
+    async function loadArchiveList() {
+      try {
+        const res = await fetch(`${API_BASE}/api/quotes/list`);
+        if (res.ok) {
+          allQuotesList = await res.json();
+          renderArchiveTable();
+        }
+      } catch (e) {}
+    }
+
+    function renderArchiveTable(filtered = null) {
+      const list = filtered || allQuotesList;
+      const tbody = document.getElementById('archive-table-body');
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:1.5rem;">No quotes found.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map(q => {
+        const s = availableSpecifics.find(item => item.id === q.specific_id);
+        const sTitle = s ? `📍 ${s.name} · ${s.container ? s.container.name : ''}` : '—';
+        const snippet = q.main_content.split('\n')[0].substring(0, 48) + '...';
+        return `
+          <tr>
+            <td style="font-family:'JetBrains Mono'; font-weight:700; color:var(--accent);">#${q.index}</td>
+            <td style="font-weight:600; color:var(--text-vivid); max-width:320px;" title="${q.main_content}">“${snippet}”</td>
+            <td><span class="selected-val-badge" style="font-size:0.75rem;">${sTitle}</span></td>
+            <td style="font-family:'JetBrains Mono'; font-size:0.8rem;">${q.date}</td>
+            <td>${(q.tags || []).map(t => `<span class="chip-badge" style="font-size:0.72rem;">#${t}</span>`).join(' ')}</td>
+            <td style="text-align:right;">
+              <button class="btn-action" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="loadQuoteForEdit('${q.id}')">✏️ Edit</button>
+              <button class="btn-action btn-danger" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="deleteQuoteItem('${q.id}')">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterArchive(q) {
+      const query = (q || "").toLowerCase();
+      const filtered = allQuotesList.filter(item => item.main_content.toLowerCase().includes(query) || item.context.toLowerCase().includes(query));
+      renderArchiveTable(filtered);
+    }
+
+    function loadQuoteForEdit(id) {
+      const q = allQuotesList.find(item => item.id === id);
+      if (!q) return;
+      activeQuote = {
+        id: q.id,
+        index: q.index,
+        main_content: q.main_content,
+        context: q.context || "",
+        date: q.date,
+        specific_id: q.specific_id,
+        theme_ids: q.theme_ids || [],
+        usage_ids: q.usage_ids || q.usage || [],
+        preference: q.preference || [],
+        backlinks: q.backlinks || []
+      };
+      document.getElementById('input-main-content').value = q.main_content;
+      document.getElementById('input-context').value = q.context || "";
+      document.getElementById('input-date').value = q.date;
+      document.getElementById('input-backlink').value = (q.backlinks || []).join(', ');
+
+      const s = availableSpecifics.find(item => item.id === q.specific_id);
+      renderSpecificBadge(s);
+      renderThemeChips();
+      renderUsagePills();
+      renderPrefChips();
+      renderLiveJSON();
+
+      switchView('quotes-view', document.querySelector('.nav-tab-btn'));
+      fireToast(`Loaded Quote #${q.index} for Editing`);
+    }
+
+    async function deleteQuoteItem(id) {
+      if (!confirm("Are you sure you want to delete this quote from SQLite?")) return;
+      const res = await fetch(`${API_BASE}/api/quote/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        fireToast("Quote deleted");
+        await fetchBackendData();
+        await loadArchiveList();
+      }
+    }
+
+    // Modal Helpers
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const cur = html.getAttribute('data-theme') || 'dark';
+      const nxt = cur === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', nxt);
+      localStorage.setItem('prescripts-theme', nxt);
+    }
+
+    // Backend Synchronizer
+    async function fetchBackendData() {
+      try {
+        const taxRes = await fetch(`${API_BASE}/api/taxonomy`);
+        if (taxRes.ok) {
+          const tax = await taxRes.json();
+          if (tax.containers) availableContainers = tax.containers;
+          if (tax.specifics) availableSpecifics = tax.specifics;
+          if (tax.themes) availableThemes = tax.themes;
+          if (tax.usages) availableUsages = tax.usages;
+        }
+
+        const qRes = await fetch(`${API_BASE}/api/quotes`);
+        if (qRes.ok) {
+          const quotes = await qRes.json();
+          if (Object.keys(quotes).length > 0) availableQuotes = quotes;
+        }
+
+        const idxRes = await fetch(`${API_BASE}/api/next_index`);
+        if (idxRes.ok) {
+          const data = await idxRes.json();
+          activeQuote.index = data.next_index;
+        }
+      } catch (e) {}
+
+      renderUsagePills();
+      renderPrefChips();
+      renderThemeChips();
+      renderLiveJSON();
+    }
+
+    // Global Click Listener for Dropdowns
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#date-host')) {
+        const dd = document.getElementById('date-dropdown');
+        if (dd) dd.classList.remove('open');
+      }
+      if (!e.target.closest('#specific-combo-wrap')) {
+        const menu = document.getElementById('specific-combo-menu');
+        const trigger = document.getElementById('specific-combo-trigger');
+        if (menu) menu.classList.remove('open');
+        if (trigger) trigger.classList.remove('active');
+      }
+      if (!e.target.closest('#theme-host')) {
+        const dd = document.getElementById('theme-dropdown');
+        if (dd) dd.classList.remove('open');
+      }
+      if (!e.target.closest('#pref-host')) {
+        const dd = document.getElementById('pref-dropdown');
+        if (dd) dd.classList.remove('open');
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const savedTheme = localStorage.getItem('prescripts-theme');
+      if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+      await fetchBackendData();
+      await loadArchiveList();
+    });
+  </script>
+</body>
+</html>

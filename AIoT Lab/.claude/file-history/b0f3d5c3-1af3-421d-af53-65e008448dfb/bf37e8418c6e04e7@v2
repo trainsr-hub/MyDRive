@@ -1,0 +1,192 @@
+@echo off
+setlocal EnableDelayedExpansion
+title OmniRoute Phase 1 Migration
+
+set "OLD_SOURCE=D:\My Drive\Sync\omniroute"
+set "LOCAL_DEST=D:\My System\Local App Junction\OmniRoute"
+set "C_JUNCTION=C:\Users\Admin\AppData\Roaming\npm\node_modules\omniroute"
+set "RECOVERY_DIR=D:\My System\Local App Junction\OmniRoute-Phase1-Recovery"
+set "ROLLBACK_DIR=%RECOVERY_DIR%\rollback\omniroute-original"
+set "LOG_DIR=%RECOVERY_DIR%\logs"
+set "OMNI_SHORTCUT=D:\My Drive\Blue AI\ZZ - Shortcuts\OmniRoute.bat"
+set "PORT=20128"
+
+if not exist "%RECOVERY_DIR%" mkdir "%RECOVERY_DIR%"
+if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
+if not exist "%RECOVERY_DIR%\rollback" mkdir "%RECOVERY_DIR%\rollback"
+
+cls
+echo ==============================================================================
+echo   OMNIROUTE PHASE 1: APPLICATION PACKAGE MIGRATION
+echo   Linear Execution - Auto Flows Through All Steps
+echo ==============================================================================
+echo.
+
+REM ===== STEP 1: AUDIT =====
+echo [STEP 1/6] AUDIT SYSTEM STATUS
+echo.
+
+for /f "usebackq delims=" %%t in (`powershell -NoProfile -Command "(Get-Item -LiteralPath '%C_JUNCTION%' -ErrorAction SilentlyContinue).Target" 2^>nul`) do set "CURRENT_TARGET=%%t"
+
+set "PROC_COUNT=0"
+for /f "usebackq delims=" %%p in (`powershell -NoProfile -Command "@(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match 'omniroute' }).Count" 2^>nul`) do set "PROC_COUNT=%%p"
+
+set "PORT_STATUS=CLOSED"
+for /f "usebackq delims=" %%o in (`powershell -NoProfile -Command "if (Get-NetTCPConnection -State Listen -LocalPort %PORT% -ErrorAction SilentlyContinue) { 'LISTENING' } else { 'CLOSED' }" 2^>nul`) do set "PORT_STATUS=%%o"
+
+echo Current Target: %CURRENT_TARGET%
+echo Port %PORT% Status: %PORT_STATUS%
+echo OmniRoute Processes: %PROC_COUNT%
+echo.
+
+if not exist "%OLD_SOURCE%\package.json" (
+    echo [ERROR] Old source not found: %OLD_SOURCE%
+    pause
+    exit /b 1
+)
+echo [OK] Old source verified
+echo.
+timeout /t 2 >nul
+
+REM ===== STEP 2: STAGE COPY =====
+echo [STEP 2/6] STAGE COPY TO LOCAL (OmniRoute still running)
+echo Source: %OLD_SOURCE%
+echo Destination: %LOCAL_DEST%
+echo.
+
+if not exist "%LOCAL_DEST%" mkdir "%LOCAL_DEST%"
+
+echo Running robocopy...
+robocopy "%OLD_SOURCE%" "%LOCAL_DEST%" /E /COPY:DAT /DCOPY:DAT /XJ /R:2 /W:2
+set "RC_ERR=%ERRORLEVEL%"
+
+if %RC_ERR% GEQ 8 (
+    echo [ERROR] Robocopy failed with code %RC_ERR%
+    pause
+    exit /b 1
+)
+
+if not exist "%LOCAL_DEST%\package.json" (
+    echo [ERROR] Staging failed - package.json not found in destination
+    pause
+    exit /b 1
+)
+
+echo [OK] Staging complete
+echo.
+timeout /t 2 >nul
+
+REM ===== STEP 3: STOP OMNIROUTE =====
+echo [STEP 3/6] STOP OMNIROUTE SERVICE (Faust goes offline temporarily)
+echo.
+echo Terminating OmniRoute processes...
+
+if exist "%TEMP%\OmniRoute\omniroute.pid" (
+    for /f "usebackq delims=" %%i in ("%TEMP%\OmniRoute\omniroute.pid") do (
+        taskkill /PID %%i /T /F >nul 2>&1
+    )
+    del "%TEMP%\OmniRoute\omniroute.pid" >nul 2>&1
+)
+
+powershell -NoProfile -Command "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -eq %PORT% } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+
+timeout /t 3 >nul
+echo [OK] OmniRoute stopped
+echo.
+timeout /t 2 >nul
+
+REM ===== STEP 4: CUTOVER =====
+echo [STEP 4/6] EXECUTE CUTOVER
+echo.
+
+echo Step 4a: Final delta copy...
+robocopy "%OLD_SOURCE%" "%LOCAL_DEST%" /E /COPY:DAT /DCOPY:DAT /XJ /R:2 /W:2 >nul 2>&1
+
+echo Step 4b: Moving old package to rollback...
+if not exist "%ROLLBACK_DIR%" (
+    move "%OLD_SOURCE%" "%ROLLBACK_DIR%" >nul 2>&1
+    if errorlevel 1 (
+        echo [ERROR] Failed to move to rollback
+        pause
+        exit /b 1
+    )
+)
+
+echo Step 4c: Removing old C: junction...
+rmdir "%C_JUNCTION%" >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] Failed to remove junction
+    pause
+    exit /b 1
+)
+
+echo Step 4d: Creating new C: junction to local master...
+mklink /J "%C_JUNCTION%" "%LOCAL_DEST%" >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] Failed to create new junction
+    pause
+    exit /b 1
+)
+
+echo [OK] Cutover complete
+echo.
+timeout /t 2 >nul
+
+REM ===== STEP 5: VERIFY =====
+echo [STEP 5/6] VERIFY CUTOVER
+echo.
+
+for /f "usebackq delims=" %%t in (`powershell -NoProfile -Command "(Get-Item -LiteralPath '%C_JUNCTION%' -ErrorAction SilentlyContinue).Target" 2^>nul`) do set "NEW_TARGET=%%t"
+
+echo New C: Junction Target: %NEW_TARGET%
+if "%NEW_TARGET%"=="%LOCAL_DEST%" (
+    echo [OK] Junction correctly points to local master
+) else (
+    echo [WARN] Target mismatch - expected %LOCAL_DEST%
+)
+
+if exist "%LOCAL_DEST%\package.json" (echo [OK] package.json present)
+if exist "%LOCAL_DEST%\bin\omniroute.mjs" (echo [OK] bin\omniroute.mjs present)
+
+node --check "%LOCAL_DEST%\bin\omniroute.mjs" >nul 2>&1
+if %ERRORLEVEL% equ 0 (echo [OK] Node syntax check passed) else (echo [WARN] Syntax check failed)
+
+echo.
+echo [OK] Verification complete
+timeout /t 2 >nul
+
+REM ===== STEP 6: START OMNIROUTE =====
+echo [STEP 6/6] START OMNIROUTE (Wakes Faust)
+echo.
+echo Launching OmniRoute from new local location...
+
+if exist "%OMNI_SHORTCUT%" (
+    call "%OMNI_SHORTCUT%"
+    echo Waiting 5 seconds for OmniRoute to start...
+    timeout /t 5 >nul
+
+    set "NEW_PORT_STATUS=CLOSED"
+    for /f "usebackq delims=" %%o in (`powershell -NoProfile -Command "if (Get-NetTCPConnection -State Listen -LocalPort %PORT% -ErrorAction SilentlyContinue) { 'LISTENING' } else { 'CLOSED' }" 2^>nul`) do set "NEW_PORT_STATUS=%%o"
+
+    if "%NEW_PORT_STATUS%"=="LISTENING" (
+        echo.
+        echo [OK] OmniRoute listening on Port %PORT%
+        echo [OK] Faust should be reconnected
+    ) else (
+        echo.
+        echo [WARN] Port not open yet - check OmniRoute logs
+    )
+) else (
+    echo [ERROR] Launcher not found: %OMNI_SHORTCUT%
+)
+
+echo.
+echo ==============================================================================
+echo   PHASE 1 MIGRATION COMPLETE
+echo ==============================================================================
+echo.
+echo Rollback location: %ROLLBACK_DIR%
+echo Local master: %LOCAL_DEST%
+echo C: Junction: %C_JUNCTION%
+echo.
+pause

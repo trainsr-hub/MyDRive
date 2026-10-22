@@ -1,0 +1,547 @@
+<title>ESP32 Web Flasher</title>
+
+<style>
+  /* Design System: Industrial Hardware Development Console */
+  :root {
+    /* Layout: Vertical split — left control panel, right console log */
+    --bg-canvas: #0a0a0a;
+    --bg-panel: #141414;
+    --bg-input: #1a1a1a;
+    --text-primary: #e5e5e5;
+    --text-secondary: #888888;
+    --text-dim: #555555;
+    --border-subtle: #222222;
+    --border-mid: #333333;
+    --accent-cyan: #00d9ff;
+    --accent-green: #00ff88;
+    --accent-amber: #ffaa00;
+    --accent-red: #ff3366;
+
+    --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+    font-family: var(--font-mono);
+    color-scheme: dark;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg-canvas: #f5f5f5;
+      --bg-panel: #ffffff;
+      --bg-input: #f0f0f0;
+      --text-primary: #1a1a1a;
+      --text-secondary: #666666;
+      --text-dim: #999999;
+      --border-subtle: #e0e0e0;
+      --border-mid: #cccccc;
+      color-scheme: light;
+    }
+  }
+
+  :root[data-theme="light"] {
+    --bg-canvas: #f5f5f5;
+    --bg-panel: #ffffff;
+    --bg-input: #f0f0f0;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666666;
+    --text-dim: #999999;
+    --border-subtle: #e0e0e0;
+    --border-mid: #cccccc;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    padding-inline: 16px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding-block: 24px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-weight: 400;
+  }
+
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 20px;
+    padding-block: 24px;
+    min-height: 0;
+  }
+
+  @media (max-width: 900px) {
+    main {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+  }
+
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--bg-input);
+    border-radius: 4px;
+    font-size: 13px;
+  }
+
+  .info-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .info-value {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--bg-input);
+    color: var(--text-secondary);
+  }
+
+  .status-badge.connected {
+    background: rgba(0, 255, 136, 0.15);
+    color: var(--accent-green);
+  }
+
+  .status-badge.flashing {
+    background: rgba(255, 170, 0, 0.15);
+    color: var(--accent-amber);
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  button {
+    padding: 10px 16px;
+    border: 1px solid var(--border-mid);
+    border-radius: 6px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  button:hover:not(:disabled) {
+    background: var(--bg-panel);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+  }
+
+  button:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  button.primary {
+    background: var(--accent-cyan);
+    color: #000000;
+    border-color: var(--accent-cyan);
+    font-weight: 700;
+  }
+
+  button.primary:hover:not(:disabled) {
+    background: #00b8dd;
+    border-color: #00b8dd;
+  }
+
+  button.danger {
+    background: var(--accent-red);
+    color: #ffffff;
+    border-color: var(--accent-red);
+  }
+
+  button.danger:hover:not(:disabled) {
+    background: #dd2244;
+    border-color: #dd2244;
+  }
+
+  .console {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.6;
+    font-variant-numeric: tabular-nums;
+    min-height: 0;
+  }
+
+  .log-line {
+    padding: 2px 0;
+    word-break: break-word;
+  }
+
+  .log-line.info { color: var(--text-secondary); }
+  .log-line.success { color: var(--accent-green); }
+  .log-line.warning { color: var(--accent-amber); }
+  .log-line.error { color: var(--accent-red); }
+
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-input);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent-cyan);
+    transition: width 0.2s ease;
+    border-radius: 3px;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 8px 0;
+  }
+
+  .note {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    padding: 8px 12px;
+    background: var(--bg-input);
+    border-radius: 4px;
+    border-left: 2px solid var(--accent-cyan);
+  }
+</style>
+
+<header>
+  <h1>⚡ ESP32 Web Flasher</h1>
+  <p class="subtitle">Rien-Prescript-Beeper // Model 01-Oracle Firmware Uploader</p>
+</header>
+
+<main>
+  <div class="panel">
+    <div class="section">
+      <div class="section-title">Device Connection</div>
+      <div class="info-row">
+        <span class="info-label">Status</span>
+        <span class="status-badge" id="status-badge">
+          <span class="status-dot"></span>
+          <span id="status-text">Disconnected</span>
+        </span>
+      </div>
+      <div class="info-row" id="port-info" hidden>
+        <span class="info-label">Port</span>
+        <span class="info-value" id="port-name">—</span>
+      </div>
+      <button id="connect-btn" class="primary">
+        <span>🔌</span>
+        <span>Connect to ESP32-C3</span>
+      </button>
+      <button id="disconnect-btn" hidden class="danger">
+        <span>❌</span>
+        <span>Disconnect</span>
+      </button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-title">Firmware Details</div>
+      <div class="info-row">
+        <span class="info-label">Target</span>
+        <span class="info-value">ESP32-C3 Supermini</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Board</span>
+        <span class="info-value">esp32-c3-devkitm-1</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Display</span>
+        <span class="info-value">ST7789 320×170</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Audio</span>
+        <span class="info-value">JQ8900 Module</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-title">Flash Progress</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Progress</span>
+        <span class="info-value" id="progress-text">0%</span>
+      </div>
+      <button id="flash-btn" disabled>
+        <span>⚡</span>
+        <span>Flash Firmware</span>
+      </button>
+      <button id="erase-btn" disabled class="danger">
+        <span>🗑️</span>
+        <span>Erase Flash</span>
+      </button>
+    </div>
+
+    <div class="note">
+      <strong>Note:</strong> This tool requires Chrome, Edge, or Opera with Web Serial API support. Connect your ESP32-C3 via USB before clicking Connect.
+    </div>
+  </div>
+
+  <div class="console" id="console">
+    <div class="log-line info">ESP32 Web Flasher ready. Click "Connect to ESP32-C3" to begin.</div>
+    <div class="log-line info">Waiting for device connection...</div>
+  </div>
+</main>
+
+<script type="module">
+  // ESP Web Tools Integration
+  import 'https://unpkg.com/esp-web-tools@10.0.1/dist/web/install-button.js';
+
+  const statusBadge = document.getElementById('status-badge');
+  const statusText = document.getElementById('status-text');
+  const portInfo = document.getElementById('port-info');
+  const portName = document.getElementById('port-name');
+  const connectBtn = document.getElementById('connect-btn');
+  const disconnectBtn = document.getElementById('disconnect-btn');
+  const flashBtn = document.getElementById('flash-btn');
+  const eraseBtn = document.getElementById('erase-btn');
+  const progressFill = document.getElementById('progress-fill');
+  const progressText = document.getElementById('progress-text');
+  const consoleEl = document.getElementById('console');
+
+  let port = null;
+  let connected = false;
+
+  function log(message, type = 'info') {
+    const line = document.createElement('div');
+    line.className = `log-line ${type}`;
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    line.textContent = `[${timestamp}] ${message}`;
+    consoleEl.appendChild(line);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  function updateStatus(isConnected) {
+    connected = isConnected;
+    if (isConnected) {
+      statusBadge.classList.add('connected');
+      statusText.textContent = 'Connected';
+      connectBtn.hidden = true;
+      disconnectBtn.hidden = false;
+      flashBtn.disabled = false;
+      eraseBtn.disabled = false;
+      portInfo.hidden = false;
+    } else {
+      statusBadge.classList.remove('connected', 'flashing');
+      statusText.textContent = 'Disconnected';
+      connectBtn.hidden = false;
+      disconnectBtn.hidden = true;
+      flashBtn.disabled = true;
+      eraseBtn.disabled = true;
+      portInfo.hidden = true;
+      portName.textContent = '—';
+    }
+  }
+
+  function updateProgress(percent) {
+    progressFill.style.width = `${percent}%`;
+    progressText.textContent = `${percent}%`;
+  }
+
+  async function connectDevice() {
+    try {
+      log('Requesting serial port access...', 'info');
+      port = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x303a }] });
+      const info = port.getInfo();
+      log('Device selected. Opening port...', 'success');
+
+      await port.open({ baudRate: 115200 });
+      portName.textContent = `USB Serial (VID: ${info.usbVendorId?.toString(16)})`;
+
+      log('✓ Connected to ESP32-C3 successfully', 'success');
+      log('Device ready for firmware flash', 'info');
+      updateStatus(true);
+
+      // Start reading
+      readLoop();
+    } catch (error) {
+      log(`✗ Connection failed: ${error.message}`, 'error');
+      updateStatus(false);
+    }
+  }
+
+  async function readLoop() {
+    try {
+      const reader = port.readable.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(value);
+        const lines = text.split('\n');
+        lines.forEach(line => {
+          if (line.trim()) log(`[ESP32] ${line.trim()}`, 'info');
+        });
+      }
+
+      reader.releaseLock();
+    } catch (error) {
+      if (error.name !== 'NetworkError') {
+        log(`Read error: ${error.message}`, 'error');
+      }
+    }
+  }
+
+  async function disconnectDevice() {
+    if (port) {
+      try {
+        await port.close();
+        log('✓ Device disconnected', 'warning');
+        updateStatus(false);
+        port = null;
+      } catch (error) {
+        log(`Disconnect error: ${error.message}`, 'error');
+      }
+    }
+  }
+
+  async function flashFirmware() {
+    if (!connected) {
+      log('✗ No device connected', 'error');
+      return;
+    }
+
+    log('⚡ Starting firmware flash process...', 'warning');
+    log('NOTE: Pre-compiled firmware required', 'warning');
+    log('Build firmware locally with: pio run', 'info');
+    log('Firmware location: .pio/build/esp32c3_supermini/firmware.bin', 'info');
+
+    statusBadge.classList.add('flashing');
+    statusText.textContent = 'Flashing...';
+
+    // Simulate flash progress
+    for (let i = 0; i <= 100; i += 5) {
+      updateProgress(i);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    log('✗ Flash aborted: Firmware binary not loaded', 'error');
+    log('To flash: Build locally and use esptool.py or PlatformIO', 'info');
+    statusBadge.classList.remove('flashing');
+    statusText.textContent = 'Connected';
+    updateProgress(0);
+  }
+
+  async function eraseFlash() {
+    if (!connected) {
+      log('✗ No device connected', 'error');
+      return;
+    }
+
+    if (!confirm('⚠️ This will erase all data on the ESP32. Continue?')) {
+      log('Erase cancelled by user', 'info');
+      return;
+    }
+
+    log('🗑️ Erasing flash memory...', 'warning');
+    statusBadge.classList.add('flashing');
+    statusText.textContent = 'Erasing...';
+
+    // Simulate erase
+    for (let i = 0; i <= 100; i += 10) {
+      updateProgress(i);
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    log('✓ Flash erased (simulated)', 'success');
+    statusBadge.classList.remove('flashing');
+    statusText.textContent = 'Connected';
+    updateProgress(0);
+  }
+
+  // Event listeners
+  connectBtn.addEventListener('click', connectDevice);
+  disconnectBtn.addEventListener('click', disconnectDevice);
+  flashBtn.addEventListener('click', flashFirmware);
+  eraseBtn.addEventListener('click', eraseFlash);
+
+  // Check Web Serial support
+  if (!('serial' in navigator)) {
+    log('✗ Web Serial API not supported in this browser', 'error');
+    log('Please use Chrome, Edge, or Opera', 'error');
+    connectBtn.disabled = true;
+  } else {
+    log('✓ Web Serial API detected', 'success');
+  }
+</script>

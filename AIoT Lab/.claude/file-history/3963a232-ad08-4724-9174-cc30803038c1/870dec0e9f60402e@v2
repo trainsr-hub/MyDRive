@@ -1,0 +1,169 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { MultiEntityPlan, TrashCandidatesResponse } from '../../types/drive';
+import { driveApi } from '../../services/driveApi';
+import { DriveReconcilerHeader } from './DriveReconcilerHeader';
+import { DriveEntitySidebar } from './DriveEntitySidebar';
+import { DriveBirdEyeDashboard } from './DriveBirdEyeDashboard';
+import { DriveTrashManager } from './DriveTrashManager';
+import { ActionToast } from '../ActionToast';
+import { createNotification, ActionNotification } from '../../services/notificationManager';
+
+interface DriveReconcilerAppProps {
+  onSwitchToPk: () => void;
+  onSwitchToHazard: () => void;
+  onSwitchToPrompt: () => void;
+  onSwitchToHair: () => void;
+  onSwitchToFacet: () => void;
+  theme: 'dark' | 'light';
+  onToggleTheme: () => void;
+}
+
+export const DriveReconcilerApp: React.FC<DriveReconcilerAppProps> = ({
+  onSwitchToPk,
+  onSwitchToHazard,
+  onSwitchToPrompt,
+  onSwitchToHair,
+  onSwitchToFacet,
+  theme,
+  onToggleTheme,
+}) => {
+  const [activeTab, setActiveTab] = useState<'reconciler' | 'trash'>('reconciler');
+  const [plan, setPlan] = useState<MultiEntityPlan | null>(null);
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [trashCount, setTrashCount] = useState(0);
+  const [notifications, setNotifications] = useState<ActionNotification[]>([]);
+
+  const showToast = useCallback((msg: string, type: any = 'info') => {
+    const notif = createNotification(type, msg);
+    setNotifications((prev) => [notif, ...prev.slice(0, 3)]);
+    setTimeout(() => {
+      setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+    }, 3800);
+  }, []);
+
+  const fetchPlanAndTrash = useCallback(async (forceLive = false) => {
+    setIsScanning(true);
+    try {
+      const [scanRes, trashRes] = await Promise.all([
+        driveApi.scan('', '', forceLive),
+        driveApi.getTrashCandidates().catch(() => null),
+      ]);
+
+      if (scanRes.success && scanRes.plan) {
+        setPlan(scanRes.plan);
+      }
+      if (trashRes && trashRes.success) {
+        setTrashCount(trashRes.total_count || 0);
+      }
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setIsScanning(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchPlanAndTrash();
+  }, [fetchPlanAndTrash]);
+
+  const handleExecutePlan = async (customPlan?: any) => {
+    setIsExecuting(true);
+    try {
+      const targetPlan = customPlan || plan;
+      if (!targetPlan) return;
+      const res = await driveApi.reconcile(targetPlan);
+      showToast(
+        `Applied: Created ${res.results.created_count} | Renamed ${res.results.renamed_count || 0} | Trashed ${res.results.pruned_empty_count || 0}`,
+        'saved'
+      );
+      await fetchPlanAndTrash();
+    } catch (err: any) {
+      showToast(`Reconciliation failed: ${err.message}`, 'error');
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  const handleTrashFolder = async (folderId: string) => {
+    try {
+      const res = await driveApi.trashFolder(folderId, true, false);
+      showToast(`Removed ${res.deleted_count} record(s) from local neo_drive.db`, 'deleted');
+      await fetchPlanAndTrash();
+    } catch (err: any) {
+      showToast(`Trash error: ${err.message}`, 'error');
+    }
+  };
+
+  const totalExceptions = plan
+    ? plan.groups
+        .flatMap((g) => g.entity_plans.flatMap((ep) => ep.items))
+        .filter((i) => i.action_type !== 'MATCH' && i.action_type !== 'CUSTOM').length
+    : 0;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-canvas)' }}>
+      {/* 1. Master Header */}
+      <DriveReconcilerHeader
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        trashCount={trashCount}
+        onSwitchToPk={onSwitchToPk}
+        onSwitchToHazard={onSwitchToHazard}
+        onSwitchToPrompt={onSwitchToPrompt}
+        onSwitchToHair={onSwitchToHair}
+        onSwitchToFacet={onSwitchToFacet}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
+      />
+
+      {/* 2. Main Workspace */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+        {activeTab === 'trash' ? (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 2rem' }}>
+            <DriveTrashManager
+              onRefreshParent={() => fetchPlanAndTrash()}
+              showToast={showToast}
+            />
+          </div>
+        ) : plan ? (
+          <>
+            <DriveEntitySidebar
+              groups={plan.groups}
+              selectedEntityId={selectedEntityId}
+              onSelectEntity={setSelectedEntityId}
+              totalExceptionsCount={totalExceptions}
+              trashCandidatesCount={trashCount}
+              onOpenTrashManager={() => setActiveTab('trash')}
+            />
+
+            <main style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 2rem' }}>
+              <DriveBirdEyeDashboard
+                plan={plan}
+                onRefresh={fetchPlanAndTrash}
+                onExecutePlan={handleExecutePlan}
+                isExecuting={isExecuting}
+                showToast={showToast}
+                selectedEntityId={selectedEntityId}
+                onSelectEntity={setSelectedEntityId}
+                onTrashFolder={handleTrashFolder}
+                onOpenTrashManager={() => setActiveTab('trash')}
+              />
+            </main>
+          </>
+        ) : (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: '14px' }}>
+            {isScanning ? 'Loading Drive Reconciler master state...' : 'No data loaded from local SQLite master.'}
+          </div>
+        )}
+      </div>
+
+      {/* Notifications / Toasts */}
+      <ActionToast
+        notifications={notifications}
+        onDismiss={(id) => setNotifications((prev) => prev.filter((n) => n.id !== id))}
+      />
+    </div>
+  );
+};

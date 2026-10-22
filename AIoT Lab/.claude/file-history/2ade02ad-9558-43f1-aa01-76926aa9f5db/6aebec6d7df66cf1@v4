@@ -1,0 +1,176 @@
+# Rebased Character Identity SQLite Engine — Simplified 3-Table Core
+
+## Context
+The Manager wants a minimal, pragmatic character database with just **3 core tables**:
+1. **Characters** — original characters with their default build
+2. **Variants** — other outfits/versions of each character
+3. **Worlds/Series** — franchise/world groupings
+
+Everything else (taxonomy, physical traits, topology, extraction) is deferred.
+
+---
+
+## 1. Three Core Tables (Rose 3-Tier Core)
+
+### Table 1: Characters (1004...) — Original Characters
+```sql
+CREATE TABLE IF NOT EXISTS characters (
+    id TEXT PRIMARY KEY,                       -- 1004... 16-char monotonic hex
+    char_code TEXT NOT NULL UNIQUE,            -- 'A01', 'B28', 'B53'
+    canonical_name TEXT NOT NULL,              -- 'Amelia Watson'
+    display_name TEXT,                         -- optional override
+    description TEXT,                          -- bio/lore
+    series_id TEXT,                            -- FK → worlds(id)
+    names_json TEXT NOT NULL,                  -- {names:[], nicknames:[], aliases:[]}
+    associate_json TEXT,                       -- ['HoloMyth']
+    hazard_score REAL DEFAULT 0.0,             -- 0.0-10.0
+    hazard_class TEXT,                         -- 'Class I - Minimal Risk'
+    base_prompt TEXT,                          -- _prpt_ from default
+    outfit TEXT,                               -- default outfit string
+    avatar_url TEXT,                           -- image URL
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (series_id) REFERENCES worlds(id) ON DELETE SET NULL
+);
+CREATE INDEX idx_characters_char_code ON characters(char_code);
+CREATE INDEX idx_characters_name ON characters(canonical_name);
+CREATE INDEX idx_characters_series ON characters(series_id);
+```
+
+### Table 2: Variants (1005...) — Other Outfits/Versions
+```sql
+CREATE TABLE IF NOT EXISTS variants (
+    id TEXT PRIMARY KEY,                       -- 1005... prefix
+    character_id TEXT NOT NULL,                -- FK → characters(id)
+    variant_key TEXT NOT NULL,                 -- 'ego_01', 'skin_01'
+    variant_name TEXT NOT NULL,                -- 'The Casual Ame'
+    prompt TEXT,                               -- _prpt_ variant prompt
+    outfit TEXT,                               -- variant outfit string
+    is_default INTEGER DEFAULT 0,              -- 1 if default build
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+    UNIQUE(character_id, variant_key)
+);
+CREATE INDEX idx_variants_char ON variants(character_id);
+```
+
+### Table 3: Worlds/Series — Franchise Groupings
+```sql
+CREATE TABLE IF NOT EXISTS worlds (
+    id TEXT PRIMARY KEY,                       -- e.g. 'WLD_HOLOLIVE'
+    name TEXT NOT NULL UNIQUE,                 -- 'Hololive'
+    franchise TEXT,                            -- 'Hololive'
+    universe TEXT,                             -- 'VTuber', 'Sci-Fi', 'Fantasy'
+    media_type TEXT,                           -- 'VTuber', 'Game', 'Anime'
+    description TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX idx_worlds_name ON worlds(name);
+```
+
+---
+
+## 2. Ingestion Scope (Minimal)
+
+### Source Data
+- **Characters**: `data/Hazard_Trigger_Data/Identity/Characters/TT01/A01.json`
+- **Worlds**: Extracted from `associate` field in character JSONs
+
+### Ingestion Order
+1. **Worlds** — extract from `associate` field in all character JSONs
+2. **Characters** — ingest `default` block from each character JSON
+3. **Variants** — ingest each non-default key (e.g., `ego_01`) as variant
+
+### Mapping from A01.json
+| JSON Field | → Table | Column |
+|------------|---------|--------|
+| `default.id` | characters | `char_code` |
+| `default.names.names[0]` | characters | `canonical_name` |
+| `default.names` | characters | `names_json` |
+| `default.associate` | characters | `series_id` (FK to worlds) |
+| `default._prpt_` | characters | `base_prompt` |
+| `default.outfit` | characters | `outfit` |
+| `default.hazardLevel.hazardScore` | characters | `hazard_score` |
+| `ego_01` key | variants | `variant_key = 'ego_01'` |
+| `ego_01._prpt_` | variants | `prompt` |
+| `ego_01.outfit` | variants | `outfit` |
+| `ego_01.names[0]` | variants | `variant_name` |
+
+---
+
+## 3. Current State (Already Done)
+
+| Component | Status |
+|-----------|--------|
+| `character_db.py` with extended schema | ✅ Done |
+| `series_db.py` (worlds table) | ✅ Done |
+| `character_db.py` has `variants` table | ✅ Done |
+| `series_db.py` (worlds table) | ✅ Done |
+| `character_db.py` upsert functions | ✅ Done |
+| API `/api/characters` search | ✅ Done |
+| API `/api/characters/{char_code}` | ✅ Done |
+| API `/api/characters` upsert | ✅ Done |
+| API `/api/characters/{char_code}/select-character` | ✅ Done |
+| API `/api/worlds` list | ⬜ Add |
+| Frontend `CharacterIdSelector` | ✅ Done |
+| Tournament bracket integration | ✅ Done |
+
+---
+
+## 3. Remaining Tasks (Minimal)
+
+### Backend
+| Task | File | Status |
+|------|------|--------|
+| Add `/api/worlds` GET endpoint | `backend/main.py` | ⬜ |
+| Seed worlds from existing character data | `scripts/seed_worlds.py` | ⬜ |
+| Ingest A01.json into characters + variants + worlds | `scripts/ingest_core.py` | ⬜ |
+
+### Frontend
+| Task | Status |
+|------|--------|
+| None needed (CharacterIdSelector already works) | ✅ |
+
+---
+
+## 4. Verification
+
+```bash
+# 1. Verify schema
+sqlite3 data/rebased.db ".schema characters" 
+sqlite3 data/rebased.db ".schema variants"
+sqlite3 data/rebased.db ".schema worlds"
+
+# 2. Test ingestion
+python scripts/ingest_core.py
+
+# 3. Test API
+curl http://localhost:8081/api/characters?q=A01
+curl http://localhost:8081/api/worlds
+curl http://localhost:8081/api/characters/A01
+
+# 4. Verify tournament bracket uses characters from SQLite
+# (already working via CharacterIdSelector)
+```
+
+---
+
+## 5. Deferred (Not Now)
+
+| Deferred Feature | Reason |
+|------------------|--------|
+| Taxonomy/tags tables | Later |
+| Physical traits extraction from `_prpt_` | Later |
+| Topology tables (visibility, layers, constructs) | Later |
+| `taxonomy_tags` + `character_taxonomy` | Later |
+| `physical_traits` + `trait_categories` + `trait_options` | Later |
+| Trait extraction pipeline | Later |
+| Frontend `TraitCategoryTree`, `TraitOptionPicker`, etc. | Later |
+| Variant manager UI | Later |
+
+---
+
+## 5. Next Step
+
+Run ingestion script to populate the 3 tables from existing A01.json, then verify the CharacterIdSelector in tournaments works with the seeded data.

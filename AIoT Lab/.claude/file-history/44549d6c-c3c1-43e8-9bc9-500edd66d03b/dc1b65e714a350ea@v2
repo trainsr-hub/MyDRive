@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Constellation</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #040810; }
+canvas { display: block; position: fixed; inset: 0; }
+
+.controls {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+
+#result-banner {
+  font-family: monospace; text-align: center;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .5s, transform .5s;
+  pointer-events: none;
+}
+#result-banner.show { opacity: 1; transform: translateY(0); }
+#result-tier { font-size: 10px; letter-spacing: .22em; text-transform: uppercase; margin-bottom: 4px; }
+#result-name { font-size: 22px; font-weight: 700; letter-spacing: .06em; }
+
+.star-btn {
+  padding: 14px 48px;
+  background: #08102a; border: 1.5px solid rgba(140,160,255,.25);
+  border-radius: 12px; color: #a0b4ff;
+  font-family: monospace; font-size: 13px; letter-spacing: .16em; text-transform: uppercase;
+  cursor: pointer; transition: background .15s, box-shadow .15s, transform .1s;
+  box-shadow: 0 0 18px rgba(80,100,220,.2);
+}
+.star-btn:hover:not(:disabled) { background: #0d183a; box-shadow: 0 0 28px rgba(100,130,255,.3); }
+.star-btn:active:not(:disabled) { transform: scale(.97); }
+.star-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+#label {
+  position: fixed; bottom: 10px; left: 16px;
+  font-family: monospace; font-size: 10px; letter-spacing: .14em;
+  color: rgba(100,120,200,.2); text-transform: uppercase; pointer-events: none;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="controls">
+  <div id="result-banner">
+    <div id="result-tier">—</div>
+    <div id="result-name">—</div>
+  </div>
+  <button class="star-btn" id="readBtn" onclick="readStars()">Read Stars</button>
+</div>
+
+<div id="label">Constellation · Summon</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', () => { resize(); initStars(); });
+resize();
+
+// ── Constellations ──────────────────────────────────────────
+// Points are [xFrac, yFrac] of canvas — center-biased
+const CONSTELLATIONS = [
+  {
+    name: 'The Wanderer', tier: 'Common',   color: '#c0c8d8', weight: 50,
+    // Simple cross
+    pts:   [[.5,.38],[.5,.5],[.5,.62],[.42,.5],[.58,.5]],
+    edges: [[0,1],[1,2],[3,1],[1,4]],
+  },
+  {
+    name: 'The Sovereign', tier: 'Rare',   color: '#93c5fd', weight: 30,
+    // Crown arc: 7 stars
+    pts:   [[.36,.56],[.41,.46],[.46,.40],[.5,.42],[.54,.40],[.59,.46],[.64,.56],[.36,.56]],
+    edges: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[0,6]],
+  },
+  {
+    name: 'The Abyss',    tier: 'Epic',    color: '#c084fc', weight: 15,
+    // Downward triangle with tail
+    pts:   [[.5,.36],[.41,.52],[.59,.52],[.5,.52],[.5,.64]],
+    edges: [[0,1],[0,2],[1,2],[3,4]],
+  },
+  {
+    name: 'The Eternal',  tier: 'Legendary', color: '#fcd34d', weight: 5,
+    // Diamond within diamond — 9 stars
+    pts:   [[.5,.32],[.60,.44],[.5,.56],[.40,.44],   // outer diamond
+            [.5,.38],[.56,.47],[.5,.53],[.44,.47],   // inner diamond
+            [.5,.44]],                                // center
+    edges: [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[8,4],[8,5],[8,6],[8,7]],
+  },
+];
+
+function roll() {
+  const total = CONSTELLATIONS.reduce((a, c) => a + c.weight, 0);
+  let rand = Math.random() * total;
+  for (const c of CONSTELLATIONS) { rand -= c.weight; if (rand <= 0) return c; }
+  return CONSTELLATIONS[CONSTELLATIONS.length - 1];
+}
+
+// ── Star pool ───────────────────────────────────────────────
+const BG_COUNT   = 220;
+const CONS_COUNT = 9;  // max constellation points
+
+let bgStars = [];       // { x, y, r, twinkle, phase }
+let conStars = [];      // { x, y, tx, ty, r, phase } — constellation stars w/ lerp target
+let conEdges = [];      // pairs of conStar indices
+let conColor = '#fff';
+let animPhase = 'idle'; // 'idle' | 'forming' | 'hold' | 'returning'
+let formT     = 0;
+let lineT     = 0;
+let holdTimer = 0;
+
+function initStars() {
+  bgStars = Array.from({ length: BG_COUNT }, () => ({
+    x:       Math.random() * W,
+    y:       Math.random() * H,
+    r:       Math.random() < .1 ? 1.4 : Math.random() < .4 ? 0.9 : 0.5,
+    twinkle: .3 + Math.random() * .7,
+    phase:   Math.random() * Math.PI * 2,
+    speed:   .3 + Math.random() * .8,
+  }));
+
+  // Init constellation stars at random positions (same count as max constellation)
+  conStars = Array.from({ length: CONS_COUNT }, () => ({
+    x: Math.random() * W,  y: Math.random() * H,
+    tx: 0, ty: 0,
+    r: 1.8, phase: Math.random() * Math.PI * 2,
+  }));
+}
+
+// ── Animation loop ──────────────────────────────────────────
+let t = 0;
+function tick() {
+  t += 0.016;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background stars
+  bgStars.forEach(s => {
+    const a = s.twinkle * (.5 + .5 * Math.sin(t * s.speed + s.phase));
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200,215,255,${a})`;
+    ctx.fill();
+  });
+
+  if (animPhase === 'idle') {
+    // Draw constellation stars very faintly at home positions
+    conStars.forEach(s => {
+      const a = .04 + .03 * Math.sin(t * .5 + s.phase);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(150,180,255,${a})`;
+      ctx.fill();
+    });
+  }
+
+  if (animPhase === 'forming' || animPhase === 'hold' || animPhase === 'returning') {
+    if (animPhase === 'forming') {
+      formT = Math.min(formT + 0.022, 1);
+      lineT = Math.max(0, (formT - .6) / .4);
+      if (formT >= 1) { animPhase = 'hold'; holdTimer = t; }
+    }
+    if (animPhase === 'hold') {
+      formT = 1; lineT = 1;
+      if (t - holdTimer > 3.0) animPhase = 'returning';
+    }
+    if (animPhase === 'returning') {
+      formT = Math.max(formT - 0.018, 0);
+      lineT = Math.max(lineT - 0.03, 0);
+      if (formT <= 0) { animPhase = 'idle'; enableBtn(); }
+    }
+
+    const ease = formT < .5 ? 4*formT*formT*formT : 1 - Math.pow(-2*formT+2,3)/2;
+
+    // Lerp constellation stars toward targets
+    conStars.forEach((s, i) => {
+      if (i >= conEdges.length + 1) return; // only active stars
+      const lx = s.x + (s.tx - s.x) * ease;
+      const ly = s.y + (s.ty - s.y) * ease;
+
+      // Glow
+      const gR  = s.r * (1 + ease * 2.5);
+      const grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, gR * 6);
+      grad.addColorStop(0,   conColor.replace(')', `,${ease * .5})`).replace('rgb', 'rgba'));
+      grad.addColorStop(1,   'transparent');
+      ctx.beginPath();
+      ctx.arc(lx, ly, gR * 6, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Star dot
+      ctx.beginPath();
+      ctx.arc(lx, ly, gR, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${.6 + ease * .4})`;
+      ctx.fill();
+    });
+
+    // Draw edges progressively
+    if (lineT > 0 && conEdges.length > 0) {
+      const totalEdges   = conEdges.length;
+      const edgesVisible = lineT * totalEdges;
+      ctx.save();
+      ctx.strokeStyle = conColor;
+      ctx.lineWidth   = 0.8;
+      ctx.shadowColor = conColor;
+      ctx.shadowBlur  = 8;
+      for (let i = 0; i < totalEdges; i++) {
+        const edgeProg = Math.min(1, Math.max(0, (edgesVisible - i)));
+        if (edgeProg <= 0) continue;
+        const [ai, bi] = conEdges[i];
+        const a = conStars[ai], b = conStars[bi];
+        const ax = a.x + (a.tx - a.x) * ease;
+        const ay = a.y + (a.ty - a.y) * ease;
+        const bx = b.x + (b.tx - b.x) * ease;
+        const by = b.y + (b.ty - b.y) * ease;
+        ctx.globalAlpha = Math.min(lineT, 1) * .5;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(ax + (bx - ax) * edgeProg, ay + (by - ay) * edgeProg);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+  }
+
+  requestAnimationFrame(tick);
+}
+
+// ── Trigger ─────────────────────────────────────────────────
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+function enableBtn() {
+  document.getElementById('readBtn').disabled = false;
+  document.getElementById('result-banner').classList.remove('show');
+}
+
+async function readStars() {
+  document.getElementById('readBtn').disabled = true;
+
+  const con = roll();
+  conColor  = con.color;
+  conEdges  = con.edges;
+
+  // Set targets for the constellation's points (only as many as the pattern needs)
+  for (let i = 0; i < CONS_COUNT; i++) {
+    if (i < con.pts.length) {
+      conStars[i].tx = con.pts[i][0] * W;
+      conStars[i].ty = con.pts[i][1] * H;
+    } else {
+      // Extra stars stay put
+      conStars[i].tx = conStars[i].x;
+      conStars[i].ty = conStars[i].y;
+    }
+  }
+
+  formT = 0; lineT = 0;
+  animPhase = 'forming';
+
+  // Show result banner after partial form
+  await wait(900);
+  const banner = document.getElementById('result-banner');
+  const tier   = document.getElementById('result-tier');
+  const name   = document.getElementById('result-name');
+  tier.textContent  = con.tier;
+  name.textContent  = con.name;
+  tier.style.color  = con.color;
+  name.style.color  = con.color;
+  name.style.textShadow = `0 0 20px ${con.color}`;
+  banner.classList.add('show');
+
+  window.parent.postMessage({ type: 'summon', animation: 'Constellation', result: con.name }, '*');
+}
+
+initStars();
+tick();
+</script>
+</body>
+</html>

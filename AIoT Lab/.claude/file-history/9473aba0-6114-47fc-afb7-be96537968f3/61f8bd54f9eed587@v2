@@ -1,0 +1,71 @@
+{
+  "id": "solar-corona",
+  "Title": "Solar Corona Pack",
+  "Note": "Bio-Agrarian • Stellar Plasma Forged",
+  "Cards": 4,
+  "ticketType": "solar-roll",
+  "ticketCost": 1,
+  "Cover": "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=500&auto=format&fit=crop&q=80",
+  "Animation": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500&auto=format&fit=crop&q=80",
+  "Button": "#f97316",
+  "ButtonText": "Engage",
+  "color": "#f97316",
+  "borderColor": "#ea580c",
+  "bgGradient": "from-[#2c1305] via-[#1a1424] to-[#120f18]",
+  "Unpack": [
+    "Sunforged Aegis ~ 2%",
+    "Solar Plasma Greatsword ~ 4%",
+    "Bio-Agrarian Battery ~ 20%",
+    "Solar Thermal Core 20...50 ~ 30%",
+    "Chlorophyll Matrix ~ 20%",
+    "Solar Ash Fragment"
+  ],
+  "Guarantee": [
+    "Solar Thermal Core 40...50"
+  ],
+  "Items": {
+    "Sunforged Aegis": {
+      "cover": "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #431407 0%, #220902 50%, #000 100%)",
+      "category": "relic",
+      "rarity": "legendary",
+      "description": "Blazing defensive shield forged inside the solar plasma mantle."
+    },
+    "Solar Plasma Greatsword": {
+      "cover": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #3b0764 0%, #1f0b24 50%, #000 100%)",
+      "category": "relic",
+      "rarity": "epic",
+      "description": "Heavy plasma broadsword with immense kinetic damage."
+    },
+    "Bio-Agrarian Battery": {
+      "cover": "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #14532d 0%, #052e16 50%, #000 100%)",
+      "category": "collectible",
+      "rarity": "rare",
+      "description": "A biological cell preserving harvested solar energy in chlorophyll matrix."
+    },
+    "Chlorophyll Matrix": {
+      "cover": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)",
+      "category": "collectible",
+      "rarity": "uncommon",
+      "description": "Dense crystalline structure grown in automated bio-farms."
+    },
+    "Solar Thermal Core": {
+      "cover": "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #c2410c 0%, #431407 50%, #000 100%)",
+      "category": "energy-core",
+      "rarity": "rare",
+      "description": "Thermal core storing concentrated solar plasma.",
+      "energyAttribute": "solar"
+    },
+    "Solar Ash Fragment": {
+      "cover": "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)",
+      "category": "collectible",
+      "rarity": "common",
+      "description": "Cooling cinder particles harvested from the solar flare collector."
+    }
+  }
+}

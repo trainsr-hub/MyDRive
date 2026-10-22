@@ -1,0 +1,109 @@
+"""
+Configuration & secrets management for Colab Integration Backend.
+Follows Faust's deterministic primacy principle - config is YAML/JSON, no Python logic.
+"""
+
+import os
+from pathlib import Path
+from typing import Optional
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
+
+# Project root directory
+PROJECT_ROOT = Path(__file__).parent.parent
+
+# Output Storage Directory (Google Drive Synced)
+AVATARS_OUTPUT_DIR = Path(
+    os.getenv("AVATARS_OUTPUT_DIR", "D:/My Drive/My Hazard Drive/Avatars")
+)
+
+# Paths
+SECRETS_DIR = PROJECT_ROOT / ".secrets"
+CREDENTIALS_FILE = SECRETS_DIR / "colab-service-account.json"
+
+# Ensure secrets directory exists
+SECRETS_DIR.mkdir(exist_ok=True)
+
+
+class Settings:
+    """Application settings loaded from environment variables."""
+
+    # Google Cloud Configuration
+    GOOGLE_APPLICATION_CREDENTIALS: str = str(
+        os.getenv("GOOGLE_APPLICATION_CREDENTIALS", CREDENTIALS_FILE)
+    )
+
+    COLAB_NOTEBOOK_ID: str = os.getenv("COLAB_NOTEBOOK_ID", "1iYIe9pNcGO3nFYX2BOVtrLCJoF37PzP6")
+
+    # Server Configuration
+    BACKEND_HOST: str = os.getenv("BACKEND_HOST", "127.0.0.1")
+    BACKEND_PORT: int = int(os.getenv("BACKEND_PORT", "8000"))
+    DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
+
+    # FastAPI Configuration
+    API_V1_PREFIX: str = "/api/v1"
+
+    @property
+    def credentials_path(self) -> Path:
+        """Return the service account credentials path."""
+        return Path(self.GOOGLE_APPLICATION_CREDENTIALS)
+
+    @property
+    def is_credentials_file_valid(self) -> bool:
+        """Check if credentials file exists and is valid JSON."""
+        if not self.credentials_path.exists():
+            return False
+
+        try:
+            import json
+            with open(self.credentials_path, "r") as f:
+                data = json.load(f)
+            return data.get("type") == "service_account"
+        except (json.JSONDecodeError, IOError):
+            return False
+
+
+settings = Settings()
+
+
+def verify_configuration() -> tuple[bool, list[str]]:
+    """
+    Verify all required configuration is present.
+    Returns (is_valid, list_of_errors).
+    """
+    errors = []
+
+    # Check credentials file
+    if not settings.credentials_path.exists():
+        errors.append(
+            f"Credentials file not found: {settings.credentials_path}. "
+            "Create .secrets/colab-service-account.json with your service account JSON."
+        )
+    elif not settings.is_credentials_file_valid:
+        errors.append(
+            f"Invalid credentials file: {settings.credentials_path}. "
+            "Must be valid JSON with 'type': 'service_account'."
+        )
+
+    # Check notebook ID
+    if not settings.COLAB_NOTEBOOK_ID:
+        errors.append("COLAB_NOTEBOOK_ID environment variable is required")
+
+    return len(errors) == 0, errors
+
+
+if __name__ == "__main__":
+    # Run configuration verification
+    is_valid, errors = verify_configuration()
+
+    if is_valid:
+        print("Configuration valid:")
+        print(f"  - Credentials: {settings.credentials_path}")
+        print(f"  - Notebook ID: {settings.COLAB_NOTEBOOK_ID}")
+        print(f"  - Backend: {settings.BACKEND_HOST}:{settings.BACKEND_PORT}")
+    else:
+        print("Configuration errors:")
+        for error in errors:
+            print(f"  - {error}")

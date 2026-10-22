@@ -1,0 +1,472 @@
+[main (root-commit) 79ad15c] Fresh start: current working state
+ 470 files changed, 106754 insertions(+)
+ create mode 100644 .agents/GEMINI.md
+ create mode 100644 .agents/audio/audio_daemon.py
+ create mode 100644 .agents/audio/config.py
+ create mode 100644 .agents/audio/engine.py
+ create mode 100644 .agents/audio/vietnamese_g2p.py
+ create mode 100644 .agents/config/n8n_config.json
+ create mode 100644 .agents/config/pixai_config.json
+ create mode 100644 .agents/memory/MEMORY.md
+ create mode 100644 .agents/memory/current_projects/n8n.md
+ create mode 100644 .agents/memory/current_projects/novel_project.md
+ create mode 100644 .agents/memory/current_projects/novel_wiki_outline_plan.md
+ create mode 100644 .agents/memory/manager/authoritative_local_state_doctrine.md
+ create mode 100644 .agents/memory/manager/core_profile.md
+ create mode 100644 .agents/memory/manager/deus_and_raye_dynamic.md
+ create mode 100644 .agents/memory/manager/drive_is_slave_mirror_doctrine.md
+ create mode 100644 .agents/memory/manager/less_is_more_ui_doctrine.md
+ create mode 100644 .agents/memory/manager/live_data_interaction_golden_standard.md
+ create mode 100644 .agents/memory/manager/partnership_ventures.md
+ create mode 100644 .agents/memory/manager/pk_network_outliner_sidebar_doctrine.md
+ create mode 100644 .agents/memory/manager/raye_visual_dossier.md
+ create mode 100644 .agents/memory/n8n-workflow-automation-engine.md
+ create mode 100644 .agents/memory/pre-presentation-verification.md
+ create mode 100644 .agents/memory/rules-stored-in-claude-folder.md
+ create mode 100644 .agents/memory/single-run-bat-launcher-pattern.md
+ create mode 100644 .agents/plans/faust_sovereign_headless_daemon_plan.md
+ create mode 100644 .agents/plans/faust_telegram_remote_agent_plan.md
+ create mode 100644 .agents/rules/anti-spaghetti-architecture.md
+ create mode 100644 .agents/rules/backend-data-persistence.md
+ create mode 100644 .agents/rules/communication-doctrine.md
+ create mode 100644 .agents/rules/core-engineering-triad.md
+ create mode 100644 .agents/rules/empirical-verification.md
+ create mode 100644 .agents/rules/live-data-interaction-doctrine.md
+ create mode 100644 .agents/rules/manager-memory-isolation.md
+ create mode 100644 .agents/rules/pk-network-outliner-doctrine.md
+ create mode 100644 .agents/rules/project-boundary-isolation.md
+ create mode 100644 .agents/rules/single-run-bat-launcher-doctrine.md
+ create mode 100644 .agents/rules/storage-d-drive.md
+ create mode 100644 .agents/rules/ui-ux-design-doctrine.md
+ create mode 100644 .agents/scripts/bridge_supervisor.py
+ create mode 100644 .agents/scripts/build_flora_app.py
+ create mode 100644 .agents/scripts/c2.py
+ create mode 100644 .agents/scripts/calc_playlist.py
+ create mode 100644 .agents/scripts/create_topics.py
+ create mode 100644 .agents/scripts/daemon/agent_loop.py
+ create mode 100644 .agents/scripts/daemon/agent_service.py
+ create mode 100644 .agents/scripts/daemon/cli_runner.py
+ create mode 100644 .agents/scripts/daemon/domain.py
+ create mode 100644 .agents/scripts/daemon/faust_remote.py
+ create mode 100644 .agents/scripts/daemon/jobs.py
+ create mode 100644 .agents/scripts/daemon/model_provider.py
+ create mode 100644 .agents/scripts/daemon/poller.py
+ create mode 100644 .agents/scripts/daemon/repository.py
+ create mode 100644 .agents/scripts/daemon/telegram_egress.py
+ create mode 100644 .agents/scripts/daemon/tools.py
+ create mode 100644 .agents/scripts/dispatch_to_faust.py
+ create mode 100644 .agents/scripts/faust_listener.py
+ create mode 100644 .agents/scripts/faust_runner.py
+ create mode 100644 .agents/scripts/generate_flora_code.py
+ create mode 100644 .agents/scripts/generate_flora_ui.py
+ create mode 100644 .agents/scripts/generate_flora_vanilla.py
+ create mode 100644 .agents/scripts/generate_pixai_art.py
+ create mode 100644 .agents/scripts/inspect_conv.py
+ create mode 100644 .agents/scripts/inspect_ports.py
+ create mode 100644 .agents/scripts/reply_telegram.py
+ create mode 100644 .agents/scripts/sync_workflow_m2.py
+ create mode 100644 .agents/scripts/telegram_notify.py
+ create mode 100644 .claude/audio/audio_daemon.py
+ create mode 100644 .claude/audio/config.py
+ create mode 100644 .claude/audio/engine.py
+ create mode 100644 .claude/audio/vietnamese_g2p.py
+ create mode 100644 .claude/faust_config.json
+ create mode 100644 .claude/memory/MEMORY.md
+ create mode 100644 .claude/memory/current_projects/n8n.md
+ create mode 100644 .claude/memory/current_projects/novel_project.md
+ create mode 100644 .claude/memory/current_projects/novel_wiki_outline_plan.md
+ create mode 100644 .claude/memory/manager/authoritative_local_state_doctrine.md
+ create mode 100644 .claude/memory/manager/core_profile.md
+ create mode 100644 .claude/memory/manager/deus_and_raye_dynamic.md
+ create mode 100644 .claude/memory/manager/drive_is_slave_mirror_doctrine.md
+ create mode 100644 .claude/memory/manager/less_is_more_ui_doctrine.md
+ create mode 100644 .claude/memory/manager/live_data_interaction_golden_standard.md
+ create mode 100644 .claude/memory/manager/partnership_ventures.md
+ create mode 100644 .claude/memory/manager/pk_network_outliner_sidebar_doctrine.md
+ create mode 100644 .claude/memory/manager/raye_visual_dossier.md
+ create mode 100644 .claude/memory/n8n-workflow-automation-engine.md
+ create mode 100644 .claude/memory/pre-presentation-verification.md
+ create mode 100644 .claude/memory/rules-stored-in-claude-folder.md
+ create mode 100644 .claude/memory/single-run-bat-launcher-pattern.md
+ create mode 100644 .claude/plans/Phase2-Config-Reorganization.md
+ create mode 100644 .claude/plans/greedy-brewing-feather.md
+ create mode 100644 .claude/rules/anti-spaghetti-architecture.md
+ create mode 100644 .claude/rules/backend-data-persistence.md
+ create mode 100644 .claude/rules/communication-doctrine.md
+ create mode 100644 .claude/rules/core-engineering-triad.md
+ create mode 100644 .claude/rules/empirical-verification.md
+ create mode 100644 .claude/rules/live-data-interaction-doctrine.md
+ create mode 100644 .claude/rules/manager-memory-isolation.md
+ create mode 100644 .claude/rules/pk-network-outliner-doctrine.md
+ create mode 100644 .claude/rules/project-boundary-isolation.md
+ create mode 100644 .claude/rules/single-run-bat-launcher-doctrine.md
+ create mode 100644 .claude/rules/storage-d-drive.md
+ create mode 100644 .claude/rules/ui-ux-design-doctrine.md
+ create mode 100644 .claude/skills/sound/SKILL.md
+ create mode 100644 .claude/skills/sound/scripts/cli.py
+ create mode 100644 .gitignore
+ create mode 100644 BT/Mathlab/CT400/BT1.m
+ create mode 100644 BT/Mathlab/CT400/EX1.slx
+ create mode 100644 BT/Mathlab/CT400/EX1.slxc
+ create mode 100644 BT/Mathlab/CT400/EX2.slx
+ create mode 100644 BT/Mathlab/CT400/EX2.slxc
+ create mode 100644 BT/Mathlab/CT400/No01.svg
+ create mode 100644 BT/Mathlab/CT400/No02.svg
+ create mode 100644 BT/Mathlab/CT400/Plot_data.m
+ create mode 100644 BT/Mathlab/CT400/rscale.m
+ create mode 100644 BT/Mathlab/CT400/slprj/sim/varcache/EX1/checksumOfCache.mat
+ create mode 100644 BT/Mathlab/CT400/slprj/sim/varcache/EX1/tmwinternal/simulink_cache.xml
+ create mode 100644 BT/Mathlab/CT400/slprj/sim/varcache/EX1/varInfo.mat
+ create mode 100644 BT/Mathlab/CT400/slprj/sim/varcache/EX2/checksumOfCache.mat
+ create mode 100644 BT/Mathlab/CT400/slprj/sim/varcache/EX2/tmwinternal/simulink_cache.xml
+ create mode 100644 BT/Mathlab/CT400/slprj/sim/varcache/EX2/varInfo.mat
+ create mode 100644 CLAUDE.md
+ create mode 100644 Entropy/Rose/ESP32_BACKEND_INTEGRATION_GUIDE.md
+ create mode 100644 Entropy/Rose/ESP32_TURSO_GUIDE.md
+ create mode 100644 Entropy/Rose/ESP32_UI_SPEC.md
+ create mode 100644 Entropy/Rose/PRESCRIPTS_PLAN.md
+ create mode 100644 Entropy/Rose/README (1).md
+ create mode 100644 Entropy/Rose/README.md
+ create mode 100644 Entropy/Rose/audio/complete_sound.wav
+ create mode 100644 Entropy/Rose/audio/draw_sound.wav
+ create mode 100644 Entropy/Rose/compile_projections.py
+ create mode 100644 Entropy/Rose/css/styles.css
+ create mode 100644 Entropy/Rose/data/quotes.json
+ create mode 100644 Entropy/Rose/data/quotes.jsonl
+ create mode 100644 Entropy/Rose/data/quotes_export.md
+ create mode 100644 Entropy/Rose/data/quotes_map.json
+ create mode 100644 Entropy/Rose/data/taxonomy_index.json
+ create mode 100644 Entropy/Rose/db (1).py
+ create mode 100644 Entropy/Rose/db.py
+ create mode 100644 Entropy/Rose/dev_server.bat
+ create mode 100644 Entropy/Rose/dev_server.py
+ create mode 100644 Entropy/Rose/entropy_rose_quote.html
+ create mode 100644 Entropy/Rose/entropy_rose_system.html
+ create mode 100644 Entropy/Rose/esp32_19_display_mock.html
+ create mode 100644 Entropy/Rose/index.html
+ create mode 100644 Entropy/Rose/js/app.js
+ create mode 100644 Entropy/Rose/js/bundle.js
+ create mode 100644 Entropy/Rose/js/id_generator.js
+ create mode 100644 Entropy/Rose/js/store.js
+ create mode 100644 Entropy/Rose/markdown_converter.py
+ create mode 100644 Entropy/Rose/metadata_editor.html
+ create mode 100644 Entropy/Rose/prescripts_entry.html
+ create mode 100644 Entropy/Rose/run_rose (1).bat
+ create mode 100644 Entropy/Rose/run_rose.bat
+ create mode 100644 Entropy/Rose/schemas/quote_schema (1).json
+ create mode 100644 Entropy/Rose/schemas/quote_schema.json
+ create mode 100644 Entropy/Rose/seed_quote (1).py
+ create mode 100644 Entropy/Rose/seed_quote.py
+ create mode 100644 Entropy/Rose/server.py
+ create mode 100644 Entropy/Rose/turso_sync.py
+ create mode 100644 GEMINI.md
+ create mode 160000 GithubTempRepos/rose-beeper-gateway
+ create mode 100644 Hardware_Rather_Empty/Entropy/.gitignore
+ create mode 100644 Hardware_Rather_Empty/Entropy/README.md
+ create mode 100644 Hardware_Rather_Empty/Entropy/README_Error.md
+ create mode 100644 Hardware_Rather_Empty/Entropy/compile_commands.json
+ create mode 100644 Hardware_Rather_Empty/Entropy/include/Jq8900Player.h
+ create mode 100644 Hardware_Rather_Empty/Entropy/include/fonts_data.h
+ create mode 100644 Hardware_Rather_Empty/Entropy/include/lgfx_config.h
+ create mode 100644 Hardware_Rather_Empty/Entropy/include/pins.h
+ create mode 100644 Hardware_Rather_Empty/Entropy/main_entropy.cpp.bak
+ create mode 100644 Hardware_Rather_Empty/Entropy/platformio.ini
+ create mode 100644 Hardware_Rather_Empty/Entropy/src/Jq8900Player.cpp
+ create mode 100644 Hardware_Rather_Empty/Entropy/src/fonts_data.cpp
+ create mode 100644 Hardware_Rather_Empty/Entropy/src/main.cpp
+ create mode 100644 Hardware_Rather_Empty/Entropy/src/vfont.h
+ create mode 100644 Hardware_Rather_Empty/Entropy/tools/make_fonts.py
+ create mode 160000 Hardware_Rather_Empty/PlatForm
+ create mode 100644 PK Network/.dev.vars
+ create mode 100644 PK Network/.env.example
+ create mode 100644 PK Network/README.md
+ create mode 100644 PK Network/check_schema.mjs
+ create mode 100644 PK Network/chromatic_images.json
+ create mode 100644 PK Network/index.html
+ create mode 100644 PK Network/package-lock.json
+ create mode 100644 PK Network/package.json
+ create mode 100644 PK Network/push_to_prod.bat
+ create mode 100644 PK Network/run_pk.bat
+ create mode 100644 PK Network/scratch_danbooru_items.json
+ create mode 100644 PK Network/src/App.tsx
+ create mode 100644 PK Network/src/components/ActionToast.tsx
+ create mode 100644 PK Network/src/components/AuthModal.tsx
+ create mode 100644 PK Network/src/components/ColumnEditorDrawer.tsx
+ create mode 100644 PK Network/src/components/DataGrid.tsx
+ create mode 100644 PK Network/src/components/GridCell.tsx
+ create mode 100644 PK Network/src/components/GridHeader.tsx
+ create mode 100644 PK Network/src/components/GridRow.tsx
+ create mode 100644 PK Network/src/components/GridToolbar.tsx
+ create mode 100644 PK Network/src/components/Header.tsx
+ create mode 100644 PK Network/src/components/HexIdCell.tsx
+ create mode 100644 PK Network/src/components/JsonMatrixCell.tsx
+ create mode 100644 PK Network/src/components/JsonMatrixPopover.tsx
+ create mode 100644 PK Network/src/components/MobileCardView.tsx
+ create mode 100644 PK Network/src/components/MobileRecordDrawer.tsx
+ create mode 100644 PK Network/src/components/NewTableModal.tsx
+ create mode 100644 PK Network/src/components/NotionMultiSelect.tsx
+ create mode 100644 PK Network/src/components/OutlinerGroupNode.tsx
+ create mode 100644 PK Network/src/components/OutlinerTableNode.tsx
+ create mode 100644 PK Network/src/components/RelationColumnConfig.tsx
+ create mode 100644 PK Network/src/components/RelationMultiSelect.tsx
+ create mode 100644 PK Network/src/components/SaveStatusNotification.tsx
+ create mode 100644 PK Network/src/components/SchemaView.tsx
+ create mode 100644 PK Network/src/components/TableSettingsModal.tsx
+ create mode 100644 PK Network/src/components/TableTabs.tsx
+ create mode 100644 PK Network/src/components/TreeHeaderRow.tsx
+ create mode 100644 PK Network/src/components/VaultGate.tsx
+ create mode 100644 PK Network/src/components/WorkspaceOutliner.tsx
+ create mode 100644 PK Network/src/components/drive/DriveBirdEyeDashboard.tsx
+ create mode 100644 PK Network/src/components/drive/DriveEntitySidebar.tsx
+ create mode 100644 PK Network/src/components/drive/DriveReconcilerApp.tsx
+ create mode 100644 PK Network/src/components/drive/DriveReconcilerHeader.tsx
+ create mode 100644 PK Network/src/components/drive/DriveTrashManager.tsx
+ create mode 100644 PK Network/src/components/drive/EntityFolderCard.tsx
+ create mode 100644 PK Network/src/components/facet/AtomicDeconstructorView.tsx
+ create mode 100644 PK Network/src/components/facet/ConditionPlayground.tsx
+ create mode 100644 PK Network/src/components/facet/FacetCodexApp.tsx
+ create mode 100644 PK Network/src/components/facet/FacetCodexCard.tsx
+ create mode 100644 PK Network/src/components/facet/FacetCodexHeader.tsx
+ create mode 100644 PK Network/src/components/facet/FacetCodexInspectorModal.tsx
+ create mode 100644 PK Network/src/components/facet/FacetLinkageSubToolbar.tsx
+ create mode 100644 PK Network/src/components/facet/FacetedHairApp.tsx
+ create mode 100644 PK Network/src/components/facet/PlaygroundGroupsView.tsx
+ create mode 100644 PK Network/src/components/facet/SynthesizedPromptDock.tsx
+ create mode 100644 PK Network/src/components/facet/TursoSchemaView.tsx
+ create mode 100644 PK Network/src/components/facet/authoring/ConditionAuthoringDeck.tsx
+ create mode 100644 PK Network/src/components/facet/authoring/EntityEditorDrawers.tsx
+ create mode 100644 PK Network/src/components/facet/authoring/authoringStyles.ts
+ create mode 100644 PK Network/src/components/facet/condition/ConditionListTable.tsx
+ create mode 100644 PK Network/src/components/facet/condition/ConditionStudioView.tsx
+ create mode 100644 PK Network/src/components/facet/condition/GroupListTable.tsx
+ create mode 100644 PK Network/src/components/facet/condition/PromptListTable.tsx
+ create mode 100644 PK Network/src/components/facet/mindmap/GroupConditionMindmap.tsx
+ create mode 100644 PK Network/src/components/facet/mindmap/PromptGroupMindmap.tsx
+ create mode 100644 PK Network/src/components/hair/HairCodexApp.tsx
+ create mode 100644 PK Network/src/components/hair/HairCodexCard.tsx
+ create mode 100644 PK Network/src/components/hair/HairCodexHeader.tsx
+ create mode 100644 PK Network/src/components/hair/HairCodexInspectorModal.tsx
+ create mode 100644 PK Network/src/components/hair/HairCodexRelationshipTree.tsx
+ create mode 100644 PK Network/src/components/hair/HairCodexSidebar.tsx
+ create mode 100644 PK Network/src/components/hair/HairCodexTraitDetails.tsx
+ create mode 100644 PK Network/src/components/hair/dependency/HairDependencyGrid.tsx
+ create mode 100644 PK Network/src/components/hair/graph/GraphCanvas.tsx
+ create mode 100644 PK Network/src/components/hair/graph/GraphControls.tsx
+ create mode 100644 PK Network/src/components/hair/graph/GraphNodeCard.tsx
+ create mode 100644 PK Network/src/components/hair/graph/GraphPaletteDrawer.tsx
+ create mode 100644 PK Network/src/components/hair/linkage/CreateTaglessNodeModal.tsx
+ create mode 100644 PK Network/src/components/hair/linkage/DiscardedPoolDrawer.tsx
+ create mode 100644 PK Network/src/components/hair/linkage/HairLinkageNodeCard.tsx
+ create mode 100644 PK Network/src/components/hair/linkage/HairLinkageQuickConnect.tsx
+ create mode 100644 PK Network/src/components/hair/linkage/HairLinkageRibbonCard.tsx
+ create mode 100644 PK Network/src/components/hair/linkage/HairLinkageRibbonSlider.tsx
+ create mode 100644 PK Network/src/components/hair/linkage/HairLinkageSubToolbar.tsx
+ create mode 100644 PK Network/src/components/hair/linkage/HairLinkageViewport.tsx
+ create mode 100644 PK Network/src/components/hair/linkage/TaglessInspectorView.tsx
+ create mode 100644 PK Network/src/components/hazard/HazardArena.tsx
+ create mode 100644 PK Network/src/components/hazard/HazardDossierModal.tsx
+ create mode 100644 PK Network/src/components/hazard/HazardHeader.tsx
+ create mode 100644 PK Network/src/components/hazard/HazardScrubber.tsx
+ create mode 100644 PK Network/src/components/hazard/HazardSlotPickerModal.tsx
+ create mode 100644 PK Network/src/components/hazard/HazardTriggerApp.tsx
+ create mode 100644 PK Network/src/components/prompt/ActiveEvaHeroCard.tsx
+ create mode 100644 PK Network/src/components/prompt/AppearanceTraitCard.tsx
+ create mode 100644 PK Network/src/components/prompt/AutomatedRestSlot.tsx
+ create mode 100644 PK Network/src/components/prompt/ColorPromptRecognizer.tsx
+ create mode 100644 PK Network/src/components/prompt/EvaDossierCard.tsx
+ create mode 100644 PK Network/src/components/prompt/EvaSelectorModal.tsx
+ create mode 100644 PK Network/src/components/prompt/HairBangsAhogeSection.tsx
+ create mode 100644 PK Network/src/components/prompt/HairChromaticsSection.tsx
+ create mode 100644 PK Network/src/components/prompt/HairFoundationSection.tsx
+ create mode 100644 PK Network/src/components/prompt/HairTabContent.tsx
+ create mode 100644 PK Network/src/components/prompt/HairTraitCard.tsx
+ create mode 100644 PK Network/src/components/prompt/ManualPromptCard.tsx
+ create mode 100644 PK Network/src/components/prompt/OcularTabContent.tsx
+ create mode 100644 PK Network/src/components/prompt/OcularTraitCard.tsx
+ create mode 100644 PK Network/src/components/prompt/PromptCompositeCard.tsx
+ create mode 100644 PK Network/src/components/prompt/PromptHeader.tsx
+ create mode 100644 PK Network/src/components/prompt/PromptStudioApp.tsx
+ create mode 100644 PK Network/src/components/prompt/RealisticEyePair.tsx
+ create mode 100644 PK Network/src/components/prompt/RealisticHairSilhouette.tsx
+ create mode 100644 PK Network/src/components/prompt/WorldRouteSpine.tsx
+ create mode 100644 PK Network/src/hooks/useSaveTracker.ts
+ create mode 100644 PK Network/src/main.tsx
+ create mode 100644 PK Network/src/services/api.ts
+ create mode 100644 PK Network/src/services/branchDragDrop.ts
+ create mode 100644 PK Network/src/services/branchOptions.ts
+ create mode 100644 PK Network/src/services/changeTracker.ts
+ create mode 100644 PK Network/src/services/colorExtractor.ts
+ create mode 100644 PK Network/src/services/columnOptions.ts
+ create mode 100644 PK Network/src/services/conditionEngine.ts
+ create mode 100644 PK Network/src/services/conditionLiveApi.ts
+ create mode 100644 PK Network/src/services/conditionStudioData.ts
+ create mode 100644 PK Network/src/services/danbooruCanonicalLinks.ts
+ create mode 100644 PK Network/src/services/danbooruHairItems.json
+ create mode 100644 PK Network/src/services/driveApi.ts
+ create mode 100644 PK Network/src/services/facetLiveDataService.ts
+ create mode 100644 PK Network/src/services/facetOntologyData.ts
+ create mode 100644 PK Network/src/services/facetSubspaceService.ts
+ create mode 100644 PK Network/src/services/formula.ts
+ create mode 100644 PK Network/src/services/fullHairSeedData.json
+ create mode 100644 PK Network/src/services/hairCodexData.ts
+ create mode 100644 PK Network/src/services/hairCodexService.ts
+ create mode 100644 PK Network/src/services/hairDependencyService.ts
+ create mode 100644 PK Network/src/services/hairGraphData.ts
+ create mode 100644 PK Network/src/services/hairGraphService.ts
+ create mode 100644 PK Network/src/services/hairLinkageService.ts
+ create mode 100644 PK Network/src/services/hairLiveService.ts
+ create mode 100644 PK Network/src/services/hairMockData.ts
+ create mode 100644 PK Network/src/services/hazardAdvance.ts
+ create mode 100644 PK Network/src/services/hazardLiveApi.ts
+ create mode 100644 PK Network/src/services/hazardMockData.ts
+ create mode 100644 PK Network/src/services/hazardSvgRouting.ts
+ create mode 100644 PK Network/src/services/headingSort.ts
+ create mode 100644 PK Network/src/services/linkageLayout.ts
+ create mode 100644 PK Network/src/services/mindmapLayout.ts
+ create mode 100644 PK Network/src/services/notificationManager.ts
+ create mode 100644 PK Network/src/services/ocularLiveService.ts
+ create mode 100644 PK Network/src/services/ocularMockData.ts
+ create mode 100644 PK Network/src/services/parsedHairCodex.json
+ create mode 100644 PK Network/src/services/popoverPosition.ts
+ create mode 100644 PK Network/src/services/promptHierarchy.ts
+ create mode 100644 PK Network/src/services/promptLiveApi.ts
+ create mode 100644 PK Network/src/services/relationFilter.ts
+ create mode 100644 PK Network/src/services/tagColors.ts
+ create mode 100644 PK Network/src/services/temptConditionLiveApi.ts
+ create mode 100644 PK Network/src/styles/hairCodex.css
+ create mode 100644 PK Network/src/styles/hairDependency.css
+ create mode 100644 PK Network/src/styles/hairGraph.css
+ create mode 100644 PK Network/src/styles/hazard.css
+ create mode 100644 PK Network/src/styles/index.css
+ create mode 100644 PK Network/src/styles/prompt.css
+ create mode 100644 PK Network/src/types/conditionStudio.ts
+ create mode 100644 PK Network/src/types/drive.ts
+ create mode 100644 PK Network/src/types/facetOntology.ts
+ create mode 100644 PK Network/src/types/hair.ts
+ create mode 100644 PK Network/src/types/hairCodex.ts
+ create mode 100644 PK Network/src/types/hairGraph.ts
+ create mode 100644 PK Network/src/types/hazard.ts
+ create mode 100644 PK Network/src/types/index.ts
+ create mode 100644 PK Network/src/types/ocular.ts
+ create mode 100644 PK Network/src/types/prompt.ts
+ create mode 100644 PK Network/src/utils/id.ts
+ create mode 100644 PK Network/src/utils/subdomain.ts
+ create mode 100644 PK Network/start_silent.vbs
+ create mode 100644 PK Network/stop_pk.bat
+ create mode 100644 PK Network/tsconfig.json
+ create mode 100644 PK Network/tsconfig.tsbuildinfo
+ create mode 100644 PK Network/vite.config.ts
+ create mode 100644 PK Network/worker/conditionRoutes.ts
+ create mode 100644 PK Network/worker/index.ts
+ create mode 100644 PK Network/worker/temptConditionRoutes.ts
+ create mode 100644 PK Network/worker/temptInfrastructure.ts
+ create mode 100644 PK Network/worker/tournament.ts
+ create mode 100644 PK Network/worker/tournamentRoutes.ts
+ create mode 100644 PK Network/worker/turso.ts
+ create mode 100644 PK Network/wrangler.jsonc
+ create mode 100644 Run_Faust_Console.bat
+ create mode 160000 Test Projects/Drive Folder Template
+ create mode 100644 Test Projects/Google Collab/.gitignore
+ create mode 100644 Test Projects/Google Collab/FAUST_ACCESS_SETUP.md
+ create mode 100644 Test Projects/Google Collab/README.md
+ create mode 100644 Test Projects/Google Collab/backend/.env.example
+ create mode 100644 Test Projects/Google Collab/backend/avatar_service.py
+ create mode 100644 Test Projects/Google Collab/backend/config.py
+ create mode 100644 Test Projects/Google Collab/backend/drive_downloader.py
+ create mode 100644 Test Projects/Google Collab/backend/fetch_notebook.py
+ create mode 100644 Test Projects/Google Collab/backend/ledger.py
+ create mode 100644 Test Projects/Google Collab/backend/local_cropper.py
+ create mode 100644 Test Projects/Google Collab/backend/main.py
+ create mode 100644 Test Projects/Google Collab/backend/requirements.txt
+ create mode 100644 Test Projects/Google Collab/backend/update_remote_notebook.py
+ create mode 100644 Test Projects/Google Collab/colab_worker.py
+ create mode 100644 Test Projects/Google Collab/index.html
+ create mode 100644 Test Projects/Google Collab/notebook.ipynb
+ create mode 100644 Test Projects/Google Collab/run.bat
+ create mode 100644 Test Projects/Google Collab/stop.bat
+ create mode 100644 Test Projects/VN-ese TTS/README.md
+ create mode 100644 Test Projects/VN-ese TTS/bridge.py
+ create mode 100644 Test Projects/VN-ese TTS/espeak_vi_test.json
+ create mode 100644 Test Projects/VN-ese TTS/kokoro_vocab.json
+ create mode 100644 Test Projects/VN-ese TTS/ui.html
+ create mode 100644 ZZ - Shortcuts/AvatarStudio.lnk
+ create mode 100644 ZZ - Shortcuts/DriveArchitect.lnk
+ create mode 100644 ZZ - Shortcuts/Lag/Start Antigravity (CDP 9000).lnk
+ create mode 100644 ZZ - Shortcuts/OmniRoute.bat
+ create mode 100644 ZZ - Shortcuts/PKNetwork.lnk
+ create mode 100644 ZZ - Shortcuts/Run_Faust_Console.bat
+ create mode 100644 ZZ - Shortcuts/Run_Faust_Console.lnk
+ create mode 100644 ZZ - Shortcuts/Start_Faust_Bridge.bat
+ create mode 100644 ZZ - Shortcuts/Start_Faust_Remote.bat
+ create mode 100644 ZZ - Shortcuts/Status_Faust_Bridge.bat
+ create mode 100644 ZZ - Shortcuts/Status_Faust_Remote.bat
+ create mode 100644 ZZ - Shortcuts/Stop_Drive_Architect.bat
+ create mode 100644 ZZ - Shortcuts/Stop_Faust_Bridge.bat
+ create mode 100644 ZZ - Shortcuts/Stop_Faust_Remote.bat
+ create mode 100644 ZZ - Shortcuts/Stop_PK_Network.bat
+ create mode 100644 ZZ - Shortcuts/Universe25.lnk
+ create mode 100644 ZZ - Shortcuts/run_pk.bat - Shortcut.lnk
+ create mode 100644 firebase-task-board/firebase-task-board/.firebase/hosting.ZGlzdA.cache
+ create mode 100644 firebase-task-board/firebase-task-board/.firebase/hosting.ZGlzdF9hcHA.cache
+ create mode 100644 firebase-task-board/firebase-task-board/.firebaserc
+ create mode 100644 firebase-task-board/firebase-task-board/.gitignore
+ create mode 100644 firebase-task-board/firebase-task-board/README.md
+ create mode 100644 firebase-task-board/firebase-task-board/dist_app/assets/index-Bc2_XuQ2.css
+ create mode 100644 firebase-task-board/firebase-task-board/dist_app/assets/index-DNGmT3eQ.js
+ create mode 100644 firebase-task-board/firebase-task-board/dist_app/images/food_actuator.jpg
+ create mode 100644 firebase-task-board/firebase-task-board/dist_app/images/water_actuator.jpg
+ create mode 100644 firebase-task-board/firebase-task-board/dist_app/index.html
+ create mode 100644 firebase-task-board/firebase-task-board/firebase.json
+ create mode 100644 firebase-task-board/firebase-task-board/firestore.rules
+ create mode 100644 firebase-task-board/firebase-task-board/index.html
+ create mode 100644 firebase-task-board/firebase-task-board/package-lock.json
+ create mode 100644 firebase-task-board/firebase-task-board/package.json
+ create mode 100644 firebase-task-board/firebase-task-board/public/images/food_actuator.jpg
+ create mode 100644 firebase-task-board/firebase-task-board/public/images/water_actuator.jpg
+ create mode 100644 firebase-task-board/firebase-task-board/src/domain/alerts.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/domain/cap-rules.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/domain/constants.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/feeder-service.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/firebase.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/main.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/repository/firebase-app.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/repository/rtdb-repo.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/service/auth-service.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/service/config-service.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/service/decision-service.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/service/feeder-service.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/service/fleet-service.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/service/history-service.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/service/station-service.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/state.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/style.css
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui-renderer.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui/alerts-view.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui/auth-modal.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui/config-view.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui/decision-view.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui/fleet-view.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui/history-view.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui/navigation.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui/param-tile.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui/raw-inspector-view.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui/station-panel.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui/telemetry-view.js
+ create mode 100644 firebase-task-board/firebase-task-board/src/ui/user-defaults-bar.js
+ create mode 100644 firebase-task-board/firebase-task-board/vite.config.js
+ create mode 100644 firebase-task-board/package.json
+ create mode 100644 firebase-task-board/run_app.bat
+ create mode 100644 launcher.bat
+ create mode 100644 secret.tomb
+ create mode 100644 tools/dynscope/DynScopeLib.slx
+ create mode 100644 tools/dynscope/Scope.svg
+ create mode 100644 tools/dynscope/build_dynscope.m
+ create mode 100644 tools/dynscope/dynscope_sfun.m
+ create mode 100644 tools/dynscope/install_dynscope.m
+ create mode 100644 tools/dynscope/open_dynscope.m
+ create mode 100644 tools/dynscope/restyle_dynscope.m
+ create mode 100644 tools/dynscope/scope_config_dlg.m
+ create mode 100644 tools/dynscope/slblocks.m
+ create mode 100644 tools/dynscope/slprj/sim/varcache/EX1/checksumOfCache.mat
+ create mode 100644 tools/dynscope/slprj/sim/varcache/EX1/tmwinternal/simulink_cache.xml
+ create mode 100644 tools/dynscope/slprj/sim/varcache/EX1/varInfo.mat

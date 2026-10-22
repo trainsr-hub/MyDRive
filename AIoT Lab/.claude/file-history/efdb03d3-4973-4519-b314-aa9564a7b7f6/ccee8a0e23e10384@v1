@@ -1,0 +1,244 @@
+#!/usr/bin/env python3
+"""
+omniroute_config_clone.py
+=========================
+Creates a clean SQLite clone of the Omniroute database containing only
+the configuration tables — no logs, telemetry, conversation history, or
+caches. The result is a fully valid SQLite file that can be restored by a
+simple file copy.
+
+Also copies the .env file alongside the clone so the environment is
+fully reproducible.
+
+Usage:
+    python omniroute_config_clone.py [--db PATH] [--env PATH] [--out-dir PATH]
+
+Defaults:
+    --db      D:/My Drive/Sync/Config/omniroute/storage.sqlite
+    --env     D:/My Drive/Sync/Config/omniroute/.env
+    --out-dir D:/My Heraclitus/Backups/OmniRoute
+"""
+
+import sqlite3
+import shutil
+import argparse
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Tables that define HOW the system behaves.
+# Deliberately excludes: call_logs, proxy_logs, conversation_turn_nodes,
+# agentic_conversations, usage_history, quota_snapshots, xp_audit_log,
+# job_runs, audit_log, domain_cost_history, context_handoffs,
+# session_model_history, provider_quota_reset_events, _omniroute_migrations,
+# routing_decisions, compression_analytics, middleware_logs, relay_logs,
+# request_detail_logs, reasoning_cache, semantic_cache, plugin_analytics,
+# plugin_metrics, free_proxies, free_proxy_sync_errors, memory_*, etc.
+# ---------------------------------------------------------------------------
+CONFIG_TABLES = [
+    # Core routing & combos
+    "combos",
+    "model_combo_mappings",
+    "combo_adaptation_state",
+    "compression_combos",
+    "compression_combo_assignments",
+
+    # Provider & connection config
+    "provider_connections",
+    "provider_nodes",
+    "provider_plans",
+    "provider_key_limits",
+    "provider_quota_state",
+    "upstream_proxy_config",
+    "proxy_registry",
+
+    # API keys & auth
+    "api_keys",
+    "key_groups",
+    "key_group_members",
+    "registered_keys",
+    "relay_tokens",
+
+    # Model config
+    "model_capabilities",
+    "model_capability_overrides",
+    "model_context_overrides",
+    "model_intelligence",
+    "reasoning_routing_rules",
+    "auto_candidate_overrides",
+
+    # Quota & budget config
+    "quota_pools",
+    "quota_allocations",
+    "quota_allocation_model_caps",
+    "quota_groups",
+    "quota_pool_connections",
+    "domain_budgets",
+    "domain_fallback_chains",
+    "account_key_limits",
+    "api_key_token_limits",
+    "api_key_context_sources",
+
+    # Agent & middleware config
+    "agent_bridge_mappings",
+    "agent_bridge_bypass",
+    "middleware_hooks",
+    "skills",
+    "jobs",
+
+    # Proxy & relay config
+    "proxy_assignments",
+    "proxy_subscriptions",
+    "group_model_permissions",
+
+    # Radar / eval config
+    "radar_settings",
+    "eval_suites",
+    "eval_cases",
+
+    # Misc config
+    "webhooks",
+    "plugins",
+    "playground_presets",
+    "tier_config",
+    "domain_circuit_breakers",
+    "key_value",
+    "db_meta",
+    "version_manager",
+    "community_servers",
+    "inspector_custom_hosts",
+]
+
+
+def get_create_sql(src: sqlite3.Connection, table: str) -> str | None:
+    """Return the original CREATE TABLE statement for a table."""
+    row = src.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name=?", (table,)
+    ).fetchone()
+    return row[0] if row else None
+
+
+def get_indexes_sql(src: sqlite3.Connection, table: str) -> list[str]:
+    """Return CREATE INDEX statements for all indexes on a table."""
+    rows = src.execute(
+        "SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name=? AND sql IS NOT NULL",
+        (table,),
+    ).fetchall()
+    return [r[0] for r in rows]
+
+
+def clone(db_path: Path, env_path: Path, out_dir: Path) -> Path:
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
+    clone_name = f"omniroute_config_{ts}.sqlite"
+    clone_path = out_dir / clone_name
+    env_out    = out_dir / f"omniroute_{ts}.env"
+
+    # --- Open source (read-only via URI) ---
+    src = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    src.execute("PRAGMA journal_mode=WAL")  # ensure WAL checkpoint is read
+
+    # --- Get tables that exist in source ---
+    existing = {
+        r[0] for r in src.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        )
+    }
+
+    tables_to_clone = [t for t in CONFIG_TABLES if t in existing]
+    skipped         = [t for t in CONFIG_TABLES if t not in existing]
+
+    # --- Build the clone ---
+    dst = sqlite3.connect(str(clone_path))
+    dst.execute("PRAGMA journal_mode=WAL")
+    dst.execute("PRAGMA foreign_keys=OFF")  # skip FK enforcement during bulk copy
+
+    stats: dict[str, int] = {}
+
+    with dst:
+        for table in tables_to_clone:
+            # Recreate schema
+            create_sql = get_create_sql(src, table)
+            if not create_sql:
+                stats[table] = -1
+                continue
+            dst.execute(create_sql)
+
+            # Copy rows
+            rows = src.execute(f"SELECT * FROM [{table}]").fetchall()
+            if rows:
+                placeholders = ",".join("?" * len(rows[0]))
+                dst.executemany(f"INSERT INTO [{table}] VALUES ({placeholders})", rows)
+
+            # Recreate indexes
+            for idx_sql in get_indexes_sql(src, table):
+                try:
+                    dst.execute(idx_sql)
+                except sqlite3.OperationalError:
+                    pass  # duplicate index name — safe to skip
+
+            stats[table] = len(rows)
+
+    dst.execute("PRAGMA foreign_keys=ON")
+    dst.execute("PRAGMA integrity_check")
+    dst.close()
+    src.close()
+
+    # --- Copy .env ---
+    if env_path.exists():
+        shutil.copy2(env_path, env_out)
+        env_copied = True
+    else:
+        env_copied = False
+
+    # --- Report ---
+    print(f"\nOmniroute Config Clone")
+    print(f"  Source   : {db_path}")
+    print(f"  Clone    : {clone_path}")
+    if env_copied:
+        print(f"  Env      : {env_out}")
+    print(f"  Tables   : {len(tables_to_clone)} cloned, {len(skipped)} not in source")
+    print()
+    for table in tables_to_clone:
+        n = stats.get(table, -1)
+        tag = f"{n} rows" if n >= 0 else "SCHEMA_ONLY (no rows key)"
+        print(f"    {table:<40} {tag}")
+
+    if skipped:
+        print()
+        print("  Skipped (not in source DB):")
+        for t in skipped:
+            print(f"    - {t}")
+
+    size_kb = clone_path.stat().st_size / 1024
+    print(f"\n  Clone size : {size_kb:.1f} KB")
+    print(f"  Done.")
+
+    return clone_path
+
+
+def main():
+    default_db  = r"storage.sqlite"
+    default_env = r".env"
+    default_out = r"D:/My Heraclitus/Backups/OmniRoute"
+
+    parser = argparse.ArgumentParser(description="Clone Omniroute config tables into a clean SQLite file")
+    parser.add_argument("--db",      default=default_db,  help="Path to storage.sqlite")
+    parser.add_argument("--env",     default=default_env, help="Path to .env file")
+    parser.add_argument("--out-dir", default=default_out, help="Output directory")
+    args = parser.parse_args()
+
+    db_path  = Path(args.db)
+    env_path = Path(args.env)
+    out_dir  = Path(args.out_dir)
+
+    if not db_path.exists():
+        print(f"ERROR: Database not found: {db_path}", file=sys.stderr)
+        sys.exit(1)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    clone(db_path, env_path, out_dir)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hydraulic Geyser · Hydrostatic Compression & Plume Burst</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #02080a; font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #ecfeff; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+
+.hud-layer {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  align-items: center; padding: 24px 20px 22px; z-index: 10;
+}
+.header { text-align: center; }
+.sub-title { font-size: 10px; letter-spacing: .35em; text-transform: uppercase; color: #06b6d4; font-weight: 700; margin-bottom: 2px; }
+.main-title { font-size: 18px; font-weight: 800; letter-spacing: .12em; color: #fff; text-shadow: 0 0 16px rgba(6,182,212,0.5); }
+
+.pool-vault {
+  pointer-events: auto; display: flex; align-items: center; gap: 14px;
+  background: rgba(4, 20, 26, 0.9); border: 1.5px solid rgba(6,182,212,0.4);
+  border-radius: 16px; padding: 12px 24px; margin-top: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 0 24px rgba(6,182,212,0.25);
+  transition: transform .1s ease, border-color .1s ease;
+}
+.pool-vault.absorb { transform: scale(1.05); border-color: #67e8f9; box-shadow: 0 0 36px rgba(6,182,212,0.8); }
+.vault-icon {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #a5f3fc, #0891b2);
+  box-shadow: 0 0 16px rgba(6,182,212,0.8);
+  display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; color: #083344;
+}
+.vault-meta { display: flex; flex-direction: column; }
+.vault-lbl { font-size: 9px; letter-spacing: .2em; color: #a5f3fc; text-transform: uppercase; }
+.vault-val { font-size: 28px; font-weight: 900; font-family: 'Consolas', monospace; color: #fff; text-shadow: 0 0 14px rgba(6,182,212,0.6); }
+
+.trigger-deck { pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.hold-btn {
+  width: 250px; min-height: 64px; border-radius: 20px; cursor: pointer;
+  background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(16,185,129,0.2));
+  border: 2px solid rgba(6,182,212,0.5); color: #cffafe;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  box-shadow: 0 0 24px rgba(6,182,212,0.3); transition: transform .1s ease, border-color .15s ease;
+}
+.hold-btn:hover { border-color: #67e8f9; box-shadow: 0 0 32px rgba(6,182,212,0.5); }
+.hold-btn.charging { transform: scale(0.96); border-color: #fff; box-shadow: 0 0 45px rgba(6,182,212,0.8); }
+.btn-txt-main { font-size: 13px; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; }
+.btn-txt-sub { font-size: 10px; font-family: monospace; letter-spacing: .1em; color: #a5f3fc; opacity: 0.8; }
+.preset-bar { display: flex; gap: 10px; }
+.preset-btn {
+  min-height: 44px; padding: 0 16px; border-radius: 10px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12);
+  color: #a5f3fc; font-size: 11px; font-weight: 700; font-family: monospace; cursor: pointer;
+}
+.preset-btn:hover { background: #0891b2; color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="hud-layer">
+  <div class="header">
+    <div class="sub-title">Hydrostatic Plume Engine</div>
+    <div class="main-title">Hydraulic Geyser · Pressure Compression</div>
+    <div class="pool-vault" id="poolVault">
+      <div class="vault-icon">🌊</div>
+      <div class="vault-meta">
+        <span class="vault-lbl">Accumulated Water Table</span>
+        <span class="vault-val" id="poolVal">00:00:00</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="trigger-deck">
+    <div class="hold-btn" id="holdTrigger">
+      <span class="btn-txt-main" id="btnMain">HOLD TO COMPRESS VALVE</span>
+      <span class="btn-txt-sub" id="btnSub">RELEASE TO GEYSER ERUPT</span>
+    </div>
+    <div class="preset-bar">
+      <button class="preset-btn" onclick="autoCharge(1800)">Pump +30m</button>
+      <button class="preset-btn" onclick="autoCharge(7200)">Pump +2h</button>
+      <button class="preset-btn" onclick="autoCharge(21600)">Pump +6h</button>
+      <button class="preset-btn" onclick="resetAll()">Flush</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const poolVaultEl = document.getElementById('poolVault'), poolValEl = document.getElementById('poolVal');
+const holdTriggerEl = document.getElementById('holdTrigger');
+const btnMainEl = document.getElementById('btnMain'), btnSubEl = document.getElementById('btnSub');
+let W, H, cx, cy, targetX = 0, targetY = 0, permanentSec = 0, displayPermanentSec = 0;
+let isHolding = false, chargeSec = 0, screenShake = 0, phase = 'idle';
+let droplets = [], steamJets = [], audioCtx = null;
+
+function resize() {
+  W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight;
+  cx = W / 2; cy = H / 2 + 10;
+  const r = poolVaultEl.getBoundingClientRect(); targetX = r.left + r.width / 2; targetY = r.top + r.height / 2;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function formatHMS(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60);
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+function playHydroHiss(pitch) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(300 * pitch, t);
+    gain.gain.setValueAtTime(0.06, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+    osc.connect(gain); gain.connect(audioCtx.destination); osc.start(t); osc.stop(t + 0.05);
+  } catch(e) {}
+}
+
+function playGeyserEruption() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'triangle'; osc.frequency.setValueAtTime(120, t); osc.frequency.exponentialRampToValueAtTime(380, t + 0.5);
+    gain.gain.setValueAtTime(0.45, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    osc.connect(gain); gain.connect(audioCtx.destination); osc.start(t); osc.stop(t + 0.5);
+  } catch(e) {}
+}
+
+['mousedown', 'touchstart'].forEach(e => holdTriggerEl.addEventListener(e, (ev) => {
+  ev.preventDefault(); if (phase === 'erupting') return;
+  isHolding = true; phase = 'pressurizing'; chargeSec = 0; holdTriggerEl.classList.add('charging');
+}));
+['mouseup', 'mouseleave', 'touchend'].forEach(e => holdTriggerEl.addEventListener(e, () => {
+  if (isHolding && phase === 'pressurizing') { isHolding = false; holdTriggerEl.classList.remove('charging'); releaseEruption(); }
+}));
+
+function autoCharge(sec) { if (phase === 'idle') { chargeSec = sec; releaseEruption(); } }
+
+function releaseEruption() {
+  if (chargeSec < 60) { phase = 'idle'; return; }
+  phase = 'erupting'; playGeyserEruption();
+  screenShake = Math.min(26, 6 + (chargeSec / 3600) * 4);
+
+  const pCount = Math.min(220, Math.max(40, Math.floor(chargeSec / 60)));
+  const secPerP = chargeSec / pCount;
+  for (let i = 0; i < pCount; i++) {
+    // Upward fountain spray
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * 0.9;
+    const sp = 8 + Math.random() * 16;
+    droplets.push({
+      x: cx, y: cy + 40, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+      secVal: secPerP, age: 0, magnetWait: 18 + Math.random() * 14,
+      size: 3 + Math.random() * 3, color: Math.random() > 0.3 ? '#38bdf8' : '#a5f3fc'
+    });
+  }
+  btnMainEl.textContent = 'GEYSER ERUPTION'; btnSubEl.textContent = 'DRAINING TO RESERVOIR'; chargeSec = 0;
+}
+
+function resetAll() {
+  permanentSec = 0; displayPermanentSec = 0; droplets = []; steamJets = [];
+  phase = 'idle'; poolValEl.textContent = '00:00:00';
+  btnMainEl.textContent = 'HOLD TO COMPRESS VALVE'; btnSubEl.textContent = 'RELEASE TO GEYSER ERUPT';
+}
+
+function draw() {
+  ctx.save();
+  if (screenShake > 0) {
+    ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+    screenShake *= 0.88; if (screenShake < 0.2) screenShake = 0;
+  }
+  ctx.fillStyle = 'rgba(2, 8, 10, 0.28)'; ctx.fillRect(-20, -20, W + 40, H + 40);
+
+  // Phase 1: High Pressure Valve Squeeze
+  if (phase === 'pressurizing' && isHolding) {
+    chargeSec += 90;
+    const prog = Math.min(1.0, chargeSec / 21600);
+    screenShake = 1.2 + prog * 9;
+    btnMainEl.textContent = `PRESSURE +${formatHMS(chargeSec)}`;
+    btnSubEl.textContent = `VALVE: ${(prog * 1200).toFixed(0)} PSI`;
+    if (Math.random() < 0.35) playHydroHiss(1.0 + prog * 2.5);
+
+    // Steam vents escaping
+    if (Math.random() < 0.5) {
+      steamJets.push({ x: cx + (Math.random() - 0.5) * 50, y: cy + 30, vx: (Math.random() - 0.5) * 2, vy: -3 - Math.random() * 3, alpha: 0.8 });
+    }
+    for (let i = steamJets.length - 1; i >= 0; i--) {
+      const s = steamJets[i]; s.x += s.vx; s.y += s.vy; s.alpha -= 0.04;
+      if (s.alpha <= 0) { steamJets.splice(i, 1); continue; }
+      ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(165, 243, 252, ${s.alpha})`; ctx.fill();
+    }
+
+    // Heavy Brass Valve Ring Squeezing Down
+    const valveW = 100 - prog * 40;
+    ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 4; ctx.shadowColor = '#06b6d4'; ctx.shadowBlur = 15;
+    ctx.strokeRect(cx - valveW / 2, cy - 20, valveW, 40);
+
+    ctx.font = `900 18px 'Consolas', monospace`; ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(`+${formatHMS(chargeSec)}`, cx, cy);
+  }
+
+  // Phase 2: Water Droplets Plume & Reservoir Ingestion
+  if (phase === 'erupting') {
+    for (let i = droplets.length - 1; i >= 0; i--) {
+      const p = droplets[i]; p.age++;
+      if (p.age < p.magnetWait) {
+        p.x += p.vx; p.y += p.vy;
+        p.vy += 0.35; // gravity arc
+        p.vx *= 0.95;
+      } else {
+        const dx = targetX - p.x, dy = targetY - p.y, dist = Math.hypot(dx, dy);
+        if (dist < 26) {
+          permanentSec += p.secVal; poolVaultEl.classList.add('absorb');
+          setTimeout(() => poolVaultEl.classList.remove('absorb'), 70);
+          playHydroHiss(2.0 + (p.age % 10) * 0.1);
+          droplets.splice(i, 1); continue;
+        }
+        const pull = Math.min(26, 2.0 + (p.age - p.magnetWait) * 0.95);
+        p.vx = (dx / dist) * pull; p.vy = (dy / dist) * pull; p.x += p.vx; p.y += p.vy;
+      }
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color; ctx.shadowColor = p.color; ctx.shadowBlur = 10; ctx.fill();
+    }
+    if (droplets.length === 0) {
+      phase = 'idle'; btnMainEl.textContent = 'HOLD TO COMPRESS VALVE'; btnSubEl.textContent = 'RELEASE TO GEYSER ERUPT';
+    }
+  }
+
+  if (displayPermanentSec < permanentSec) {
+    displayPermanentSec += Math.ceil((permanentSec - displayPermanentSec) * 0.2);
+    poolValEl.textContent = formatHMS(displayPermanentSec);
+  }
+  ctx.restore();
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

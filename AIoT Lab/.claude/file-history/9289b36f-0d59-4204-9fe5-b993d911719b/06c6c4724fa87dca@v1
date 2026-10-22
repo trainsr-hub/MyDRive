@@ -1,0 +1,57 @@
+// path: src/App.tsx
+
+import { useEffect, useRef } from 'react'
+import { ThemeProvider } from './themes/ThemeProvider'
+import { AppManager } from './core/AppManager'
+import { useGlobalStore } from './store/useGlobalStore'
+
+export default function App() {
+  const loadFromBackend = useGlobalStore((s) => s.loadFromBackend)
+  const isOnline = useGlobalStore((s) => s.isOnline)
+
+  // Track previous online state so we can detect offline → online recovery
+  const wasOnlineRef = useRef<boolean>(true)
+
+  // ── 1. Initial hydration on cold mount ────────────────────────────────────
+  useEffect(() => {
+    loadFromBackend()
+  }, [loadFromBackend])
+
+  // ── 2. Periodic background re-hydration every 60 seconds ─────────────────
+  // Keeps currency, inventory and vault in sync without requiring F5.
+  useEffect(() => {
+    const timer = setInterval(() => {
+      loadFromBackend()
+    }, 60_000)
+    return () => clearInterval(timer)
+  }, [loadFromBackend])
+
+  // ── 3. Tab-focus re-hydration via Page Visibility API ─────────────────────
+  // Re-syncs the moment the user switches back to this tab.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadFromBackend()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [loadFromBackend])
+
+  // ── 4. Online-recovery re-hydration ───────────────────────────────────────
+  // When the backend flips from offline → online, immediately re-hydrate
+  // to pick up any mutations that happened while we were disconnected.
+  useEffect(() => {
+    const wasOffline = !wasOnlineRef.current
+    if (wasOffline && isOnline) {
+      loadFromBackend()
+    }
+    wasOnlineRef.current = isOnline
+  }, [isOnline, loadFromBackend])
+
+  return (
+    <ThemeProvider>
+      <AppManager />
+    </ThemeProvider>
+  )
+}

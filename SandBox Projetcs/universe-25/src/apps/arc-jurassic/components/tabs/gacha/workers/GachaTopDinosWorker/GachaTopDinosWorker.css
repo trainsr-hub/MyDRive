@@ -1,0 +1,204 @@
+/* ============================================================================ */
+/* GACHA TOP DINOS WORKER STYLES (Apex Vanguard Left Panel)                     */
+/* ============================================================================ */
+
+.dino-top3-panel {
+    width: 360px;
+    max-width: 95vw;
+    background: linear-gradient(165deg, rgba(16, 12, 26, 0.94) 0%, rgba(8, 6, 14, 0.98) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 20px rgba(255, 215, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(14px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+@media (min-width: 1200px) {
+    .dino-top3-panel-docked {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 40;
+    }
+}
+
+@media (min-width: 900px) and (max-width: 1199px) {
+    .dino-top3-panel-docked {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 330px;
+        z-index: 40;
+    }
+}
+
+@media (max-width: 899px) {
+    .dino-top3-panel-docked {
+        position: relative;
+        width: min(480px, 100%);
+        margin-bottom: 12px;
+        z-index: 40;
+    }
+}
+
+.dino-top3-header {
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(90deg, rgba(212, 175, 55, 0.12) 0%, rgba(132, 24, 34, 0.1) 100%);
+}
+
+.dino-top3-content {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-sizing: border-box;
+}
+
+/* Progressive Infinite Scroll Container - Calibrated for exactly 3 full dinosaur cards */
+.dino-top3-scrollable {
+    max-height: 232px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 215, 0, 0.35) rgba(0, 0, 0, 0.25);
+}
+
+.dino-top3-scrollable::-webkit-scrollbar {
+    width: 5px;
+}
+
+.dino-top3-scrollable::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 4px;
+}
+
+.dino-top3-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.35);
+    border-radius: 4px;
+}
+
+.dino-top3-scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 215, 0, 0.6);
+}
+
+.dino-top3-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    min-height: 68px;
+    max-height: 68px;
+    box-sizing: border-box;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.14s ease-out;
+    flex-shrink: 0;
+}
+
+.dino-top3-card:hover {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.08) 0%, rgba(132, 24, 34, 0.08) 100%);
+    border-color: rgba(255, 215, 0, 0.35);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.dino-top3-card.rank-1 {
+    border-left: 3.5px solid #ffd700;
+}
+
+.dino-top3-card.rank-2 {
+    border-left: 3.5px solid #cbd5e1;
+}
+
+.dino-top3-card.rank-3 {
+    border-left: 3.5px solid #f97316;
+}
+
+.dino-top3-card.rank-other {
+    border-left: 2.5px solid rgba(148, 163, 184, 0.4);
+    opacity: 0.92;
+}
+
+.dino-top3-card.rank-other:hover {
+    opacity: 1;
+}
+
+.dino-top3-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 900;
+    font-family: monospace;
+    flex-shrink: 0;
+}
+
+.dino-top3-badge.rank-1 {
+    background: linear-gradient(135deg, #ffd700, #b8860b);
+    color: #000;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.dino-top3-badge.rank-2 {
+    background: linear-gradient(135deg, #e2e8f0, #94a3b8);
+    color: #000;
+    box-shadow: 0 0 8px rgba(203, 213, 225, 0.4);
+}
+
+.dino-top3-badge.rank-3 {
+    background: linear-gradient(135deg, #fb923c, #c2410c);
+    color: #fff;
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+}
+
+.dino-top3-badge.rank-other {
+    background: rgba(30, 24, 40, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+    font-size: 10px;
+}
+
+.dino-top3-empty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    min-height: 68px;
+    max-height: 68px;
+    box-sizing: border-box;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    color: #8c7a9e;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+/* Scroll Hint Footer */
+.dino-top-scroll-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 8px;
+    margin-top: 2px;
+    border-radius: 8px;
+    background: rgba(255, 215, 0, 0.05);
+    border: 1px dashed rgba(255, 215, 0, 0.2);
+    color: #ffd86b;
+    font-size: 10px;
+    font-family: monospace;
+    letter-spacing: 0.3px;
+}

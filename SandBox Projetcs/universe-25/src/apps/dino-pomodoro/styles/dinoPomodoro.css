@@ -1,0 +1,207 @@
+/* path: src/apps/dino-pomodoro/styles/dinoPomodoro.css */
+/* Advanced Jurassic Chronometer & Bio-Incubator Animation Engine */
+
+/* 1. Flowing Molten Plasma Beam */
+@keyframes plasmaFlow {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.plasma-energy-bar {
+  background: linear-gradient(
+    90deg,
+    #92400e 0%,
+    #d97706 20%,
+    #f59e0b 40%,
+    #fef08a 50%,
+    #f59e0b 60%,
+    #d97706 80%,
+    #92400e 100%
+  );
+  background-size: 200% 100%;
+  animation: plasmaFlow 3s linear infinite;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.5), inset 0 0 8px rgba(254, 240, 138, 0.6);
+}
+
+.plasma-energy-bar.paused {
+  animation-play-state: paused;
+  filter: saturate(0.7) brightness(0.85);
+}
+
+/* 2. Chronometer Rotating Outer Dial */
+@keyframes chronoDialSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes chronoDialSpinReverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.chrono-dial-outer {
+  transform-origin: center center;
+  animation: chronoDialSpin 40s linear infinite;
+}
+
+.chrono-dial-outer.running {
+  animation: chronoDialSpin 25s linear infinite;
+}
+
+.chrono-dial-inner {
+  transform-origin: center center;
+  animation: chronoDialSpinReverse 30s linear infinite;
+}
+
+/* 3. Incubation Heartbeat / Second Tick Pulse */
+@keyframes timerHeartbeat {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.4));
+  }
+  12% {
+    transform: scale(1.025);
+    filter: drop-shadow(0 0 25px rgba(251, 191, 36, 0.85)) drop-shadow(0 0 8px #fff);
+  }
+  28% {
+    transform: scale(0.995);
+    filter: drop-shadow(0 0 14px rgba(251, 191, 36, 0.5));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.4));
+  }
+}
+
+.timer-digits-pulse {
+  animation: timerHeartbeat 1000ms ease-out infinite;
+}
+
+/* 4. Head Spark / Flare Radiance */
+@keyframes flareGlow {
+  0%, 100% {
+    transform: translateY(-50%) scale(0.9);
+    box-shadow: 0 0 12px 3px rgba(255, 235, 100, 0.8), 0 0 25px 6px rgba(245, 158, 11, 0.6);
+  }
+  50% {
+    transform: translateY(-50%) scale(1.2);
+    box-shadow: 0 0 20px 6px rgba(255, 255, 255, 0.95), 0 0 35px 10px rgba(251, 191, 36, 0.9);
+  }
+}
+
+.progress-head-flare {
+  animation: flareGlow 1500ms ease-in-out infinite;
+}
+
+/* 5. Ambient Bio-Steam / Energy Motes */
+@keyframes energyMoteFloat1 {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.85;
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-60px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes energyMoteFloat2 {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.9;
+  }
+  75% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-80px) scale(1.4);
+    opacity: 0;
+  }
+}
+
+.energy-mote-1 {
+  animation: energyMoteFloat1 2800ms ease-in-out infinite;
+}
+
+.energy-mote-2 {
+  animation: energyMoteFloat2 3400ms ease-in-out 700ms infinite;
+}
+
+.energy-mote-3 {
+  animation: energyMoteFloat1 3100ms ease-in-out 1400ms infinite;
+}
+
+/* 6. Scanline Sweep Effect */
+@keyframes holoScanline {
+  0% {
+    top: -20%;
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  80% {
+    opacity: 0.7;
+  }
+  100% {
+    top: 120%;
+    opacity: 0;
+  }
+}
+
+.holo-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 215, 0, 0.2) 20%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 215, 0, 0.2) 80%,
+    transparent 100%
+  );
+  filter: blur(0.5px);
+  pointer-events: none;
+  animation: holoScanline 4500ms linear infinite;
+}
+
+/* 7. Supercharged Completion Shockwave */
+@keyframes completeShockwave {
+  0% {
+    transform: scale(0.85);
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.9);
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+    box-shadow: 0 0 60px rgba(251, 191, 36, 0);
+  }
+}
+
+.complete-shockwave-ring {
+  animation: completeShockwave 1800ms cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+}

@@ -1,0 +1,13 @@
+# backend/api/storage_router.py — Core 5-Tier Storage Router
+from fastapi import APIRouter
+from core.storage_engine import OrderRequest, process_storage_order
+
+router = APIRouter(tags=["Storage Engine"])
+
+@router.get("/health")
+async def health_check():
+    return {"status": "ok", "message": "Blue Rose Storage Engine is running"}
+
+@router.post("/api/v1/execute")
+async def execute_order(req: OrderRequest):
+    return process_storage_order(req)

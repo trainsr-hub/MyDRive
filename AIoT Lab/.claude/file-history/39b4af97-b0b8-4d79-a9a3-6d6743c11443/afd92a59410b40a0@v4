@@ -1,0 +1,765 @@
+<title>Prescripts Data Entry</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --text: #1f2937;
+  --text-secondary: #6b7280;
+  --accent: #7c3aed;
+  --accent-soft: #ede9fe;
+  --success: #10b981;
+  --radius: 8px;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --border: #334155;
+    --text: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --accent: #8b5cf6;
+    --accent-soft: #312e81;
+    --success: #34d399;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --border: #334155;
+  --text: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --accent: #8b5cf6;
+  --accent-soft: #312e81;
+  --success: #34d399;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 32px;
+}
+
+@media (max-width: 768px) {
+  .form-grid { grid-template-columns: 1fr; }
+}
+
+.form-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.form-section h2 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.field-group {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.field-hint {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  line-height: 1.5;
+}
+
+.multi-select {
+  position: relative;
+}
+
+.multi-select-trigger {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.multi-select-trigger:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tag-remove {
+  cursor: pointer;
+  padding: 0 2px;
+  opacity: 0.7;
+}
+
+.tag-remove:hover {
+  opacity: 1;
+}
+
+.tag-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  flex: 1;
+  min-width: 120px;
+  padding: 4px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 4px;
+  display: none;
+}
+
+.dropdown-menu.open {
+  display: block;
+}
+
+.dropdown-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.dropdown-option:last-child {
+  border-bottom: none;
+}
+
+.dropdown-option:hover {
+  background: var(--accent-soft);
+}
+
+.dropdown-option.selected {
+  background: var(--accent);
+  color: white;
+}
+
+.quote-preview {
+  padding: 8px 0;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.json-preview {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.button:hover {
+  opacity: 0.9;
+}
+
+.button-secondary {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+  z-index: 1001;
+}
+
+.preview-panel {
+  position: sticky;
+  top: 24px;
+  height: fit-content;
+}
+
+.preview-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.preview-content h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+</style>
+
+<button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
+
+<div class="container">
+  <div class="header">
+    <h1>Prescripts Data Entry</h1>
+    <p>Phase 1: Morning wisdom quotes with flexible metadata</p>
+  </div>
+
+  <div class="form-grid">
+    <div class="form-content">
+
+      <div class="form-section">
+        <h2>Quote Content</h2>
+
+        <div class="field-group">
+          <label class="field-label" for="main-content">Main Content</label>
+          <textarea id="main-content" class="input textarea" placeholder="Enter the quote text..."></textarea>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="context">Context</label>
+          <textarea id="context" class="input textarea" placeholder="Situational backdrop..."></textarea>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Date</h2>
+
+        <div class="field-group">
+          <label class="field-label" for="date-range">Flexible Date</label>
+          <div class="multi-select">
+            <input type="text" id="date-range" class="input" placeholder="2020, 2020-05, 2020~2023, or 2023-12-15" oninput="showDateSuggestions(this.value)" onkeydown="handleDateKeyDown(event)">
+            <div class="dropdown-menu" id="date-suggestions" style="max-height: 150px;">
+              <div id="date-options"></div>
+            </div>
+          </div>
+          <div class="field-hint">Year, month, range, or exact date</div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Speaker(s)</h2>
+
+        <div class="field-group">
+          <label class="field-label">Speaker Names</label>
+          <div class="multi-select">
+            <div class="multi-select-trigger" onclick="toggleDropdown('speakers')">
+              <div id="speakers-tags"></div>
+              <input type="text" class="tag-input" id="speakers-input" placeholder="Search or add..."
+                     oninput="filterOptions('speakers', this.value)"
+                     onkeydown="handleKeyDown('speakers', event)">
+            </div>
+            <div class="dropdown-menu" id="speakers-dropdown">
+              <div id="speakers-options"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Response Quote IDs</h2>
+
+        <div class="field-group">
+          <label class="field-label">Preference</label>
+          <div class="multi-select">
+            <div class="multi-select-trigger" onclick="toggleDropdown('responses')">
+              <div id="responses-tags"></div>
+              <input type="text" class="tag-input" id="responses-input" placeholder="Search quotes..."
+                     oninput="filterOptions('responses', this.value)"
+                     onkeydown="handleKeyDown('responses', event)">
+            </div>
+            <div class="dropdown-menu" id="responses-dropdown">
+              <div id="responses-options"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2>Tags</h2>
+
+        <div class="field-group">
+          <label class="field-label">Domains</label>
+          <div class="multi-select">
+            <div class="multi-select-trigger" onclick="toggleDropdown('domains')">
+              <div id="domains-tags"></div>
+              <input type="text" class="tag-input" id="domains-input" placeholder="Search or create..."
+                     oninput="filterOptions('domains', this.value)"
+                     onkeydown="handleKeyDown('domains', event)">
+            </div>
+            <div class="dropdown-menu" id="domains-dropdown">
+              <div id="domains-options"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Themes</label>
+          <div class="multi-select">
+            <div class="multi-select-trigger" onclick="toggleDropdown('themes')">
+              <div id="themes-tags"></div>
+              <input type="text" class="tag-input" id="themes-input" placeholder="Search or create..."
+                     oninput="filterOptions('themes', this.value)"
+                     onkeydown="handleKeyDown('themes', event)">
+            </div>
+            <div class="dropdown-menu" id="themes-dropdown">
+              <div id="themes-options"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="sentiment">Sentiment</label>
+          <input type="text" id="sentiment" class="input" placeholder="analytical, stoic, triumphant...">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="button" onclick="saveQuote()">Save Quote</button>
+        <button class="button button-secondary" onclick="clearForm()">Clear</button>
+      </div>
+    </div>
+
+    <div class="preview-panel">
+      <div class="preview-content">
+        <h3>Live JSON Preview</h3>
+        <div class="json-preview" id="json-preview">{}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const availableQuotes = {
+  "0047FB356CE62F42": {
+    id: "0047FB356CE62F42",
+    main_content: "Static hum, thrum—needle drops,\nSpinning echo, time just stops.",
+    context: "from 'Vinyl Angel' by Koi no Koe"
+  },
+  "0047FB356CE65652": {
+    id: "0047FB356CE65652",
+    main_content: "The universe is built on a plan, the profound symmetry of which is somehow present in every inner corner of human thought.",
+    context: "Reflections on cybernetics"
+  }
+};
+
+let quoteData = {
+  id: "",
+  index: 0,
+  main_content: "",
+  context: "",
+  date: "",
+  source_speaker: [],
+  preference: [],
+  tags: { domains: [], themes: [], sentiment: "" }
+};
+
+let availableOptions = {
+  speakers: ["Faust", "The Manager", "Marcus Aurelius"],
+  domains: ["philosophy", "cybernetics", "warfare", "architecture"],
+  themes: ["entropy", "sovereignty", "symmetry", "causality"]
+};
+
+function generateDateSuggestions(input) {
+  const currentYear = new Date().getFullYear();
+  const suggestions = [];
+
+  const input_lower = input.toLowerCase();
+
+  // Year suggestions
+  for (let y = currentYear; y >= currentYear - 20; y--) {
+    if (y.toString().includes(input_lower)) suggestions.push(y.toString());
+  }
+
+  // Month suggestions
+  const months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+  if (input.includes('-') || input_lower === 'month') {
+    months.forEach(m => {
+      const formatted = currentYear + '-' + m;
+      if (formatted.includes(input_lower)) suggestions.push(formatted);
+    });
+  }
+
+  // Range suggestions
+  for (let start = currentYear - 20; start < currentYear; start++) {
+    for (let end = start + 1; end <= currentYear; end++) {
+      const range = start + '~' + end;
+      if (range.includes(input_lower)) suggestions.push(range);
+    }
+  }
+
+  return suggestions.slice(0, 8);
+}
+
+function showDateSuggestions(value) {
+  const container = document.getElementById('date-options');
+  const dropdown = document.getElementById('date-suggestions');
+
+  if (!value.trim()) {
+    dropdown.classList.remove('open');
+    return;
+  }
+
+  const suggestions = generateDateSuggestions(value);
+  container.innerHTML = suggestions.map(s =>
+    `<div class="dropdown-option" onclick="selectDateSuggestion('${s}')">${s}</div>`
+  ).join('');
+
+  dropdown.classList.add('open');
+}
+
+function selectDateSuggestion(value) {
+  document.getElementById('date-range').value = value;
+  document.getElementById('date-suggestions').classList.remove('open');
+  updateQuoteData();
+}
+
+function handleDateKeyDown(event) {
+  if (event.key === 'Enter') {
+    document.getElementById('date-suggestions').classList.remove('open');
+    updateQuoteData();
+  } else if (event.key === 'Escape') {
+    document.getElementById('date-suggestions').classList.remove('open');
+  }
+}
+
+function generateHexId() {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 0xFFFF);
+  return (timestamp.toString(16) + random.toString(16)).toUpperCase().padStart(16, '0').slice(0, 16);
+}
+
+function updateQuoteData() {
+  quoteData.main_content = document.getElementById('main-content').value;
+  quoteData.context = document.getElementById('context').value;
+  quoteData.date = document.getElementById('date-range').value;
+  quoteData.tags.sentiment = document.getElementById('sentiment').value;
+
+  if (quoteData.main_content && !quoteData.id) {
+    quoteData.id = generateHexId();
+    quoteData.index = Date.now();
+  }
+
+  updateJsonPreview();
+}
+
+function updateJsonPreview() {
+  document.getElementById('json-preview').textContent = JSON.stringify(quoteData, null, 2);
+}
+
+function toggleDropdown(type) {
+  const dropdown = document.getElementById(`${type}-dropdown`);
+  const isOpen = dropdown.classList.contains('open');
+
+  document.querySelectorAll('.dropdown-menu').forEach(dd => dd.classList.remove('open'));
+
+  if (!isOpen) {
+    dropdown.classList.add('open');
+    updateDropdownOptions(type);
+  }
+}
+
+function updateDropdownOptions(type) {
+  const container = document.getElementById(`${type}-options`);
+  const input = document.getElementById(`${type}-input`);
+  const query = input.value.toLowerCase();
+
+  container.innerHTML = '';
+
+  if (type === 'responses') {
+    Object.values(availableQuotes).forEach(quote => {
+      if (quote.main_content.toLowerCase().includes(query) || quote.context.toLowerCase().includes(query) || !query) {
+        const div = document.createElement('div');
+        div.className = 'dropdown-option';
+        div.innerHTML = `<div><strong>${quote.main_content.substring(0, 50)}...</strong><div class="quote-preview">${quote.context}</div></div>`;
+        div.onclick = () => addTag('responses', quote.id);
+        container.appendChild(div);
+      }
+    });
+  } else {
+    const options = availableOptions[type] || [];
+    const selected = type === 'domains' ? quoteData.tags.domains : (type === 'themes' ? quoteData.tags.themes : quoteData.source_speaker);
+
+    options.filter(opt => opt.toLowerCase().includes(query) && !selected.includes(opt)).forEach(option => {
+      const div = document.createElement('div');
+      div.className = 'dropdown-option';
+      div.textContent = option;
+      div.onclick = () => addTag(type, option);
+      container.appendChild(div);
+    });
+
+    if (query && !options.map(o => o.toLowerCase()).includes(query)) {
+      const div = document.createElement('div');
+      div.className = 'dropdown-option';
+      div.style.fontStyle = 'italic';
+      div.style.color = 'var(--accent)';
+      div.textContent = `+ Create "${input.value}"`;
+      div.onclick = () => createAndAddTag(type, input.value);
+      container.appendChild(div);
+    }
+  }
+}
+
+function addTag(type, value) {
+  if (type === 'responses') {
+    if (!quoteData.preference.includes(value)) quoteData.preference.push(value);
+  } else if (type === 'speakers') {
+    if (!quoteData.source_speaker.includes(value)) quoteData.source_speaker.push(value);
+  } else if (type === 'domains') {
+    if (!quoteData.tags.domains.includes(value)) quoteData.tags.domains.push(value);
+  } else if (type === 'themes') {
+    if (!quoteData.tags.themes.includes(value)) quoteData.tags.themes.push(value);
+  }
+
+  updateTagsDisplay(type);
+  updateQuoteData();
+
+  document.getElementById(`${type}-input`).value = '';
+  document.getElementById(`${type}-dropdown`).classList.remove('open');
+}
+
+function createAndAddTag(type, value) {
+  if (!availableOptions[type].includes(value)) {
+    availableOptions[type].push(value);
+  }
+  addTag(type, value);
+}
+
+function removeTag(type, value) {
+  if (type === 'responses') {
+    quoteData.preference = quoteData.preference.filter(v => v !== value);
+  } else if (type === 'speakers') {
+    quoteData.source_speaker = quoteData.source_speaker.filter(v => v !== value);
+  } else if (type === 'domains') {
+    quoteData.tags.domains = quoteData.tags.domains.filter(v => v !== value);
+  } else if (type === 'themes') {
+    quoteData.tags.themes = quoteData.tags.themes.filter(v => v !== value);
+  }
+
+  updateTagsDisplay(type);
+  updateQuoteData();
+}
+
+function updateTagsDisplay(type) {
+  const container = document.getElementById(`${type}-tags`);
+  let values = [];
+  let actualValues = [];
+
+  if (type === 'responses') {
+    actualValues = quoteData.preference;
+    values = quoteData.preference.map(id => {
+      const quote = availableQuotes[id];
+      return quote ? quote.main_content.substring(0, 25) + '...' : id.substring(0, 8);
+    });
+  } else if (type === 'speakers') {
+    actualValues = quoteData.source_speaker;
+    values = quoteData.source_speaker;
+  } else if (type === 'domains') {
+    actualValues = quoteData.tags.domains;
+    values = quoteData.tags.domains;
+  } else if (type === 'themes') {
+    actualValues = quoteData.tags.themes;
+    values = quoteData.tags.themes;
+  }
+
+  container.innerHTML = values.map((value, idx) => {
+    const actual = actualValues[idx];
+    return `<div class="tag-chip">${value}<span class="tag-remove" onclick="removeTag('${type}', '${actual}')">×</span></div>`;
+  }).join('');
+}
+
+function handleKeyDown(type, event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const value = event.target.value.trim();
+    if (value) {
+      createAndAddTag(type, value);
+    }
+  } else if (event.key === 'Escape') {
+    document.getElementById(`${type}-dropdown`).classList.remove('open');
+  }
+}
+
+function saveQuote() {
+  updateQuoteData();
+  if (!quoteData.main_content) {
+    alert('Please enter main content');
+    return;
+  }
+  console.log('Saving:', quoteData);
+  alert('Quote saved!');
+}
+
+function clearForm() {
+  quoteData = {
+    id: "", index: 0, main_content: "", context: "", date: "",
+    source_speaker: [], preference: [],
+    tags: { domains: [], themes: [], sentiment: "" }
+  };
+
+  document.getElementById('main-content').value = '';
+  document.getElementById('context').value = '';
+  document.getElementById('date-range').value = '';
+  document.getElementById('sentiment').value = '';
+
+  ['speakers', 'responses', 'domains', 'themes'].forEach(updateTagsDisplay);
+
+  updateJsonPreview();
+}
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const current = root.getAttribute('data-theme');
+  const newTheme = current === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', newTheme);
+  localStorage.setItem('prescripts-theme', newTheme);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const savedTheme = localStorage.getItem('prescripts-theme');
+  if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+
+  ['main-content', 'context', 'date-range', 'sentiment'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateQuoteData);
+  });
+
+  document.addEventListener('click', function(event) {
+    if (!event.target.closest('.multi-select') && !event.target.closest('.dropdown-menu')) {
+      document.querySelectorAll('.dropdown-menu').forEach(dd => dd.classList.remove('open'));
+    }
+  });
+
+  ['speakers', 'responses', 'domains', 'themes'].forEach(updateTagsDisplay);
+
+  updateJsonPreview();
+});
+</script>

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 E-Paper Quote Presentation Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap">
+  <style>
+    :root {
+      --bg-canvas:        #060606;
+      --bg-card:          #101010;
+      --bg-card-hover:    #181818;
+      --bg-input:         #181818;
+      --text-vivid:       #ffffff;
+      --text-main:        #e0e0e0;
+      --text-muted:       #888888;
+      --border-dim:       #222222;
+      --border-mid:       #333333;
+      --radius-sm:        6px;
+      --radius-md:        10px;
+      font-family: "JetBrains Mono", monospace;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      padding: 2rem 1.5rem 5rem;
+      display: flex;
+      justify-content: center;
+      line-height: 1.6;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* Top Control Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--border-dim);
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .title-group h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .title-group p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.38rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-family: "JetBrains Mono", monospace;
+    }
+    .btn:hover { background: var(--bg-card-hover); border-color: #555555; color: #fff; }
+    .btn.active { background: #ffffff; color: #000000; border-color: #ffffff; font-weight: 700; }
+
+    select.select-picker {
+      padding: 0.38rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      color: var(--text-vivid);
+      font-size: 0.78rem;
+      outline: none;
+      cursor: pointer;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    /* Sub-Toolbar (Active Status + Toggles) */
+    .toolbar-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 0.65rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      font-size: 0.75rem;
+    }
+
+    .toolbar-info {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: var(--text-muted);
+    }
+    .active-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.12rem 0.45rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border-mid);
+      border-radius: 4px;
+      color: var(--text-vivid);
+      font-weight: 600;
+    }
+
+    /* ==========================================================================
+       ESP32 E-PAPER HARDWARE CHASSIS
+       ========================================================================== */
+    .epaper-chassis {
+      width: 100%;
+      max-width: 760px;
+      min-height: 340px;
+      aspect-ratio: 16 / 8.5;
+      margin: 1.5rem auto;
+      border-radius: 10px;
+      padding: 1.75rem 2.25rem;
+      position: relative;
+      background: #000000 !important;
+      color: #ffffff !important;
+      border: 10px solid #1c1c1c;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 0 1px #282828;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+
+    /* Horizontal Landscape Content Centering */
+    .ep-content {
+      font-size: 1.35rem;
+      line-height: 1.7;
+      font-style: italic;
+      color: #ffffff;
+      margin-top: auto;
+      margin-bottom: auto;
+      padding: 0.75rem 0;
+    }
+
+    /* Compact 2.9" aspect ratio simulation */
+    .epaper-chassis.compact {
+      max-width: 520px;
+      padding: 1.5rem 1.75rem;
+    }
+
+    /* 1. Header: Ghosted (#666) & Smaller Scale (0.74rem) */
+    .ep-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.6rem;
+      font-size: 0.74rem;
+      font-weight: 500;
+      border-bottom: 1px solid #222222;
+      color: #666666;
+      letter-spacing: 0.02em;
+    }
+
+    .ep-status-bar .ep-header-left { color: #666666; }
+    .ep-status-bar .ep-idx-num { color: #777777; font-weight: 600; }
+    .ep-status-bar .ep-sep { color: #444444; margin: 0 0.35rem; }
+    .ep-status-bar .ep-specific-title { color: #777777; font-weight: 500; }
+    .ep-status-bar .ep-header-right { color: #666666; }
+    .ep-status-bar .ep-date-label { color: #555555; }
+    .ep-status-bar .ep-date-val { color: #777777; font-weight: 500; }
+
+    /* 2. Content: Italic, Size L (1.45rem), Crisp White */
+    .ep-content {
+      font-size: 1.45rem;
+      line-height: 1.75;
+      font-style: italic;
+      margin-bottom: 1.6rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+    }
+
+    /* Category Alignment Rules */
+    .ep-content.content-justify {
+      text-align: justify !important;
+      text-justify: inter-word !important;
+      hyphens: auto;
+    }
+    .ep-content.content-left {
+      text-align: left !important;
+    }
+
+    /* Architectural Quotation Marks */
+    .ep-qmark {
+      font-family: Georgia, "IBM Plex Serif", serif !important;
+      font-style: normal !important;
+      font-weight: 700;
+      font-size: 1.6em;
+      line-height: 0;
+      display: inline-block;
+      user-select: none;
+      transition: color 0.15s ease;
+    }
+    .ep-qmark-open {
+      margin-right: 0.35rem;
+      vertical-align: -0.1em;
+    }
+    .ep-qmark-close {
+      margin-left: 0.35rem;
+      vertical-align: -0.22em;
+    }
+
+    /* 3. Optional Context */
+    .ep-context {
+      font-size: 0.8rem;
+      padding: 0.65rem 0.9rem;
+      margin-bottom: 1.6rem;
+      line-height: 1.55;
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 2px solid #444444;
+      color: #777777;
+    }
+
+    /* 4. Footer: Tags on Left, Container on Right */
+    .ep-footer {
+      padding-top: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      border-top: 1px solid #222222;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .ep-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      align-items: center;
+    }
+
+    .ep-tag-block {
+      display: inline-block;
+      padding: 0.14rem 0.52rem;
+      border-radius: 4px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.3;
+      user-select: none;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .ep-attribution {
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      text-align: right;
+    }
+    .ep-container-name {
+      font-weight: 700;
+      transition: color 0.15s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Top Control Bar -->
+    <header class="top-bar">
+      <div class="title-group">
+        <h1><span>📟</span> ESP32 E-Paper Studio</h1>
+        <p>Hardware Specification Preview: <code>#IDX ~ Specific</code> · <code>Date</code> · <code>“Italic”</code> · <code>#Tags</code> · <code>Container</code></p>
+      </div>
+
+      <div class="controls-row">
+        <select class="select-picker" id="quote-select" onchange="loadSelectedQuote(this.value)">
+          <option value="">Loading quotes...</option>
+        </select>
+        <button class="btn" onclick="pickRandomQuote()">🎲 Random Quote</button>
+        <button class="btn" onclick="reRollColors()">🎲 Re-roll Colors</button>
+      </div>
+    </header>
+
+    <!-- Sub-Toolbar (Active Status + Hardware Toggles) -->
+    <section class="toolbar-bar">
+      <div class="toolbar-info">
+        <span>Quote Marks &amp; Container Color:</span>
+        <span class="active-pill" id="active-accent-indicator">
+          <span style="width:10px; height:10px; border-radius:50%; display:inline-block;" id="accent-dot"></span>
+          <span id="accent-name-label">Pool of 2</span>
+        </span>
+        <span style="opacity:0.35;">|</span>
+        <span>Content: <strong>Crisp White (Mono L)</strong></span>
+      </div>
+
+      <div class="controls-row">
+        <button class="btn active" id="toggle-context-btn" onclick="toggleContext()">Context Box</button>
+        <button class="btn" id="toggle-compact-btn" onclick="toggleCompactMode()">2.9" / 4.2"</button>
+      </div>
+    </section>
+
+    <!-- MAIN HARDWARE CANVAS -->
+    <main>
+      <div class="epaper-chassis" id="epaper-stage"></div>
+    </main>
+
+    <!-- Raw Data Payload Drawer -->
+    <details style="background:var(--bg-card); border:1px solid var(--border-dim); border-radius:var(--radius-md); padding:0.85rem 1rem; cursor:pointer;">
+      <summary style="font-size:0.8rem; font-weight:600; color:var(--text-muted); outline:none;">
+        🔍 Inspect Raw 5-Point Payload (Sent to ESP32 over Wi-Fi)
+      </summary>
+      <pre id="raw-payload-json" style="font-family:'JetBrains Mono'; font-size:0.76rem; color:#38bdf8; margin-top:0.75rem; overflow-x:auto;"></pre>
+    </details>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin.startsWith('http') ? window.location.origin : 'http://127.0.0.1:20137';
+    let quotesList = [];
+    let activeQuote = null;
+    let availableSpecifics = [];
+    let availableThemes = [];
+
+    // Hardware Option State
+    let showContext = true;
+    let isCompact = false;
+    let reRollSeed = 0;
+
+    // 2-Color Pool for Quote Marks & Container: Gold vs Blue
+    const ACCENT_POOL = [
+      { name: "Sapphire Blue", hex: "#38bdf8" },
+      { name: "Imperial Gold", hex: "#f59e0b" }
+    ];
+
+    // Vast Independent Color Palette for Tags (Golden-Ratio Spectrum Engine)
+    function generateVastTagStyle(tagName, tagIndex) {
+      let hash = 0;
+      for (let i = 0; i < tagName.length; i++) {
+        hash = ((hash << 5) - hash) + tagName.charCodeAt(i);
+        hash |= 0;
+      }
+      const goldenAngle = 137.508;
+      const hue = Math.abs(Math.floor((hash * goldenAngle + tagIndex * 89 + reRollSeed) % 360));
+
+      const textColor   = `hsl(${hue}, 85%, 72%)`;
+      const borderColor = `hsla(${hue}, 70%, 40%, 0.45)`;
+      const bgColor     = `hsla(${hue}, 65%, 8%, 0.9)`;
+      return `background: ${bgColor} !important; border-color: ${borderColor} !important; color: ${textColor} !important;`;
+    }
+
+    async function init() {
+      try {
+        const [taxRes, qRes] = await Promise.all([
+          fetch(`${API_BASE}/api/taxonomy`).then(r => r.json()).catch(err => { console.error('Taxonomy fetch error:', err); return {}; }),
+          fetch(`${API_BASE}/api/quotes/list`).then(r => r.json()).catch(err => { console.error('Quotes fetch error:', err); return []; })
+        ]);
+
+        availableSpecifics = taxRes.specifics || [];
+        availableThemes = taxRes.themes || [];
+        quotesList = qRes || [];
+
+        populateSelect();
+
+        // Default to Quote #6 (or first available)
+        const target = quotesList.find(q => q.idx === 6) || quotesList[0];
+        if (target) {
+          loadSelectedQuote(target.id);
+        } else {
+          document.getElementById('epaper-stage').innerHTML = `<div style="padding:2rem; text-align:center; color:var(--text-muted);">No quotes found in database.</div>`;
+        }
+      } catch (err) {
+        console.error("Init Error:", err);
+        document.getElementById('epaper-stage').innerHTML = `<div style="padding:2rem; text-align:center; color:#f43f5e;">Client Render Error: ${err.message}</div>`;
+      }
+    }
+
+    function populateSelect() {
+      const select = document.getElementById('quote-select');
+      if (quotesList.length === 0) {
+        select.innerHTML = `<option>No quotes in database</option>`;
+        return;
+      }
+      select.innerHTML = quotesList.map(q => {
+        const snippet = q.main_content.split('\n')[0].substring(0, 34);
+        return `<option value="${q.id}">#${q.idx ?? q.index} — "${snippet}..."</option>`;
+      }).join('');
+    }
+
+    function loadSelectedQuote(qid) {
+      activeQuote = quotesList.find(q => q.id === qid) || quotesList[0];
+      if (!activeQuote) return;
+
+      document.getElementById('quote-select').value = activeQuote.id;
+      renderActiveEpaper();
+    }
+
+    function pickRandomQuote() {
+      if (quotesList.length === 0) return;
+      const rnd = quotesList[Math.floor(Math.random() * quotesList.length)];
+      loadSelectedQuote(rnd.id);
+    }
+
+    function reRollColors() {
+      reRollSeed = Math.floor(Math.random() * 1000);
+      renderActiveEpaper();
+    }
+
+    function toggleContext() {
+      showContext = !showContext;
+      document.getElementById('toggle-context-btn').classList.toggle('active', showContext);
+      renderActiveEpaper();
+    }
+
+    function toggleCompactMode() {
+      isCompact = !isCompact;
+      document.getElementById('toggle-compact-btn').classList.toggle('active', isCompact);
+      const chassis = document.getElementById('epaper-stage');
+      if (chassis) chassis.classList.toggle('compact', isCompact);
+    }
+
+    // Resolve minimal 5-point metadata bundle
+    function getBundle(q) {
+      if (!q) return null;
+
+      const content = q.main_content || "";
+      const context = q.context || "";
+
+      const specific = availableSpecifics.find(s => s.id === q.specific_id);
+      const specificName = specific ? specific.name : "—";
+      const containerName = specific && specific.container ? specific.container.name : (specific ? (specific.container_name || "—") : "—");
+
+      let effectiveDate = (q.date || "").trim();
+      let isFallback = false;
+      if (!effectiveDate && specific && specific.date && specific.date.trim()) {
+        effectiveDate = specific.date.trim();
+        isFallback = true;
+      }
+
+      const rawThemes = (q.theme_ids || []).map(tid => {
+        const th = availableThemes.find(t => t.id === tid);
+        return th ? th.name : tid;
+      });
+      const hashtagThemes = rawThemes.map(t => `#${t}`);
+      const rawCategory = specific ? (specific.category || "").trim() : "";
+
+      return {
+        idx: q.idx ?? q.index,
+        content,
+        context,
+        category: rawCategory,
+        specificName,
+        containerName,
+        effectiveDate: effectiveDate || "—",
+        isFallback,
+        hashtagThemes: hashtagThemes.length > 0 ? hashtagThemes : ["#Wisdom"]
+      };
+    }
+
+    function renderActiveEpaper() {
+      const b = getBundle(activeQuote);
+      if (!b) return;
+
+      document.getElementById('raw-payload-json').textContent = JSON.stringify(b, null, 2);
+      const stage = document.getElementById('epaper-stage');
+
+      // Category-Driven Content Alignment: writing => justify, music/poem => left
+      const catLower = (b.category || "").toLowerCase().trim();
+      const isWriting = catLower === "writing" || catLower === "bài viết" || catLower === "baiviet";
+      const alignClass = isWriting ? "content-justify" : "content-left";
+
+      // Quotation Mark & Container Accent: Random pool of 2 (Gold vs Blue)
+      const quoteSeed = (typeof b.idx === 'number' ? b.idx : (parseInt(String(b.idx).replace(/\D/g, ''), 10) || 1)) + reRollSeed;
+      const accentIndex = Math.abs(quoteSeed % ACCENT_POOL.length);
+      const activeAccent = ACCENT_POOL[accentIndex];
+      const sharedAccentColor = activeAccent.hex;
+
+      // Update toolbar accent indicator
+      document.getElementById('accent-dot').style.background = sharedAccentColor;
+      document.getElementById('accent-name-label').textContent = activeAccent.name;
+
+      // Content: Italic, wrapped by distinct quotation marks matching the Container's color
+      const formattedContent = `<span class="ep-qmark ep-qmark-open" style="color:${sharedAccentColor};">“</span><em>${b.content.replace(/\n/g, '<br>')}</em><span class="ep-qmark ep-qmark-close" style="color:${sharedAccentColor};">”</span>`;
+
+      // Header components: Ghost (#666) and smaller font size
+      const headerTitleHTML = `<span class="ep-header-left"><strong class="ep-idx-num">#${b.idx}</strong><span class="ep-sep">~</span><span class="ep-specific-title">${b.specificName}</span></span>`;
+      const headerDateHTML = `<span class="ep-header-right"><span class="ep-date-label">Date: </span><span class="ep-date-val">${b.effectiveDate}</span></span>`;
+
+      // Tags: Each tag receives an independent random color from the vast spectrum
+      const tagsBlocks = b.hashtagThemes.map((t, idx) => {
+        const tagStyle = generateVastTagStyle(t, idx);
+        return `<span class="ep-tag-block" style="${tagStyle}">${t}</span>`;
+      }).join('');
+
+      // Container: Shares the exact same color as the quotation marks (Gold or Blue)
+      const containerHTML = `<span class="ep-container-name" style="color:${sharedAccentColor};">${b.containerName}</span>`;
+
+      stage.innerHTML = `
+        <!-- 1. Header: #<idx> ~ <specific> on left, Date: <date> on right (Ghost gray & smaller) -->
+        <div class="ep-status-bar">
+          <div>${headerTitleHTML}</div>
+          <div>${headerDateHTML}</div>
+        </div>
+
+        <!-- 2. Content: Italic in crisp white, category-driven alignment -->
+        <div class="ep-content ${alignClass}">
+          ${formattedContent}
+        </div>
+
+        <!-- 3. Optional Context -->
+        ${(showContext && b.context) ? `
+          <div class="ep-context">
+            ${b.context}
+          </div>
+        ` : ''}
+
+        <!-- 4. Footer: Tags on LEFT (Vast random colors) · Container on RIGHT (Shared accent) -->
+        <div class="ep-footer">
+          <div class="ep-tags">${tagsBlocks}</div>
+          <div class="ep-attribution">${containerHTML}</div>
+        </div>
+      `;
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

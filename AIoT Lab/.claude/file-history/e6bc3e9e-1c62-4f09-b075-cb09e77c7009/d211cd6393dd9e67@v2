@@ -1,0 +1,93 @@
+import asyncio
+import json
+import subprocess
+import time
+import urllib.request
+import websockets
+
+async def test_all_app_routes():
+    chrome_path = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
+    proc = subprocess.Popen([
+        chrome_path,
+        '--headless=new',
+        '--remote-debugging-port=9225',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-default-browser-check',
+        'http://localhost:5173'
+    ])
+    await asyncio.sleep(2)
+
+    console_messages = []
+    try:
+        tabs = json.loads(urllib.request.urlopen('http://localhost:9225/json').read())
+        target_tab = None
+        for t in tabs:
+            if 'localhost:5173' in t.get('url', ''):
+                target_tab = t
+                break
+
+        if not target_tab:
+            print("Target tab not found!")
+            return
+
+        ws_url = target_tab['webSocketDebuggerUrl']
+        async with websockets.connect(ws_url) as ws:
+            await ws.send(json.dumps({'id': 1, 'method': 'Log.enable'}))
+            await ws.send(json.dumps({'id': 2, 'method': 'Runtime.enable'}))
+
+            # Navigate to golden-hour, arc-jurassic, and heraclitus
+            urls_to_test = [
+                'http://localhost:5173/golden-hour',
+                'http://localhost:5173/arc-jurassic',
+                'http://localhost:5173/heraclitus'
+            ]
+
+            for test_url in urls_to_test:
+                print(f"Navigating to {test_url}...")
+                await ws.send(json.dumps({
+                    'id': 10,
+                    'method': 'Page.navigate',
+                    'params': {'url': test_url}
+                }))
+                await asyncio.sleep(1.5)
+
+            # Collect all logs
+            t_end = time.time() + 2.0
+            while time.time() < t_end:
+                try:
+                    raw = await asyncio.wait_for(ws.recv(), timeout=0.3)
+                    msg = json.loads(raw)
+                    method = msg.get('method', '')
+                    if method == 'Log.entryAdded':
+                        console_messages.append(msg.get('params', {}).get('entry', {}))
+                    elif method == 'Runtime.consoleAPICalled':
+                        params = msg.get('params', {})
+                        args = [a.get('value', str(a)) for a in params.get('args', [])]
+                        console_messages.append({
+                            'level': params.get('type'),
+                            'text': ' '.join(str(x) for x in args),
+                        })
+                except asyncio.TimeoutError:
+                    pass
+
+        print("\n--- APP ROUTES CONSOLE MESSAGES ---")
+        for m in console_messages:
+            print(f"[{m.get('level')}] {m.get('text')}")
+
+        warnings = [
+            m for m in console_messages
+            if 'allowtransparency' in str(m.get('text', '')).lower()
+            or 'sandbox' in str(m.get('text', '')).lower()
+        ]
+
+        if warnings:
+            print("\n❌ FAILED: Detected target warnings:", warnings)
+        else:
+            print("\n✅ PERFECT: Zero `allowTransparency` and zero `sandbox escape` warnings across all routes!")
+
+    finally:
+        proc.terminate()
+
+if __name__ == '__main__':
+    asyncio.run(test_all_app_routes())

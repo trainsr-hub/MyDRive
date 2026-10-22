@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+r"""
+Tier 3: Background Job Supervisor
+Manages detached developer servers, long-running builds, and log capture.
+Ensures zero-leakage process lifecycle on Local Disk D:\.
+"""
+
+import json
+import os
+import subprocess
+import sys
+import time
+import uuid
+from pathlib import Path
+from typing import List, Optional, Dict, Any
+
+from domain import ExecutionResult, JobInfo
+
+
+JOBS_DIR = Path(r"D:\Program Data\faust_daemon\jobs")
+REGISTRY_FILE = Path(r"D:\Program Data\faust_daemon\jobs.json")
+
+
+class JobManager:
+    """Manages detached background processes and their logs."""
+
+    @classmethod
+    def _init_storage(cls) -> None:
+        JOBS_DIR.mkdir(parents=True, exist_ok=True)
+        if not REGISTRY_FILE.exists():
+            with open(REGISTRY_FILE, "w", encoding="utf-8") as f:
+                json.dump({}, f)
+
+    @classmethod
+    def _load_registry(cls) -> Dict[str, Dict[str, Any]]:
+        cls._init_storage()
+        try:
+            with open(REGISTRY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
+    @classmethod
+    def _save_registry(cls, data: Dict[str, Dict[str, Any]]) -> None:
+        cls._init_storage()
+        with open(REGISTRY_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+    @classmethod
+    def _is_pid_alive(cls, pid: int) -> bool:
+        if os.name == "nt":
+            res = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}"],
+                capture_output=True, text=True
+            )
+            return str(pid) in res.stdout
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+
+    @classmethod
+    def start_background(cls, command: str, name: str, cwd: str) -> ExecutionResult:
+        """Launches a command detached, capturing output to a dedicated log file."""
+        cls._init_storage()
+        job_id = f"job_{uuid.uuid4().hex[:6]}"
+        log_file = JOBS_DIR / f"{job_id}.log"
+
+        flags = (
+            subprocess.CREATE_NEW_PROCESS_GROUP
+            | subprocess.DETACHED_PROCESS
+            | subprocess.CREATE_NO_WINDOW
+            if os.name == "nt" else 0
+        )
+
+        try:
+            with open(log_file, "w", encoding="utf-8") as out:
+                proc = subprocess.Popen(
+                    ["powershell", "-NoProfile", "-NonInteractive", "-Command", command],
+                    cwd=cwd,
+                    stdout=out,
+                    stderr=subprocess.STDOUT,
+                    creationflags=flags
+                )
+
+            registry = cls._load_registry()
+            registry[job_id] = {
+                "job_id": job_id,
+                "pid": proc.pid,
+                "name": name,
+                "command": command,
+                "cwd": cwd,
+                "start_time": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "log_file": str(log_file)
+            }
+            cls._save_registry(registry)
+
+            return ExecutionResult(
+                success=True,
+                output=f"Started background job '{name}' [{job_id}] (PID: {proc.pid}).\nLogs: {log_file.name}"
+            )
+        except Exception as e:
+            return ExecutionResult(success=False, output="", error=f"Failed to start background job: {str(e)}")
+
+    @classmethod
+    def stop_background(cls, job_id: str) -> ExecutionResult:
+        """Kills the background process tree cleanly."""
+        registry = cls._load_registry()
+        job = registry.get(job_id)
+        if not job:
+            return ExecutionResult(success=False, output="", error=f"Job not found: {job_id}")
+
+        pid = job.get("pid")
+        if not pid:
+            return ExecutionResult(success=False, output="", error=f"No PID found for job {job_id}")
+
+        try:
+            if os.name == "nt":
+                subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
+            else:
+                os.kill(pid, 9)
+
+            del registry[job_id]
+            cls._save_registry(registry)
+            return ExecutionResult(success=True, output=f"Terminated background job '{job.get('name')}' [{job_id}] (PID: {pid}).")
+        except Exception as e:
+            return ExecutionResult(success=False, output="", error=f"Failed to kill job {job_id}: {str(e)}")
+
+    @classmethod
+    def list_background(cls) -> List[JobInfo]:
+        """Returns all currently running background jobs."""
+        registry = cls._load_registry()
+        active = []
+        updated = {}
+
+        for jid, d in registry.items():
+            pid = d.get("pid", 0)
+            alive = cls._is_pid_alive(pid) if pid else False
+            if alive:
+                updated[jid] = d
+                active.append(JobInfo(
+                    job_id=jid,
+                    pid=pid,
+                    name=d.get("name", "app"),
+                    command=d.get("command", ""),
+                    cwd=d.get("cwd", ""),
+                    start_time=d.get("start_time", ""),
+                    is_running=True
+                ))
+
+        if len(updated) != len(registry):
+            cls._save_registry(updated)
+
+        return active
+
+    @classmethod
+    def tail_log(cls, job_id: str, lines: int = 50) -> ExecutionResult:
+        """Retrieves trailing lines from a background job's log."""
+        log_file = JOBS_DIR / f"{job_id}.log"
+        if not log_file.exists():
+            return ExecutionResult(success=False, output="", error=f"Log file not found for {job_id}")
+        try:
+            with open(log_file, "r", encoding="utf-8", errors="replace") as f:
+                all_lines = f.readlines()
+            tail = all_lines[-lines:] if len(all_lines) > lines else all_lines
+            return ExecutionResult(success=True, output="".join(tail))
+        except Exception as e:
+            return ExecutionResult(success=False, output="", error=str(e))
+
+    @classmethod
+    def stop_all_jobs(cls) -> int:
+        """Terminates all running child jobs."""
+        active = cls.list_background()
+        count = 0
+        for j in active:
+            cls.stop_background(j.job_id)
+            count += 1
+        return count

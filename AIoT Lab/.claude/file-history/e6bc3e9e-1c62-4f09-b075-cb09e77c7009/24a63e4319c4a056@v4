@@ -1,0 +1,111 @@
+// path: src/apps/heraclitus/components/ChronoGachaRollPanel.tsx
+// Tier 4 Presentation Component: Golden Standard Chrono Gacha Button matching Image #3
+
+import React, { useState } from 'react'
+import { Sparkles, Ticket, ChevronDown } from 'lucide-react'
+import { useInventoryStore } from '../../../store/useInventoryStore'
+import { rollChronoDuration } from '../core/chronoGachaEngine'
+import type { GachaRollResult } from '../core/chronoGachaEngine'
+
+interface ChronoGachaRollPanelProps {
+  isDepositing: boolean
+  onRoll: (result: GachaRollResult, wagerMultiplier: number) => void
+}
+
+const WAGER_OPTIONS = [1, 2, 4, 8, 16]
+
+export const ChronoGachaRollPanel: React.FC<ChronoGachaRollPanelProps> = ({
+  isDepositing,
+  onRoll,
+}) => {
+  const chronoTickets = useInventoryStore((s) => s.chronoTickets ?? 15)
+  const addChronoTickets = useInventoryStore((s) => s.addChronoTickets)
+  const spendChronoTickets = useInventoryStore((s) => s.spendChronoTickets)
+
+  const [wager, setWager] = useState<number>(1)
+
+  const handleRoll = () => {
+    if (isDepositing) return
+
+    if (chronoTickets < wager) {
+      // Auto-refill free stipend if player has run out of tickets
+      addChronoTickets(10)
+    }
+
+    const success = spendChronoTickets(wager)
+    if (!success) {
+      addChronoTickets(10)
+      spendChronoTickets(wager)
+    }
+
+    const baseResult = rollChronoDuration()
+    const multipliedSeconds = baseResult.seconds * wager
+    const finalResult: GachaRollResult = {
+      ...baseResult,
+      seconds: multipliedSeconds,
+    }
+
+    onRoll(finalResult, wager)
+  }
+
+  const handleTicketClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    addChronoTickets(10)
+  }
+
+  return (
+    <div className="chrono-gacha-container">
+      {/* ── 1. PRIMARY SUMMON BUTTON (Exact Golden Standard from Image #3) ── */}
+      <button
+        type="button"
+        onClick={handleRoll}
+        disabled={isDepositing}
+        className={`chrono-summon-button ${
+          isDepositing ? 'is-spooling' : wager > 1 ? 'is-high-wager' : ''
+        }`}
+      >
+        <span className="flex items-center justify-center gap-2">
+          <Sparkles className="w-5 h-5 text-[#ffd86b] animate-pulse" />
+          <span>
+            {isDepositing
+              ? 'Spooling Chrono Kinetic Stream...'
+              : wager > 1
+              ? `Summon ${wager}x Chrono Duration (Gacha)`
+              : 'Summon Chrono Duration (Gacha)'}
+          </span>
+        </span>
+      </button>
+
+      {/* ── 2. PRE-ROLL WAGER BAR (Exact Golden Standard from Image #3) ── */}
+      <div className="chrono-wager-bar">
+        <span className="chrono-wager-label">ROLL WAGER:</span>
+        <div className="chrono-wager-select-wrapper">
+          <select
+            value={wager}
+            onChange={(e) => setWager(Number(e.target.value))}
+            className="chrono-wager-select"
+            disabled={isDepositing}
+          >
+            {WAGER_OPTIONS.map((opt) => (
+              <option key={opt} value={opt} className="bg-[#120f18] text-[#ffd86b]">
+                {opt}x Ticket Wager ({opt} 🎟️)
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="chrono-select-chevron" />
+        </div>
+
+        {/* Ticket Counter Badge (matches Image #3) */}
+        <button
+          type="button"
+          onClick={handleTicketClick}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#120a1f] border border-[#d4af37]/40 hover:border-[#ffd86b] text-xs font-mono font-bold text-[#ffd86b] transition cursor-pointer active:scale-95"
+          title="Click to claim +10 Free Tickets"
+        >
+          <Ticket className="w-3.5 h-3.5 text-[#f472b6]" />
+          <span>{chronoTickets} Left</span>
+        </button>
+      </div>
+    </div>
+  )
+}

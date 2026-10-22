@@ -1,0 +1,85 @@
+{
+  "id": "vinyl-angel",
+  "Title": "Vinyl Angel Pack",
+  "Note": "Koi no Koe • 432Hz Harmonic Stems & Temporal DNA",
+  "Cards": 10,
+  "ticketType": "discs",
+  "ticketCost": 100,
+  "Cover": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80",
+  "Animation": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80",
+  "Button": "#ffffff",
+  "ButtonText": "Engage (100 Discs)",
+  "color": "#ffffff",
+  "borderColor": "#d4af37",
+  "bgGradient": "from-[#1a1424] via-[#0d0a12] to-[#000000]",
+  "Unpack": [
+    "1000 Purple DNA ~ 40%",
+    "2000 Purple DNA ~ 15%",
+    "1 Red DNA Orb ~ 20%",
+    "2 Red DNA Orbs ~ 5%",
+    "1 Day of Temporal Time ~ 15%",
+    "Vinyl Angel Stem ~ 0.3%",
+    "500 Purple DNA"
+  ],
+  "Guarantee": [
+    "1 Red DNA Orb | 1 Day of Temporal Time"
+  ],
+  "Items": {
+    "1000 Purple DNA": {
+      "cover": "https://cdn.paleo.gg/games/jwtg/images/resource/dna.png",
+      "background": "linear-gradient(135deg, #3b0764 0%, #1e0538 50%, #000 100%)",
+      "category": "dna",
+      "rarity": "uncommon",
+      "dnaReward": 1000,
+      "description": "1,000 biological genetic units synthesized from 432Hz harmonic vinyl waveforms."
+    },
+    "2000 Purple DNA": {
+      "cover": "https://cdn.paleo.gg/games/jwtg/images/resource/dna.png",
+      "background": "linear-gradient(135deg, #581c87 0%, #2e0854 50%, #000 100%)",
+      "category": "dna",
+      "rarity": "rare",
+      "dnaReward": 2000,
+      "description": "2,000 dense genetic units extracted from high-amplitude audio resonance."
+    },
+    "1 Red DNA Orb": {
+      "cover": "https://cdn.paleo.gg/games/jwtg/images/hybrid-type/super-hybrid.png",
+      "background": "linear-gradient(135deg, #7f1d1d 0%, #450a0a 50%, #000 100%)",
+      "category": "red-orbs",
+      "rarity": "rare",
+      "redOrbsReward": 1,
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA for Super-Hybrids."
+    },
+    "2 Red DNA Orbs": {
+      "cover": "https://cdn.paleo.gg/games/jwtg/images/hybrid-type/super-hybrid.png",
+      "background": "linear-gradient(135deg, #991b1b 0%, #450a0a 50%, #000 100%)",
+      "category": "red-orbs",
+      "rarity": "epic",
+      "redOrbsReward": 2,
+      "description": "Two apex celestial red genetic orbs. Equivalent to 2,000 Purple DNA."
+    },
+    "1 Day of Temporal Time": {
+      "cover": "https://cdn.paleo.gg/games/jwtg/images/stats/speed.png",
+      "background": "linear-gradient(135deg, #0369a1 0%, #082f49 50%, #000 100%)",
+      "category": "time",
+      "rarity": "rare",
+      "timeRewardSeconds": 86400,
+      "description": "1 full day (86,400s) of temporal incubation and acceleration energy."
+    },
+    "Vinyl Angel Stem": {
+      "cover": "https://images.unsplash.com/photo-1539185441755-769473a23570?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #451a03 0%, #1e1302 50%, #000 100%)",
+      "category": "collectible",
+      "rarity": "legendary",
+      "stemCount": 1,
+      "description": "Pure 432Hz master stem audio channel from Vinyl Angel Koi no Koe. Archival collectible for future projects."
+    },
+    "500 Purple DNA": {
+      "cover": "https://cdn.paleo.gg/games/jwtg/images/resource/dna.png",
+      "background": "linear-gradient(135deg, #1e1b4b 0%, #0f0d26 50%, #000 100%)",
+      "category": "dna",
+      "rarity": "common",
+      "dnaReward": 500,
+      "description": "500 base genetic units harvested from harmonic leylines."
+    }
+  }
+}

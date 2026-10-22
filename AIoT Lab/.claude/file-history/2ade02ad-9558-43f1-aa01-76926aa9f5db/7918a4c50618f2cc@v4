@@ -1,0 +1,526 @@
+"""
+Rebased Character Identity Database: SQLite Relational Engine
+Entropy Rose Pattern with Symmetrical Characters & Variants and World Tree IDs.
+
+Hex ID Standards:
+  - 1004: Characters (Original Character with Default Build)
+  - 1005: Character Variants (Alternative Builds / Costumes / Egos)
+  - 1006: Worlds / Series Tree
+"""
+
+import sqlite3
+import json
+import os
+import time
+from typing import Dict, Any, List, Optional
+import tournament_db as tdb
+import series_db as sdb
+
+PREFIX_CHARACTER = "1004"
+PREFIX_VARIANT = "1005"
+
+
+def init_character_schema(db_path: str = tdb.DEFAULT_DB_PATH) -> None:
+    """Initializes the relational character and variant tables matching Manager's Vision."""
+    conn = tdb.get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        # Table: characters (1004...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS characters (
+                id TEXT PRIMARY KEY,
+                char_code TEXT NOT NULL UNIQUE,
+                canonical_name TEXT NOT NULL,
+                short_names TEXT NOT NULL DEFAULT '[]',
+                series_ids TEXT NOT NULL DEFAULT '[]',
+                taxonomy_ids TEXT NOT NULL DEFAULT '[]',
+                stand_ids TEXT NOT NULL DEFAULT '[]',
+                dna_ids TEXT NOT NULL DEFAULT '[]',
+                hazard_rank INTEGER NOT NULL DEFAULT 0,
+                base_prompt TEXT DEFAULT '',
+                outfit TEXT DEFAULT '',
+                avatar_url TEXT DEFAULT '',
+                created_at TEXT NOT NULL
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_characters_char_code ON characters(char_code);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_characters_name ON characters(canonical_name);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_characters_hazard_rank ON characters(hazard_rank);")
+
+        # Table: character_variants (1005...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS character_variants (
+                id TEXT PRIMARY KEY,
+                character_id TEXT NOT NULL,
+                variant_names TEXT NOT NULL DEFAULT '[]',
+                short_names TEXT NOT NULL DEFAULT '[]',
+                series_ids TEXT NOT NULL DEFAULT '[]',
+                taxonomy_ids TEXT NOT NULL DEFAULT '[]',
+                stand_ids TEXT NOT NULL DEFAULT '[]',
+                dna_ids TEXT NOT NULL DEFAULT '[]',
+                hazard_rank INTEGER NOT NULL DEFAULT 0,
+                base_prompt TEXT DEFAULT '',
+                outfit TEXT DEFAULT '',
+                avatar_url TEXT DEFAULT '',
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_cv_char ON character_variants(character_id);")
+
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+
+
+def upsert_character(
+    char_data: Dict[str, Any],
+    variants: Optional[List[Dict[str, Any]]] = None,
+    db_path: str = tdb.DEFAULT_DB_PATH
+) -> Dict[str, Any]:
+    """Upserts a character and optional child variants in an atomic IMMEDIATE transaction."""
+    init_character_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    char_code = char_data["char_code"].strip().upper()
+    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+
+    # Serialize JSON array fields
+    def ensure_json_array(val):
+        if isinstance(val, list):
+            return json.dumps(val, ensure_ascii=False)
+        elif isinstance(val, str) and val.strip().startswith("["):
+            return val
+        elif isinstance(val, str) and val.strip():
+            return json.dumps([s.strip() for s in val.split(",") if s.strip()], ensure_ascii=False)
+        return "[]"
+
+    short_names_json = ensure_json_array(char_data.get("short_names", []))
+    series_ids_json = ensure_json_array(char_data.get("series_ids", []))
+    taxonomy_ids_json = ensure_json_array(char_data.get("taxonomy_ids", []))
+    stand_ids_json = ensure_json_array(char_data.get("stand_ids", []))
+    dna_ids_json = ensure_json_array(char_data.get("dna_ids", []))
+    hazard_rank = int(char_data.get("hazard_rank", 0))
+
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        # Resolve or generate character hex ID
+        cur = conn.execute("SELECT id FROM characters WHERE char_code = ?;", (char_code,))
+        row = cur.fetchone()
+        char_id = char_data.get("id") or (row["id"] if row else tdb.generate_tournament_hex_id(PREFIX_CHARACTER))
+
+        conn.execute("""
+            INSERT INTO characters (
+                id, char_code, canonical_name, short_names, series_ids,
+                taxonomy_ids, stand_ids, dna_ids, hazard_rank, base_prompt,
+                outfit, avatar_url, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(char_code) DO UPDATE SET
+                canonical_name = excluded.canonical_name,
+                short_names = excluded.short_names,
+                series_ids = excluded.series_ids,
+                taxonomy_ids = excluded.taxonomy_ids,
+                stand_ids = excluded.stand_ids,
+                dna_ids = excluded.dna_ids,
+                hazard_rank = excluded.hazard_rank,
+                base_prompt = excluded.base_prompt,
+                outfit = excluded.outfit,
+                avatar_url = excluded.avatar_url;
+        """, (
+            char_id,
+            char_code,
+            char_data["canonical_name"].strip(),
+            short_names_json,
+            series_ids_json,
+            taxonomy_ids_json,
+            stand_ids_json,
+            dna_ids_json,
+            hazard_rank,
+            char_data.get("base_prompt", ""),
+            char_data.get("outfit", ""),
+            char_data.get("avatar_url", ""),
+            now_str
+        ))
+
+        # Insert child variants if provided
+        if variants is not None:
+            conn.execute("DELETE FROM character_variants WHERE character_id = ?;", (char_id,))
+            for v in variants:
+                vid = v.get("id") or tdb.generate_tournament_hex_id(PREFIX_VARIANT)
+                v_names_json = ensure_json_array(v.get("variant_names", []))
+                v_short_json = ensure_json_array(v.get("short_names", []))
+                v_series_json = ensure_json_array(v.get("series_ids", [])) or series_ids_json
+                v_tax_json = ensure_json_array(v.get("taxonomy_ids", []))
+                v_stand_json = ensure_json_array(v.get("stand_ids", []))
+                v_dna_json = ensure_json_array(v.get("dna_ids", []))
+                v_rank = int(v.get("hazard_rank", hazard_rank))
+
+                conn.execute("""
+                    INSERT INTO character_variants (
+                        id, character_id, variant_names, short_names, series_ids,
+                        taxonomy_ids, stand_ids, dna_ids, hazard_rank, base_prompt,
+                        outfit, avatar_url, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """, (
+                    vid,
+                    char_id,
+                    v_names_json,
+                    v_short_json,
+                    v_series_json,
+                    v_tax_json,
+                    v_stand_json,
+                    v_dna_json,
+                    v_rank,
+                    v.get("base_prompt") or v.get("prompt", ""),
+                    v.get("outfit", ""),
+                    v.get("avatar_url", ""),
+                    now_str
+                ))
+
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return get_character_by_code(char_code, db_path)
+
+
+def get_character_by_code(char_code: str, db_path: str = tdb.DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """Fetches a character by unique char_code along with all variants."""
+    init_character_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    cur = conn.execute("SELECT * FROM characters WHERE char_code = ?;", (char_code.strip().upper(),))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        return None
+
+    char_dict = dict(row)
+    char_id = char_dict["id"]
+
+    # Parse JSON lists
+    for field in ["short_names", "series_ids", "taxonomy_ids", "stand_ids", "dna_ids"]:
+        char_dict[field] = json.loads(char_dict[field]) if char_dict.get(field) else []
+
+    # Load child variants
+    v_cur = conn.execute("SELECT * FROM character_variants WHERE character_id = ? ORDER BY created_at ASC;", (char_id,))
+    variants = []
+    for vr in v_cur.fetchall():
+        vd = dict(vr)
+        for field in ["variant_names", "short_names", "series_ids", "taxonomy_ids", "stand_ids", "dna_ids"]:
+            vd[field] = json.loads(vd[field]) if vd.get(field) else []
+        variants.append(vd)
+
+    char_dict["variants"] = variants
+    conn.close()
+    return char_dict
+
+
+def get_all_characters_full(db_path: str = tdb.DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    """Fetches all characters with all columns and variant counts."""
+    init_character_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    cur = conn.execute("""
+        SELECT c.*, (SELECT COUNT(*) FROM character_variants v WHERE v.character_id = c.id) as variant_count
+        FROM characters c
+        ORDER BY c.char_code ASC;
+    """)
+    rows = cur.fetchall()
+    results = []
+    for r in rows:
+        d = dict(r)
+        for field in ["short_names", "series_ids", "taxonomy_ids", "stand_ids", "dna_ids"]:
+            d[field] = json.loads(d[field]) if d.get(field) else []
+        results.append(d)
+    conn.close()
+    return results
+
+
+def delete_character(char_code: str, db_path: str = tdb.DEFAULT_DB_PATH) -> bool:
+    """Deletes a character by char_code with cascading delete of variants."""
+    init_character_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        conn.execute("DELETE FROM characters WHERE char_code = ?;", (char_code.strip().upper(),))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return True
+
+
+def search_characters(
+    query: str = "",
+    limit: int = 20,
+    db_path: str = tdb.DEFAULT_DB_PATH
+) -> List[Dict[str, Any]]:
+    """
+    Search-as-you-type query for the character selector dropdown.
+    Matches against char_code, canonical_name, or inside short_names JSON.
+    """
+    init_character_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    clean_q = query.strip()
+
+    if clean_q:
+        like_pattern = f"%{clean_q}%"
+        cur = conn.execute("""
+            SELECT id, char_code, canonical_name, short_names, series_ids, avatar_url, hazard_rank
+            FROM characters
+            WHERE char_code LIKE ? OR canonical_name LIKE ? OR short_names LIKE ?
+            ORDER BY
+                CASE WHEN char_code LIKE ? THEN 0 ELSE 1 END,
+                char_code ASC
+            LIMIT ?;
+        """, (like_pattern, like_pattern, like_pattern, f"{clean_q}%", limit))
+    else:
+        cur = conn.execute("""
+            SELECT id, char_code, canonical_name, short_names, series_ids, avatar_url, hazard_rank
+            FROM characters
+            ORDER BY char_code ASC
+            LIMIT ?;
+        """, (limit,))
+
+    rows = cur.fetchall()
+    results = []
+    for r in rows:
+        d = dict(r)
+        d["short_names"] = json.loads(d["short_names"]) if d.get("short_names") else []
+        d["series_ids"] = json.loads(d["series_ids"]) if d.get("series_ids") else []
+        results.append(d)
+    conn.close()
+    return results
+
+
+# ==============================================================================
+# VARIANTS CRUD
+# ==============================================================================
+
+def get_all_variants_full(db_path: str = tdb.DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    """Fetches all variants across all characters with parent info."""
+    init_character_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    cur = conn.execute("""
+        SELECT v.*,
+               c.char_code, c.canonical_name, c.avatar_url as char_avatar_url
+        FROM character_variants v
+        JOIN characters c ON v.character_id = c.id
+        ORDER BY c.char_code ASC, v.created_at ASC;
+    """)
+    rows = cur.fetchall()
+    results = []
+    for r in rows:
+        d = dict(r)
+        for field in ["variant_names", "short_names", "series_ids", "taxonomy_ids", "stand_ids", "dna_ids"]:
+            d[field] = json.loads(d[field]) if d.get(field) else []
+        results.append(d)
+    conn.close()
+    return results
+
+
+def upsert_single_variant(
+    char_code: str,
+    variant_data: Dict[str, Any],
+    db_path: str = tdb.DEFAULT_DB_PATH
+) -> Dict[str, Any]:
+    """Creates or updates a single variant for a given character code."""
+    init_character_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+
+    def ensure_json_array(val):
+        if isinstance(val, list):
+            return json.dumps(val, ensure_ascii=False)
+        elif isinstance(val, str) and val.strip().startswith("["):
+            return val
+        elif isinstance(val, str) and val.strip():
+            return json.dumps([s.strip() for s in val.split(",") if s.strip()], ensure_ascii=False)
+        return "[]"
+
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        cur = conn.execute("SELECT id, series_ids, hazard_rank FROM characters WHERE char_code = ?;", (char_code.strip().upper(),))
+        char_row = cur.fetchone()
+        if not char_row:
+            raise ValueError(f"Character with code '{char_code}' not found")
+        char_id = char_row["id"]
+
+        vid = variant_data.get("id") or tdb.generate_tournament_hex_id(PREFIX_VARIANT)
+        v_names_json = ensure_json_array(variant_data.get("variant_names", []))
+        v_short_json = ensure_json_array(variant_data.get("short_names", []))
+        v_series_json = ensure_json_array(variant_data.get("series_ids", [])) or char_row["series_ids"]
+        v_tax_json = ensure_json_array(variant_data.get("taxonomy_ids", []))
+        v_stand_json = ensure_json_array(variant_data.get("stand_ids", []))
+        v_dna_json = ensure_json_array(variant_data.get("dna_ids", []))
+        v_rank = int(variant_data.get("hazard_rank", char_row["hazard_rank"] or 0))
+
+        conn.execute("""
+            INSERT INTO character_variants (
+                id, character_id, variant_names, short_names, series_ids,
+                taxonomy_ids, stand_ids, dna_ids, hazard_rank, base_prompt,
+                outfit, avatar_url, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                variant_names = excluded.variant_names,
+                short_names = excluded.short_names,
+                series_ids = excluded.series_ids,
+                taxonomy_ids = excluded.taxonomy_ids,
+                stand_ids = excluded.stand_ids,
+                dna_ids = excluded.dna_ids,
+                hazard_rank = excluded.hazard_rank,
+                base_prompt = excluded.base_prompt,
+                outfit = excluded.outfit,
+                avatar_url = excluded.avatar_url;
+        """, (
+            vid,
+            char_id,
+            v_names_json,
+            v_short_json,
+            v_series_json,
+            v_tax_json,
+            v_stand_json,
+            v_dna_json,
+            v_rank,
+            variant_data.get("base_prompt") or variant_data.get("prompt", ""),
+            variant_data.get("outfit", ""),
+            variant_data.get("avatar_url", ""),
+            now_str
+        ))
+
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return {"id": vid, "character_id": char_id, "char_code": char_code}
+
+
+def delete_variant(variant_id: str, db_path: str = tdb.DEFAULT_DB_PATH) -> bool:
+    """Deletes a variant by ID."""
+    init_character_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        conn.execute("DELETE FROM character_variants WHERE id = ?;", (variant_id,))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return True
+
+
+# ==============================================================================
+# INGESTION & SEEDING PIPELINE
+# ==============================================================================
+
+def ingest_character_json(file_path: str, world_id_map: Dict[str, str], db_path: str = tdb.DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """Ingests a character JSON file mapping to the new schema and world tree IDs."""
+    if not os.path.exists(file_path):
+        return None
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    default_def = data.get("default", {})
+    char_code = default_def.get("id") or os.path.splitext(os.path.basename(file_path))[0]
+
+    names_obj = default_def.get("names", {})
+    canonical_name = ""
+    short_names = []
+
+    if isinstance(names_obj, dict):
+        if names_obj.get("names"):
+            canonical_name = names_obj["names"][0]
+        elif names_obj.get("canonical"):
+            canonical_name = names_obj["canonical"]
+        # Extract short names from nicknames or first token of canonical name
+        if names_obj.get("nicknames"):
+            short_names.extend(names_obj["nicknames"])
+        if names_obj.get("aliases"):
+            short_names.extend([a for a in names_obj["aliases"] if len(a) <= 15])
+    elif isinstance(names_obj, list) and names_obj:
+        canonical_name = names_obj[0]
+        short_names = names_obj[1:]
+
+    if not canonical_name:
+        canonical_name = char_code
+
+    if not short_names:
+        first_token = canonical_name.split()[0]
+        if first_token != canonical_name:
+            short_names.append(first_token)
+
+    # Resolve series_ids from world_id_map
+    series_ids = []
+    assoc = default_def.get("associate", [])
+    if isinstance(assoc, list):
+        for item in assoc:
+            if item in world_id_map:
+                series_ids.append(world_id_map[item])
+            else:
+                w = sdb.get_world_by_name(item, None, db_path)
+                if w:
+                    series_ids.append(w["id"])
+
+    hazard_score = 0
+    hl = default_def.get("hazardLevel", {})
+    if isinstance(hl, dict):
+        hazard_score = int(round(float(hl.get("hazardScore", 0))))
+
+    # Extract non-default variants
+    variants = []
+    for k, v in data.items():
+        if k == "default":
+            continue
+        v_names = []
+        if isinstance(v, dict):
+            if v.get("names"):
+                v_names = v["names"] if isinstance(v["names"], list) else [str(v["names"])]
+            else:
+                v_names = [k]
+
+            variants.append({
+                "variant_names": v_names,
+                "short_names": [v_names[0].replace("The ", "").strip()] if v_names else [],
+                "series_ids": series_ids,
+                "hazard_rank": hazard_score,
+                "base_prompt": v.get("_prpt_") or v.get("prompt", ""),
+                "outfit": v.get("outfit", ""),
+                "avatar_url": v.get("avatar_url", "")
+            })
+
+    char_data = {
+        "char_code": char_code,
+        "canonical_name": canonical_name,
+        "short_names": short_names,
+        "series_ids": series_ids,
+        "hazard_rank": hazard_score,
+        "base_prompt": default_def.get("_prpt_") or default_def.get("prompt", ""),
+        "outfit": default_def.get("outfit", ""),
+        "avatar_url": default_def.get("avatar_url", "")
+    }
+
+    return upsert_character(char_data, variants, db_path)
+
+
+def seed_character_roster(db_path: str = tdb.DEFAULT_DB_PATH) -> int:
+    """Seeds the default world tree and foundational characters matching Manager's Vision."""
+    # 1. Seed World Tree first
+    world_ids = sdb.seed_default_world_tree(db_path)
+
+    # 2. Ingest A01.json if on disk
+    base_data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+    a01_path = os.path.join(base_data_dir, "Hazard_Trigger_Data", "Identity", "Characters", "TT01", "A01.json")
+    if os.path.exists(a01_path):
+        ingest_character_json(a01_path, world_ids, db_path)
+
+    # 3. Seed canonical archive competitors with IDs
+    roster = [
+        {"char_code": "A01", "canonical_name": "Amelia Watson", "short_names": ["Ame", "Watson"], "series_ids": [world_ids.get("HoloMyth", "")], "hazard_rank": 3, "avatar_url": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100"},
+        {"char_code": "A20", "canonical_name": "Topaz", "short_names": ["Topaz"], "series_ids": [world_ids.get("Honkai: Star Rail", "")], "hazard_rank": 4, "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"},
+        {"char_code": "A27", "canonical_name": "Nico Robin", "short_names": ["Robin"], "series_ids": [world_ids.get("One Piece", "")], "hazard_rank": 5, "avatar_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100"},
+        {"char_code": "A68", "canonical_name": "Silver Wolf", "short_names": ["Silver Wolf", "Wolfie"], "series_ids": [world_ids.get("Honkai: Star Rail", "")], "hazard_rank": 6, "avatar_url": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100"},
+        {"char_code": "B02", "canonical_name": "Amane Kanata", "short_names": ["Kanata", "PPTenshi"], "series_ids": [world_ids.get("Hololive", "")], "hazard_rank": 4, "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"},
+        {"char_code": "B05", "canonical_name": "Usada Pekora", "short_names": ["Pekora", "Peko"], "series_ids": [world_ids.get("Gen 3", "")], "hazard_rank": 5, "avatar_url": "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=100"},
+        {"char_code": "B28", "canonical_name": "Hino Akane", "short_names": ["Akane"], "series_ids": [world_ids.get("THE IDOLM@STER", "")], "hazard_rank": 3, "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"},
+        {"char_code": "B53", "canonical_name": "Alabama", "short_names": ["Alabama"], "series_ids": [world_ids.get("Azur Lane", "")], "hazard_rank": 4, "avatar_url": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100"},
+        {"char_code": "C25", "canonical_name": "Yonah", "short_names": ["Yonah"], "series_ids": [world_ids.get("NieR", "")], "hazard_rank": 2, "avatar_url": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100"},
+        {"char_code": "EVA_01", "canonical_name": "Eva Frontier", "short_names": ["Eva"], "series_ids": [world_ids.get("StellaBlade", "")], "hazard_rank": 8, "avatar_url": "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=100"}
+    ]
+
+    for item in roster:
+        item["series_ids"] = [s for s in item["series_ids"] if s]
+        upsert_character(item, None, db_path)
+
+    return len(roster)

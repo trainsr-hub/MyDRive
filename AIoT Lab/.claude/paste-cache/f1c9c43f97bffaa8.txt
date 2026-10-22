@@ -1,0 +1,80 @@
+esp32_19_display_mock.html:842 The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio
+playBeeperChirp @ esp32_19_display_mock.html:842
+applyPreset @ esp32_19_display_mock.html:1138
+init @ esp32_19_display_mock.html:1012
+esp32_19_display_mock.html:863 The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio
+playBeeperChirp @ esp32_19_display_mock.html:863
+applyPreset @ esp32_19_display_mock.html:1138
+init @ esp32_19_display_mock.html:1012
+esp32_19_display_mock.html:842 The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio
+playBeeperChirp @ esp32_19_display_mock.html:842
+(anonymous) @ esp32_19_display_mock.html:877
+Promise.catch
+playSoundEffect @ esp32_19_display_mock.html:877
+loadSelectedQuote @ esp32_19_display_mock.html:1064
+init @ esp32_19_display_mock.html:1039
+esp32_19_display_mock.html:856 The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio
+playBeeperChirp @ esp32_19_display_mock.html:856
+(anonymous) @ esp32_19_display_mock.html:877
+Promise.catch
+playSoundEffect @ esp32_19_display_mock.html:877
+loadSelectedQuote @ esp32_19_display_mock.html:1064
+init @ esp32_19_display_mock.html:1039
+esp32_19_display_mock.html:1540 Uncaught (in promise) ReferenceError: shouldAnimate is not defined
+    at renderActivePrescript (esp32_19_display_mock.html:1540:7)
+    at loadSelectedQuote (esp32_19_display_mock.html:1065:7)
+    at init (esp32_19_display_mock.html:1039:9)
+renderActivePrescript @ esp32_19_display_mock.html:1540
+loadSelectedQuote @ esp32_19_display_mock.html:1065
+init @ esp32_19_display_mock.html:1039
+esp32_19_display_mock.html:1540 Uncaught ReferenceError: shouldAnimate is not defined
+    at renderActivePrescript (esp32_19_display_mock.html:1540:7)
+    at applyPreset (esp32_19_display_mock.html:1137:7)
+    at toggleNativeScale (esp32_19_display_mock.html:1146:7)
+    at HTMLButtonElement.onclick (esp32_19_display_mock.html:653:76)
+renderActivePrescript @ esp32_19_display_mock.html:1540
+applyPreset @ esp32_19_display_mock.html:1137
+toggleNativeScale @ esp32_19_display_mock.html:1146
+onclick @ esp32_19_display_mock.html:653
+esp32_19_display_mock.html:1540 Uncaught ReferenceError: shouldAnimate is not defined
+    at renderActivePrescript (esp32_19_display_mock.html:1540:7)
+    at loadSelectedQuote (esp32_19_display_mock.html:1065:7)
+    at navQuote (esp32_19_display_mock.html:1078:7)
+    at HTMLButtonElement.onclick (esp32_19_display_mock.html:721:58)
+renderActivePrescript @ esp32_19_display_mock.html:1540
+loadSelectedQuote @ esp32_19_display_mock.html:1065
+navQuote @ esp32_19_display_mock.html:1078
+onclick @ esp32_19_display_mock.html:721
+favicon.ico:1  GET http://localhost:20137/favicon.ico 404 (File not found)
+esp32_19_display_mock.html:1540 Uncaught ReferenceError: shouldAnimate is not defined
+    at renderActivePrescript (esp32_19_display_mock.html:1540:7)
+    at loadSelectedQuote (esp32_19_display_mock.html:1065:7)
+    at navQuote (esp32_19_display_mock.html:1078:7)
+    at HTMLButtonElement.onclick (esp32_19_display_mock.html:721:58)
+renderActivePrescript @ esp32_19_display_mock.html:1540
+loadSelectedQuote @ esp32_19_display_mock.html:1065
+navQuote @ esp32_19_display_mock.html:1078
+onclick @ esp32_19_display_mock.html:721
+esp32_19_display_mock.html:1540 Uncaught ReferenceError: shouldAnimate is not defined
+    at renderActivePrescript (esp32_19_display_mock.html:1540:7)
+    at loadSelectedQuote (esp32_19_display_mock.html:1065:7)
+    at navQuote (esp32_19_display_mock.html:1078:7)
+    at HTMLButtonElement.onclick (esp32_19_display_mock.html:721:58)
+renderActivePrescript @ esp32_19_display_mock.html:1540
+loadSelectedQuote @ esp32_19_display_mock.html:1065
+navQuote @ esp32_19_display_mock.html:1078
+onclick @ esp32_19_display_mock.html:721
+esp32_19_display_mock.html:1540 Uncaught ReferenceError: shouldAnimate is not defined
+    at renderActivePrescript (esp32_19_display_mock.html:1540:7)
+    at changePage (esp32_19_display_mock.html:1364:9)
+    at HTMLButtonElement.onclick (esp32_19_display_mock.html:708:79)
+renderActivePrescript @ esp32_19_display_mock.html:1540
+changePage @ esp32_19_display_mock.html:1364
+onclick @ esp32_19_display_mock.html:708
+esp32_19_display_mock.html:1540 Uncaught ReferenceError: shouldAnimate is not defined
+    at renderActivePrescript (esp32_19_display_mock.html:1540:7)
+    at changePage (esp32_19_display_mock.html:1364:9)
+    at HTMLButtonElement.onclick (esp32_19_display_mock.html:708:79)
+renderActivePrescript @ esp32_19_display_mock.html:1540
+changePage @ esp32_19_display_mock.html:1364
+onclick @ esp32_19_display_mock.html:708

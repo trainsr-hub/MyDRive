@@ -1,0 +1,361 @@
+#!/usr/bin/env python3
+"""
+omniroute_config_clone.py
+=========================
+Creates a clean SQLite clone of the Omniroute database containing:
+  1. Configuration tables WITH data (routing, providers, keys, quotas, etc.)
+  2. Operational/telemetry tables WITHOUT data (empty schemas preserved)
+
+The result preserves the complete schema while dropping accumulated logs,
+telemetry, conversation history, and caches. This allows the backup to be
+restored without carrying 400MB of unnecessary runtime data.
+
+Also copies the .env file alongside the clone so the environment is
+fully reproducible.
+
+Usage:
+    python omniroute_config_clone.py [--db PATH] [--env PATH] [--out-dir PATH]
+
+Defaults:
+    --db      D:/My Drive/Sync/Config/omniroute/storage.sqlite
+    --env     D:/My Drive/Sync/Config/omniroute/.env
+    --out-dir D:/My Heraclitus/Backups/OmniRoute
+"""
+
+import sqlite3
+import shutil
+import argparse
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Tables that define HOW the system behaves (copied WITH data).
+# ---------------------------------------------------------------------------
+CONFIG_TABLES = [
+    # Core routing & combos
+    "combos",
+    "model_combo_mappings",
+    "combo_adaptation_state",
+    "compression_combos",
+    "compression_combo_assignments",
+
+    # Provider & connection config
+    "provider_connections",
+    "provider_nodes",
+    "provider_plans",
+    "provider_key_limits",
+    "provider_quota_state",
+    "upstream_proxy_config",
+    "proxy_registry",
+
+    # API keys & auth
+    "api_keys",
+    "key_groups",
+    "key_group_members",
+    "registered_keys",
+    "relay_tokens",
+
+    # Model config
+    "model_capabilities",
+    "model_capability_overrides",
+    "model_context_overrides",
+    "model_intelligence",
+    "reasoning_routing_rules",
+    "auto_candidate_overrides",
+
+    # Quota & budget config
+    "quota_pools",
+    "quota_allocations",
+    "quota_allocation_model_caps",
+    "quota_groups",
+    "quota_pool_connections",
+    "domain_budgets",
+    "domain_fallback_chains",
+    "account_key_limits",
+    "api_key_token_limits",
+    "api_key_context_sources",
+
+    # Agent & middleware config
+    "agent_bridge_mappings",
+    "agent_bridge_bypass",
+    "middleware_hooks",
+    "skills",
+    "jobs",
+
+    # Proxy & relay config
+    "proxy_assignments",
+    "proxy_subscriptions",
+    "group_model_permissions",
+
+    # Radar / eval config
+    "radar_settings",
+    "eval_suites",
+    "eval_cases",
+
+    # Misc config
+    "webhooks",
+    "plugins",
+    "playground_presets",
+    "tier_config",
+    "domain_circuit_breakers",
+    "key_value",
+    "db_meta",
+    "version_manager",
+    "community_servers",
+    "inspector_custom_hosts",
+]
+
+# ---------------------------------------------------------------------------
+# Tables that store operational data (logs, telemetry, caches, state).
+# These are cloned as EMPTY schemas only — structure preserved, no data.
+# ---------------------------------------------------------------------------
+TELEMETRY_TABLES = [
+    # Conversation & agentic systems
+    "agentic_conversations",
+    "conversation_turn_nodes",
+    "context_handoffs",
+    "a2a_tasks",
+    "a2a_task_events",
+    "agent_bridge_state",
+
+    # Logs & telemetry
+    "call_logs",
+    "proxy_logs",
+    "usage_history",
+    "audit_log",
+    "config_audit_log",
+    "request_detail_logs",
+    "domain_cost_history",
+    "provider_quota_reset_events",
+    "_omniroute_migrations",
+    "job_runs",
+    "middleware_logs",
+    "relay_logs",
+    "relay_rate_limits",
+    "mcp_tool_audit",
+
+    # Analytics & summaries
+    "hourly_usage_summary",
+    "daily_usage_summary",
+    "compression_analytics",
+    "compression_cache_stats",
+    "compression_engine_breakdown",
+    "compression_run_telemetry",
+    "plugin_analytics",
+    "plugin_metrics",
+
+    # State & runtime
+    "connection_runtime_state",
+    "exclusive_connection_leases",
+    "routing_decisions",
+    "domain_budget_reset_logs",
+    "domain_lockout_state",
+    "session_account_affinity",
+    "session_model_history",
+    "proxy_scope_rotation",
+
+    # Caching systems
+    "quota_snapshots",
+    "quota_consumption",
+    "semantic_cache",
+    "reasoning_cache",
+    "ccr_blocks",
+    "radar_feed_cache",
+    "radar_intel_cache",
+    "radar_local_model_state",
+    "radar_offers_cache",
+    "radar_referrals_cache",
+
+    # Proxy & free tier
+    "free_proxies",
+    "free_proxy_sync_errors",
+
+    # Batches & eval
+    "batches",
+    "batch_item_checkpoints",
+    "eval_runs",
+    "discovery_results",
+
+    # Security & auth
+    "cli_access_tokens",
+    "cloud_agent_credentials",
+    "command_code_auth_sessions",
+    "api_key_token_counters",
+    "api_key_token_limit_reset_logs",
+
+    # Memory & FTS
+    "memories",
+    # The four FTS shadow tables below are created automatically when the
+    # memory_fts virtual table is created, so they must not be created again.
+    "memory_fts",
+    "memory_vec_meta",
+
+    # Inspector & debug
+    "inspector_sessions",
+    "inspector_session_requests",
+
+    # Gamification
+    "user_levels",
+    "user_badges",
+    "leaderboard",
+    "xp_audit_log",
+    "badge_definitions",
+    "tier_assignments",
+    "token_ledger",
+    "invite_tokens",
+
+    # Misc
+    "skill_executions",
+    "sync_tokens",
+    "webhook_deliveries",
+    "files",
+]
+
+
+def quote_identifier(identifier: str) -> str:
+    """Return a safely quoted SQLite identifier."""
+    return f'"{identifier.replace(chr(34), chr(34) * 2)}"'
+
+
+def get_application_tables(conn: sqlite3.Connection) -> list[str]:
+    """Return all user tables in the database, excluding internal sqlite tables."""
+    rows = conn.execute(
+        "SELECT name FROM sqlite_master "
+        "WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+    ).fetchall()
+    return [row[0] for row in rows]
+
+
+def get_fts_shadow_tables(conn: sqlite3.Connection) -> set[str]:
+    """Identify FTS auxiliary tables automatically managed by virtual tables."""
+    rows = conn.execute(
+        "SELECT name FROM sqlite_master "
+        "WHERE type = 'table' AND sql LIKE 'CREATE VIRTUAL TABLE%fts%'"
+    ).fetchall()
+    all_tables = set(get_application_tables(conn))
+    suffixes = ("_config", "_data", "_docsize", "_idx")
+    return {
+        f"{name}{suffix}"
+        for (name,) in rows
+        for suffix in suffixes
+        if f"{name}{suffix}" in all_tables
+    }
+
+
+def clear_operational_data(dst: sqlite3.Connection) -> tuple[list[str], list[str]]:
+    """Delete rows from operational tables while retaining FTS internal tables."""
+    tables = get_application_tables(dst)
+    config_tables = set(CONFIG_TABLES)
+    fts_shadow = get_fts_shadow_tables(dst)
+    tables_to_empty = [
+        table for table in tables
+        if table not in config_tables and table not in fts_shadow
+    ]
+
+    dst.execute("PRAGMA foreign_keys = OFF")
+    with dst:
+        for table in tables_to_empty:
+            dst.execute(f"DELETE FROM {quote_identifier(table)}")
+    dst.execute("PRAGMA foreign_keys = ON")
+
+    return tables_to_empty, sorted(fts_shadow)
+
+
+def validate_clone(dst: sqlite3.Connection) -> None:
+    """Verify database structural integrity and foreign-key constraints."""
+    integrity = dst.execute("PRAGMA integrity_check").fetchone()[0]
+    if integrity != "ok":
+        raise RuntimeError(f"Integrity check failed: {integrity}")
+
+    fk_errors = dst.execute("PRAGMA foreign_key_check").fetchall()
+    if fk_errors:
+        raise RuntimeError(f"Foreign-key check failed: {fk_errors[0]}")
+
+
+def clone(db_path: Path, env_path: Path, out_dir: Path) -> Path:
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
+    clone_name = f"omniroute_config_{ts}.sqlite"
+    clone_path = out_dir / clone_name
+    env_out = out_dir / f"omniroute_{ts}.env"
+
+    src = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    dst = sqlite3.connect(str(clone_path))
+
+    try:
+        # Step 1: Use SQLite's online backup API for a consistent WAL snapshot.
+        src.backup(dst)
+
+        # Step 2: Clear operational rows, retaining schema and configuration data.
+        emptied_tables, fts_shadow = clear_operational_data(dst)
+
+        # Step 3: Reclaim free space and run integrity checks.
+        dst.execute("VACUUM")
+        validate_clone(dst)
+
+        config_present = sorted(set(CONFIG_TABLES) & set(get_application_tables(dst)))
+        config_rows = {
+            table: dst.execute(
+                f"SELECT COUNT(*) FROM {quote_identifier(table)}"
+            ).fetchone()[0]
+            for table in config_present
+        }
+    finally:
+        dst.close()
+        src.close()
+
+    if env_path.exists():
+        shutil.copy2(env_path, env_out)
+        env_copied = True
+    else:
+        env_copied = False
+
+    print("\nOmniroute Config Clone")
+    print(f"  Source   : {db_path}")
+    print(f"  Clone    : {clone_path}")
+    if env_copied:
+        print(f"  Env      : {env_out}")
+
+    print(f"  Retained configuration tables: {len(config_present)}")
+    print(f"  Emptied operational tables   : {len(emptied_tables)}")
+    if fts_shadow:
+        print(f"  FTS internal shadow tables   : {len(fts_shadow)}")
+
+    print(f"\n  CONFIG TABLES (with data): {len(config_present)}")
+    for table, count in config_rows.items():
+        print(f"    {table:<40} {count:,} rows")
+
+    size_kb = clone_path.stat().st_size / 1024
+    print(f"\n  Clone size : {size_kb:,.1f} KB")
+    print("  Done.")
+
+    return clone_path
+
+    return clone_path
+
+
+def main():
+    default_db  = r"storage.sqlite"
+    default_env = r".env"
+    default_out = r"D:/My Heraclitus/Backups/OmniRoute"
+
+    parser = argparse.ArgumentParser(description="Clone Omniroute config tables into a clean SQLite file")
+    parser.add_argument("--db",      default=default_db,  help="Path to storage.sqlite")
+    parser.add_argument("--env",     default=default_env, help="Path to .env file")
+    parser.add_argument("--out-dir", default=default_out, help="Output directory")
+    args = parser.parse_args()
+
+    db_path  = Path(args.db)
+    env_path = Path(args.env)
+    out_dir  = Path(args.out_dir)
+
+    if not db_path.exists():
+        print(f"ERROR: Database not found: {db_path}", file=sys.stderr)
+        sys.exit(1)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    clone(db_path, env_path, out_dir)
+
+
+if __name__ == "__main__":
+    main()

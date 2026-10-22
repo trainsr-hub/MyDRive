@@ -1,0 +1,168 @@
+/* path: src/apps/heraclitus/styles/heraclitusAnimations.css */
+/* Tier 4: Transport/UI - Heraclitus-specific animation overrides */
+
+/* ========================================================================== */
+/* HERACLITUS COMPONENT-SPECIFIC ANIMATION OVERRIDES                         */
+/* Builds upon twoPhaseStyles.css with component-specific implementations    */
+/* ========================================================================== */
+
+/* --- DurationCalcTab --- */
+
+/* Calculate button spool effect */
+.calc-button-spool {
+  animation: tp-spool-progress var(--tp-spool-duration, 450ms) ease-in-out,
+             tp-spool-shake var(--tp-spool-duration, 450ms);
+}
+
+/* Deposit button voxel effect */
+.deposit-button-voxel {
+  animation: tp-button-spool-compress var(--tp-spool-duration, 450ms);
+}
+
+/* --- YellowPoolTab --- */
+
+/* Manual deposit prism effect */
+.manual-deposit-prism {
+  animation: tp-prism-charge var(--tp-spool-duration, 450ms),
+             tp-prism-fracture var(--tp-shatter-duration, 1000ms);
+}
+
+/* Orb charge pulse */
+.orb-charge-pulse {
+  animation: tp-orb-core-pulse var(--tp-spool-duration, 450ms) infinite;
+}
+
+/* --- SpeedBreakdownCards --- */
+
+/* Speed card selection micro-animation */
+.speed-card-select {
+  animation: tp-card-compress var(--tp-micro-spool, 150ms),
+             tp-card-expand var(--tp-micro-dissolve, 300ms);
+}
+
+/* --- VideoListTable --- */
+
+/* Row hover kinetic feedback */
+.video-row-hover {
+  animation: tp-row-pulse var(--tp-hover-duration, 200ms);
+}
+
+/* Selected row highlight */
+.video-row-selected {
+  animation: tp-row-glow var(--tp-select-duration, 500ms) infinite alternate;
+}
+
+/* --- Shared Utility Animations --- */
+
+/* Micro-spool for quick interactions */
+@keyframes tp-card-compress {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+@keyframes tp-card-expand {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
+}
+
+/* Row pulse */
+@keyframes tp-row-pulse {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+
+/* Row glow */
+@keyframes tp-row-glow {
+  0% { box-shadow: 0 0 0px rgba(255, 216, 107, 0); }
+  100% { box-shadow: 0 0 8px rgba(255, 216, 107, 0.3); }
+}
+
+/* Orb core pulse */
+@keyframes tp-orb-core-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+/* Prism charge */
+@keyframes tp-prism-charge {
+  0% { transform: scale(1) rotate(0deg); }
+  100% { transform: scale(1.1) rotate(360deg); }
+}
+
+/* Prism fracture */
+@keyframes tp-prism-fracture {
+  0% { opacity: 1; transform: scale(1); }
+  30% { opacity: 0.8; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(0.2) rotate(180deg); }
+}
+
+/* Button spool compress */
+@keyframes tp-button-spool-compress {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95) translateY(2px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+/* --- Theme Application --- */
+
+/* Apply chrono theme to calculate elements */
+.chrono-theme {
+  --tp-primary: #fbbf24;
+  --tp-secondary: #f97316;
+  --tp-glow: rgba(251, 191, 36, 0.7);
+  --tp-particle-a: #facc15;
+  --tp-particle-b: #38bdf8;
+  --tp-text: #fef08a;
+  --tp-text-glow: rgba(254, 240, 138, 0.8);
+}
+
+/* Apply prism theme to prism elements */
+.prism-theme {
+  --tp-primary: #c084fc;
+  --tp-secondary: #d946ef;
+  --tp-glow: rgba(192, 132, 252, 0.7);
+  --tp-particle-a: #e879f9;
+  --tp-particle-b: #38bdf8;
+  --tp-text: #f5d0fe;
+  --tp-text-glow: rgba(216, 180, 254, 0.8);
+}
+
+/* Apply cyber theme to cyber elements */
+.cyber-theme {
+  --tp-primary: #00f0ff;
+  --tp-secondary: #06b6d4;
+  --tp-glow: rgba(0, 240, 255, 0.7);
+  --tp-particle-a: #5eead4;
+  --tp-particle-b: #22d3ee;
+  --tp-text: #5eead4;
+  --tp-text-glow: rgba(94, 234, 212, 0.8);
+}
+
+/* Apply supernova theme to supernova elements */
+.supernova-theme {
+  --tp-primary: #fb923c;
+  --tp-secondary: #f97316;
+  --tp-glow: rgba(251, 146, 60, 0.8);
+  --tp-particle-a: #ffd700;
+  --tp-particle-b: #ffffff;
+  --tp-text: #fff7ed;
+  --tp-text-glow: rgba(255, 247, 237, 0.9);
+}
+
+/* --- Respect Reduced Motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .calc-button-spool,
+  .results-panel-dissolve-in,
+  .deposit-button-voxel,
+  .manual-deposit-prism,
+  .orb-charge-pulse,
+  .speed-card-select,
+  .video-row-hover,
+  .video-row-selected {
+    animation-duration: 0.001s !important;
+    transition-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+  }
+}

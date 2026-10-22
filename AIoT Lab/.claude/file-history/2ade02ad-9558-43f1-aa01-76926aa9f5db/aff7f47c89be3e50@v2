@@ -1,0 +1,313 @@
+"""
+Rebased FastAPI Server - Full REST API for Hazard Trigger System
+Port 20140 with CORS enabled for localhost:5173
+"""
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional, List
+import db
+from models import (
+    CategoryCreate, Category,
+    NodeCreate, Node,
+    PoolCreate, Pool,
+    PresetCreate, Preset,
+    ResolvedPromptResult
+)
+from graph_resolver import GraphResolver
+import time
+
+app = FastAPI(
+    title="Rebased API",
+    version="1.0.0",
+    description="Hazard Trigger Prompt Engineering System"
+)
+
+# CORS Configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup."""
+    db.init_db()
+    print("[OK] Rebased API server initialized on port 20140")
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "status": "ok",
+        "service": "rebased-backend",
+        "timestamp": int(time.time())
+    }
+
+
+# ==============================================================================
+# CATEGORIES ENDPOINTS
+# ==============================================================================
+
+@app.get("/api/categories", response_model=List[Category])
+async def list_categories():
+    """Get all categories."""
+    try:
+        categories = db.get_all_categories()
+        return categories
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/categories", response_model=Category)
+async def create_category(category: CategoryCreate):
+    """Create a new category."""
+    try:
+        category_id = db.generate_hex_id("0002")
+        category_dict = category.dict()
+        category_dict["id"] = category_id
+        db.upsert_category(category_dict)
+        return category_dict
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/categories/{category_id}")
+async def delete_category(category_id: str):
+    """Delete a category."""
+    try:
+        db.delete_category(category_id)
+        return {"ok": True, "deleted": category_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==============================================================================
+# NODES ENDPOINTS
+# ==============================================================================
+
+@app.get("/api/nodes", response_model=List[Node])
+async def list_nodes(category_id: Optional[str] = None):
+    """Get all nodes, optionally filtered by category."""
+    try:
+        nodes = db.get_all_nodes()
+        if category_id:
+            nodes = [n for n in nodes if n['category_id'] == category_id]
+        return nodes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/nodes", response_model=Node)
+async def create_node(node: NodeCreate):
+    """Create a new node."""
+    try:
+        node_id = db.generate_hex_id("0001")
+        node_dict = node.dict()
+        node_dict["id"] = node_id
+        node_dict["created_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        db.upsert_node(node_dict)
+        return node_dict
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/nodes/{node_id}", response_model=Node)
+async def update_node(node_id: str, node: NodeCreate):
+    """Update an existing node."""
+    try:
+        node_dict = node.dict()
+        node_dict["id"] = node_id
+        node_dict["created_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        db.upsert_node(node_dict)
+        return node_dict
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/nodes/{node_id}")
+async def delete_node(node_id: str):
+    """Delete a node."""
+    try:
+        db.delete_node(node_id)
+        return {"ok": True, "deleted": node_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==============================================================================
+# POOLS ENDPOINTS
+# ==============================================================================
+
+@app.get("/api/pools", response_model=List[Pool])
+async def list_pools():
+    """Get all gacha pools."""
+    try:
+        pools = db.get_all_pools()
+        return pools
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/pools", response_model=Pool)
+async def create_pool(pool: PoolCreate):
+    """Create a new gacha pool."""
+    try:
+        pool_id = db.generate_hex_id("0003")
+        pool_dict = pool.dict()
+        pool_dict["id"] = pool_id
+        db.upsert_pool(pool_dict)
+        return pool_dict
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/pools/{pool_id}")
+async def delete_pool(pool_id: str):
+    """Delete a gacha pool."""
+    try:
+        db.delete_pool(pool_id)
+        return {"ok": True, "deleted": pool_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==============================================================================
+# PRESETS ENDPOINTS
+# ==============================================================================
+
+@app.get("/api/presets", response_model=List[Preset])
+async def list_presets():
+    """Get all presets."""
+    try:
+        presets = db.get_all_presets()
+        return presets
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/presets", response_model=Preset)
+async def create_preset(preset: PresetCreate):
+    """Create a new preset."""
+    try:
+        preset_id = db.generate_hex_id("0004")
+        preset_dict = preset.dict()
+        preset_dict["id"] = preset_id
+        preset_dict["created_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        db.upsert_preset(preset_dict)
+        return preset_dict
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/presets/{preset_id}")
+async def delete_preset(preset_id: str):
+    """Delete a preset."""
+    try:
+        db.delete_preset(preset_id)
+        return {"ok": True, "deleted": preset_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==============================================================================
+# GRAPH RESOLUTION ENDPOINT
+# ==============================================================================
+
+@app.post("/api/graph/resolve", response_model=ResolvedPromptResult)
+async def resolve_graph(
+    preset_id: str,
+    seed: Optional[int] = None
+):
+    """
+    Resolve a prompt graph using the deterministic Hazard Trigger algorithm.
+
+    Args:
+        preset_id: The preset configuration to use
+        seed: Optional random seed for reproducibility
+
+    Returns:
+        ResolvedPromptResult with positive/negative prompts, LoRAs, and metadata
+    """
+    try:
+        # Load preset
+        presets = db.get_all_presets()
+        preset = next((p for p in presets if p['id'] == preset_id), None)
+
+        if not preset:
+            raise HTTPException(status_code=404, detail=f"Preset {preset_id} not found")
+
+        # Load all nodes
+        all_nodes = db.get_all_nodes()
+        active_nodes = [n for n in all_nodes if n['id'] in preset['active_node_ids']]
+
+        # Load all pools
+        all_pools = db.get_all_pools()
+
+        # Build wildcards and exclusions (currently empty, can be extended)
+        wildcards = {}
+        exclusions = {
+            "forbidden_keywords": ["bad anatomy", "extra limbs", "mutated hands"],
+            "global_negatives": [
+                "lowres", "bad anatomy", "bad hands", "text", "error",
+                "missing fingers", "extra digit", "fewer digits", "cropped",
+                "worst quality", "low quality", "normal quality", "jpeg artifacts",
+                "signature", "watermark", "username", "blurry"
+            ],
+            "auto_negatives": {}
+        }
+
+        # Resolve graph
+        resolver = GraphResolver(db)
+        result = resolver.resolve_prompt_graph(
+            active_nodes=active_nodes,
+            node_weights=preset['node_weights'],
+            gacha_pools=all_pools,
+            active_gacha_pool_ids=preset['active_gacha_pool_ids'],
+            wildcards=wildcards,
+            exclusions=exclusions,
+            target_engine=preset['target_engine'],
+            custom_positive=preset['custom_positive'],
+            custom_negative=preset['custom_negative'],
+            seed=seed
+        )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==============================================================================
+# GRACEFUL SHUTDOWN
+# ==============================================================================
+
+@app.post("/api/shutdown")
+async def shutdown():
+    """Graceful shutdown endpoint."""
+    import os
+    import signal
+
+    # Send SIGTERM to self after response is sent
+    def delayed_shutdown():
+        import threading
+        import time
+        time.sleep(0.5)
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    import threading
+    threading.Thread(target=delayed_shutdown, daemon=True).start()
+
+    return {"ok": True, "message": "Rebased server shutting down"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=20140, log_level="info")

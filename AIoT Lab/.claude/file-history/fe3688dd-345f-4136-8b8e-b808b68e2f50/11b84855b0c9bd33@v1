@@ -1,0 +1,620 @@
+import React, { useState, useMemo } from 'react';
+import { useTriggerStore } from '../../store/useTriggerStore';
+import { decompilePrompt, DecompiledPromptResult } from '../../utils/promptDecompiler';
+import { renderComponentIcon } from '../../utils/iconResolver';
+import {
+  ScanSearch,
+  Sparkles,
+  ClipboardCopy,
+  Trash2,
+  ArrowRight,
+  CheckCircle2,
+  HelpCircle,
+  Layers,
+  FileText,
+  User,
+  Users,
+  Eye,
+  BookmarkPlus,
+  Hash,
+  Activity,
+  Check,
+  Zap,
+} from 'lucide-react';
+
+interface ReverseEngineeringViewProps {
+  onApplyAndNavigate: () => void;
+  onOpenSaveModal: () => void;
+}
+
+const SAMPLE_PROMPTS = [
+  {
+    name: 'Cyberpunk Solo',
+    prompt:
+      '1girl, solo, masterpiece, cyberpunk ninja, black sleek bodysuit, volumetric neon lighting, dynamic low angle, highly detailed, octane render, BREAK, best quality',
+  },
+  {
+    name: 'Fantasy Portrait',
+    prompt:
+      '1girl, solo, upper body, cinematic lighting, magical fantasy atmosphere, soft smile, detailed eyes, 8k wallpaper',
+  },
+  {
+    name: 'Action Duo',
+    prompt:
+      '2girls, dynamic fight pose, motion blur, dramatic rim lighting, epic combat background, photorealistic',
+  },
+];
+
+export const ReverseEngineeringView: React.FC<ReverseEngineeringViewProps> = ({
+  onApplyAndNavigate,
+  onOpenSaveModal,
+}) => {
+  const {
+    folders,
+    matrixDomains,
+    compiledPrompt: currentStudioPrompt,
+    selectOption,
+    toggleMatrixBaseState,
+  } = useTriggerStore();
+
+  const [inputPrompt, setInputPrompt] = useState('');
+  const [copiedClean, setCopiedClean] = useState(false);
+  const [copiedUnmatched, setCopiedUnmatched] = useState(false);
+  const [appliedSectionRelPaths, setAppliedSectionRelPaths] = useState<string[]>([]);
+  const [activeTokenFilter, setActiveTokenFilter] = useState<'all' | 'matched' | 'unmatched'>('all');
+
+  // Perform live / reactive decompilation
+  const result: DecompiledPromptResult = useMemo(() => {
+    return decompilePrompt(inputPrompt, folders, matrixDomains);
+  }, [inputPrompt, folders, matrixDomains]);
+
+  // Handle Paste from Clipboard
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) setInputPrompt(text);
+    } catch (e) {
+      console.warn('Clipboard paste failed:', e);
+    }
+  };
+
+  // Handle Applying All Matched Components to Studio
+  const handleApplyAll = () => {
+    // 1. Set component selections
+    Object.entries(result.recommendedSelections).forEach(([relPath, key]) => {
+      selectOption(relPath, key);
+    });
+
+    // 2. Set matrix domain base states
+    Object.entries(result.recommendedMatrixBase).forEach(([domainId, stateIds]) => {
+      stateIds.forEach((stateId) => {
+        toggleMatrixBaseState(domainId, stateId);
+      });
+    });
+
+    onApplyAndNavigate();
+  };
+
+  // Handle Adopting a Single Matched Section
+  const handleAdoptSingle = (relPath: string, key: string) => {
+    selectOption(relPath, key);
+    setAppliedSectionRelPaths((prev) => [...prev, relPath]);
+  };
+
+  const handleCopyCleaned = () => {
+    const matchedTokens = result.tokenAnalyses
+      .filter((t) => t.isMatched)
+      .map((t) => t.original)
+      .join(', ');
+    if (!matchedTokens) return;
+    navigator.clipboard.writeText(matchedTokens);
+    setCopiedClean(true);
+    setTimeout(() => setCopiedClean(false), 1800);
+  };
+
+  const handleCopyUnmatched = () => {
+    const unmatched = result.unmatchedTokens.join(', ');
+    if (!unmatched) return;
+    navigator.clipboard.writeText(unmatched);
+    setCopiedUnmatched(true);
+    setTimeout(() => setCopiedUnmatched(false), 1800);
+  };
+
+  return (
+    <div className="flex flex-col gap-6 animate-fadeIn">
+      {/* Header Banner */}
+      <div className="p-6 rounded-3xl bg-hazard-card/90 border border-hazard-border shadow-lg flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-hazard-gold/10 border border-hazard-gold/30 text-hazard-gold shadow-hazard-glow">
+            <ScanSearch className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold uppercase tracking-wider text-hazard-textBright">
+                Reverse Engineering & Prompt Decompiler
+              </h2>
+              <span className="px-2 py-0.5 rounded-md bg-hazard-gold/15 border border-hazard-gold/40 text-hazard-gold text-[10px] font-mono font-bold">
+                Pattern Deconstruction
+              </span>
+            </div>
+            <p className="text-xs text-hazard-textMuted font-mono mt-0.5">
+              Paste any master prompt to deconstruct its tokens, trace matching components across your library, and port the selections.
+            </p>
+          </div>
+        </div>
+
+        {/* Quick Sample Prompts & Pull Studio Prompt */}
+        <div className="flex flex-wrap items-center gap-2">
+          {currentStudioPrompt && (
+            <button
+              type="button"
+              onClick={() => setInputPrompt(currentStudioPrompt)}
+              title="Load the currently compiled studio prompt"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-hazard-cyan bg-hazard-cyan/10 border border-hazard-cyan/30 hover:bg-hazard-cyan/20 hover:border-hazard-cyan rounded-xl transition"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Load Studio Prompt</span>
+            </button>
+          )}
+
+          {SAMPLE_PROMPTS.map((sample) => (
+            <button
+              key={sample.name}
+              type="button"
+              onClick={() => setInputPrompt(sample.prompt)}
+              className="px-2.5 py-1.5 text-[11px] font-mono font-bold text-hazard-textMuted hover:text-white bg-hazard-void border border-hazard-border rounded-xl transition hover:border-hazard-gold/50"
+            >
+              {sample.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Prompt Input Area */}
+      <div className="flex flex-col gap-3 p-5 rounded-3xl bg-hazard-card border border-hazard-border shadow-md">
+        <div className="flex items-center justify-between text-xs font-mono">
+          <div className="flex items-center gap-2 text-hazard-textMuted">
+            <FileText className="w-4 h-4 text-hazard-gold" />
+            <span className="font-bold text-hazard-textBright">Input Prompt to Deconstruct:</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handlePaste}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-hazard-void border border-hazard-border text-hazard-textMuted hover:text-white hover:border-hazard-cyan/50 text-[11px] transition"
+            >
+              <ClipboardCopy className="w-3.5 h-3.5" />
+              <span>Paste Clipboard</span>
+            </button>
+            {inputPrompt && (
+              <button
+                type="button"
+                onClick={() => setInputPrompt('')}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-hazard-void border border-hazard-border text-hazard-textMuted hover:text-hazard-crimson hover:border-hazard-crimson/50 text-[11px] transition"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Clear</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <textarea
+          rows={4}
+          value={inputPrompt}
+          onChange={(e) => setInputPrompt(e.target.value)}
+          placeholder="Paste raw positive prompt string here (e.g., 1girl, solo, cyberpunk ninja, volumetric lighting, dynamic pose, 8k...)"
+          className="w-full p-4 rounded-2xl bg-hazard-void/90 border border-hazard-border focus:border-hazard-gold text-xs font-mono text-hazard-textBright placeholder:text-hazard-textMuted/40 resize-none outline-none leading-relaxed transition"
+        />
+      </div>
+
+      {/* Deconstruction Analysis & Results */}
+      {inputPrompt.trim() ? (
+        <div className="flex flex-col gap-6">
+          {/* Telemetry & Coverage Bar */}
+          <div className="p-4 rounded-2xl bg-hazard-card/80 border border-hazard-border flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-hazard-purple/10 border border-hazard-purple/30 text-hazard-purple">
+                <Activity className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-hazard-textBright">
+                  Decompilation Telemetry
+                </h3>
+                <p className="text-[11px] text-hazard-textMuted font-mono">
+                  {result.tokensCount} total tokens detected • {result.matchedTokensCount} matched
+                </p>
+              </div>
+            </div>
+
+            {/* Badges */}
+            <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+              {/* Coverage Meter */}
+              <div className="px-3 py-1.5 rounded-lg bg-hazard-void border border-hazard-border flex items-center gap-2">
+                <span className="text-hazard-textMuted">Library Coverage:</span>
+                <strong
+                  className={`font-bold ${
+                    result.matchPercentage >= 70
+                      ? 'text-emerald-400'
+                      : result.matchPercentage >= 40
+                      ? 'text-hazard-gold'
+                      : 'text-hazard-crimson'
+                  }`}
+                >
+                  {result.matchPercentage}%
+                </strong>
+              </div>
+
+              {/* Matched Categories count */}
+              <div className="px-3 py-1.5 rounded-lg bg-hazard-void border border-hazard-border flex items-center gap-2">
+                <span className="text-hazard-textMuted">Sections Matched:</span>
+                <strong className="text-hazard-cyan font-bold">
+                  {result.matchedSections.length + result.matchedMatrixStates.length}
+                </strong>
+              </div>
+
+              {/* Inferred Subject Telemetry */}
+              <div className="px-3 py-1.5 rounded-lg bg-hazard-void border border-hazard-border flex items-center gap-2">
+                <span className="text-hazard-textMuted">Inferred Subject:</span>
+                <strong className="text-hazard-gold">
+                  {result.detectedTelemetry.females}♀ / {result.detectedTelemetry.males}♂
+                </strong>
+                {result.detectedTelemetry.isSolo && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-hazard-gold/20 text-hazard-gold border border-hazard-gold/40 font-bold">
+                    SOLO
+                  </span>
+                )}
+                {result.detectedTelemetry.isPOV && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-hazard-crimson/20 text-hazard-crimson border border-hazard-crimson/40 font-bold">
+                    POV
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Master Action Strip */}
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-r from-hazard-gold/15 via-hazard-card to-hazard-cyan/10 border-2 border-hazard-gold/50 shadow-hazard-glow">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-hazard-gold animate-pulse" />
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-hazard-textBright uppercase tracking-wide">
+                  Ready to Port to Studio?
+                </span>
+                <span className="text-[11px] text-hazard-textMuted font-mono">
+                  Apply all {result.matchedSections.length} identified component selections directly into active state.
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyCleaned}
+                title="Copy all tokens that matched known components"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-hazard-textMuted hover:text-white bg-hazard-void border border-hazard-border rounded-xl transition"
+              >
+                {copiedClean ? <Check className="w-4 h-4 text-emerald-400" /> : <ClipboardCopy className="w-4 h-4" />}
+                <span>{copiedClean ? 'Copied Clean' : 'Copy Matched'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleApplyAll}
+                disabled={result.matchedSections.length === 0 && result.matchedMatrixStates.length === 0}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider bg-gradient-to-r from-hazard-gold to-hazard-goldGlow text-black shadow-hazard-glow hover:scale-[1.02] active:scale-95 transition disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <span>Apply All to Studio</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive Token Strip / Cloud */}
+          <div className="flex flex-col gap-3 p-5 rounded-3xl bg-hazard-card border border-hazard-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-hazard-textBright">
+                <Hash className="w-4 h-4 text-hazard-gold" />
+                <span>Interactive Token Map</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                <button
+                  type="button"
+                  onClick={() => setActiveTokenFilter('all')}
+                  className={`px-2 py-0.5 rounded-md transition ${
+                    activeTokenFilter === 'all'
+                      ? 'bg-hazard-gold text-black font-bold'
+                      : 'bg-hazard-void text-hazard-textMuted hover:text-white'
+                  }`}
+                >
+                  All ({result.tokenAnalyses.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTokenFilter('matched')}
+                  className={`px-2 py-0.5 rounded-md transition ${
+                    activeTokenFilter === 'matched'
+                      ? 'bg-emerald-500 text-black font-bold'
+                      : 'bg-hazard-void text-hazard-textMuted hover:text-white'
+                  }`}
+                >
+                  Matched ({result.matchedTokensCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTokenFilter('unmatched')}
+                  className={`px-2 py-0.5 rounded-md transition ${
+                    activeTokenFilter === 'unmatched'
+                      ? 'bg-slate-500 text-black font-bold'
+                      : 'bg-hazard-void text-hazard-textMuted hover:text-white'
+                  }`}
+                >
+                  Unmatched ({result.unmatchedTokens.length})
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 p-3 rounded-2xl bg-hazard-void/80 border border-hazard-border min-h-[60px]">
+              {result.tokenAnalyses
+                .filter((t) => {
+                  if (activeTokenFilter === 'matched') return t.isMatched;
+                  if (activeTokenFilter === 'unmatched') return !t.isMatched;
+                  return true;
+                })
+                .map((token, idx) => {
+                  return (
+                    <span
+                      key={idx}
+                      title={
+                        token.isMatched
+                          ? `Matched ${token.matchedSection} > ${token.matchedFile} (${token.matchedEntryName})`
+                          : 'Unmatched custom tag or modifier'
+                      }
+                      className={`px-2.5 py-1 rounded-lg text-xs font-mono transition select-none flex items-center gap-1.5 ${
+                        token.color === 'cyan'
+                          ? 'bg-cyan-950/80 border border-cyan-500/60 text-cyan-300'
+                          : token.color === 'purple'
+                          ? 'bg-purple-950/80 border border-purple-500/60 text-purple-300'
+                          : token.color === 'gold'
+                          ? 'bg-hazard-gold/15 border border-hazard-gold/60 text-hazard-gold font-bold shadow-sm'
+                          : 'bg-hazard-card border border-hazard-border/80 text-hazard-textMuted hover:text-white'
+                      }`}
+                    >
+                      {token.isMatched ? (
+                        <CheckCircle2 className="w-3 h-3 text-hazard-gold" />
+                      ) : (
+                        <HelpCircle className="w-3 h-3 text-hazard-textMuted/60" />
+                      )}
+                      <span>{token.original}</span>
+                      {token.matchedSection && (
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-black/50 text-hazard-textMuted font-sans">
+                          {token.matchedSection.replace(/^_\d+_/, '')}
+                        </span>
+                      )}
+                    </span>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* Section 1: Identified Component Sections Grid */}
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-2 border-b border-hazard-border">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-hazard-gold" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-hazard-textBright">
+                  Identified Component Sections ({result.matchedSections.length})
+                </h3>
+              </div>
+              <span className="text-xs text-hazard-textMuted font-mono">
+                Click "Adopt" to port individual selections into the active studio
+              </span>
+            </div>
+
+            {result.matchedSections.length === 0 ? (
+              <div className="p-8 text-center border border-dashed border-hazard-border rounded-2xl bg-hazard-card/30 text-hazard-textMuted text-xs font-mono">
+                No matching component entries were identified in your current library for this prompt.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {result.matchedSections.map((match) => {
+                  const isAdopted = appliedSectionRelPaths.includes(match.fileRelPath);
+                  const entry = match.matchedEntry;
+                  const hasImage = Boolean(entry.image || entry.thumbnail);
+
+                  return (
+                    <div
+                      key={match.fileRelPath}
+                      className={`relative flex flex-col justify-between p-4 rounded-2xl border transition-all duration-150 ${
+                        isAdopted
+                          ? 'border-emerald-500/70 bg-emerald-950/20 shadow-sm'
+                          : 'border-hazard-border bg-hazard-card hover:border-hazard-gold/50'
+                      }`}
+                    >
+                      {/* Top Row: Folder / File Name + Confidence Badge */}
+                      <div className="flex items-center justify-between gap-2 pb-2 border-b border-hazard-border/50">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="text-hazard-gold">
+                            <Layers className="w-3.5 h-3.5" />
+                          </span>
+                          <span className="text-[11px] font-bold text-hazard-textMuted uppercase truncate font-mono">
+                            {match.folderDisplayName} • {match.fileDisplayName}
+                          </span>
+                        </div>
+
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold ${
+                            match.confidence >= 90
+                              ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/40'
+                              : match.confidence >= 60
+                              ? 'bg-hazard-gold/15 text-hazard-gold border border-hazard-gold/40'
+                              : 'bg-hazard-void text-hazard-textMuted border border-hazard-border'
+                          }`}
+                        >
+                          {match.confidence}% match
+                        </span>
+                      </div>
+
+                      {/* Middle: Entry Display Name & Matched Snippet */}
+                      <div className="flex items-start gap-3 py-3">
+                        {/* Thumbnail / Placeholder */}
+                        <div className="w-14 h-14 rounded-xl border border-hazard-border bg-hazard-void flex-shrink-0 overflow-hidden flex items-center justify-center">
+                          {hasImage ? (
+                            <img
+                              src={entry.image || entry.thumbnail}
+                              alt={entry.display_name || match.matchedEntryKey}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Sparkles className="w-6 h-6 text-hazard-gold/60" />
+                          )}
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-bold text-hazard-gold truncate">
+                            {entry.display_name || match.matchedEntryKey}
+                          </span>
+                          <span className="text-[10px] font-mono text-hazard-cyan mt-0.5 truncate">
+                            Key: {match.matchedEntryKey}
+                          </span>
+                          {entry.prompt && (
+                            <span
+                              className="text-[10px] font-mono text-hazard-textMuted mt-1 line-clamp-2"
+                              title={entry.prompt}
+                            >
+                              {entry.prompt}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bottom Row: Matched Tokens & Adopt Button */}
+                      <div className="flex items-center justify-between pt-2 border-t border-hazard-border/50 gap-2">
+                        <div className="flex items-center gap-1 overflow-hidden">
+                          <span className="text-[9px] font-mono text-hazard-textMuted/70">Matched:</span>
+                          <span
+                            className="text-[9px] font-mono text-emerald-400 font-bold truncate max-w-[140px]"
+                            title={match.matchedTokens.join(', ')}
+                          >
+                            {match.matchedTokens.join(', ')}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleAdoptSingle(match.fileRelPath, match.matchedEntryKey)}
+                          className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold transition active:scale-95 ${
+                            isAdopted
+                              ? 'bg-emerald-500 text-black font-extrabold'
+                              : 'bg-hazard-gold/15 text-hazard-gold hover:bg-hazard-gold hover:text-black border border-hazard-gold/40'
+                          }`}
+                        >
+                          {isAdopted ? (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Adopted</span>
+                            </>
+                          ) : (
+                            <>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                              <span>Adopt</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: Identified Matrix Domain States */}
+          {result.matchedMatrixStates.length > 0 && (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-hazard-border">
+                <Layers className="w-4 h-4 text-hazard-cyan" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-hazard-textBright">
+                  Identified Matrix Domain States ({result.matchedMatrixStates.length})
+                </h3>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {result.matchedMatrixStates.map((ms) => (
+                  <div
+                    key={`${ms.domainId}_${ms.state.id}`}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-hazard-card border border-hazard-cyan/40 shadow-sm"
+                  >
+                    <span className="text-base">{ms.state.emoji}</span>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-hazard-cyan">
+                        {ms.state.label}
+                      </span>
+                      <span className="text-[9px] font-mono text-hazard-textMuted">
+                        Domain: {ms.domainDisplayName}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 ml-2">
+                      {ms.matchedTokens.join(', ')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section 3: Unmatched Tokens & Modifiers */}
+          {result.unmatchedTokens.length > 0 && (
+            <div className="flex flex-col gap-3 p-5 rounded-3xl bg-hazard-card/60 border border-hazard-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-hazard-textMuted">
+                  <HelpCircle className="w-4 h-4 text-hazard-textMuted" />
+                  <span>Unmatched / Novel Tokens ({result.unmatchedTokens.length})</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyUnmatched}
+                  className="flex items-center gap-1 text-[11px] font-mono text-hazard-textMuted hover:text-white"
+                >
+                  {copiedUnmatched ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : (
+                    <ClipboardCopy className="w-3.5 h-3.5" />
+                  )}
+                  <span>{copiedUnmatched ? 'Copied' : 'Copy All Unmatched'}</span>
+                </button>
+              </div>
+
+              <p className="text-[11px] text-hazard-textMuted font-mono">
+                These tokens were not mapped to any known library component. They may be quality tags, custom descriptions, or candidate keywords for new entries:
+              </p>
+
+              <div className="flex flex-wrap gap-1.5 p-3 rounded-2xl bg-hazard-void border border-hazard-border">
+                {result.unmatchedTokens.map((token, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-0.5 rounded-md text-[11px] font-mono bg-hazard-card border border-hazard-border text-hazard-textMuted"
+                  >
+                    {token}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Empty State */
+        <div className="flex flex-col items-center justify-center p-16 rounded-3xl border-2 border-dashed border-hazard-border/80 bg-hazard-card/30 text-center gap-3">
+          <ScanSearch className="w-12 h-12 text-hazard-gold/50 animate-pulse" />
+          <h3 className="text-base font-bold uppercase tracking-wider text-hazard-textBright">
+            No Prompt Input Yet
+          </h3>
+          <p className="text-xs text-hazard-textMuted font-mono max-w-md">
+            Paste any completed prompt above or click one of the quick samples to deconstruct and trace component attributions across your entire database.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};

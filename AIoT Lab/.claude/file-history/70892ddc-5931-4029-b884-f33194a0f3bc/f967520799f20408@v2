@@ -1,0 +1,148 @@
+import React from 'react';
+import { rutGonTime } from '../core/rutGonTime';
+import { GachaAnimationWorker } from './tabs/gacha/workers/GachaAnimationWorker/GachaAnimationWorker';
+import { Clock, Sparkles, Bot, Square, Zap, Unlock, Flame } from 'lucide-react';
+
+export interface AutoGachaHudProps {
+  isActive: boolean;
+  isBlackHolePlaying: boolean;
+  currentRollIndex: number; // 0 to 9
+  totalRolls?: number; // default 10
+  currentDinoName: string;
+  currentDinoImage?: string;
+  currentCostSeconds: number;
+  currentEvo1Ferocity: number;
+  remainingJurassicTime: number;
+  newlyUnlockedDinos: string[];
+  onSkipBlackHole: () => void;
+  onStopAutoGacha: () => void;
+}
+
+export const AutoGachaHud: React.FC<AutoGachaHudProps> = ({
+  isActive,
+  isBlackHolePlaying,
+  currentRollIndex,
+  totalRolls = 10,
+  currentDinoName,
+  currentDinoImage,
+  currentCostSeconds,
+  currentEvo1Ferocity,
+  remainingJurassicTime,
+  newlyUnlockedDinos,
+  onSkipBlackHole,
+  onStopAutoGacha,
+}) => {
+  if (!isActive) return null;
+
+  // 1. Black Hole Initial Cosmic Stage
+  if (isBlackHolePlaying) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/95 backdrop-blur-md">
+        {/* Top Header Badge */}
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-[#120e1c]/90 border border-amber-400/60 px-5 py-2 rounded-full shadow-[0_0_25px_rgba(255,215,0,0.35)] z-20">
+          <Bot className="w-5 h-5 text-amber-400 animate-spin" />
+          <span className="text-sm font-mono font-black text-amber-200 tracking-wider uppercase">
+            Initiating 10x Auto-Gacha • Sorting 10 Specimens By Strength
+          </span>
+        </div>
+
+        {/* Animation Worker Stage */}
+        <div className="w-full h-full">
+          <GachaAnimationWorker
+            animationSrc="/animations/black-hole.html"
+            onComplete={onSkipBlackHole}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Active Telemetry HUD Bar (Pinned at top of viewport)
+  return (
+    <div className="sticky top-0 z-[100] w-full px-4 py-2 pointer-events-auto">
+      <div className="max-w-6xl mx-auto bg-gradient-to-r from-[#120e1c]/95 via-[#1a1428]/95 to-[#120e1c]/95 border-2 border-emerald-400/80 rounded-2xl shadow-[0_0_25px_rgba(16,185,129,0.35)] backdrop-blur-xl p-3 flex flex-col gap-2 transition-all">
+        {/* Main Row */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          {/* Section 1: Roll Indicator & Progress Dots */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-400 px-3 py-1.5 rounded-xl text-emerald-300 font-mono font-black text-xs shadow-sm">
+              <Bot className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span>ROLL {Math.min(currentRollIndex + 1, totalRolls)} OF {totalRolls}</span>
+            </div>
+
+            {/* Visual Dot Progress */}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalRolls }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    idx < currentRollIndex
+                      ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]'
+                      : idx === currentRollIndex
+                      ? 'bg-amber-400 scale-125 animate-ping'
+                      : 'bg-white/20'
+                  }`}
+                  title={`Roll ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Section 2: Active Specimen Telemetry */}
+          {currentDinoName && (
+            <div className="flex items-center gap-3 bg-[#181224] border border-[#342646] px-3.5 py-1.5 rounded-xl text-xs font-mono">
+              {currentDinoImage && (
+                <img
+                  src={currentDinoImage}
+                  alt={currentDinoName}
+                  className="w-5 h-5 object-contain rounded border border-amber-400/60"
+                />
+              )}
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-white tracking-wide">{currentDinoName}</span>
+                <span className="flex items-center gap-0.5 text-amber-300 font-bold" title="Evolution 1 Ferocity">
+                  <Flame className="w-3.5 h-3.5 text-amber-400" />
+                  {currentEvo1Ferocity.toLocaleString()} Fero
+                </span>
+                <span className="flex items-center gap-0.5 text-rose-400 font-black" title="Roll Cost">
+                  <Zap className="w-3.5 h-3.5 text-rose-400" />
+                  -{rutGonTime(currentCostSeconds, 'seconds')}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Section 3: Time Remaining & Killswitch */}
+          <div className="flex items-center gap-3">
+            {/* Real-time Balance */}
+            <div className="flex items-center gap-1.5 bg-[#0f172a] border border-sky-400/60 px-3.5 py-1.5 rounded-xl text-sky-300 font-mono font-bold text-xs shadow-sm">
+              <Clock className="w-3.5 h-3.5 text-sky-400" />
+              <span>TIME LEFT: {rutGonTime(remainingJurassicTime, 'seconds')}</span>
+            </div>
+
+            {/* Cancel / Stop Button */}
+            <button
+              type="button"
+              onClick={onStopAutoGacha}
+              className="flex items-center gap-1.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-400/80 hover:border-rose-400 text-rose-300 px-3 py-1.5 rounded-xl font-mono font-bold text-xs cursor-pointer transition-all shadow-sm"
+              title="Stop Auto-Gacha Sequence"
+            >
+              <Square className="w-3 h-3 fill-rose-400" />
+              <span>STOP</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Section 4: Newly Unlocked Pool Dinos Banner (if any) */}
+        {newlyUnlockedDinos && newlyUnlockedDinos.length > 0 && (
+          <div className="flex items-center gap-2 bg-gradient-to-r from-amber-950/70 via-emerald-950/70 to-amber-950/70 border border-amber-400/60 px-3 py-1 rounded-xl text-[11px] font-mono font-bold text-amber-300 animate-pulse">
+            <Unlock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="text-emerald-300">NEW SPECIES ADDED TO GACHA POOL:</span>
+            <span className="text-white underline underline-offset-2">{newlyUnlockedDinos.join(', ')}</span>
+            <Sparkles className="w-3 h-3 text-amber-400 shrink-0 ml-auto" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

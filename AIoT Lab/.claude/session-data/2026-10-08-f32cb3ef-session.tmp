@@ -1,0 +1,52 @@
+# Session: 2026-10-08
+**Date:** 2026-10-08
+**Started:** 00:05
+**Last Updated:** 01:09
+**Project:** rien-prescript-beeper-fixes
+**Branch:** worktree-rien-prescript-beeper-fixes
+**Worktree:** D:\My Drive\Blue AI\.claude\worktrees\rien-prescript-beeper-fixes
+**Repo:** D:\My Drive\Blue AI\.git
+
+---
+<!-- ECC:SUMMARY:START -->
+## Session Summary
+
+### Tasks
+- Adjusted chaos‑character styling so they are **fully bright and opaque** like the ordered content.
+- Restricted chaos characters to appear **only where content characters exist**, matching the number of lines and characters (including spaces, quotes, ellipsis).
+- Cleaned up `esp32_19_display_mock.html` by **removing the options panel** and locking the hardware‑display configuration to the Manager’s vision:
+  - 1.9" IPS Bar (ST7789), 320 × 170 px, Obsidian OLED theme
+  - Animation always on
+  - Context always on
+  - Auto‑page always on with a timer of **7 s × (number of content lines)**
+- Updated related CSS/JS sections to reflect the new opacity, color inheritance, and placeholder logic.
+
+### Decisions Made
+- **Opacity & Color**: Set `.ep-c.ep-scramble` to `opacity: 1` and `color: inherit` for 100 % brightness.
+- **Chaos Placement**: Implemented an “unboxing placeholder” model so chaos characters are generated only for positions occupied by content characters, eliminating empty‑row chaos.
+- **Hardware/Theme Lock‑In**: Fixed hardware spec and display theme values in the HTML; removed UI controls that allowed user modification.
+- **Timer Logic**: Agreed on a deterministic timer (`7 s * lines`) for auto‑page progression (implementation pending).
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `Entropy/Rose/esp32_19_display_mock.html` | - Updated `.ep-c.ep-scramble` CSS (full opacity, color inheritance).<br>- Added logic to confine chaos characters to content cells only.<br>- Stripped the options UI panel.<br>- Hard‑coded hardware specs, theme, animation, context, and auto‑page settings. |
+
+### Unresolved Issues
+- **Timer Implementation**: The 7 s × line‑count auto‑page timer logic still needs to be coded and wired into the page script.
+- **Verification**: Need to run the page in a browser to confirm chaos characters render correctly and the timer behaves as expected.
+- **Potential Side Effects**: Ensure that removing the options panel does not break any other scripts that referenced those controls.
+
+### Next Session Context
+- The next work should **implement the auto‑page timer** based on the content line count and verify its integration.
+- Perform **full functional testing** of the updated `esp32_19_display_mock.html` (visual check of chaos brightness, placement, and timer behavior).
+- If any regressions appear, address them while preserving the locked hardware/theme settings.
+<!-- ECC:SUMMARY:END -->
+
+### Notes for Next Session
+-
+
+### Context to Load
+```
+[relevant files]
+```

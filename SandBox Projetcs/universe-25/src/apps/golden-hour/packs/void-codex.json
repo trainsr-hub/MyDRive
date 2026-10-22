@@ -1,0 +1,81 @@
+{
+  "id": "void_codex",
+  "title": "Void Codex Pack",
+  "subtitle": "Hazard Visualizer • Ancient Mesolithic Runes",
+  "cards_per_pull": 3,
+  "cost": {
+    "currency": "codex-roll",
+    "amount": 1
+  },
+  "visuals": {
+    "cover_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop&q=80",
+    "preview_url": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80",
+    "accent_color": "#38bdf8",
+    "border_color": "#0284c7",
+    "bg_gradient": "from-[#082f49] via-[#1a1424] to-[#120f18]",
+    "button_text": "Engage"
+  },
+  "pools": [
+    { "item_id": "void_codex_prime", "weight": 2 },
+    { "item_id": "enuma_elish_tablet", "weight": 8 },
+    { "item_id": "voidbound_aegis", "weight": 10 },
+    { "item_id": "void_kinetic_core", "weight": 25, "amount_range": [30, 50] },
+    { "item_id": "zero_point_matrix_crystal", "weight": 25 },
+    { "item_id": "abyssal_rune_dust", "weight": 30 }
+  ],
+  "guarantees": [
+    "zero_point_matrix_crystal",
+    "enuma_elish_tablet"
+  ],
+  "items": {
+    "void_codex_prime": {
+      "name": "Void Codex Prime",
+      "category": "relic",
+      "rarity": "legendary",
+      "icon_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #082f49 0%, #031726 50%, #000 100%)",
+      "description": "Ancient stone tablet inscribed with singularity equations."
+    },
+    "voidbound_aegis": {
+      "name": "Voidbound Aegis",
+      "category": "relic",
+      "rarity": "rare",
+      "icon_url": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #082f49 0%, #041b2c 50%, #000 100%)",
+      "description": "Absorbs hostile shockwaves and converts kinetic impact."
+    },
+    "enuma_elish_tablet": {
+      "name": "Enuma Elish Tablet Fragment",
+      "category": "collectible",
+      "rarity": "epic",
+      "icon_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #3b0764 0%, #1f0838 50%, #000 100%)",
+      "description": "Ancient Babylonian creation epic inscribed in cuneiform clay."
+    },
+    "zero_point_matrix_crystal": {
+      "name": "Zero-Point Matrix Crystal",
+      "category": "collectible",
+      "rarity": "rare",
+      "icon_url": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #082f49 0%, #031e33 50%, #000 100%)",
+      "description": "Flawless refractive crystal that channels zero-point energy."
+    },
+    "void_kinetic_core": {
+      "name": "Void Kinetic Core",
+      "category": "energy-core",
+      "rarity": "rare",
+      "energy_attribute": "void",
+      "icon_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #7e22ce 0%, #3b0764 50%, #000 100%)",
+      "description": "Kinetic energy fuel condensed from dimensional voids."
+    },
+    "abyssal_rune_dust": {
+      "name": "Abyssal Rune Dust",
+      "category": "collectible",
+      "rarity": "common",
+      "icon_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)",
+      "description": "Pulverized ancient rune stones with faint residual magnetic fields."
+    }
+  }
+}

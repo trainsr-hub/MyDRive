@@ -1,0 +1,55 @@
+{
+  "id": "vinyl-angel",
+  "Title": "Vinyl Angel Pack",
+  "Note": "Koi no Koe • 432Hz Harmonic Stems & Temporal DNA",
+  "Cards": 10,
+  "ticketType": "discs",
+  "ticketCost": 100,
+  "Cover": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80",
+  "Animation": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80",
+  "Button": "#ffffff",
+  "ButtonText": "Engage (100 Discs)",
+  "color": "#ffffff",
+  "borderColor": "#d4af37",
+  "bgGradient": "from-[#1a1424] via-[#0d0a12] to-[#000000]",
+  "Unpack": [
+    "Vinyl Stem x1 ~ 0.3%",
+    "Red DNA x 1...3 ~ 10%",
+    "Game Time 1H...3D ~ 30%",
+    "Purple DNA 300...3000 ~ 70%"
+  ],
+  "Guarantee": [
+    "Red DNA x 1...3 | Game Time 1H...3D"
+  ],
+  "Items": {
+    "Vinyl Stem": {
+      "cover": "https://images.unsplash.com/photo-1539185441755-769473a23570?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #451a03 0%, #1e1302 50%, #000 100%)",
+      "category": "collectible",
+      "rarity": "legendary",
+      "stemCount": 1,
+      "description": "Pure 432Hz master stem audio channel from Vinyl Angel Koi no Koe. Sacred archival collectible (0.3% apex drop rate)."
+    },
+    "Red DNA": {
+      "cover": "https://cdn.paleo.gg/games/jwtg/images/hybrid-type/super-hybrid.png",
+      "background": "linear-gradient(135deg, #7f1d1d 0%, #450a0a 50%, #000 100%)",
+      "category": "red-orbs",
+      "rarity": "rare",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate)."
+    },
+    "Game Time": {
+      "cover": "https://cdn.paleo.gg/games/jwtg/images/stats/speed.png",
+      "background": "linear-gradient(135deg, #0369a1 0%, #082f49 50%, #000 100%)",
+      "category": "time",
+      "rarity": "rare",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate)."
+    },
+    "Purple DNA": {
+      "cover": "https://cdn.paleo.gg/games/jwtg/images/resource/dna.png",
+      "background": "linear-gradient(135deg, #3b0764 0%, #1e0538 50%, #000 100%)",
+      "category": "dna",
+      "rarity": "uncommon",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate)."
+    }
+  }
+}

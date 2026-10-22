@@ -1,0 +1,213 @@
+# OmniRoute Sync Boundary & Recovery Plan
+
+## Context
+OmniRoute currently runs through two C: directory junctions into Google Drive–synced source folders:
+
+| C: junction | Current target | Purpose |
+|---|---|---|
+| `C:\Users\Admin\AppData\Roaming\npm\node_modules\omniroute` | `D:\My Drive\Sync\omniroute` | OmniRoute installed application package |
+| `C:\Users\Admin\.omniroute` | `D:\My Drive\Sync\Config\omniroute` | OmniRoute configuration and persistent data |
+
+The application-package migration will stop OmniRoute and therefore make Faust unavailable. Phase 1 must be operated by the Manager without reliance on a live Faust session. The solution is an independently runnable, stateful recovery batch tool prepared and tested before cutover.
+
+## Architecture Decision
+
+### Phase 1 — application package
+- **Local authoritative location:** `D:\My System\Local App Junction\OmniRoute\`
+- **C: package junction:** retarget to this local package location.
+- **Google Drive location:** `D:\My Drive\Sync\omniroute` is removed only after the new package passes static validation and a rollback copy exists locally.
+- **No junction is placed in Google Drive.** App code, dependencies, build output, and source leave Drive completely.
+
+### Phase 2 — configuration and user data (separate later phase)
+
+```text
+C:\Users\Admin\.omniroute
+  └─ junction → D:\My System\Local App Junction\OmniRoute\Config\  [local root]
+
+D:\My System\Local App Junction\OmniRoute\Config\
+  ├─ call_logs\, logs\, qoder-cli\, PID/runtime directories  [real local folders]
+  └─ links for selected synced user assets                      [local links only]
+       └─ target → D:\My Drive\Sync\Config\omniroute\       [real Drive files]
+
+D:\My Drive\Sync\Config\omniroute\
+  └─ only real selected user config/data files and folders
+```
+
+Google Drive must never contain junctions. It sees only ordinary real files at the synced endpoint; any links resolve locally on each machine.
+
+**SQLite gate:** `storage.sqlite` currently has WAL/SHM sidecars. Do not live-sync the database, WAL, or SHM files until Phase 2 separately verifies OmniRoute’s database behavior and defines an application-safe snapshot/export process.
+
+---
+
+# Phase 0 — Completed Inventory
+
+| C: junction | Verified type | Exact target |
+|---|---|---|
+| `C:\Users\Admin\.omniroute` | Directory junction / Mount Point | `D:\My Drive\Sync\Config\omniroute` |
+| `C:\Users\Admin\AppData\Roaming\npm\node_modules\omniroute` | Directory junction / Mount Point | `D:\My Drive\Sync\omniroute` |
+
+No other OmniRoute reparse points were found in the C: root or Admin profile inventory.
+
+---
+
+# Phase 1 — Application Package Migration
+
+## Hard safety rules
+
+1. **Do not mutate anything until the recovery batch has been created and its Audit action has passed.**
+2. **Never run the recovery batch from the OmniRoute package, the old Drive source, or either C: junction.** It must be independent of the paths being changed.
+3. **Never use `rmdir /S /Q` on a junction.** After exact-target validation, use bare `rmdir "<junction>"`; this removes only the reparse point, not its target’s contents.
+4. **Never use `taskkill /IM node.exe`.** It can terminate unrelated Node services. The Manager stops OmniRoute normally; the batch detects and blocks on likely remaining OmniRoute processes.
+5. **Every destructive action requires an exact target check, an explicit confirmation phrase, and a written state/log entry.** Any mismatch aborts.
+6. **Keep a rollback copy outside Google Drive.** Do not permanently delete it until the Manager has used the migrated installation for at least 48 hours.
+
+## 1. Build an offline-independent recovery console
+
+Create the recovery tool **before stopping OmniRoute**, outside all changing paths:
+
+```text
+D:\My System\Local App Junction\OmniRoute-Phase1-Recovery\
+├── OmniRoute-Phase1.bat
+├── state.ini
+├── manifests\
+├── logs\
+└── rollback\
+```
+
+Create a shortcut to `OmniRoute-Phase1.bat` in `D:\My Drive\Blue AI\ZZ - Shortcuts\` (or another Manager-visible location). It is the sole control point while Faust is offline.
+
+The batch uses only Windows-provided commands: `cmd`, `robocopy`, `fsutil`, `mklink`, `rmdir`, `move`, `where`, and optional Windows PowerShell for process inspection. It must not invoke OmniRoute, npm, Node package scripts, Python, or any executable from the old Drive source.
+
+### Required menu actions
+
+| Menu action | Purpose | Safe while OmniRoute runs? |
+|---|---|---|
+| `1 — Audit` | Read-only verification of paths, targets, capacity, process hints, and state | Yes |
+| `2 — Stage copy` | Initial full copy to local destination; does not modify a junction | Yes; repeat after shutdown |
+| `3 — Cut over` | Final delta copy, move old source to local rollback, and retarget package junction | **No** |
+| `4 — Verify` | Static post-cutover validation without starting a long-lived service | After cutover |
+| `5 — Roll back` | Restore original Drive package and original C: junction | After failed verification/startup |
+| `6 — Finalize` | Explicitly delete the retained rollback copy after stable use | After 48+ hours |
+
+The tool reads `state.ini` at startup, prints the current state and next permitted action, and permits only valid state transitions. It must never auto-finalize or silently delete data.
+
+## 2. Audit requirements
+
+`1 — Audit` fails loudly unless all of these pass:
+
+- The old C: path exists, is a directory junction, and has the **exact target** `D:\My Drive\Sync\omniroute`.
+- The old Drive source exists and contains `package.json`, `bin\omniroute.mjs`, `src\`, and `node_modules\`.
+- The local destination `D:\My System\Local App Junction\OmniRoute` does not exist, or is a previously validated staged destination for this same migration. An unrelated existing directory is an abort condition.
+- The recovery directory is outside the old source, local destination, and both C: junction paths.
+- The D: drive has sufficient free space for the staged copy and a retained rollback package.
+- The audit writes a manifest recording timestamp, old target, source, destination, required-path checks, and available disk space.
+- It lists processes whose command line contains `omniroute` or `D:\My Drive\Sync\omniroute`; it only reports them and does not terminate them.
+
+## 3. Stage copy while Faust is online
+
+The Manager chooses `2 — Stage copy` before taking OmniRoute offline. The batch executes:
+
+```batch
+robocopy "D:\My Drive\Sync\omniroute" "D:\My System\Local App Junction\OmniRoute" /E /COPY:DAT /DCOPY:DAT /XJ /R:2 /W:2 /TEE /LOG+:"<recovery-log>"
+```
+
+Required behavior:
+
+- `/XJ` prevents traversal of unexpected nested junctions.
+- Robocopy exit codes `0` through `7` count as success; `8` or greater is failure.
+- It verifies required package files and directories at destination.
+- It runs a non-mutating `robocopy /L` comparison and logs the remaining differences.
+- On success it records `STAGED`; it does not alter the old Drive folder or C: junction.
+
+This minimizes the time Faust is unavailable. Cutover repeats the copy after normal shutdown to bring over the final delta.
+
+## 4. Manager-operated cutover
+
+The Manager first stops OmniRoute through its normal shutdown path and waits for active work to finish. Then they choose `3 — Cut over`. The batch must:
+
+1. Display likely remaining OmniRoute process matches and refuse to proceed until none remain, except after an explicit Manager confirmation that a reported match is a false positive.
+2. Revalidate the original C: junction target and the local staged package.
+3. Run the final `robocopy` delta pass; require a successful return code.
+4. Require the exact phrase `MOVE OMNIROUTE PACKAGE`.
+5. Move—not delete—the original Drive package to:
+
+   ```text
+   D:\My System\Local App Junction\OmniRoute-Phase1-Recovery\rollback\omniroute-original\
+   ```
+
+   This keeps rollback outside Drive. The old source’s disappearance from Drive is intentional only after the local copy is safe.
+6. Verify the old Drive source is absent and the rollback copy still contains `package.json` and `bin\omniroute.mjs`.
+7. Reconfirm the C: path is a junction with the expected old target; remove **only the junction**:
+
+   ```batch
+   rmdir "C:\Users\Admin\AppData\Roaming\npm\node_modules\omniroute"
+   ```
+
+8. Create the replacement junction:
+
+   ```batch
+   mklink /J "C:\Users\Admin\AppData\Roaming\npm\node_modules\omniroute" "D:\My System\Local App Junction\OmniRoute"
+   ```
+
+9. Read it back with `fsutil reparsepoint query` and require the exact local target.
+10. Set state to `CUTOVER_COMPLETE` only after every prior check succeeds.
+
+## 5. Offline-safe verification and wake-up test
+
+`4 — Verify` must not depend on Faust. It validates:
+
+- The C: junction resolves exactly to `D:\My System\Local App Junction\OmniRoute`.
+- The target contains `package.json`, `bin\omniroute.mjs`, `src\`, and `node_modules\`.
+- `where node` finds a Node executable.
+- `node --check "D:\My System\Local App Junction\OmniRoute\bin\omniroute.mjs"` succeeds.
+- All results are logged and the tool clearly prints either **safe to launch OmniRoute normally** or **roll back now**.
+
+After static verification passes, the Manager launches OmniRoute through their normal command/path. The global `node_modules\omniroute` path now resolves to the local package, so no reinstall should be required. If Faust reconnects through the normal workflow, Phase 1 is operationally successful.
+
+## 6. Deterministic rollback
+
+If static verification or normal startup fails, `5 — Roll back` must work without Faust:
+
+1. Assert the C: path is a junction whose exact target is the new local package. Abort on mismatch.
+2. Remove only the new C: junction with bare `rmdir`.
+3. Assert the rollback copy exists and the old Drive source does not.
+4. Move `rollback\omniroute-original` back to `D:\My Drive\Sync\omniroute`.
+5. Recreate the original junction:
+
+   ```batch
+   mklink /J "C:\Users\Admin\AppData\Roaming\npm\node_modules\omniroute" "D:\My Drive\Sync\omniroute"
+   ```
+
+6. Verify the exact old target plus required package files.
+7. Mark `ROLLED_BACK`, retain the local staged copy and all logs, and do not delete anything further.
+
+## 7. Finalization
+
+Do not delete the rollback copy in the migration session. Once the Manager has used OmniRoute/Faust successfully for at least 48 hours:
+
+- Run `6 — Finalize`.
+- Display the rollback path, size, timestamp, and last successful verification.
+- Require the exact phrase `DELETE ROLLBACK BACKUP`.
+- Delete only `rollback\omniroute-original`.
+- Retain the batch, manifests, and logs for future recovery.
+
+---
+
+# Phase 1 Verification Checklist
+
+- [x] Existing C: OmniRoute package junction identified and target recorded.
+- [x] Existing C: OmniRoute config junction identified and target recorded.
+- [ ] Offline-independent recovery console exists outside every changed path.
+- [ ] Audit passes and logs original target paths.
+- [ ] Stage copy passes and required package paths exist locally.
+- [ ] Final delta copy passes after normal OmniRoute shutdown.
+- [ ] Original package exists in local rollback before the C: junction is changed.
+- [ ] Replacement C: junction resolves exactly to the local package.
+- [ ] Node syntax check succeeds against local `bin\omniroute.mjs`.
+- [ ] Manager launches OmniRoute normally and confirms Faust reconnects.
+- [ ] Google Drive no longer syncs the application package.
+- [ ] Rollback is retained for at least 48 hours and finalized only by explicit action.
+
+# Phase 2 Gate — Do Not Execute Yet
+
+Phase 2 starts only after Phase 1 is stable. It needs a fresh inventory of all config paths OmniRoute reads/writes. It will retarget `C:\Users\Admin\.omniroute` to the local Config root, preserve Google Drive folders as ordinary real files, and create any required links **from local Config to Drive assets**, never the reverse. The SQLite snapshot/backup design is a mandatory prerequisite before moving any database-related file.

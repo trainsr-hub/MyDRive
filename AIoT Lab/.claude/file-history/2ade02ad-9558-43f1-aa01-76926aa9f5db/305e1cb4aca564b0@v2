@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d4af37'><path d='M12 2c1.5 3 4 5 4 8a4 4 0 0 1-8 0c0-3 2.5-5 4-8z'/></svg>" />
+    <title>Hazard Identity Studio — Database Engine</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/identity-main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,99 @@
+// path: src/apps/golden-hour/packs/index.ts
+
+import type { TicketType, GachaRarity, ElementalAttribute } from '../types';
+
+/**
+ * =============================================================================
+ * GACHA PACK JSON SPECIFICATION & SCHEMA
+ * =============================================================================
+ * Every `.json` file placed in `src/apps/golden-hour/packs/` represents a single
+ * standalone card pack template. The system dynamically loads all JSON files in
+ * this directory via Vite's `import.meta.glob`.
+ *
+ * KEY RULES & SYNTAX:
+ * -----------------------------------------------------------------------------
+ * 1. "id" (string, required): Unique deck slug (e.g., "celestial-empyrean").
+ * 2. "Title" (string, required): Primary pack display title.
+ * 3. "Note" (string, required): Subtitle / lore flavor note.
+ * 4. "Cards" (number, required): Number of cards generated per pack opening.
+ * 5. "ticketType" (string, required): 'angel-roll' | 'solar-roll' | 'codex-roll'.
+ * 6. "ticketCost" (number, required): Amount of tickets consumed per open.
+ * 7. "Cover" (string, required): Static pack artwork URL / path.
+ * 8. "Animation" (string, required): Animated preview GIF/video URL on hover.
+ * 9. "Button" (string, optional): Button accent color (hex) or theme trim.
+ * 10. "ButtonText" (string, optional): Action button text (defaults to "Engage").
+ * 11. "color" (string, required): Primary theme accent color.
+ * 12. "borderColor" (string, required): Border highlight color.
+ * 13. "bgGradient" (string, required): Tailwind gradient class combination.
+ * 14. "Unpack" (string[], required): Drop table rules with percentage expressions:
+ *     - "ItemName ~ 30%": Explicit 30% pull probability.
+ *     - "ItemName 10...50 ~ 20%": 20% chance to roll an amount between 10 and 50.
+ *     - "FallbackItemName": Receives remainder rate (1 - explicit_sum) / count.
+ * 15. "Guarantee" (string[], optional): Guaranteed drops (supports "A | B" choices).
+ * 16. "Items" (Record<string, PackItemJsonMeta>, optional): Dictionary of item metadata.
+ */
+
+export interface PackItemJsonMeta {
+  cover?: string;
+  background?: string;
+  category?: 'relic' | 'collectible' | 'energy-core';
+  rarity?: GachaRarity;
+  description?: string;
+  energyAttribute?: ElementalAttribute;
+  energyAmount?: number;
+}
+
+export interface RawDeckPack {
+  id: string;
+  Title: string;
+  Note: string;
+  Cards: number;
+  ticketType: TicketType;
+  ticketCost: number;
+  Cover: string;
+  Animation: string;
+  Button?: string;
+  ButtonText?: string;
+  color: string;
+  borderColor: string;
+  bgGradient: string;
+  Unpack: string[];
+  Guarantee?: string[];
+  Items?: Record<string, PackItemJsonMeta>;
+}
+
+// =============================================================================
+// DYNAMIC GACHA PACK DISCOVERY (Glob Loader)
+// =============================================================================
+
+const packJsonModules = import.meta.glob<Record<string, any>>('./*.json', { eager: true });
+
+export const LOADED_GACHA_PACKS: RawDeckPack[] = Object.values(packJsonModules)
+  .map((m: any) => m.default || m)
+  .filter((deck: any) => Boolean(deck && deck.id && deck.Title && deck.Unpack));
+
+/**
+ * Universal Item Metadata Resolver:
+ * Scans all loaded pack JSONs for an item's visual & mechanical definition.
+ */
+export function resolveItemMetaFromPacks(itemName: string): PackItemJsonMeta {
+  const baseKey = itemName.replace(/\s+\d+u$/, '').replace(/\s+\d+\.\.\.\d+$/, '').trim();
+
+  for (const pack of LOADED_GACHA_PACKS) {
+    if (pack.Items && pack.Items[baseKey]) {
+      return pack.Items[baseKey];
+    }
+    if (pack.Items && pack.Items[itemName]) {
+      return pack.Items[itemName];
+    }
+  }
+
+  // Generic fallback if item is not explicitly declared in any JSON pack
+  return {
+    cover: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)',
+    category: 'collectible',
+    rarity: 'common',
+    description: 'A mysterious artifact materialized from dimensional matrix indexing.',
+  };
+}

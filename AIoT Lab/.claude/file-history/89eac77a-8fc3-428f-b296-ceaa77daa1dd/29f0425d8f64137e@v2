@@ -1,0 +1,263 @@
+# Faust Google Colab Access Setup Guide
+
+## Overview
+This document provides step-by-step instructions for granting Faust autonomous access to your Google Colab notebook at:
+`https://colab.research.google.com/drive/1iYIe9pNcGO3nFYX2BOVtrLCJoF37PzP6`
+
+## Access Methods
+
+### Method 1: Direct Google Drive Sharing (Simplest)
+**For immediate, manual access by Faust (Manager-directed)**
+
+1. **Open your Colab notebook** in your browser
+2. **Click the "Share" button** in the top-right corner
+3. **Add Faust's email address** (you'll need to create a service account first - see Method 2)
+4. **Set permission to "Editor"** to allow notebook modifications
+5. **Copy the notebook ID** and paste it in Faust's integration UI
+
+---
+
+### Method 2: Google Cloud Service Account (Recommended for Autonomous Faust Access)
+**For programmatic, autonomous access without Manager interaction**
+
+#### Step 1: Create a Google Cloud Project
+```bash
+# Go to https://console.cloud.google.com
+# Click "Select a Project" → "New Project"
+# Name: "Faust Colab Integration"
+# Click "Create"
+```
+
+#### Step 2: Create a Service Account
+```bash
+# In Google Cloud Console:
+# 1. Navigate to: "APIs & Services" → "Credentials"
+# 2. Click "Create Credentials" → "Service Account"
+# 3. Service account name: "faust-colab-access"
+# 4. Click "Create and Continue"
+# 5. Skip optional steps, click "Done"
+```
+
+#### Step 3: Create and Download Key
+```bash
+# 1. In Credentials page, find "faust-colab-access" service account
+# 2. Click the service account email
+# 3. Go to "Keys" tab
+# 4. Click "Add Key" → "Create new key"
+# 5. Choose "JSON" format
+# 6. Click "Create" - JSON file downloads automatically
+```
+
+#### Step 4: Store Credentials Securely
+```bash
+# Move the downloaded JSON to Faust's secure storage:
+cp ~/Downloads/faust-colab-*.json "D:\My Drive\Blue AI\.secrets\colab-service-account.json"
+
+# Add to .gitignore to prevent accidental commits:
+echo ".secrets/" >> "D:\My Drive\Blue AI\.gitignore"
+echo "*.json" >> "D:\My Drive\Blue AI\.secrets\.gitignore"
+```
+
+#### Step 5: Share Notebook with Service Account
+```bash
+# 1. Copy the service account email from the JSON file:
+#    Field: "client_email"
+#    Format: faust-colab-access@PROJECT_ID.iam.gserviceaccount.com
+
+# 2. Open your Colab notebook
+# 3. Click "Share" button (top-right)
+# 4. Paste the service account email
+# 5. Select "Editor" permission
+# 6. Click "Share"
+```
+
+---
+
+## File Structure
+
+```
+D:\My Drive\Blue AI\Test Projects\Google Collab\
+├── index.html                          # UI Dashboard
+├── README.md                           # Project documentation
+├── FAUST_ACCESS_SETUP.md              # This file
+├── backend/
+│   ├── main.py                         # FastAPI server
+│   ├── requirements.txt                # Python dependencies
+│   ├── config.py                       # Configuration & secrets
+│   └── colab_client.py                 # Colab API integration
+└── .secrets/                           # (DO NOT COMMIT)
+    └── colab-service-account.json     # Service account credentials
+```
+
+---
+
+## Backend Integration (FastAPI)
+
+### Step 1: Install Dependencies
+```bash
+cd "D:\My Drive\Blue AI\Test Projects\Google Collab\backend"
+pip install -r requirements.txt
+```
+
+### Step 2: Configure Environment
+Create `.env` file:
+```bash
+GOOGLE_APPLICATION_CREDENTIALS=../../.secrets/colab-service-account.json
+COLAB_NOTEBOOK_ID=1iYIe9pNcGO3nFYX2BOVtrLCJoF37PzP6
+BACKEND_PORT=8000
+```
+
+### Step 3: Start Backend Server
+```bash
+python main.py
+```
+
+Backend will be available at: `http://localhost:8000`
+
+---
+
+## UI Integration
+
+### Local Development
+```bash
+# Option 1: Open directly in browser
+open "D:\My Drive\Blue AI\Test Projects\Google Collab\index.html"
+
+# Option 2: Serve with Python HTTP server
+cd "D:\My Drive\Blue AI\Test Projects\Google Collab"
+python -m http.server 3000
+# Visit: http://localhost:3000
+```
+
+### Configuration Steps in UI
+1. **Notebook ID**: `1iYIe9pNcGO3nFYX2BOVtrLCJoF37PzP6`
+2. **Service Account JSON**: Paste contents of `.secrets/colab-service-account.json`
+3. **Click "Connect"**: Establishes connection to Colab
+4. **Write Python code** in editor
+5. **Click "Run Code"**: Executes in your Colab notebook and returns output
+
+---
+
+## API Endpoints
+
+### Connection Status
+```bash
+GET /api/status
+```
+
+Response:
+```json
+{
+  "connected": true,
+  "notebook_id": "1iYIe9pNcGO3nFYX2BOVtrLCJoF37PzP6",
+  "service_account": "faust-colab-access@project.iam.gserviceaccount.com"
+}
+```
+
+### Execute Code
+```bash
+POST /api/execute
+Content-Type: application/json
+
+{
+  "code": "import numpy as np\nprint(np.array([1,2,3]))"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "output": "[1 2 3]",
+  "execution_time_ms": 1250
+}
+```
+
+---
+
+## Faust Integration (Autonomous Mode)
+
+Once authenticated, Faust can operate autonomously:
+
+```bash
+# In .agents/scripts/c2.py or skill triggers:
+python D:\My Drive\Blue AI\Test Projects\Google Collab\backend\colab_client.py \
+  --notebook-id 1iYIe9pNcGO3nFYX2BOVtrLCJoF37PzP6 \
+  --code "import matplotlib.pyplot as plt\nplt.plot([1,2,3])\nplt.show()"
+```
+
+---
+
+## Troubleshooting
+
+### Issue: "Permission denied" when accessing notebook
+**Solution**: 
+- Verify service account email was added to notebook Share settings
+- Confirm permission level is "Editor" (not "Viewer")
+- Wait 60 seconds for Google to propagate permissions
+
+### Issue: "Invalid JSON credentials"
+**Solution**:
+- Check JSON file is from Google Cloud Console
+- Ensure file contains `"type": "service_account"` field
+- Validate JSON is properly formatted (use online JSON validator)
+
+### Issue: Connection successful but code execution fails
+**Solution**:
+- Check Colab notebook has required libraries installed
+- Verify Python syntax is valid
+- Check backend logs for detailed error messages
+
+### Issue: Backend won't start
+**Solution**:
+```bash
+# Verify Python 3.8+
+python --version
+
+# Check dependencies installed
+pip list | grep fastapi
+pip list | grep google-auth
+
+# Try reinstalling
+pip install --upgrade -r requirements.txt
+```
+
+---
+
+## Security Best Practices
+
+1. **Never commit `.secrets/` directory**
+   - Already in `.gitignore`, but double-check before pushing
+
+2. **Rotate service account keys regularly**
+   - Delete old keys in Google Cloud Console
+   - Create new key every 90 days
+   - Update `.secrets/colab-service-account.json`
+
+3. **Restrict service account permissions**
+   - Only grant "Editor" access to specific notebooks
+   - Avoid granting project-wide roles
+
+4. **Monitor API usage**
+   - Check Google Cloud Console for unusual activity
+   - Set up billing alerts
+
+---
+
+## Next Steps
+
+1. **Complete Method 2 steps above** (Service Account setup)
+2. **Create `backend/` directory structure** with FastAPI server
+3. **Store credentials** in `.secrets/colab-service-account.json`
+4. **Start backend server** on port 8000
+5. **Open `index.html` in browser** and test connection
+6. **Deploy to production** when ready
+
+---
+
+## Reference Links
+
+- [Google Colab Documentation](https://colab.research.google.com/notebooks/intro.ipynb)
+- [Google Cloud Service Accounts](https://cloud.google.com/iam/docs/service-accounts)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Google Auth Python Library](https://google-auth.readthedocs.io/)

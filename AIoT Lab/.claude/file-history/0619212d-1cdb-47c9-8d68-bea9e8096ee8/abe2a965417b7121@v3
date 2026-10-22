@@ -1,0 +1,85 @@
+{
+  "table_name": "notes",
+  "columns": [
+    {
+      "name": "Note ID",
+      "slug": "id",
+      "type": "hex_id",
+      "metadata": {
+        "prefix": "NOTE"
+      }
+    },
+    {
+      "name": "Note Headline",
+      "slug": "note_headline",
+      "type": "text_single",
+      "metadata": {}
+    },
+    {
+      "name": "Markdown Content Body",
+      "slug": "content",
+      "type": "text_multi",
+      "metadata": {}
+    },
+    {
+      "name": "Estimated Word Count",
+      "slug": "word_count",
+      "type": "int_scalar",
+      "metadata": {}
+    },
+    {
+      "name": "Relevance Score",
+      "slug": "score",
+      "type": "float_scalar",
+      "metadata": {}
+    },
+    {
+      "name": "Pinned to Workspace Top?",
+      "slug": "is_pinned",
+      "type": "boolean",
+      "metadata": {}
+    },
+    {
+      "name": "Primary Category",
+      "slug": "category",
+      "type": "enum_single",
+      "metadata": {
+        "options": [
+          "personal",
+          "work",
+          "ideas",
+          "archive"
+        ]
+      }
+    },
+    {
+      "name": "Classification Labels",
+      "slug": "labels",
+      "type": "enum_multi",
+      "metadata": {
+        "options": [
+          "important",
+          "reference",
+          "draft",
+          "review"
+        ]
+      }
+    },
+    {
+      "name": "Parent Project Link",
+      "slug": "project_id",
+      "type": "relation_single",
+      "metadata": {
+        "target": "projects"
+      }
+    },
+    {
+      "name": "Linked Related Notes",
+      "slug": "linked_note_ids",
+      "type": "relation_multi",
+      "metadata": {
+        "target": "notes"
+      }
+    }
+  ]
+}

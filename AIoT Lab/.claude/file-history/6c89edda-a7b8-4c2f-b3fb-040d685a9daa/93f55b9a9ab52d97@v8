@@ -1,0 +1,483 @@
+import React, { useState } from 'react';
+import { EntityPlan, ActionItem } from '../types';
+import {
+  Folder,
+  ExternalLink,
+  Zap,
+  CheckCircle2,
+  ChevronDown,
+  FileEdit,
+  FolderPlus,
+  RefreshCw,
+  Trash2,
+  ArrowRight,
+  X,
+  File,
+  Edit2,
+  Check,
+} from 'lucide-react';
+
+interface EntityFolderCardProps {
+  entityPlan: EntityPlan;
+  onFixEntity: (entityPlan: EntityPlan) => void;
+  isExecuting: boolean;
+  isFullWidth?: boolean;
+  viewMode?: 'all' | 'conflict' | 'perfected';
+  onRenameEntity?: (entityId: string, newName: string) => Promise<void>;
+}
+
+interface TreeNode {
+  item: ActionItem;
+  path: string;
+  name: string;
+  children: TreeNode[];
+}
+
+function buildEntityTree(items: ActionItem[], viewMode: 'all' | 'conflict' | 'perfected' = 'all'): TreeNode[] {
+  let subItems = items.filter((i) => {
+    const parts = i.relative_path.split('/').filter(Boolean);
+    return parts.length > 2;
+  });
+
+  if (viewMode === 'conflict') {
+    const conflictPaths = new Set(
+      subItems.filter((i) => i.action_type !== 'MATCH').map((i) => i.relative_path)
+    );
+    // Show only conflict folders or folders containing conflict descendants
+    subItems = subItems.filter((i) => {
+      if (i.action_type !== 'MATCH') return true;
+      return Array.from(conflictPaths).some((cp) => cp.startsWith(i.relative_path + '/'));
+    });
+  } else if (viewMode === 'perfected') {
+    // Show only non-conflict / healthy subfolders
+    subItems = subItems.filter((i) => i.action_type === 'MATCH');
+  }
+
+  const nodeMap = new Map<string, TreeNode>();
+  const rootNodes: TreeNode[] = [];
+
+  const sorted = [...subItems].sort(
+    (a, b) => a.relative_path.split('/').length - b.relative_path.split('/').length
+  );
+
+  for (const item of sorted) {
+    const parts = item.relative_path.split('/').filter(Boolean);
+    const node: TreeNode = {
+      item,
+      path: item.relative_path,
+      name: item.folder_name,
+      children: [],
+    };
+    nodeMap.set(item.relative_path, node);
+
+    const parentPath = parts.slice(0, -1).join('/');
+    const parentNode = nodeMap.get(parentPath);
+
+    if (parentNode) {
+      parentNode.children.push(node);
+    } else {
+      rootNodes.push(node);
+    }
+  }
+
+  return rootNodes;
+}
+
+export const EntityFolderCard: React.FC<EntityFolderCardProps> = ({
+  entityPlan,
+  onFixEntity,
+  isExecuting,
+  isFullWidth = false,
+  viewMode = 'all',
+  onRenameEntity,
+}) => {
+  // Tracks selected folder path at each tree level
+  const [selectedPathsByLevel, setSelectedPathsByLevel] = useState<Record<number, string | null>>({});
+
+  // Inline rename state
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState(entityPlan.target_root_name);
+  const [isSavingName, setIsSavingName] = useState(false);
+
+  const handleSaveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = editName.trim();
+    if (!clean || clean === entityPlan.target_root_name) {
+      setIsEditingName(false);
+      return;
+    }
+    setIsSavingName(true);
+    try {
+      await onRenameEntity?.(entityPlan.target_root_id, clean);
+      setIsEditingName(false);
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
+  const tree = buildEntityTree(entityPlan.items, viewMode);
+  const mismatches = entityPlan.items.filter((i) => i.action_type !== 'MATCH');
+  const hasMismatches = mismatches.length > 0;
+
+  const handleFolderClick = (level: number, node: TreeNode) => {
+    setSelectedPathsByLevel((prev) => {
+      // If clicking already selected folder, collapse it
+      if (prev[level] === node.path) {
+        const next = { ...prev };
+        delete next[level];
+        // clean up deeper levels too
+        Object.keys(next).forEach((k) => {
+          if (Number(k) >= level) delete next[Number(k)];
+        });
+        return next;
+      }
+
+      // Otherwise select it and clear deeper levels
+      const next = { ...prev, [level]: node.path };
+      Object.keys(next).forEach((k) => {
+        if (Number(k) > level) delete next[Number(k)];
+      });
+      return next;
+    });
+  };
+
+  const getStatusBadge = (item: ActionItem) => {
+    switch (item.action_type) {
+      case 'RENAME':
+        return (
+          <span className="badge badge-rename" style={{ fontSize: '10px', padding: '1px 6px' }}>
+            <FileEdit size={10} style={{ marginRight: '2px' }} /> Rename
+          </span>
+        );
+      case 'CREATE':
+        return (
+          <span className="badge badge-create" style={{ fontSize: '10px', padding: '1px 6px' }}>
+            <FolderPlus size={10} style={{ marginRight: '2px' }} /> Missing
+          </span>
+        );
+      case 'UPDATE_DESC':
+        return (
+          <span className="badge badge-update" style={{ fontSize: '10px', padding: '1px 6px' }}>
+            <RefreshCw size={10} style={{ marginRight: '2px' }} /> Metadata
+          </span>
+        );
+      case 'PRUNE_EMPTY':
+        return (
+          <span className="badge badge-prune" style={{ fontSize: '10px', padding: '1px 6px' }}>
+            <Trash2 size={10} style={{ marginRight: '2px' }} /> Unwanted
+          </span>
+        );
+      case 'MATCH':
+      default:
+        return (
+          <span style={{ fontSize: '10.5px', color: 'var(--success)', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+            <CheckCircle2 size={11} /> In sync
+          </span>
+        );
+    }
+  };
+
+  // Renders a grid of Google Drive folder cards for a specific list of nodes
+  const renderFolderGrid = (nodes: TreeNode[], level = 0) => {
+    const activePath = selectedPathsByLevel[level];
+    const activeNode = nodes.find((n) => n.path === activePath);
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        {/* The Google Drive Folder Card Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: isFullWidth ? 'repeat(auto-fill, minmax(260px, 1fr))' : 'repeat(auto-fill, minmax(210px, 1fr))',
+            gap: isFullWidth ? '0.85rem' : '0.65rem',
+          }}
+        >
+          {nodes.map((node) => {
+            const hasChildren = node.children.length > 0;
+            const isSelected = activePath === node.path;
+            const isMismatch = node.item.action_type !== 'MATCH';
+
+            return (
+              <div
+                key={node.path}
+                onClick={() => handleFolderClick(level, node)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: isFullWidth ? '0.85rem 1.1rem' : '0.65rem 0.85rem',
+                  borderRadius: 'var(--radius-md)',
+                  background: isSelected
+                    ? 'var(--bg-canvas)'
+                    : isMismatch
+                    ? node.item.action_type === 'FLAG_RED'
+                      ? 'var(--danger-bg)'
+                      : 'var(--bg-card-hover)'
+                    : 'var(--bg-card)',
+                  border: isSelected
+                    ? '2px solid var(--accent)'
+                    : isMismatch
+                    ? '1px solid rgba(245, 158, 11, 0.4)'
+                    : '1px solid var(--border-light)',
+                  boxShadow: isSelected ? '0 0 12px var(--accent-glow)' : 'var(--shadow-sm)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  userSelect: 'none',
+                }}
+                className="table-row-hover"
+              >
+                {/* Left: Google Drive Style Folder Icon & Title */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', overflow: 'hidden', flex: 1 }}>
+                  <Folder
+                    size={isFullWidth ? 22 : 18}
+                    style={{
+                      color:
+                        node.item.action_type === 'RENAME'
+                          ? '#c084fc'
+                          : node.item.action_type === 'CREATE'
+                          ? 'var(--success)'
+                          : node.item.action_type === 'FLAG_RED'
+                          ? 'var(--danger)'
+                          : isMismatch
+                          ? 'var(--warning)'
+                          : 'var(--accent)',
+                      flexShrink: 0,
+                    }}
+                  />
+
+                  <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    {node.item.action_type === 'RENAME' ? (
+                      <span style={{ fontSize: '12.5px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <span style={{ textDecoration: 'line-through', opacity: 0.5 }}>{node.item.current_name}</span>
+                        <ArrowRight size={11} style={{ color: '#c084fc' }} />
+                        <span style={{ color: '#c084fc' }}>{node.item.folder_name}</span>
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: '12.5px',
+                          fontWeight: isMismatch ? 700 : 600,
+                          color: isMismatch ? 'var(--text-primary)' : 'var(--text-secondary)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {node.item.folder_name}
+                      </span>
+                    )}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '2px' }}>
+                      {getStatusBadge(node.item)}
+                      {hasChildren && (
+                        <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
+                          • {node.children.length} sub-subfolder{node.children.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Target Link / Expand Indicator */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                  {node.item.target_id && (
+                    <a
+                      href={`https://drive.google.com/drive/folders/${node.item.target_id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: 'var(--text-dim)', padding: '2px' }}
+                      title="Open in Google Drive"
+                    >
+                      <ExternalLink size={12} />
+                    </a>
+                  )}
+                  {hasChildren && (
+                    <ChevronDown
+                      size={13}
+                      style={{
+                        color: isSelected ? 'var(--accent)' : 'var(--text-dim)',
+                        transform: isSelected ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.15s ease',
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Cascading Sub-Subfolders Shelf (Appears when active folder has children) */}
+        {activeNode && activeNode.children.length > 0 && (
+          <div
+            style={{
+              padding: '0.85rem 1rem',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--bg-canvas)',
+              border: '1px solid var(--border-mid)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.65rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Folder size={14} style={{ color: 'var(--accent)' }} />
+                <span>Sub-subfolders inside "{activeNode.name}":</span>
+              </div>
+
+              <button
+                onClick={() => handleFolderClick(level, activeNode)}
+                className="btn subtle"
+                style={{ padding: '2px 5px', fontSize: '11px' }}
+                title="Close subfolder preview"
+              >
+                <X size={12} />
+              </button>
+            </div>
+
+            {/* Recursively render child grid */}
+            {renderFolderGrid(activeNode.children, level + 1)}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div
+      className="card"
+      style={{
+        padding: '0',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        borderColor: hasMismatches ? 'rgba(245, 158, 11, 0.4)' : 'var(--border-light)',
+        background: 'var(--bg-card)',
+        boxShadow: hasMismatches ? '0 4px 16px rgba(0, 0, 0, 0.25)' : 'none',
+      }}
+    >
+      {/* Entity Card Header */}
+      <div
+        style={{
+          padding: '0.85rem 1.15rem',
+          borderBottom: '1px solid var(--border-light)',
+          background: 'var(--bg-card-hover)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.5rem',
+        }}
+      >
+        {/* Left: Entity Name & Inline Rename */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Folder size={18} style={{ color: hasMismatches ? 'var(--warning)' : 'var(--success)' }} />
+
+          {isEditingName ? (
+            <form onSubmit={handleSaveName} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <input
+                type="text"
+                autoFocus
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setIsEditingName(false);
+                }}
+                className="input-base"
+                style={{
+                  minHeight: '30px',
+                  padding: '0.2rem 0.5rem',
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  width: '240px',
+                }}
+              />
+              <button
+                type="submit"
+                disabled={isSavingName}
+                className="btn primary"
+                style={{ padding: '0.25rem 0.5rem', fontSize: '11px', background: 'var(--accent)', color: '#000' }}
+                title="Save name"
+              >
+                <Check size={12} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditingName(false)}
+                className="btn subtle"
+                style={{ padding: '0.25rem 0.5rem', fontSize: '11px' }}
+                title="Cancel"
+              >
+                <X size={12} />
+              </button>
+            </form>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>
+                {entityPlan.target_root_name}
+              </span>
+              <button
+                onClick={() => {
+                  setEditName(entityPlan.target_root_name);
+                  setIsEditingName(true);
+                }}
+                className="btn subtle"
+                style={{ padding: '2px 5px', color: 'var(--text-dim)', borderRadius: '4px' }}
+                title="Rename entity folder"
+              >
+                <Edit2 size={12} />
+              </button>
+              <a
+                href={`https://drive.google.com/drive/folders/${entityPlan.target_root_id}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: 'var(--text-dim)', padding: '2px' }}
+                title="Open folder in Google Drive"
+              >
+                <ExternalLink size={13} />
+              </a>
+            </div>
+          )}
+        </div>
+
+        {hasMismatches ? (
+          <button
+            onClick={() => onFixEntity(entityPlan)}
+            disabled={isExecuting}
+            className="btn primary"
+            style={{
+              padding: '0.35rem 0.85rem',
+              fontSize: '11.5px',
+              fontWeight: 700,
+              background: 'var(--warning)',
+              color: '#000',
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+            }}
+          >
+            <Zap size={12} /> Fix ({mismatches.length})
+          </button>
+        ) : (
+          <div style={{ fontSize: '11.5px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 700 }}>
+            <CheckCircle2 size={13} /> In Sync
+          </div>
+        )}
+      </div>
+
+      {/* Entity Subfolders in Google Drive Grid Layout */}
+      <div style={{ padding: '0.85rem 1.15rem' }}>
+        {tree.length === 0 ? (
+          <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-dim)', fontSize: '12px' }}>
+            {viewMode === 'conflict'
+              ? '✓ Zero conflict subfolders in this entity'
+              : viewMode === 'perfected'
+              ? 'No perfected subfolders in this entity yet'
+              : 'No subfolders'}
+          </div>
+        ) : (
+          renderFolderGrid(tree, 0)
+        )}
+      </div>
+    </div>
+  );
+};

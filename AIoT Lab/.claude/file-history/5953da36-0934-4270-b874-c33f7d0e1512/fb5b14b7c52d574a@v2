@@ -1,0 +1,122 @@
+# backend/server.py — Blue Rose Modular Storage & Integration Engine (Hot-Reload Synced)
+import sys
+import traceback
+from pathlib import Path
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+
+# Ensure backend root is in sys.path
+BACKEND_ROOT = Path(__file__).resolve().parent
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
+
+from core.websocket_manager import ws_manager
+from api.storage_router import router as storage_router
+from api.curler_router import router as curler_router
+from api.golden_hour_router import router as golden_hour_router
+
+BASE_DIR = BACKEND_ROOT / "data" / "projects"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Log cleanup on boot
+    if BASE_DIR.exists():
+        for proj_dir in BASE_DIR.iterdir():
+            log_dir = proj_dir / "logs"
+            if log_dir.exists():
+                for log_file in log_dir.glob("*.log"):
+                    try:
+                        log_file.unlink()
+                    except Exception:
+                        pass
+
+    # Preload Faust Sound Plugin if present
+    try:
+        SKILLS_DIR = BACKEND_ROOT.parent / ".claude" / "skills"
+        if str(SKILLS_DIR) not in sys.path:
+            sys.path.insert(0, str(SKILLS_DIR))
+        from sound.scripts.engine import get_engine
+        get_engine().preload()
+        print("[VOICE] Faust Sound Plugin preloaded and warmed up successfully.")
+    except Exception as e:
+        print(f"[INFO] Voice synthesis plugin standby: {e}")
+
+    print("[ROCKET] Blue Rose Modular Storage & Task Engine Online!")
+    yield
+
+app = FastAPI(title="Blue Rose Storage Engine", lifespan=lifespan)
+
+# CORS Configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Exception Handlers
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "traceback": traceback.format_exc()},
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
+# Health check endpoints
+@app.get("/health")
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "service": "Blue Rose Storage & Voice Engine"}
+
+# Voice synthesis router integration
+try:
+    SKILLS_DIR = BACKEND_ROOT.parent / ".claude" / "skills"
+    if str(SKILLS_DIR) not in sys.path:
+        sys.path.insert(0, str(SKILLS_DIR))
+    from sound.scripts.api import include_voice_router
+    include_voice_router(app)
+    print("[VOICE] Faust Voice synthesis API registered at /api/v1/voice/synthesize")
+except Exception as e:
+    print(f"[VOICE] Error registering voice router: {e}")
+
+# Register Modular Routers
+app.include_router(storage_router)
+app.include_router(curler_router)
+app.include_router(golden_hour_router)
+
+# WebSocket Endpoint for Faust Subtitles
+@app.websocket("/ws/subtitle")
+async def subtitle_websocket_endpoint(websocket: WebSocket):
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+    except Exception as e:
+        print(f"[WebSocket] Error: {e}")
+        ws_manager.disconnect(websocket)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "server:app",
+        host="0.0.0.0",
+        port=8080,
+        reload=True,
+        reload_dirs=[str(BACKEND_ROOT)],
+        reload_includes=["*.py", "*.json", ".env"],
+        log_level="info"
+    )

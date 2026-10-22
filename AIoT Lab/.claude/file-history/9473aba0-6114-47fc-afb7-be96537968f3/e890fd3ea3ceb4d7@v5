@@ -1,0 +1,411 @@
+// path: src/apps/golden-hour/engine/gachaEngine.ts
+
+import type { PullItem, TicketType, GachaRarity, GlobalRankTier, ElementalAttribute } from '../types';
+import { resolveItemMetaFromPacks, type RawDeckPack } from '../packs';
+
+export interface EvaluatedPoolEntry {
+  raw: string;
+  itemPattern: string;
+  rate: number;         // 0 to 1
+  cumulative: number;   // 0 to 1
+}
+
+export interface CompiledDeck {
+  deck: RawDeckPack;
+  standardPool: EvaluatedPoolEntry[];
+  guaranteePool: EvaluatedPoolEntry[];
+}
+
+export interface RollEngineResult {
+  items: PullItem[];
+  stringList: string[];
+  dict: Record<string, number>;
+}
+
+// =============================================================================
+// HELPER UTILITIES
+// =============================================================================
+
+function getRandomInt(min: number, max: number): number {
+  const low = Math.ceil(min);
+  const high = Math.floor(max);
+  return Math.floor(Math.random() * (high - low + 1)) + low;
+}
+
+/**
+ * Evaluates expressions like:
+ * - "OptionA | OptionB" -> randomly picks one
+ * - "Game Time 1H...3D" -> rolls hours in [1, 72] and formats clean string
+ * - "Red DNA x 1...3" -> rolls count in [1, 3]
+ * - "Purple DNA 300...3000" -> rolls amount in [300, 3000]
+ * - "Vinyl Stem x1" -> sets stem count to 1
+ */
+export function resolveItemPattern(pattern: string): {
+  cleanName: string;
+  parsedAmount?: number;
+  timeRewardSeconds?: number;
+  baseKey: string;
+  categoryHint?: 'dna' | 'red-orbs' | 'time' | 'collectible' | 'relic' | 'energy-core';
+} {
+  let resolved = pattern.trim();
+
+  // 1. Resolve random pipe choices: "A | B | C"
+  if (resolved.includes('|')) {
+    const choices = resolved.split('|').map((s) => s.trim()).filter(Boolean);
+    resolved = choices[Math.floor(Math.random() * choices.length)];
+  }
+
+  let parsedAmount: number | undefined;
+  let timeRewardSeconds: number | undefined;
+  let categoryHint: 'dna' | 'red-orbs' | 'time' | 'collectible' | 'relic' | 'energy-core' | undefined;
+
+  // 2. Special Case: Time Range (e.g. "Game Time 1H...3D" or "1H-3D")
+  const timeMatch = resolved.match(/(\d+)H\s*(?:\.\.\.|-)\s*(\d+)([DH])/i);
+  if (timeMatch) {
+    const minHours = parseInt(timeMatch[1], 10);
+    const maxVal = parseInt(timeMatch[2], 10);
+    const unit = timeMatch[3].toUpperCase();
+    const maxHours = unit === 'D' ? maxVal * 24 : maxVal;
+    const rolledHours = getRandomInt(minHours, maxHours);
+    timeRewardSeconds = rolledHours * 3600;
+    parsedAmount = timeRewardSeconds;
+    categoryHint = 'time';
+
+    const label =
+      rolledHours >= 24
+        ? `${(rolledHours / 24).toFixed(1)} Day${rolledHours >= 48 ? 's' : ''}`
+        : `${rolledHours} Hour${rolledHours > 1 ? 's' : ''}`;
+    resolved = `Game Time (${label})`;
+  } else if (/Red\s+DNA/i.test(resolved) && (resolved.includes('...') || resolved.includes('-'))) {
+    // 3. Special Case: Red DNA x 1...3 or 1-3
+    const numMatch = resolved.match(/(\d+)\s*(?:\.\.\.|-)\s*(\d+)/);
+    if (numMatch) {
+      const min = parseInt(numMatch[1], 10);
+      const max = parseInt(numMatch[2], 10);
+      const count = getRandomInt(min, max);
+      parsedAmount = count;
+      categoryHint = 'red-orbs';
+      resolved = `Red DNA (x${count})`;
+    }
+  } else if (/Purple\s+DNA/i.test(resolved) && (resolved.includes('...') || resolved.includes('-'))) {
+    // 4. Special Case: Purple DNA 300...3000
+    const numMatch = resolved.match(/(\d+)\s*(?:\.\.\.|-)\s*(\d+)/);
+    if (numMatch) {
+      const min = parseInt(numMatch[1], 10);
+      const max = parseInt(numMatch[2], 10);
+      const rawVal = getRandomInt(Math.floor(min / 50), Math.floor(max / 50)) * 50;
+      parsedAmount = rawVal;
+      categoryHint = 'dna';
+      resolved = `Purple DNA (+${rawVal.toLocaleString()})`;
+    }
+  } else if (/Vinyl\s+Stem/i.test(resolved)) {
+    // 5. Special Case: Vinyl Stem
+    parsedAmount = 1;
+    categoryHint = 'collectible';
+    resolved = 'Vinyl Stem x1';
+  } else {
+    // 6. Generic Range syntax: "10...50"
+    const rangeMatch = resolved.match(/(\d+)\.\.\.(\d+)/);
+    if (rangeMatch) {
+      const min = parseInt(rangeMatch[1], 10);
+      const max = parseInt(rangeMatch[2], 10);
+      parsedAmount = getRandomInt(min, max);
+      resolved = resolved.replace(rangeMatch[0], `${parsedAmount}u`);
+    }
+  }
+
+  // 7. Base key extraction for metadata lookup
+  const baseKey = resolved
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/\s+x\d+$/i, '')
+    .replace(/\s+\d+u$/, '')
+    .replace(/\s+\d+\.\.\.\d+$/, '')
+    .trim();
+
+  return { cleanName: resolved, parsedAmount, timeRewardSeconds, baseKey, categoryHint };
+}
+
+// =============================================================================
+// COMPILATION & CUMULATIVE PROBABILITY TABLE
+// =============================================================================
+
+export function compileDeckPool(deck: RawDeckPack): CompiledDeck {
+  const compileEntries = (rawList: string[]): EvaluatedPoolEntry[] => {
+    if (!rawList || rawList.length === 0) return [];
+
+    let totalExplicitRate = 0;
+    const itemsWithoutRate: string[] = [];
+    const parsedList: { pattern: string; raw: string; rate?: number }[] = [];
+
+    for (const entry of rawList) {
+      if (entry.includes('~')) {
+        const [pattern, rateStr] = entry.split('~').map((s) => s.trim());
+        const rate = parseFloat(rateStr.replace('%', '')) / 100;
+        totalExplicitRate += rate;
+        parsedList.push({ pattern, raw: entry, rate });
+      } else {
+        itemsWithoutRate.push(entry.trim());
+        parsedList.push({ pattern: entry.trim(), raw: entry });
+      }
+    }
+
+    // If explicit rates sum to > 1.0 (e.g. 0.3% + 10% + 30% + 70% = 110.3%),
+    // normalize all rates proportionally across the 1.0 spectrum
+    if (totalExplicitRate > 1.0) {
+      let cumulative = 0;
+      return parsedList.map((item) => {
+        const normalizedRate = (item.rate || 0) / totalExplicitRate;
+        cumulative += normalizedRate;
+        return {
+          raw: item.raw,
+          itemPattern: item.pattern,
+          rate: normalizedRate,
+          cumulative,
+        };
+      });
+    }
+
+    const remainderRate = Math.max(0, 1 - totalExplicitRate);
+    const fallbackRate = itemsWithoutRate.length > 0 ? remainderRate / itemsWithoutRate.length : 0;
+
+    let cumulative = 0;
+    return parsedList.map((item) => {
+      const rate = item.rate !== undefined ? item.rate : fallbackRate;
+      cumulative += rate;
+      return {
+        raw: item.raw,
+        itemPattern: item.pattern,
+        rate,
+        cumulative,
+      };
+    });
+  };
+
+  return {
+    deck,
+    standardPool: compileEntries(deck.Unpack),
+    guaranteePool: deck.Guarantee ? compileEntries(deck.Guarantee) : [],
+  };
+}
+
+// Cache compiled decks for O(1) execution
+const COMPILED_DECKS_CACHE = new Map<string, CompiledDeck>();
+
+export function getOrCompileDeck(deck: RawDeckPack): CompiledDeck {
+  if (!COMPILED_DECKS_CACHE.has(deck.id)) {
+    COMPILED_DECKS_CACHE.set(deck.id, compileDeckPool(deck));
+  }
+  return COMPILED_DECKS_CACHE.get(deck.id)!;
+}
+
+// =============================================================================
+// FAST SAMPLING & PULL ITEM BUILDER
+// =============================================================================
+
+function sampleFromPool(pool: EvaluatedPoolEntry[]): string {
+  if (pool.length === 0) return 'Residual Matter Fragment';
+  const roll = Math.random();
+  for (const entry of pool) {
+    if (roll <= entry.cumulative) {
+      return entry.itemPattern;
+    }
+  }
+  return pool[pool.length - 1].itemPattern;
+}
+
+export function createPullItemFromPattern(
+  pattern: string,
+  ticketType: TicketType
+): PullItem {
+  const { cleanName, parsedAmount, timeRewardSeconds, baseKey, categoryHint } = resolveItemPattern(pattern);
+  const meta = resolveItemMetaFromPacks(baseKey);
+
+  const id = `item_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  const rarity: GachaRarity = meta.rarity || 'common';
+
+  const scoreMultiplier = {
+    common: 2.0,
+    uncommon: 4.0,
+    rare: 6.0,
+    epic: 8.5,
+    legendary: 11.0,
+  }[rarity];
+
+  const score = Math.round((Math.random() * 1.5 + scoreMultiplier) * 100) / 100;
+  const rank: GlobalRankTier =
+    rarity === 'legendary' ? '✦'
+    : rarity === 'epic' ? 'Ψ'
+    : rarity === 'rare' ? 'S₁'
+    : rarity === 'uncommon' ? 'A+'
+    : 'B';
+
+  const desc = meta.description || 'A dimensional artifact materialized through gacha synthesis.';
+  const category = categoryHint || meta.category || 'collectible';
+
+  if (category === 'relic') {
+    const atk = Math.floor(Math.random() * 20 * (scoreMultiplier / 2));
+    const def = Math.floor(Math.random() * 15 * (scoreMultiplier / 2));
+    const spd = Math.floor(Math.random() * 10 * (scoreMultiplier / 2));
+    const luck = Math.floor(Math.random() * 10 * (scoreMultiplier / 2));
+    const penalty = Math.floor(Math.random() * 8) + 2;
+
+    return {
+      id,
+      name: cleanName,
+      description: desc,
+      category: 'relic',
+      rarity,
+      rank,
+      score,
+      origin: ticketType,
+      iconEmoji: '⚔️',
+      stats: [
+        { name: 'ATK', value: atk },
+        { name: 'DEF', value: def },
+        { name: 'SPD', value: spd - penalty },
+        { name: 'LUCK', value: luck },
+      ],
+      buffs: [
+        {
+          name: `${cleanName} Resonance`,
+          description: `Amplifies Golden Hour efficiency multiplier by +${(scoreMultiplier * 2.2).toFixed(1)}%.`,
+          magnitude: scoreMultiplier * 0.022,
+        },
+      ],
+      downsides: [
+        {
+          name: 'Entropic Friction',
+          description: `Imposes a -${penalty} speed penalty during tactical traversal.`,
+          severity: Math.min(5, Math.ceil(penalty / 2)),
+        },
+      ],
+      pulledAt: new Date().toISOString(),
+    };
+  }
+
+  if (category === 'energy-core') {
+    const element: ElementalAttribute = meta.energyAttribute || 'aether';
+    const amount = parsedAmount || meta.energyAmount || getRandomInt(20, 50);
+
+    return {
+      id,
+      name: cleanName,
+      description: desc,
+      category: 'energy-core',
+      rarity,
+      rank: 'D',
+      score: 1.5,
+      origin: ticketType,
+      iconEmoji: '⚡',
+      energyCores: [{ attribute: element, amount }],
+      pulledAt: new Date().toISOString(),
+    };
+  }
+
+  if (category === 'dna') {
+    const dnaAmount = parsedAmount || meta.dnaReward || 1000;
+    return {
+      id,
+      name: cleanName,
+      description: desc,
+      category: 'dna',
+      rarity: rarity === 'common' ? 'uncommon' : rarity,
+      rank: rarity === 'rare' ? 'S₁' : rarity === 'uncommon' ? 'A+' : 'B',
+      score: scoreMultiplier,
+      origin: ticketType,
+      iconEmoji: '🧬',
+      dnaReward: dnaAmount,
+      pulledAt: new Date().toISOString(),
+    };
+  }
+
+  if (category === 'red-orbs') {
+    const redOrbsAmount = parsedAmount || meta.redOrbsReward || 1;
+    return {
+      id,
+      name: cleanName,
+      description: desc,
+      category: 'red-orbs',
+      rarity: redOrbsAmount >= 2 ? 'epic' : 'rare',
+      rank: redOrbsAmount >= 2 ? 'Ψ' : 'S₁',
+      score: scoreMultiplier,
+      origin: ticketType,
+      iconEmoji: '🔴',
+      redOrbsReward: redOrbsAmount,
+      pulledAt: new Date().toISOString(),
+    };
+  }
+
+  if (category === 'time') {
+    const timeSeconds = timeRewardSeconds || parsedAmount || meta.timeRewardSeconds || 86400;
+    return {
+      id,
+      name: cleanName,
+      description: desc,
+      category: 'time',
+      rarity: timeSeconds >= 86400 ? 'rare' : 'uncommon',
+      rank: timeSeconds >= 86400 ? 'S₁' : 'A+',
+      score: scoreMultiplier,
+      origin: ticketType,
+      iconEmoji: '⏳',
+      timeRewardSeconds: timeSeconds,
+      pulledAt: new Date().toISOString(),
+    };
+  }
+
+  // Collectible default (includes Vinyl Stems)
+  const isStem = /stem/i.test(cleanName) || Boolean(meta.stemCount);
+  return {
+    id,
+    name: cleanName,
+    description: desc,
+    category: 'collectible',
+    rarity: isStem ? 'legendary' : rarity,
+    rank: isStem ? '✦' : rarity === 'legendary' ? '✦' : rank,
+    score: isStem ? 11.85 : score,
+    origin: ticketType,
+    iconEmoji: isStem ? '🪽' : '🏺',
+    seriesName: isStem ? 'Koi no Koe Archival Stems' : 'Babylonian Codex Archive',
+    stemCount: isStem ? 1 : meta.stemCount,
+    dnaReward: isStem ? 1000 : meta.dnaReward,
+    loreText: `Synthesized during the Golden Hour cycle from dimensional world [${ticketType}].`,
+    pulledAt: new Date().toISOString(),
+  };
+}
+
+// =============================================================================
+// MAIN PACK ROLLING ACTION (High-Efficiency Multi-Pull Batch)
+// =============================================================================
+
+export function executePackRoll(deck: RawDeckPack, multiplier: number = 1): RollEngineResult {
+  const compiled = getOrCompileDeck(deck);
+  const totalCards = Math.max(1, deck.Cards * multiplier);
+
+  const items: PullItem[] = [];
+  const stringList: string[] = [];
+  const dict: Record<string, number> = {};
+
+  // 1. Guaranteed slots first
+  const guaranteeCount = (compiled.guaranteePool.length > 0 ? 1 : 0) * multiplier;
+  for (let g = 0; g < guaranteeCount; g++) {
+    const rawPattern = sampleFromPool(compiled.guaranteePool);
+    const item = createPullItemFromPattern(rawPattern, deck.ticketType);
+    items.push(item);
+    const token = `${item.name} ~ ${item.category}`;
+    stringList.push(token);
+    dict[item.name] = (dict[item.name] || 0) + 1;
+  }
+
+  // 2. Standard pool rolls
+  const standardRolls = Math.max(0, totalCards - guaranteeCount);
+  for (let i = 0; i < standardRolls; i++) {
+    const rawPattern = sampleFromPool(compiled.standardPool);
+    const item = createPullItemFromPattern(rawPattern, deck.ticketType);
+    items.push(item);
+    const token = `${item.name} ~ ${item.category}`;
+    stringList.push(token);
+    dict[item.name] = (dict[item.name] || 0) + 1;
+  }
+
+  return { items, stringList, dict };
+}

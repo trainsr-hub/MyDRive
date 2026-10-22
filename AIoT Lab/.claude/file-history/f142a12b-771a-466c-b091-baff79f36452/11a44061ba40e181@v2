@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+"""
+Tier 3: Agent Service & Domain Orchestrator
+Pure business rules, security validation, deterministic intent routing,
+and task orchestration. Zero UI code.
+"""
+
+import time
+from datetime import datetime
+from typing import Optional, Callable
+
+from domain import TelegramDirective, ExecutionResult, SessionMessage
+from repository import SessionRepository, WorkspaceRepository
+from tools import SovereignTools
+from jobs import JobManager
+from agent_loop import AgentExecutionLoop
+
+
+MANAGER_USER_ID = 8016442589
+
+
+class FaustAgentService:
+    """Core domain orchestrator for Faust Sovereign operations."""
+
+    def __init__(self, session_repo: Optional[SessionRepository] = None) -> None:
+        self.session_repo = session_repo or SessionRepository()
+        self.agent_loop = AgentExecutionLoop(self.session_repo)
+
+    def process_directive(
+        self,
+        directive: TelegramDirective,
+        progress_cb: Optional[Callable[[str], None]] = None
+    ) -> ExecutionResult:
+        """Main service entrypoint: validates, routes, persists, and returns result."""
+        start = time.perf_counter()
+
+        # Security Gate
+        if directive.user_id != 0 and directive.user_id != MANAGER_USER_ID:
+            return ExecutionResult(
+                success=False,
+                output="",
+                error=f"Unauthorized access: Sender ID {directive.user_id} is not the Manager."
+            )
+
+        if directive.is_empty:
+            return ExecutionResult(success=False, output="", error="Empty directive received.")
+
+        topic = WorkspaceRepository.resolve_topic(directive.thread_id)
+        cmd_text = directive.clean_text
+
+        # Record incoming turn
+        self.session_repo.save_message(SessionMessage(
+            role="manager",
+            content=cmd_text,
+            timestamp=datetime.now().isoformat(),
+            thread_id=directive.thread_id,
+            message_id=directive.message_id
+        ))
+
+        # Route deterministic command or agent task
+        result = self._dispatch_command(cmd_text, topic.workspace, topic.name, directive.thread_id, progress_cb)
+        elapsed = (time.perf_counter() - start) * 1000
+
+        # Record Faust response turn
+        self.session_repo.save_message(SessionMessage(
+            role="faust",
+            content=result.output if result.success else f"Error: {result.error}",
+            timestamp=datetime.now().isoformat(),
+            thread_id=directive.thread_id,
+            message_id=directive.message_id
+        ))
+
+        return ExecutionResult(
+            success=result.success,
+            output=result.output,
+            latency_ms=elapsed,
+            error=result.error
+        )
+
+    def _dispatch_command(
+        self,
+        text: str,
+        cwd: str,
+        workspace_name: str,
+        thread_id: str,
+        progress_cb: Optional[Callable[[str], None]] = None
+    ) -> ExecutionResult:
+        """Evaluates fast-path deterministic commands."""
+        lower = text.lower().strip()
+
+        if lower in ("/status", "/ping", "status", "ping"):
+            return self._handle_status(cwd, workspace_name, thread_id)
+        if lower in ("/clear", "/new", "clear", "new"):
+            return self._handle_clear(thread_id, workspace_name)
+        if lower in ("/git", "/branch", "git"):
+            return SovereignTools.git_status(cwd)
+        if lower in ("/diff", "diff"):
+            return SovereignTools.git_diff(cwd, stat_only=True)
+        if lower in ("/workspaces", "/topics", "workspaces"):
+            return self._handle_workspaces()
+        if lower in ("/ps", "ps"):
+            return self._handle_ps()
+        if lower.startswith("/kill "):
+            return self._handle_kill(text[6:].strip())
+        if lower.startswith("/run "):
+            return SovereignTools.run_shell(text[5:].strip(), cwd=cwd)
+        if lower in ("/help", "help"):
+            return self._handle_help()
+
+        # Free-form directive execution via Agent Loop
+        return self.agent_loop.execute_directive(text, cwd, workspace_name, thread_id, progress_cb)
+
+    def _handle_status(self, cwd: str, workspace_name: str, thread_id: str) -> ExecutionResult:
+        git_res = SovereignTools.git_status(cwd)
+        history = self.session_repo.get_recent_history(thread_id, limit=3)
+        jobs = JobManager.list_background()
+
+        jobs_text = f"{len(jobs)} active" if jobs else "none"
+        output = (
+            f"<b>Faust Sovereign Intelligence Core: ONLINE</b>\n\n"
+            f"• <b>Workspace:</b> <code>{workspace_name}</code>\n"
+            f"• <b>Path:</b> <code>{cwd}</code>\n"
+            f"• <b>Runtime:</b> Local Disk D: Storage Invariant\n"
+            f"• <b>Context:</b> {len(history)} turns indexed for Topic #{thread_id}\n"
+            f"• <b>Background Jobs:</b> {jobs_text}\n\n"
+            f"<b>Git Telemetry:</b>\n<pre>{git_res.output}</pre>"
+        )
+        return ExecutionResult(success=True, output=output)
+
+    def _handle_clear(self, thread_id: str, workspace_name: str) -> ExecutionResult:
+        deleted = self.session_repo.clear_thread(thread_id)
+        output = (
+            f"<b>Context Reset Complete:</b>\n\n"
+            f"• Cleared {deleted} turns from topic #{thread_id} ({workspace_name}).\n"
+            f"• Workspace files on Disk D:\\ remain 100% intact.\n"
+            f"• Next directive will start a fresh cognitive session."
+        )
+        return ExecutionResult(success=True, output=output)
+
+    def _handle_ps(self) -> ExecutionResult:
+        jobs = JobManager.list_background()
+        if not jobs:
+            return ExecutionResult(success=True, output="<b>Background Jobs:</b> None currently active.")
+        lines = [
+            f"• <code>{j.job_id}</code>: <b>{j.name}</b> (PID {j.pid}) started at {j.start_time}\n  Cmd: <code>{j.command}</code>"
+            for j in jobs
+        ]
+        return ExecutionResult(success=True, output="<b>Running Background Jobs:</b>\n\n" + "\n\n".join(lines))
+
+    def _handle_kill(self, job_id: str) -> ExecutionResult:
+        return JobManager.stop_background(job_id)
+
+    def _handle_workspaces(self) -> ExecutionResult:
+        topics = WorkspaceRepository.list_all_topics()
+        lines = [f"• <b>Topic #{t.thread_id} ({t.name}):</b> <code>{t.workspace}</code>" for t in topics]
+        output = "<b>Registered Sovereign Workspaces:</b>\n\n" + "\n".join(lines)
+        return ExecutionResult(success=True, output=output)
+
+    def _handle_help(self) -> ExecutionResult:
+        help_text = (
+            "<b>Faust Sovereign C2 Command Manual:</b>\n\n"
+            "• <code>/status</code> — System health, active topic workspace, Git telemetry.\n"
+            "• <code>/clear</code> (or <code>/new</code>) — Reset topic memory context.\n"
+            "• <code>/ps</code> — View running background dev servers and jobs.\n"
+            "• <code>/kill &lt;id&gt;</code> — Terminate background dev server process.\n"
+            "• <code>/git</code> — Git branch status and latest commit.\n"
+            "• <code>/diff</code> — Git diff statistics for active workspace.\n"
+            "• <code>/workspaces</code> — List all registered topic-to-folder mappings.\n"
+            "• <code>/run &lt;cmd&gt;</code> — Execute terminal command within workspace.\n"
+            "• <i>&lt;Natural Language Directive&gt;</i> — Execute autonomous development task."
+        )
+        return ExecutionResult(success=True, output=help_text)

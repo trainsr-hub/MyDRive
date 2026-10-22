@@ -1,0 +1,126 @@
+/* ===== Hazard Trigger Dual-Wing Tournament Bracket ===== */
+.bracket-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 850px;
+  height: 88vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #0f1322 0%, #07080c 100%);
+  border-radius: 24px;
+  border: 1px solid #1e2230;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8);
+}
+
+.bracket-canvas {
+  position: relative;
+  width: 100%;
+  max-width: 1300px;
+  height: 100%;
+  aspect-ratio: 1.35 / 1;
+  isolation: isolate;
+}
+
+/* Avatar Node */
+.bracket-node {
+  position: absolute;
+  width: 58px;
+  height: 58px;
+  aspect-ratio: 1 / 1;
+  z-index: 10;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid #2a3148;
+  background-color: #0f1118;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+  user-select: none;
+}
+
+.bracket-node:hover {
+  transform: scale(1.18);
+  z-index: 30;
+  border-color: #d4af37;
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.45);
+}
+
+.bracket-node.node-winner {
+  border-color: #d4af37;
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.35);
+}
+
+.bracket-node.node-empty {
+  border: 2px dashed #282f44;
+  opacity: 0.45;
+  background-color: #0a0c12;
+}
+
+.bracket-node img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* ===== LEFT WING (Base Seeds top 5%..88%) ===== */
+.bracket-slot-l1 { left: 3%; top: 4%; }
+.bracket-slot-l2 { left: 3%; top: 15.5%; }
+.bracket-slot-l3 { left: 3%; top: 27%; }
+.bracket-slot-l4 { left: 3%; top: 38.5%; }
+.bracket-slot-l5 { left: 3%; top: 54.5%; }
+.bracket-slot-l6 { left: 3%; top: 66%; }
+.bracket-slot-l7 { left: 3%; top: 77.5%; }
+.bracket-slot-l8 { left: 3%; top: 89%; }
+
+/* Round 2 Left (l9..l12) */
+.bracket-slot-l9  { left: 15%; top: 9.75%; }
+.bracket-slot-l10 { left: 15%; top: 32.75%; }
+.bracket-slot-l11 { left: 15%; top: 60.25%; }
+.bracket-slot-l12 { left: 15%; top: 83.25%; }
+
+/* Round 3 Left (l13..l14) */
+.bracket-slot-l13 { left: 27%; top: 21.25%; }
+.bracket-slot-l14 { left: 27%; top: 71.75%; }
+
+/* Semis Left (l15) */
+.bracket-slot-l15 { left: 39%; top: 46.5%; }
+
+/* ===== RIGHT WING (Mirror) ===== */
+.bracket-slot-r1 { right: 3%; top: 4%; }
+.bracket-slot-r2 { right: 3%; top: 15.5%; }
+.bracket-slot-r3 { right: 3%; top: 27%; }
+.bracket-slot-r4 { right: 3%; top: 38.5%; }
+.bracket-slot-r5 { right: 3%; top: 54.5%; }
+.bracket-slot-r6 { right: 3%; top: 66%; }
+.bracket-slot-r7 { right: 3%; top: 77.5%; }
+.bracket-slot-r8 { right: 3%; top: 89%; }
+
+/* Round 2 Right (r9..r12) */
+.bracket-slot-r9  { right: 15%; top: 9.75%; }
+.bracket-slot-r10 { right: 15%; top: 32.75%; }
+.bracket-slot-r11 { right: 15%; top: 60.25%; }
+.bracket-slot-r12 { right: 15%; top: 83.25%; }
+
+/* Round 3 Right (r13..r14) */
+.bracket-slot-r13 { right: 27%; top: 21.25%; }
+.bracket-slot-r14 { right: 27%; top: 71.75%; }
+
+/* Semis Right (r15) */
+.bracket-slot-r15 { right: 39%; top: 46.5%; }
+
+/* ===== GRAND CHAMPION (Center) ===== */
+.bracket-slot-champion {
+  left: 50%;
+  top: 46.5%;
+  transform: translate(-50%, 0);
+  width: 72px;
+  height: 72px;
+  border: 3px solid #f3c64c;
+  box-shadow: 0 0 35px rgba(243, 198, 76, 0.55);
+}
+
+.bracket-slot-champion:hover {
+  transform: translate(-50%, 0) scale(1.15);
+}

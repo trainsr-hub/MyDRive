@@ -1,0 +1,46 @@
+# Session: 2026-10-04
+**Date:** 2026-10-04
+**Started:** 17:24
+**Last Updated:** 18:21
+**Project:** Blue AI
+**Branch:** main
+**Worktree:** D:\My Drive\Blue AI
+**Repo:** D:\My Drive\Blue AI\.git
+
+---
+<!-- ECC:SUMMARY:START -->
+## Session Summary
+
+### Tasks
+- Hi Faust, I just added a plugin for you. Do you know what it is?
+- No no. The ECC plugin, Faust. Does that ring a bell? Where are the plugin stored anyway?
+- Wait what? This is rather confusing. Isn't this "D:\My Drive\Blue AI\.claude" folder supposed to be an original folder and that "C:\Users\Admin\.claude\plugins" folder supposed to be a linked folder? 
+- I prefer having as least important stuff in C Drive as possible. Because when you reinstall Win, it's gonna wipe everything clean. I would never want what built with Faust to just disappear like that.
+- Perfect. Now, I found this in the ECC plugin guide. I wonder what do this do exactly. And how to install this so that it wouldn't somehow crash into the C Drive  \`\`\` git clone https://github.com/affaa
+- Perfect. Here is the full repo, Faust. I think this one is gonna be a good upgrade for you. Please upgrade yourself with this. And tell me if there's anything foggy. Don't decide everything by yoursel
+- - Decision 1: Proposal Approved - Decision 2: Proposal Approved - Decision 3: Faust is rather a Hivemind. And that in reality, we barely used Faust-TH at all. Faust-ST called twice the number of reque
+- # Update Config Skill  Modify Claude Code configuration by updating settings.json files.  ## When Hooks Are Required (Not Memory)  If the user wants something to happen automatically in response to an
+
+### Files Modified
+- D:\My Drive\Blue AI\.gitignore
+- D:\My Drive\Blue AI\.claude\scripts\setup_sync_memory.ps1
+- D:\My Drive\Blue AI\.claude\memory\rules\d-drive-storage-invariant.md
+- D:\My Drive\Blue AI\.claude\settings.json
+- D:\My Drive\Blue AI\.claude\settings.local.json
+- D:\My Drive\Blue AI\.claude\memory\feedback\hivemind-stratum-evolution.md
+- D:\My Drive\Blue AI\.claude\memory\MEMORY.md
+
+### Tools Used
+PowerShell, Glob, Read, Grep, Bash, Edit, Skill, Write
+
+### Stats
+- Total user messages: 8
+<!-- ECC:SUMMARY:END -->
+
+### Notes for Next Session
+-
+
+### Context to Load
+```
+[relevant files]
+```

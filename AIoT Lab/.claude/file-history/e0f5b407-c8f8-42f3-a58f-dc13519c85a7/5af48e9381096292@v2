@@ -1,0 +1,370 @@
+/**
+ * Project Entry: Schema Table Component
+ * Notion-Style Schema Grid, Drag-and-Drop FLIP Reorder, Config Badges & Field Creation
+ */
+import { state, FIELD_TYPES, escHtml, showToast } from '../state.js';
+import { openSidebar, closeSidebar } from './sidebar.js';
+import { updateColCountLabel } from './toolbar.js';
+
+let rowDrag = null;
+
+export function renderConfigBadge(col) {
+  const meta = col.metadata || {};
+  if (col.type === 'int_scalar') {
+    if (meta.default_option) {
+      return `<span class="config-badge active-formula" title="Default Formula: ${escHtml(meta.default_option)}">⚡ ${escHtml(meta.default_option)}</span>`;
+    }
+    return `<span class="config-badge muted" title="Click to set default formula">+ set default</span>`;
+  }
+  if (col.type === 'hex_id') {
+    return `<span class="config-badge pk">prefix: ${escHtml(meta.prefix || 'ID')}</span>`;
+  }
+  if (col.type.startsWith('enum_')) {
+    const count = Array.isArray(meta.options) ? meta.options.length : 0;
+    return `<span class="config-badge enum">${count} option${count === 1 ? '' : 's'}</span>`;
+  }
+  if (col.type.startsWith('relation_')) {
+    return `<span class="config-badge rel">→ ${escHtml(meta.target || 'self')}</span>`;
+  }
+  return `<span class="config-badge muted" style="opacity:0.4;">—</span>`;
+}
+
+export function getFilteredColumns() {
+  const t = state.tables[state.activeTable];
+  if (!t) return [];
+  return state.activeFilter === 'all'
+    ? t.columns.map((c, i) => ({ col: c, realIdx: i }))
+    : t.columns.map((c, i) => ({ col: c, realIdx: i })).filter(({ col }) => FIELD_TYPES[col.type]?.category === state.activeFilter);
+}
+
+export function renderSchemaTable() {
+  const tbody = document.getElementById('table-body');
+  if (!tbody) return;
+  const filtered = getFilteredColumns();
+  updateColCountLabel();
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="table-empty">No columns in this category.</td></tr>`;
+    renderAddRow();
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(({ col, realIdx }) => renderTableRow(col, realIdx)).join('');
+
+  renderAddRow();
+  attachRowDragListeners();
+
+  // Restore selection highlight
+  if (state.activeColIdx !== null) {
+    const row = tbody.querySelector(`tr[data-idx="${state.activeColIdx}"]`);
+    if (row) row.classList.add('selected');
+  }
+}
+
+export function renderTableRow(col, idx) {
+  const ft = FIELD_TYPES[col.type] || {};
+  const t = state.tables[state.activeTable];
+  const isFirst = idx === 0;
+  const isLast  = idx === t.columns.length - 1;
+
+  return `
+    <tr data-idx="${idx}" class="draggable ${state.activeColIdx === idx ? 'selected' : ''}">
+      <td class="td-num">
+        <span class="row-num" style="color:var(--text-dim);font:500 11px var(--font-mono)">${idx + 1}</span>
+        <span class="drag-handle" title="Drag to reorder">⋮⋮</span>
+        <span class="row-expand">⤢</span>
+      </td>
+      <td>
+        <div class="td-name">
+          <span class="col-icon">${ft.icon || ''}</span>
+          <span class="col-name-text">${escHtml(col.name)}</span>
+        </div>
+      </td>
+      <td>
+        <span class="type-chip ${ft.category || ''}">${ft.title || col.type}</span>
+      </td>
+      <td class="td-slug col-slug">${escHtml(col.slug || '')}</td>
+      <td class="td-config">
+        ${renderConfigBadge(col)}
+      </td>
+      <td class="td-sql col-sql">${ft.sql || ''}</td>
+      <td>
+        <div class="td-actions" onclick="event.stopPropagation()">
+          <button class="btn ghost icon-only sm btn-action-config" data-idx="${idx}" title="Configure Column">⚙️</button>
+          <button class="btn ghost icon-only sm btn-action-up" data-idx="${idx}" ${isFirst ? 'disabled' : ''} title="Move up" style="${isFirst ? 'opacity:0.3' : ''}">▲</button>
+          <button class="btn ghost icon-only sm btn-action-down" data-idx="${idx}" ${isLast ? 'disabled' : ''} title="Move down" style="${isLast ? 'opacity:0.3' : ''}">▼</button>
+          <button class="btn ghost icon-only sm btn-action-del" data-idx="${idx}" title="Delete">✕</button>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+export function selectRow(idx) {
+  if (state.activeColIdx === idx) {
+    closeSidebar();
+    return;
+  }
+  state.activeColIdx = idx;
+  document.querySelectorAll('#table-body tr').forEach(r => r.classList.remove('selected'));
+  const row = document.querySelector(`#table-body tr[data-idx="${idx}"]`);
+  if (row) row.classList.add('selected');
+  openSidebar(idx);
+}
+
+export function refreshTableRow(idx) {
+  const t = state.tables[state.activeTable];
+  if (!t || !t.columns[idx]) { renderSchemaTable(); return; }
+  const col = t.columns[idx];
+  const row = document.querySelector(`#table-body tr[data-idx="${idx}"]`);
+  if (!row) { renderSchemaTable(); return; }
+  const ft = FIELD_TYPES[col.type] || {};
+
+  const colIcon = row.querySelector('.col-icon');
+  const colText = row.querySelector('.col-name-text');
+  const chip = row.querySelector('.type-chip');
+  const tdSlug = row.querySelector('.td-slug');
+  const tdConfig = row.querySelector('.td-config');
+  const tdSql = row.querySelector('.td-sql');
+
+  if (colIcon) colIcon.textContent = ft.icon || '';
+  if (colText) colText.textContent = col.name;
+  if (chip) {
+    chip.className = `type-chip ${ft.category || ''}`;
+    chip.textContent = ft.title || col.type;
+  }
+  if (tdSlug) tdSlug.textContent = col.slug || '';
+  if (tdConfig) tdConfig.innerHTML = renderConfigBadge(col);
+  if (tdSql) tdSql.textContent = ft.sql || '';
+}
+
+export function renderAddRow() {
+  const tbody = document.getElementById('table-body');
+  if (!tbody) return;
+  const types = [
+    ['hex_id','🔑 Hex ID'], ['text_single','📝 Text'], ['text_multi','📋 Multi'],
+    ['int_scalar','🔢 Int'], ['float_scalar','🔢 Float'], ['boolean','🔘 Bool'],
+    ['enum_single','🏷️ Enum'], ['enum_multi','🏷️ Multi-Enum'],
+    ['relation_single','🔗 Relation'], ['relation_multi','🔗 Rel-N'],
+  ];
+
+  const existing = tbody.querySelector('.row-add');
+  if (existing) existing.remove();
+
+  const tr = document.createElement('tr');
+  tr.className = 'row-add';
+  tr.innerHTML = `<td colspan="7">
+    <div class="add-field-strip">
+      <span style="font:600 11px var(--font-mono);color:var(--text-dim);margin-right:0.25rem;">+ ADD</span>
+      ${types.map(([slug, label]) => `
+        <button class="add-chip" data-add-type="${slug}">${label}</button>
+      `).join('')}
+    </div>
+  </td>`;
+  tbody.appendChild(tr);
+
+  tr.querySelectorAll('.add-chip[data-add-type]').forEach(btn => {
+    btn.onclick = () => addField(btn.getAttribute('data-add-type'));
+  });
+}
+
+export function addField(type) {
+  const t = state.tables[state.activeTable];
+  if (!t) return;
+  const newCol = { name: FIELD_TYPES[type].title, slug: 'new_field', type, metadata: {} };
+  if (type.startsWith('enum_'))     newCol.metadata.options = ['option1', 'option2'];
+  if (type.startsWith('relation_')) newCol.metadata.target  = 'self';
+  if (type === 'hex_id')            newCol.metadata.prefix  = state.activeTable.substring(0, 4).toUpperCase();
+  if (type === 'int_scalar')        newCol.metadata.default_option = `max(id) + 1`;
+  t.columns.push(newCol);
+  renderSchemaTable();
+  selectRow(t.columns.length - 1);
+  showToast(`Added ${FIELD_TYPES[type].title}`);
+}
+
+export function moveColumn(idx, dir) {
+  const cols = state.tables[state.activeTable].columns;
+  const target = idx + dir;
+  if (target < 0 || target >= cols.length) return;
+
+  const [moved] = cols.splice(idx, 1);
+  cols.splice(target, 0, moved);
+
+  if      (state.activeColIdx === idx)    state.activeColIdx = target;
+  else if (state.activeColIdx === target) state.activeColIdx = idx;
+
+  renderSchemaTable();
+  if (state.activeColIdx !== null) openSidebar(state.activeColIdx);
+}
+
+export function deleteRowDirect(idx) {
+  const name = state.tables[state.activeTable].columns[idx].name;
+  state.tables[state.activeTable].columns.splice(idx, 1);
+  if (state.activeColIdx === idx) closeSidebar();
+  else if (state.activeColIdx !== null && state.activeColIdx > idx) state.activeColIdx--;
+  renderSchemaTable();
+  showToast(`Deleted "${name}"`);
+}
+
+/* Row Event Delegation & FLIP Drag */
+export function attachRowDragListeners() {
+  const tbody = document.getElementById('table-body');
+  if (!tbody) return;
+
+  tbody.querySelectorAll('tr.draggable').forEach(row => {
+    const idx = parseInt(row.getAttribute('data-idx'), 10);
+
+    // Row click selection
+    row.onclick = () => selectRow(idx);
+
+    // Config badge click
+    const tdConfig = row.querySelector('.td-config');
+    if (tdConfig) {
+      tdConfig.onclick = (e) => {
+        e.stopPropagation();
+        selectRow(idx);
+      };
+    }
+
+    // Action buttons
+    const btnCfg = row.querySelector('.btn-action-config');
+    if (btnCfg) btnCfg.onclick = (e) => { e.stopPropagation(); selectRow(idx); };
+
+    const btnUp = row.querySelector('.btn-action-up');
+    if (btnUp) btnUp.onclick = (e) => { e.stopPropagation(); moveColumn(idx, -1); };
+
+    const btnDown = row.querySelector('.btn-action-down');
+    if (btnDown) btnDown.onclick = (e) => { e.stopPropagation(); moveColumn(idx, 1); };
+
+    const btnDel = row.querySelector('.btn-action-del');
+    if (btnDel) btnDel.onclick = (e) => { e.stopPropagation(); deleteRowDirect(idx); };
+
+    // Pointer drag
+    const tdNum = row.querySelector('.td-num');
+    if (tdNum) {
+      tdNum.onpointerdown = (e) => handleRowPointerDown(e, row, idx);
+    }
+  });
+}
+
+function handleRowPointerDown(e, row, fromIdx) {
+  if (e.button !== 0) return;
+  const tbody = document.getElementById('table-body');
+  const rect = row.getBoundingClientRect();
+
+  row.setPointerCapture(e.pointerId);
+
+  const placeholder = document.createElement('tr');
+  placeholder.className = 'row-placeholder';
+  placeholder.innerHTML = '<td colspan="7"></td>';
+
+  const offsetX = e.clientX - rect.left;
+  const offsetY = e.clientY - rect.top;
+
+  rowDrag = {
+    row, fromIdx, tbody, placeholder, offsetX, offsetY, rect,
+    isDragging: false, startX: e.clientX, startY: e.clientY
+  };
+
+  const onMove = (me) => {
+    if (!rowDrag) return;
+    const dist = Math.hypot(me.clientX - rowDrag.startX, me.clientY - rowDrag.startY);
+
+    if (!rowDrag.isDragging && dist > 5) {
+      rowDrag.isDragging = true;
+      row.parentNode.insertBefore(placeholder, row);
+      row.classList.add('is-dragging');
+      row.style.width = `${rect.width}px`;
+      row.style.height = `${rect.height}px`;
+    }
+
+    if (rowDrag.isDragging) {
+      row.style.left = `${me.clientX - offsetX}px`;
+      row.style.top = `${me.clientY - offsetY}px`;
+      updateRowPlacementFLIP(me.clientY);
+    }
+  };
+
+  const onUp = () => {
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    try { row.releasePointerCapture(e.pointerId); } catch (_) {}
+
+    if (!rowDrag || !rowDrag.isDragging) { rowDrag = null; return; }
+
+    const targetRect = placeholder.getBoundingClientRect();
+    const currentTop = parseFloat(row.style.top);
+    const dy = targetRect.top - currentTop;
+
+    row.style.transition = 'transform 0.22s cubic-bezier(0.16,1,0.3,1)';
+    row.style.transform = `translateY(${dy}px)`;
+
+    setTimeout(() => {
+      const allRows = [...tbody.querySelectorAll('tr.draggable')];
+      const toIdx = allRows.indexOf(placeholder);
+
+      row.classList.remove('is-dragging');
+      ['position','left','top','width','height','transform','transition']
+        .forEach(p => row.style[p] = '');
+
+      if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+
+      if (toIdx !== -1 && toIdx !== rowDrag.fromIdx) {
+        const cols = state.tables[state.activeTable].columns;
+        const [movedCol] = cols.splice(rowDrag.fromIdx, 1);
+        cols.splice(toIdx, 0, movedCol);
+
+        if (state.activeColIdx !== null) {
+          if (state.activeColIdx === rowDrag.fromIdx) state.activeColIdx = toIdx;
+          else if (rowDrag.fromIdx < toIdx && state.activeColIdx > rowDrag.fromIdx && state.activeColIdx <= toIdx) state.activeColIdx--;
+          else if (rowDrag.fromIdx > toIdx && state.activeColIdx >= toIdx && state.activeColIdx < rowDrag.fromIdx) state.activeColIdx++;
+        }
+
+        renderSchemaTable();
+        if (state.activeColIdx !== null) openSidebar(state.activeColIdx);
+        showToast(`Reordered: ${movedCol.name}`);
+      }
+      rowDrag = null;
+    }, 220);
+  };
+
+  window.addEventListener('pointermove', onMove, { passive: true });
+  window.addEventListener('pointerup', onUp);
+}
+
+function updateRowPlacementFLIP(pointerY) {
+  if (!rowDrag) return;
+  const { row, tbody, placeholder } = rowDrag;
+  const allRows = [...tbody.querySelectorAll('tr.draggable:not(.is-dragging)')];
+  let target = null;
+
+  for (const otherRow of allRows) {
+    const box = otherRow.getBoundingClientRect();
+    if (pointerY < box.top + box.height / 2) {
+      target = otherRow;
+      break;
+    }
+  }
+
+  const curr = placeholder.nextElementSibling === row ? row.nextElementSibling : placeholder.nextElementSibling;
+  if (curr === target) return;
+
+  const firstPos = new Map();
+  allRows.forEach(r => firstPos.set(r, r.getBoundingClientRect()));
+
+  if (target) tbody.insertBefore(placeholder, target);
+  else tbody.appendChild(placeholder);
+
+  allRows.forEach(r => {
+    const first = firstPos.get(r);
+    const last = r.getBoundingClientRect();
+    const dy = first.top - last.top;
+    if (dy !== 0) {
+      r.style.transition = 'none';
+      r.style.transform = `translateY(${dy}px)`;
+      r.offsetHeight;
+      r.style.transition = 'transform 0.22s cubic-bezier(0.2,0,0,1)';
+      r.style.transform = '';
+    }
+  });
+}

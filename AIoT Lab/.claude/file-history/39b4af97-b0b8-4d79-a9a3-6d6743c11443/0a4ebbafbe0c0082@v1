@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QuoteNote",
+  "description": "Schema for the Entropy Rose Quote Note System with O(1) datetime hex ID and complex multi-dimensional tagging",
+  "type": "object",
+  "required": ["id", "index", "main_content", "date"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{14,32}$",
+      "description": "Hex-encoded datetime down to millisecond (e.g. YYYYMMDDHHmmssfff converted to hex or fixed 16-char hex) for O(1) sorting and lookup"
+    },
+    "index": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Monotonically increasing human-readable integer identifier (1 => inf)"
+    },
+    "main_content": {
+      "type": "string",
+      "description": "Multi-line string containing the primary quote or core text"
+    },
+    "context": {
+      "type": "string",
+      "description": "Multi-line string detailing the context, situational backdrop, or interpretive background"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Date formatted strictly as YYYY-MM-DD"
+    },
+    "source_speaker": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the speaker, author, or creator"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role, title, or affiliation of the speaker"
+        },
+        "origin": {
+          "type": "string",
+          "description": "Originating medium: book, speech, conversation, anime, paper, etc."
+        }
+      },
+      "required": ["name"]
+    },
+    "backlink": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target_id": {
+            "type": "string",
+            "description": "The hex ID of the target quote or entity"
+          },
+          "relation": {
+            "type": "string",
+            "enum": ["contradicts", "supports", "derives_from", "parallels", "contextualizes"],
+            "description": "Semantic relationship type"
+          }
+        },
+        "required": ["target_id"]
+      },
+      "description": "Array of semantic graph linkages"
+    },
+    "preference": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "Hex ID of a quote that responds to or talks back about this quote"
+      },
+      "description": "One-directional list of quote IDs representing responses or conversational follow-ups"
+    },
+    "tags": {
+      "type": "object",
+      "description": "Multi-dimensional tagging taxonomy",
+      "properties": {
+        "domains": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Macro fields (e.g., philosophy, war, architecture, cybernetics, personal)"
+        },
+        "themes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Thematic concepts (e.g., entropy, sovereignty, deterministic, order, chaos)"
+        },
+        "sentiment": {
+          "type": "string",
+          "enum": ["nihilistic", "stoic", "triumphant", "cynical", "analytical", "transcendent"],
+          "description": "Emotional/philosophical resonance"
+        },
+        "custom": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Arbitrary key-value semantic tags for infinite extensibility"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,377 @@
+"""
+Entropy Rose / Prescripts: Pure 3-Tier Entity SQLite Engine.
+Establishes the universal Container -> Specific -> Quote hierarchy:
+  1. 'containers' (Prefix 0002... : Origin / Franchise / Creator / Persona)
+  2. 'specifics'  (Prefix 0003... : Specific Endpoint / Work / Character / Diary / Wisdom)
+  3. 'quotes'     (Prefix 0001... : Wisdom Quote Artifact, references specific_ids)
+Zero redundant shadow tables, zero duplicate timestamps, zero dead columns.
+"""
+
+import sqlite3
+import json
+import os
+from typing import Dict, Any, List, Optional
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB_PATH = os.path.join(BASE_DIR, "data", "rose_quotes.db")
+DEFAULT_JSONL_PATH = os.path.join(BASE_DIR, "data", "quotes.jsonl")
+
+
+def get_connection(db_path: str = DEFAULT_DB_PATH) -> sqlite3.Connection:
+    """Creates a connection configured with WAL and concurrency pragmas."""
+    os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
+    conn = sqlite3.connect(db_path, timeout=5.0)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA busy_timeout = 5000;")
+    conn.execute("PRAGMA foreign_keys = ON;")
+    return conn
+
+
+def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
+    """Initializes the pure 3-table relational schema."""
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        # Drop legacy speakers table if present
+        conn.execute("DROP TABLE IF EXISTS speakers;")
+
+        # Table 2: containers (id: 0002..., name, type, notes)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS containers (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                type TEXT,
+                notes TEXT
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_containers_name ON containers(name);")
+
+        # Table 3: specifics (id: 0003..., name, container_id, category, notes)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS specifics (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                container_id TEXT NOT NULL,
+                category TEXT,
+                notes TEXT,
+                FOREIGN KEY (container_id) REFERENCES containers(id) ON DELETE CASCADE
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_specifics_container ON specifics(container_id);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_specifics_name ON specifics(name);")
+
+        # Table 1: quotes (id: 0001..., idx, content, context, date, specific_ids, preference, backlinks, tags, sentiment)
+        # Check if quotes exists and has specific_ids
+        cur = conn.execute("PRAGMA table_info(quotes);")
+        cols = [r["name"] for r in cur.fetchall()]
+        if cols and "specific_ids" not in cols:
+            conn.execute("ALTER TABLE quotes ADD COLUMN specific_ids TEXT;")
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS quotes (
+                id TEXT PRIMARY KEY,
+                idx INTEGER UNIQUE NOT NULL,
+                main_content TEXT NOT NULL,
+                context TEXT,
+                date TEXT NOT NULL,
+                specific_ids TEXT,
+                preference TEXT,
+                backlinks TEXT,
+                tags TEXT,
+                sentiment TEXT
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_quotes_idx ON quotes(idx);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_quotes_date ON quotes(date);")
+
+    conn.close()
+
+
+# ==============================================================================
+# TABLE 2: CONTAINER OPERATIONS (0002...)
+# ==============================================================================
+
+def upsert_container(container: Dict[str, Any], db_path: str = DEFAULT_DB_PATH) -> None:
+    """Inserts or updates a Container entity (Creator, Franchise, Origin)."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        name = container["name"].strip()
+        conn.execute("DELETE FROM containers WHERE name = ? OR id = ?;", (name, container["id"]))
+        conn.execute("""
+            INSERT INTO containers (id, name, type, notes)
+            VALUES (?, ?, ?, ?);
+        """, (container["id"], name, container.get("type", ""), container.get("notes", "")))
+    conn.close()
+
+
+def get_container(container_id: str, db_path: str = DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """O(1) lookup of a Container by Hex ID."""
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT id, name, type, notes FROM containers WHERE id = ?;", (container_id,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return {"id": row["id"], "name": row["name"], "type": row["type"] or "", "notes": row["notes"] or ""}
+
+
+def get_all_containers(db_path: str = DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    """Returns all Containers sorted by name."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT id, name, type, notes FROM containers ORDER BY name ASC;")
+    rows = cur.fetchall()
+    conn.close()
+    return [{"id": r["id"], "name": r["name"], "type": r["type"] or "", "notes": r["notes"] or ""} for r in rows]
+
+
+# ==============================================================================
+# TABLE 3: SPECIFIC OPERATIONS (0003...)
+# ==============================================================================
+
+def upsert_specific(specific: Dict[str, Any], db_path: str = DEFAULT_DB_PATH) -> None:
+    """Inserts or updates a Specific endpoint (Work, Character, Diary, Wisdom)."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        name = specific["name"].strip()
+        cid = specific["container_id"]
+        conn.execute("DELETE FROM specifics WHERE id = ? OR (name = ? AND container_id = ?);", (specific["id"], name, cid))
+        conn.execute("""
+            INSERT INTO specifics (id, name, container_id, category, notes)
+            VALUES (?, ?, ?, ?, ?);
+        """, (specific["id"], name, cid, specific.get("category", ""), specific.get("notes", "")))
+    conn.close()
+
+
+def get_specific(specific_id: str, db_path: str = DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """O(1) lookup of a Specific endpoint joined with its container."""
+    conn = get_connection(db_path)
+    cur = conn.execute("""
+        SELECT s.id, s.name, s.container_id, s.category, s.notes, c.name as container_name, c.type as container_type
+        FROM specifics s
+        JOIN containers c ON s.container_id = c.id
+        WHERE s.id = ?;
+    """, (specific_id,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return {
+        "id": row["id"],
+        "name": row["name"],
+        "container_id": row["container_id"],
+        "container_name": row["container_name"],
+        "container_type": row["container_type"] or "",
+        "category": row["category"] or "",
+        "notes": row["notes"] or ""
+    }
+
+
+def get_all_specifics(db_path: str = DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    """Returns all Specific endpoints pre-joined with their container."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("""
+        SELECT s.id, s.name, s.container_id, s.category, s.notes, c.name as container_name, c.type as container_type
+        FROM specifics s
+        JOIN containers c ON s.container_id = c.id
+        ORDER BY s.name ASC;
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    return [{
+        "id": r["id"],
+        "name": r["name"],
+        "container_id": r["container_id"],
+        "container_name": r["container_name"],
+        "container_type": r["container_type"] or "",
+        "category": r["category"] or "",
+        "notes": r["notes"] or ""
+    } for r in rows]
+
+
+# ==============================================================================
+# TABLE 1: QUOTE OPERATIONS (0001...)
+# ==============================================================================
+
+def get_next_index(db_path: str = DEFAULT_DB_PATH) -> int:
+    """Calculates next human sequence number (max + 1)."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT COALESCE(MAX(idx), 0) + 1 AS next_idx FROM quotes;")
+    row = cur.fetchone()
+    conn.close()
+    return row["next_idx"] if row else 1
+
+
+def upsert_quote(quote: Dict[str, Any], db_path: str = DEFAULT_DB_PATH, compile_after: bool = True) -> None:
+    """
+    Inserts or updates a quote document in SQLite.
+    References specific_ids (Table 3), preference, backlinks, tags, sentiment.
+    """
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        # Resolve specific IDs
+        raw_specifics = quote.get("specific_ids", quote.get("source_speaker", []))
+        specific_ids = []
+        if isinstance(raw_specifics, list):
+            for sp in raw_specifics:
+                if isinstance(sp, str):
+                    cur = conn.execute("SELECT id FROM specifics WHERE id = ? OR name = ?;", (sp, sp))
+                    found = cur.fetchone()
+                    if found:
+                        specific_ids.append(found["id"])
+                    else:
+                        specific_ids.append(sp)
+                elif isinstance(sp, dict):
+                    specific_ids.append(sp.get("id"))
+
+        # Tags
+        raw_tags = quote.get("tags", [])
+        tags_json_str = json.dumps(raw_tags if isinstance(raw_tags, list) else [], ensure_ascii=False)
+
+        # Preference & Backlinks
+        preference = quote.get("preference", [])
+        preference_json_str = json.dumps(preference if isinstance(preference, list) else [], ensure_ascii=False)
+
+        backlinks = quote.get("backlink", quote.get("backlinks", []))
+        backlinks_json_str = json.dumps(backlinks if isinstance(backlinks, list) else [], ensure_ascii=False)
+
+        specific_ids_json_str = json.dumps(specific_ids, ensure_ascii=False)
+        sentiment_str = quote.get("sentiment", "")
+
+        idx = quote.get("index") or get_next_index(db_path)
+
+        # Clean up any stale record with same idx
+        conn.execute("DELETE FROM quotes WHERE idx = ? AND id != ?;", (idx, quote["id"]))
+
+        conn.execute("""
+            INSERT INTO quotes (
+                id, idx, main_content, context, date,
+                specific_ids, preference, backlinks, tags, sentiment
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                idx = excluded.idx,
+                main_content = excluded.main_content,
+                context = excluded.context,
+                date = excluded.date,
+                specific_ids = excluded.specific_ids,
+                preference = excluded.preference,
+                backlinks = excluded.backlinks,
+                tags = excluded.tags,
+                sentiment = excluded.sentiment;
+        """, (
+            quote["id"],
+            idx,
+            quote["main_content"].strip(),
+            quote.get("context", "").strip(),
+            str(quote["date"]).strip(),
+            specific_ids_json_str,
+            preference_json_str,
+            backlinks_json_str,
+            tags_json_str,
+            sentiment_str
+        ))
+
+    conn.close()
+
+    if compile_after:
+        try:
+            from compile_projections import compile_projections
+            compile_projections(db_path)
+        except Exception as e:
+            print(f"[WARN] Projection compilation error: {e}")
+
+
+def get_quote(quote_id: str, db_path: str = DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """O(1) lookup of a quote by Hex ID."""
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT * FROM quotes WHERE id = ?;", (quote_id,))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        return None
+
+    specific_ids = json.loads(row["specific_ids"]) if row["specific_ids"] else []
+    preference = json.loads(row["preference"]) if row["preference"] else []
+    backlinks = json.loads(row["backlinks"]) if row["backlinks"] else []
+    tags = json.loads(row["tags"]) if row["tags"] else []
+
+    conn.close()
+    return {
+        "id": row["id"],
+        "index": row["idx"],
+        "main_content": row["main_content"],
+        "context": row["context"] or "",
+        "date": row["date"],
+        "specific_ids": specific_ids,
+        "preference": preference,
+        "backlinks": backlinks,
+        "tags": tags,
+        "sentiment": row["sentiment"] or ""
+    }
+
+
+def get_all_quotes(db_path: str = DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    """Returns all quotes ordered by index."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT * FROM quotes ORDER BY idx ASC;")
+    rows = cur.fetchall()
+    results = []
+    for row in rows:
+        results.append({
+            "id": row["id"],
+            "index": row["idx"],
+            "main_content": row["main_content"],
+            "context": row["context"] or "",
+            "date": row["date"],
+            "specific_ids": json.loads(row["specific_ids"]) if row["specific_ids"] else [],
+            "preference": json.loads(row["preference"]) if row["preference"] else [],
+            "backlinks": json.loads(row["backlinks"]) if row["backlinks"] else [],
+            "tags": json.loads(row["tags"]) if row["tags"] else [],
+            "sentiment": row["sentiment"] or ""
+        })
+    conn.close()
+    return results
+
+
+def search_quotes(query: str, db_path: str = DEFAULT_DB_PATH, limit: int = 20) -> List[Dict[str, Any]]:
+    """Fast keyword search across content, context, and tags."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    like_q = f"%{query}%"
+    cur = conn.execute("""
+        SELECT *
+        FROM quotes
+        WHERE main_content LIKE ? OR context LIKE ? OR tags LIKE ?
+        ORDER BY idx ASC
+        LIMIT ?;
+    """, (like_q, like_q, like_q, limit))
+    rows = cur.fetchall()
+    results = []
+    for row in rows:
+        results.append({
+            "id": row["id"],
+            "index": row["idx"],
+            "main_content": row["main_content"],
+            "context": row["context"] or "",
+            "date": row["date"],
+            "specific_ids": json.loads(row["specific_ids"]) if row["specific_ids"] else [],
+            "preference": json.loads(row["preference"]) if row["preference"] else [],
+            "backlinks": json.loads(row["backlinks"]) if row["backlinks"] else [],
+            "tags": json.loads(row["tags"]) if row["tags"] else [],
+            "sentiment": row["sentiment"] or ""
+        })
+    conn.close()
+    return results

@@ -1,0 +1,357 @@
+"""
+Rebased Character Identity Database: SQLite Relational Engine
+Rose 5-Tier Architectural Pattern.
+
+Hex ID Standards:
+  - 1004: Characters (Identity Entities)
+  - 1005: Character Variants / Outfits
+"""
+
+import sqlite3
+import json
+import os
+import time
+from typing import Dict, Any, List, Optional
+import tournament_db as tdb
+
+PREFIX_CHARACTER = "1004"
+PREFIX_VARIANT = "1005"
+
+
+def init_character_schema(db_path: str = tdb.DEFAULT_DB_PATH) -> None:
+    """Initializes the relational character identity tables."""
+    conn = tdb.get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        # Table: characters (1004...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS characters (
+                id TEXT PRIMARY KEY,
+                char_code TEXT NOT NULL UNIQUE,
+                canonical_name TEXT NOT NULL,
+                series TEXT,
+                associate_json TEXT,
+                names_json TEXT,
+                hazard_score REAL DEFAULT 0.0,
+                hazard_class TEXT,
+                base_prompt TEXT,
+                outfit TEXT,
+                avatar_url TEXT,
+                taxonomy_json TEXT,
+                dna_phase1_json TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_characters_char_code ON characters(char_code);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_characters_name ON characters(canonical_name);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_characters_series ON characters(series);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_characters_hazard ON characters(hazard_score);")
+
+        # Table: character_variants (1005...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS character_variants (
+                id TEXT PRIMARY KEY,
+                character_id TEXT NOT NULL,
+                variant_key TEXT NOT NULL,
+                variant_name TEXT NOT NULL,
+                prompt TEXT,
+                outfit TEXT,
+                is_default INTEGER DEFAULT 0,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+                UNIQUE(character_id, variant_key)
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_cv_char ON character_variants(character_id);")
+
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+
+
+def get_hazard_class(score: float) -> str:
+    """Computes Hazard Class badge based on score."""
+    if score <= 2.0:
+        return "Class I - Minimal Risk"
+    elif score <= 4.0:
+        return "Class II - Moderate Hazard"
+    elif score <= 6.0:
+        return "Class III - Severe Entity"
+    elif score <= 8.0:
+        return "Class IV - Catastrophic"
+    return "Class V - Apollyon Threat"
+
+
+def upsert_character(
+    char_data: Dict[str, Any],
+    variants: Optional[List[Dict[str, Any]]] = None,
+    db_path: str = tdb.DEFAULT_DB_PATH
+) -> Dict[str, Any]:
+    """Upserts a character and its variants in an atomic IMMEDIATE transaction."""
+    init_character_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    char_code = char_data["char_code"].strip().upper()
+    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        # Check existing
+        cur = conn.execute("SELECT id FROM characters WHERE char_code = ?;", (char_code,))
+        row = cur.fetchone()
+        char_id = row["id"] if row else tdb.generate_tournament_hex_id(PREFIX_CHARACTER)
+
+        hazard_score = float(char_data.get("hazard_score", 0.0))
+        hazard_class = char_data.get("hazard_class") or get_hazard_class(hazard_score)
+
+        associate_json = json.dumps(char_data.get("associate", []), ensure_ascii=False)
+        names_json = json.dumps(char_data.get("names", {}), ensure_ascii=False)
+        taxonomy_json = json.dumps(char_data.get("taxonomy", {}), ensure_ascii=False)
+        dna_json = json.dumps(char_data.get("dna_phase1", {}), ensure_ascii=False)
+
+        conn.execute("""
+            INSERT INTO characters (
+                id, char_code, canonical_name, series, associate_json, names_json,
+                hazard_score, hazard_class, base_prompt, outfit, avatar_url,
+                taxonomy_json, dna_phase1_json, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(char_code) DO UPDATE SET
+                canonical_name = excluded.canonical_name,
+                series = excluded.series,
+                associate_json = excluded.associate_json,
+                names_json = excluded.names_json,
+                hazard_score = excluded.hazard_score,
+                hazard_class = excluded.hazard_class,
+                base_prompt = excluded.base_prompt,
+                outfit = excluded.outfit,
+                avatar_url = excluded.avatar_url,
+                taxonomy_json = excluded.taxonomy_json,
+                dna_phase1_json = excluded.dna_phase1_json,
+                updated_at = excluded.updated_at;
+        """, (
+            char_id,
+            char_code,
+            char_data["canonical_name"].strip(),
+            char_data.get("series", ""),
+            associate_json,
+            names_json,
+            hazard_score,
+            hazard_class,
+            char_data.get("base_prompt", ""),
+            char_data.get("outfit", ""),
+            char_data.get("avatar_url", ""),
+            taxonomy_json,
+            dna_json,
+            now_str,
+            now_str
+        ))
+
+        # Handle variants
+        if variants:
+            conn.execute("DELETE FROM character_variants WHERE character_id = ?;", (char_id,))
+            for v in variants:
+                vid = tdb.generate_tournament_hex_id(PREFIX_VARIANT)
+                conn.execute("""
+                    INSERT INTO character_variants (
+                        id, character_id, variant_key, variant_name, prompt, outfit, is_default, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                """, (
+                    vid,
+                    char_id,
+                    v["variant_key"],
+                    v.get("variant_name", v["variant_key"]),
+                    v.get("prompt", ""),
+                    v.get("outfit", ""),
+                    1 if v.get("is_default") else 0,
+                    now_str
+                ))
+
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return get_character_by_code(char_code, db_path)
+
+
+def get_character_by_code(char_code: str, db_path: str = tdb.DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """Fetches a character by unique char_code (e.g. 'A01')."""
+    init_character_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    cur = conn.execute("SELECT * FROM characters WHERE char_code = ?;", (char_code.strip().upper(),))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        return None
+
+    char_dict = dict(row)
+    char_id = char_dict["id"]
+
+    # Load variants
+    v_cur = conn.execute("SELECT * FROM character_variants WHERE character_id = ? ORDER BY is_default DESC;", (char_id,))
+    variants = [dict(r) for r in v_cur.fetchall()]
+    conn.close()
+
+    char_dict["variants"] = variants
+    char_dict["associate"] = json.loads(char_dict["associate_json"]) if char_dict["associate_json"] else []
+    char_dict["names"] = json.loads(char_dict["names_json"]) if char_dict["names_json"] else {}
+    char_dict["taxonomy"] = json.loads(char_dict["taxonomy_json"]) if char_dict["taxonomy_json"] else {}
+    char_dict["dna_phase1"] = json.loads(char_dict["dna_phase1_json"]) if char_dict["dna_phase1_json"] else {}
+    return char_dict
+
+
+def search_characters(
+    query: str = "",
+    limit: int = 20,
+    db_path: str = tdb.DEFAULT_DB_PATH
+) -> List[Dict[str, Any]]:
+    """
+    Search-as-you-type query for the character selector dropdown.
+    Matches against char_code prefix/substring and canonical_name.
+    """
+    init_character_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    clean_q = query.strip()
+
+    if clean_q:
+        like_pattern = f"%{clean_q}%"
+        # Prioritize exact prefix match on char_code, then name match
+        cur = conn.execute("""
+            SELECT id, char_code, canonical_name, series, avatar_url, hazard_score, hazard_class
+            FROM characters
+            WHERE char_code LIKE ? OR canonical_name LIKE ? OR series LIKE ?
+            ORDER BY
+                CASE WHEN char_code LIKE ? THEN 0 ELSE 1 END,
+                char_code ASC
+            LIMIT ?;
+        """, (like_pattern, like_pattern, like_pattern, f"{clean_q}%", limit))
+    else:
+        cur = conn.execute("""
+            SELECT id, char_code, canonical_name, series, avatar_url, hazard_score, hazard_class
+            FROM characters
+            ORDER BY char_code ASC
+            LIMIT ?;
+        """, (limit,))
+
+    rows = cur.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def ingest_character_json(file_path: str, db_path: str = tdb.DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """Ingests a character JSON file into the SQLite database."""
+    if not os.path.exists(file_path):
+        return None
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    default_def = data.get("default", {})
+    char_code = default_def.get("id")
+    if not char_code:
+        # Fallback to filename
+        char_code = os.path.splitext(os.path.basename(file_path))[0]
+
+    names_obj = default_def.get("names", {})
+    canonical_name = ""
+    if isinstance(names_obj, dict):
+        if names_obj.get("names"):
+            canonical_name = names_obj["names"][0]
+        elif names_obj.get("canonical"):
+            canonical_name = names_obj["canonical"]
+    elif isinstance(names_obj, list) and names_obj:
+        canonical_name = names_obj[0]
+    if not canonical_name:
+        canonical_name = char_code
+
+    series = ""
+    assoc = default_def.get("associate", [])
+    if isinstance(assoc, list) and assoc:
+        series = assoc[0]
+    elif isinstance(assoc, dict):
+        series = assoc.get("series") or assoc.get("organization") or ""
+
+    hazard_score = 0.0
+    hl = default_def.get("hazardLevel", {})
+    if isinstance(hl, dict):
+        hazard_score = float(hl.get("hazardScore", 0.0))
+
+    variants = []
+    for k, v in data.items():
+        v_name = k
+        if isinstance(v, dict):
+            if v.get("names"):
+                v_name = v["names"][0] if isinstance(v["names"], list) else str(v["names"])
+            variants.append({
+                "variant_key": k,
+                "variant_name": v_name,
+                "prompt": v.get("_prpt_") or v.get("prompt", ""),
+                "outfit": v.get("outfit", ""),
+                "is_default": (k == "default")
+            })
+
+    char_data = {
+        "char_code": char_code,
+        "canonical_name": canonical_name,
+        "series": series,
+        "associate": assoc,
+        "names": names_obj,
+        "hazard_score": hazard_score,
+        "base_prompt": default_def.get("_prpt_") or default_def.get("prompt", ""),
+        "outfit": default_def.get("outfit", ""),
+        "avatar_url": default_def.get("avatar_url", ""),
+        "taxonomy": default_def.get("taxonomy", {}),
+        "dna_phase1": default_def.get("dna_phase1", {})
+    }
+
+    return upsert_character(char_data, variants, db_path)
+
+
+def seed_character_roster(db_path: str = tdb.DEFAULT_DB_PATH) -> int:
+    """Seeds the foundational characters from Identity/Characters and Tournament archives."""
+    init_character_schema(db_path)
+
+    # 1. Ingest A01.json if on disk
+    base_data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+    a01_path = os.path.join(base_data_dir, "Hazard_Trigger_Data", "Identity", "Characters", "TT01", "A01.json")
+    if os.path.exists(a01_path):
+        ingest_character_json(a01_path, db_path)
+
+    # 2. Seed Genesis & Duality competitors
+    roster = [
+        {"char_code": "A01", "canonical_name": "Amelia Watson", "series": "Hololive", "hazard_score": 3.0, "avatar_url": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100"},
+        {"char_code": "A20", "canonical_name": "Topaz", "series": "Honkai: Star Rail", "hazard_score": 4.5, "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"},
+        {"char_code": "A27", "canonical_name": "Nico Robin", "series": "One Piece", "hazard_score": 5.2, "avatar_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100"},
+        {"char_code": "A68", "canonical_name": "Silver Wolf", "series": "Honkai: Star Rail", "hazard_score": 6.0, "avatar_url": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100"},
+        {"char_code": "B02", "canonical_name": "Amane Kanata", "series": "Hololive", "hazard_score": 4.0, "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"},
+        {"char_code": "B05", "canonical_name": "Usada Pekora", "series": "Hololive", "hazard_score": 4.8, "avatar_url": "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=100"},
+        {"char_code": "B11", "canonical_name": "Henrietta de Tristain", "series": "Zero no Tsukaima", "hazard_score": 2.5, "avatar_url": ""},
+        {"char_code": "B28", "canonical_name": "Hino Akane", "series": "THE IDOLM@STER", "hazard_score": 3.5, "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"},
+        {"char_code": "B31", "canonical_name": "Nana Bassler", "series": "Yumeria", "hazard_score": 2.8, "avatar_url": ""},
+        {"char_code": "B35", "canonical_name": "Misaki Shokuhou", "series": "Toaru Majutsu no Index", "hazard_score": 5.0, "avatar_url": ""},
+        {"char_code": "B39", "canonical_name": "Mila", "series": "MiSide", "hazard_score": 3.8, "avatar_url": "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=100"},
+        {"char_code": "B53", "canonical_name": "Alabama", "series": "Azur Lane", "hazard_score": 4.2, "avatar_url": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100"},
+        {"char_code": "B56", "canonical_name": "Wang Liu Mei", "series": "Gundam 00", "hazard_score": 3.1, "avatar_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100"},
+        {"char_code": "B57", "canonical_name": "Lucia", "series": "Punishing: Gray Raven", "hazard_score": 5.5, "avatar_url": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100"},
+        {"char_code": "B91", "canonical_name": "Nurse Joy", "series": "Pokemon", "hazard_score": 1.5, "avatar_url": ""},
+        {"char_code": "C14", "canonical_name": "Kirishima Romin", "series": "Yu-Gi-Oh! SEVENS", "hazard_score": 3.0, "avatar_url": ""},
+        {"char_code": "C17", "canonical_name": "Friend A", "series": "Hololive", "hazard_score": 2.0, "avatar_url": ""},
+        {"char_code": "C18", "canonical_name": "Amanogawa Shiina", "series": "Idols", "hazard_score": 2.2, "avatar_url": ""},
+        {"char_code": "C19", "canonical_name": "Carol Malus Dienheim", "series": "Symphogear", "hazard_score": 4.9, "avatar_url": ""},
+        {"char_code": "C20", "canonical_name": "Otosaka Ayumi", "series": "Charlotte", "hazard_score": 2.4, "avatar_url": ""},
+        {"char_code": "C21", "canonical_name": "Aoki Reika", "series": "Smile Precure!", "hazard_score": 3.6, "avatar_url": ""},
+        {"char_code": "C22", "canonical_name": "Raphtalia", "series": "Shield Hero", "hazard_score": 4.1, "avatar_url": ""},
+        {"char_code": "C23", "canonical_name": "Kinomoto Nadeshiko", "series": "Cardcaptor Sakura", "hazard_score": 2.0, "avatar_url": ""},
+        {"char_code": "C25", "canonical_name": "Yonah", "series": "NieR", "hazard_score": 2.1, "avatar_url": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100"},
+        {"char_code": "C28", "canonical_name": "Nelly", "series": "Original", "hazard_score": 2.5, "avatar_url": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100"},
+        {"char_code": "C29", "canonical_name": "Izumi Konata", "series": "Lucky Star", "hazard_score": 3.0, "avatar_url": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100"},
+        {"char_code": "C30", "canonical_name": "Pursena Adoldia", "series": "Mushoku Tensei", "hazard_score": 3.9, "avatar_url": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100"},
+        {"char_code": "C31", "canonical_name": "Milla Maxwell", "series": "Tales of Xillia", "hazard_score": 5.4, "avatar_url": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100"},
+        {"char_code": "EVA_01", "canonical_name": "Eva Frontier", "series": "StellaBlade", "hazard_score": 7.5, "avatar_url": "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=100"},
+        {"char_code": "HOLO_01", "canonical_name": "Ouro Kronii", "series": "Hololive", "hazard_score": 5.0, "avatar_url": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100"},
+        {"char_code": "HOLO_02", "canonical_name": "Subaru", "series": "Hololive", "hazard_score": 3.7, "avatar_url": "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=100"},
+        {"char_code": "IDOL_01", "canonical_name": "Higuchi Madoka", "series": "THE IDOLM@STER Shiny Colors", "hazard_score": 4.0, "avatar_url": "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=100"}
+    ]
+
+    for item in roster:
+        upsert_character(item, None, db_path)
+
+    return len(roster)

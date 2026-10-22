@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+"""
+Tier 3: Execution Tools
+Pure deterministic tool execution (Subprocess Shell, Git, Filesystem, Audio Reflex).
+Adheres strictly to the Local Disk D: Policy and anti-silent-fallback rules.
+"""
+
+import os
+import sys
+import time
+import subprocess
+from pathlib import Path
+from typing import Optional
+
+from domain import ExecutionResult
+
+
+C2_SCRIPT_PATH = Path(r"D:\My Drive\Blue AI\.agents\scripts\c2.py")
+
+
+class SovereignTools:
+    """Deterministic system and developer tools."""
+
+    @staticmethod
+    def run_shell(command: str, cwd: str, timeout: int = 45) -> ExecutionResult:
+        """Executes a PowerShell command safely within the target workspace."""
+        start = time.perf_counter()
+        if not os.path.exists(cwd):
+            return ExecutionResult(
+                success=False, output="", latency_ms=0,
+                error=f"Workspace path does not exist: {cwd}"
+            )
+
+        cmd = ["powershell", "-NoProfile", "-NonInteractive", "-Command", command]
+        try:
+            res = subprocess.run(
+                cmd,
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                encoding="utf-8",
+                errors="replace"
+            )
+            elapsed = (time.perf_counter() - start) * 1000
+            stdout = res.stdout.strip()
+            stderr = res.stderr.strip()
+            output = stdout if stdout else stderr
+            return ExecutionResult(
+                success=(res.returncode == 0),
+                output=output,
+                latency_ms=elapsed,
+                error=stderr if res.returncode != 0 else None
+            )
+        except subprocess.TimeoutExpired:
+            elapsed = (time.perf_counter() - start) * 1000
+            return ExecutionResult(
+                success=False, output="", latency_ms=elapsed,
+                error=f"Command timed out after {timeout}s: {command}"
+            )
+        except Exception as e:
+            elapsed = (time.perf_counter() - start) * 1000
+            return ExecutionResult(
+                success=False, output="", latency_ms=elapsed,
+                error=f"Process execution error: {str(e)}"
+            )
+
+    @classmethod
+    def git_status(cls, cwd: str) -> ExecutionResult:
+        """Retrieves active Git branch, dirty status, and latest commit."""
+        cmd = (
+            "$b = git branch --show-current; "
+            "$lines = (git status -s); "
+            "$count = $lines.Count; "
+            "$sample = ($lines | Select-Object -First 12) -join \"`n\"; "
+            "$more = if ($count -gt 12) { \"`n... and $($count - 12) more changed files\" } else { '' }; "
+            "$l = git log -1 --oneline; "
+            "Write-Output \"Branch: $b`nLast Commit: $l`nChanges ($count files):`n$sample$more\""
+        )
+        return cls.run_shell(cmd, cwd=cwd, timeout=10)
+
+    @classmethod
+    def git_diff(cls, cwd: str, stat_only: bool = True) -> ExecutionResult:
+        """Retrieves Git diff (stat or full diff)."""
+        flag = "--stat" if stat_only else ""
+        return cls.run_shell(f"git diff {flag}", cwd=cwd, timeout=15)
+
+    @staticmethod
+    def _resolve_safe_path(target_path: str, cwd: str) -> Optional[Path]:
+        """Validates that target path resolves safely inside workspace root."""
+        p = Path(target_path)
+        if not p.is_absolute():
+            p = (Path(cwd) / p).resolve()
+        else:
+            p = p.resolve()
+        # Verify it resides on D:\
+        if not str(p).lower().startswith("d:"):
+            return None
+        return p
+
+    @classmethod
+    def read_file(cls, file_path: str, cwd: str, max_lines: int = 200, offset: int = 1) -> ExecutionResult:
+        """Safely reads text content bounded by maximum lines."""
+        p = cls._resolve_safe_path(file_path, cwd)
+        if not p or not p.exists() or not p.is_file():
+            return ExecutionResult(success=False, output="", error=f"File not found or outside allowed workspace: {file_path}")
+        try:
+            with open(p, "r", encoding="utf-8", errors="replace") as f:
+                all_lines = f.readlines()
+            start_idx = max(0, offset - 1)
+            selected = all_lines[start_idx : start_idx + max_lines]
+            numbered = [f"{i + start_idx + 1}\t{line}" for i, line in enumerate(selected)]
+            return ExecutionResult(success=True, output="".join(numbered))
+        except Exception as e:
+            return ExecutionResult(success=False, output="", error=str(e))
+
+    @classmethod
+    def write_file(cls, file_path: str, content: str, cwd: str) -> ExecutionResult:
+        r"""Writes content to a file on Local Disk D:\, creating parent directories."""
+        p = cls._resolve_safe_path(file_path, cwd)
+        if not p:
+            return ExecutionResult(success=False, output="", error=f"Path rejected (must reside on D:\\): {file_path}")
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with open(p, "w", encoding="utf-8") as f:
+                f.write(content)
+            return ExecutionResult(success=True, output=f"Successfully written {len(content)} characters to {p.name}")
+        except Exception as e:
+            return ExecutionResult(success=False, output="", error=str(e))
+
+    @classmethod
+    def edit_file(cls, file_path: str, old_str: str, new_str: str, cwd: str) -> ExecutionResult:
+        r"""Replaces exact unique string in a file on Local Disk D:\."""
+        p = cls._resolve_safe_path(file_path, cwd)
+        if not p or not p.exists() or not p.is_file():
+            return ExecutionResult(success=False, output="", error=f"File not found: {file_path}")
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                content = f.read()
+            count = content.count(old_str)
+            if count == 0:
+                return ExecutionResult(success=False, output="", error=f"old_str not found in {p.name}")
+            if count > 1:
+                return ExecutionResult(success=False, output="", error=f"old_str occurs {count} times (must be unique) in {p.name}")
+            new_content = content.replace(old_str, new_str, 1)
+            with open(p, "w", encoding="utf-8") as f:
+                f.write(new_content)
+            return ExecutionResult(success=True, output=f"Successfully updated {p.name}")
+        except Exception as e:
+            return ExecutionResult(success=False, output="", error=str(e))
+
+    @classmethod
+    def list_dir(cls, dir_path: str, cwd: str, max_entries: int = 60) -> ExecutionResult:
+        """Lists directory contents up to max entries."""
+        p = cls._resolve_safe_path(dir_path, cwd)
+        if not p or not p.exists() or not p.is_dir():
+            return ExecutionResult(success=False, output="", error=f"Directory not found: {dir_path}")
+        try:
+            entries = sorted(os.listdir(p))[:max_entries]
+            lines = []
+            for e in entries:
+                sub = p / e
+                prefix = "[DIR] " if sub.is_dir() else "[FILE]"
+                lines.append(f"{prefix} {e}")
+            return ExecutionResult(success=True, output="\n".join(lines))
+        except Exception as e:
+            return ExecutionResult(success=False, output="", error=str(e))
+
+    @staticmethod
+    def trigger_acoustic_reflex(speech_text: str) -> None:
+        """Invokes local biological TTS reflex asynchronously."""
+        if not C2_SCRIPT_PATH.exists() or not speech_text.strip():
+            return
+        clean_text = speech_text.replace('"', '\\"').strip()
+        try:
+            subprocess.Popen(
+                [sys.executable, str(C2_SCRIPT_PATH), "--no-tg", clean_text],
+                cwd=str(C2_SCRIPT_PATH.parent.parent.parent),
+                creationflags=0x08000000 if os.name == "nt" else 0
+            )
+        except Exception:
+            pass

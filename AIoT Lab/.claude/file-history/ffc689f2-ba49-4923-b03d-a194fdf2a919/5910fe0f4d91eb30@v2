@@ -1,0 +1,145 @@
+# Notion-Style Table UX Research & Implementation Plan
+
+## Context
+In our schema editor UI (`ui-test-standalone.html`):
+- **Each table row represents a COLUMN definition**
+- Dragging a row = reordering the column in the schema
+- This mirrors Notion's database table where you can reorder properties
+
+---
+
+## Research Findings
+
+### Notion's Drag-and-Drop Patterns
+
+#### 1. Row/Property Reordering (What We Need)
+- **Left-edge drag zone**: Hover over the left-most cell (row number or checkbox area) reveals a drag handle
+- **Drag handle visual**: 6-dot grip icon (⋮⋮) or hamburger menu appears on hover
+- **Cursor feedback**: `cursor: grab` on hover, `cursor: grabbing` when actively dragging
+- **Placeholder**: Dashed border or highlight shows drop position during drag
+- **FLIP animation**: Smooth transitions when rows snap into new positions
+- **Auto-scroll**: Table scrolls when dragging near edges
+
+#### 2. Column/Property Header Reordering (Notion databases)
+- Hover over column header reveals drag handle on the left edge of header
+- Drag header left/right to reorder
+- Other columns shift smoothly to make room
+- Drop zone indicator (blue line) shows insertion point
+
+### Key UX Principles
+1. **Affordance**: Clear visual indication that items are draggable
+2. **Target area**: Entire left edge is the drag zone, not just a tiny icon
+3. **Feedback**: Real-time placeholder shows where item will land
+4. **Smooth animation**: FLIP technique for performant reordering
+5. **Touch support**: Works on mobile with long-press to initiate drag
+
+---
+
+## Implementation Plan
+
+### Phase 1: CSS & HTML Structure
+
+#### Current State (Broken)
+- Header has `.draggable` but drag doesn't work
+- Number cell has `.drag-handle` that only shows on hover
+- No actual pointer event handlers attached to rows
+
+#### Target State
+1. **Number cell (`.td-num`)** becomes the dedicated drag zone
+2. **Cursor changes**: `grab` on hover, `grabbing` when dragging
+3. **Drag handle**: Shows ⋮⋮ consistently (not just on hover) or on hover in number cell
+4. **Row receives `.drag-handle` class** when cursor is over number cell
+
+```css
+/* Number cell as drag zone */
+.td-num {
+  cursor: grab;
+  user-select: none;
+  width: 48px; /* Fixed width for consistent grab area */
+}
+
+.td-num:active {
+  cursor: grabbing;
+}
+
+/* Visual indicator */
+.td-num .drag-handle {
+  display: inline-block;
+  color: var(--text-dim);
+  opacity: 0.5;
+}
+
+.td-num:hover .drag-handle {
+  opacity: 1;
+  color: var(--accent);
+}
+```
+
+### Phase 2: JavaScript Drag Engine
+
+#### Implementation: Pointer Events (Not HTML5 DnD)
+- Use Pointer Events API for cross-platform support
+- Attach to `.td-num` cell, not the entire row
+- Flow:
+  1. **pointerdown** on `.td-num`: Capture pointer, set drag mode
+  2. **pointermove**: Move floating "ghost" element, calculate new position
+  3. **pointerup**: Drop into new position, animate, update data
+
+#### Key Variables
+```javascript
+let dragState = {
+  row: null,           // Original row element
+  placeholder: null,   // Visual gap indicator
+  fromIdx: 0,          // Original index
+  startY: 0,           // For threshold detection
+  isDragging: false    // Drag active flag
+};
+```
+
+#### Algorithm
+1. On `pointerdown` on `.td-num`:
+   - Prevent default
+   - Capture pointer on the cell
+   - Create placeholder row (dashed border, same height)
+   - Store starting position
+
+2. On `pointermove`:
+   - If distance > 5px, activate drag mode
+   - Position "ghost" row at cursor
+   - Calculate target index based on cursor Y position
+   - Move placeholder to show drop position
+   - Apply FLIP to other rows
+
+3. On `pointerup`:
+   - Animate ghost to placeholder position
+   - Swap data in `tables[activeTable].columns`
+   - Re-render table
+   - Cleanup
+
+### Phase 3: Edge Cases
+- First/last row: Prevent dragging beyond bounds OR allow reordering
+- Filter active: Reorder applies to full column list, filter is display-only
+- Sidebar open: Sidebar closes during drag
+- Touch devices: Use `touch-action: none` and long-press to initiate
+
+---
+
+## File to Modify
+`D:\My Drive\Blue AI\ui-test-standalone.html`
+
+### Changes Required
+1. **CSS**: Update `.td-num` styles for proper drag zone
+2. **HTML**: Ensure each row has `.draggable` class
+3. **JS**: Replace header drag code with row drag code
+4. **JS**: Attach pointerdown listeners in `renderTable()`
+
+---
+
+## Success Criteria
+- [ ] Grabbing the number cell initiates drag
+- [ ] Ghost row follows cursor smoothly
+- [ ] Placeholder shows drop position in real-time
+- [ ] Other rows animate out of the way (FLIP)
+- [ ] Drop commits reorder to data model
+- [ ] Toast confirms reorder: "Reordered: Column Name"
+- [ ] Works on desktop (mouse) — touch is stretch goal

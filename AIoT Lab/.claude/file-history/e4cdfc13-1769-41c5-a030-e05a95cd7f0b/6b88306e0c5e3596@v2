@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+"""
+Faust ESP32 Field Speaker Streamer
+Connects to Faust's shared resident audio daemon on Port 20129 to synthesize
+speech using resident Kokoro weights and streams 16-bit PCM directly to the ESP32 speaker.
+"""
+import base64
+import json
+import logging
+import os
+import sys
+import time
+import urllib.request
+import urllib.error
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import serial
+import serial.tools.list_ports
+
+# Logger setup
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] [faust.esp32_speaker] %(levelname)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger("faust.esp32_speaker")
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_DIR = SCRIPT_DIR.parent
+CONFIG_PATH = SKILL_DIR / "assets" / "esp32_speaker_config.json"
+
+
+def load_config() -> Dict:
+    """Load ESP32 speaker configuration."""
+    if CONFIG_PATH.exists():
+        try:
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("esp32_speaker", {})
+        except Exception as e:
+            logger.warning(f"Failed to read config, using defaults: {e}")
+    return {
+        "port": "COM5",
+        "baud": 921600,
+        "sample_rate": 16000,
+        "gain": 1.2,
+        "daemon_url": "http://127.0.0.1:20129",
+        "chunk_size": 512,
+    }
+
+
+def list_com_ports() -> List[str]:
+    """List all available system serial COM ports."""
+    return [p.device for p in serial.tools.list_ports.comports()]
+
+
+def synthesize_via_daemon(
+    text: str,
+    daemon_url: str = "http://127.0.0.1:20129",
+    target_sample_rate: int = 16000,
+    voice: Optional[str] = None,
+    secondary_voice: Optional[str] = None,
+    speed: Optional[float] = None,
+    pitch_shift: Optional[float] = None,
+) -> Tuple[bytes, int, float]:
+    """
+    Request 16-bit PCM synthesis from the shared resident audio daemon.
+    Returns: (pcm_bytes, sample_rate, duration_seconds)
+    """
+    url = f"{daemon_url.rstrip('/')}/synthesize"
+    payload = {
+        "text": text,
+        "target_sample_rate": target_sample_rate,
+    }
+    if voice:
+        payload["voice"] = voice
+    if secondary_voice:
+        payload["secondary_voice"] = secondary_voice
+    if speed is not None:
+        payload["speed"] = speed
+    if pitch_shift is not None:
+        payload["pitch_shift"] = pitch_shift
+
+    req_data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=req_data,
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+
+    t0 = time.perf_counter()
+    try:
+        with urllib.request.urlopen(req, timeout=10.0) as resp:
+            res_data = json.loads(resp.read().decode("utf-8"))
+            if res_data.get("status") != "ok":
+                raise RuntimeError(f"Daemon synthesis failed: {res_data}")
+
+            pcm_bytes = base64.b64decode(res_data["pcm_base64"])
+            sample_rate = res_data["sample_rate"]
+            duration = res_data["duration_seconds"]
+            synth_latency = res_data.get("synth_latency_ms", (time.perf_counter() - t0) * 1000)
+            logger.info(
+                f"Synthesized {duration:.2f}s audio in {synth_latency:.1f}ms "
+                f"({len(pcm_bytes)} bytes @ {sample_rate}Hz)"
+            )
+            return pcm_bytes, sample_rate, duration
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"Faust resident audio daemon is unreachable at {daemon_url}: {e}")
+
+
+def stream_to_esp32_serial(
+    pcm_bytes: bytes,
+    port: str = "COM5",
+    baud: int = 921600,
+    sample_rate: int = 16000,
+    chunk_size: int = 512,
+    gain: float = 1.0,
+) -> bool:
+    """
+    Stream PCM audio samples directly over UART to the ESP32 I2S receiver.
+    """
+    if not pcm_bytes:
+        logger.warning("No audio bytes to stream.")
+        return False
+
+    # Apply digital gain if requested
+    if gain != 1.0:
+        import numpy as np
+        samples = np.frombuffer(pcm_bytes, dtype=np.int16).astype(np.float32) * gain
+        pcm_bytes = np.clip(samples, -32768, 32767).astype(np.int16).tobytes()
+
+    logger.info(f"Opening Serial port {port} @ {baud} baud for real-time ESP32 streaming...")
+    ser = serial.Serial(port=port, baudrate=baud, timeout=1.0)
+    try:
+        time.sleep(0.05) # Allow line settle
+
+        total_bytes = len(pcm_bytes)
+        bytes_sent = 0
+        t_start = time.perf_counter()
+
+        while bytes_sent < total_bytes:
+            chunk = pcm_bytes[bytes_sent : bytes_sent + chunk_size]
+            ser.write(chunk)
+            bytes_sent += len(chunk)
+
+            # Pacing: Keep ~0.15s buffer lead on ESP32 to guarantee continuous playback without overrun
+            expected_time = (bytes_sent / 2) / sample_rate
+            elapsed_time = time.perf_counter() - t_start
+            lead_time = expected_time - elapsed_time
+
+            if lead_time > 0.15:
+                time.sleep(lead_time - 0.10)
+
+        ser.flush()
+        logger.info(f"Finished streaming {bytes_sent} bytes to ESP32 speaker.")
+        return True
+    finally:
+        ser.close()
+
+
+def speak_esp32(
+    text: str,
+    port: Optional[str] = None,
+    baud: Optional[int] = None,
+    sample_rate: Optional[int] = None,
+    gain: Optional[float] = None,
+    voice: Optional[str] = None,
+    speed: Optional[float] = None,
+) -> bool:
+    """
+    High-level API: Synthesize via shared daemon and stream to ESP32.
+    """
+    cfg = load_config()
+    target_port = port or cfg.get("port", "COM5")
+    target_baud = baud or cfg.get("baud", 921600)
+    target_sr = sample_rate or cfg.get("sample_rate", 16000)
+    target_gain = gain if gain is not None else cfg.get("gain", 1.2)
+    daemon_url = cfg.get("daemon_url", "http://127.0.0.1:20129")
+    chunk_size = cfg.get("chunk_size", 512)
+
+    logger.info(f"Speaking via ESP32 speaker on {target_port}: \"{text}\"")
+
+    # 1. Synthesize via resident RAM model
+    pcm_bytes, sr, duration = synthesize_via_daemon(
+        text=text,
+        daemon_url=daemon_url,
+        target_sample_rate=target_sr,
+        voice=voice,
+        speed=speed,
+    )
+
+    # 2. Stream to ESP32
+    return stream_to_esp32_serial(
+        pcm_bytes=pcm_bytes,
+        port=target_port,
+        baud=target_baud,
+        sample_rate=sr,
+        chunk_size=chunk_size,
+        gain=target_gain,
+    )

@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <title>Database Folder Admin</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f8f7f6;
+      --fg: #1a1a1a;
+      --fg-secondary: #666666;
+      --fg-dim: #999999;
+      --border: #e0e0e0;
+      --accent: #0066cc;
+      --success: #10b981;
+      --danger: #ef4444;
+      --danger-bg: #fee2e2;
+      --danger-border: #fecaca;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f0f0f;
+        --bg-secondary: #1a1a1a;
+        --fg: #ffffff;
+        --fg-secondary: #d0d0d0;
+        --fg-dim: #808080;
+        --border: #333333;
+        --accent: #4da6ff;
+        --success: #34d399;
+        --danger: #ff6b6b;
+        --danger-bg: #7f1d1d;
+        --danger-border: #b91c1c;
+        --warning: #fbbf24;
+        --info: #60a5fa;
+        color-scheme: dark;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0f0f0f;
+      --bg-secondary: #1a1a1a;
+      --fg: #ffffff;
+      --fg-secondary: #d0d0d0;
+      --fg-dim: #808080;
+      --border: #333333;
+      --accent: #4da6ff;
+      --success: #34d399;
+      --danger: #ff6b6b;
+      --danger-bg: #7f1d1d;
+      --danger-border: #b91c1c;
+      --warning: #fbbf24;
+      --info: #60a5fa;
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 1.5rem 0 1rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      color: var(--fg-dim);
+      margin: 0;
+      font-size: 13px;
+    }
+
+    main {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input[type="text"] {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-secondary);
+      color: var(--fg);
+      font-size: 13px;
+      min-width: 200px;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-secondary);
+      color: var(--fg);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    button:hover {
+      background: var(--border);
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    button.primary:hover {
+      opacity: 0.85;
+    }
+
+    button.danger {
+      background: var(--danger);
+      color: white;
+      border-color: var(--danger);
+    }
+
+    button.danger:hover {
+      opacity: 0.85;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .stat-card {
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 0.35rem;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--fg-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .table-container {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--bg-secondary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead {
+      background: var(--bg);
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    th {
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--fg-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 11px;
+    }
+
+    td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr:hover {
+      background: var(--bg);
+    }
+
+    .checkbox {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .folder-id {
+      font-family: "Monaco", "Courier New", monospace;
+      font-size: 11px;
+      color: var(--fg-secondary);
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .folder-name {
+      font-weight: 500;
+      color: var(--fg);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .badge-match {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+    }
+
+    .badge-src {
+      background: rgba(168, 85, 247, 0.15);
+      color: #a855f7;
+    }
+
+    .badge-danger {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid var(--danger-border);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 0.4rem;
+    }
+
+    .action-buttons button {
+      padding: 0.35rem 0.65rem;
+      font-size: 12px;
+    }
+
+    .bulk-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 1rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      border-radius: 6px 6px 0 0;
+    }
+
+    .selection-count {
+      color: var(--fg-dim);
+      font-size: 13px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal h2 {
+      margin: 0 0 1rem;
+      font-size: 18px;
+    }
+
+    .modal p {
+      margin: 0 0 1.5rem;
+      color: var(--fg-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+    }
+
+    .status-message {
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      font-size: 13px;
+    }
+
+    .status-success {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      border: 1px solid var(--success);
+    }
+
+    .status-error {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid var(--danger-border);
+    }
+
+    .status-info {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--info);
+      border: 1px solid var(--info);
+    }
+
+    .loading {
+      display: inline-block;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--fg-dim);
+    }
+
+    .empty-state p {
+      margin: 0;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🗂️ Database Folder Admin</h1>
+    <p class="subtitle">View, search, and delete all folders in neo_drive.db with full control</p>
+  </header>
+
+  <main>
+    <div id="statusMessage"></div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-number" id="totalFolders">0</div>
+        <div class="stat-label">Total Folders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="selectedCount">0</div>
+        <div class="stat-label">Selected</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="orphanCount">0</div>
+        <div class="stat-label">Orphans</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="Search folders by name, ID, or parent...">
+      <button id="refreshBtn" class="primary">Refresh</button>
+      <button id="showAllBtn">Show All</button>
+      <button id="showOrphansBtn">Show Orphans</button>
+    </div>
+
+    <div class="table-container">
+      <div id="bulkActionsBar" class="bulk-actions" style="display: none;">
+        <span class="selection-count"><span id="selectedCountText">0</span> selected</span>
+        <button id="deleteSelectedBtn" class="danger">Delete Selected</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 30px;"><input type="checkbox" id="selectAllCheckbox"></th>
+            <th>Folder Name</th>
+            <th>Folder ID</th>
+            <th>Parent ID</th>
+            <th>Description</th>
+            <th>Source ID</th>
+            <th>Files</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="8" style="text-align: center; color: var(--fg-dim);">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <p>No folders found matching your search</p>
+    </div>
+  </main>
+
+  <div id="deleteModal" class="modal-backdrop" style="display: none;">
+    <div class="modal">
+      <h2>⚠️ Confirm Deletion</h2>
+      <p id="deleteWarningText"></p>
+      <div class="modal-buttons">
+        <button id="cancelDeleteBtn">Cancel</button>
+        <button id="confirmDeleteBtn" class="danger">Delete Permanently</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:10191";
+    let allFolders = [];
+    let filteredFolders = [];
+    let selectedFolders = new Set();
+    let deleteTargets = [];
+
+    const searchInput = document.getElementById("searchInput");
+    const tableBody = document.getElementById("tableBody");
+    const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+    const bulkActionsBar = document.getElementById("bulkActionsBar");
+    const deleteModal = document.getElementById("deleteModal");
+    const statusMessage = document.getElementById("statusMessage");
+
+    // Load all folders from the database
+    async function loadFolders() {
+      try {
+        showStatus("Loading folders from database...", "info");
+        const res = await fetch(`${API_BASE}/api/drive/all_folders`);
+        const data = await res.json();
+
+        if (data.success) {
+          allFolders = data.folders || [];
+          filteredFolders = [...allFolders];
+          updateStats();
+          renderTable();
+          showStatus(`Loaded ${allFolders.length} folders`, "success");
+        } else {
+          showStatus("Failed to load folders", "error");
+        }
+      } catch (err) {
+        showStatus(`Error: ${err.message}`, "error");
+      }
+    }
+
+    function updateStats() {
+      document.getElementById("totalFolders").textContent = allFolders.length;
+      document.getElementById("selectedCount").textContent = selectedFolders.size;
+
+      const orphans = allFolders.filter(f => {
+        const parentExists = allFolders.some(p => p.drive_id === f.child_of);
+        return f.child_of && !parentExists;
+      });
+      document.getElementById("orphanCount").textContent = orphans.length;
+    }
+
+    function renderTable() {
+      if (filteredFolders.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--fg-dim);">No folders found</td></tr>';
+        document.getElementById("emptyState").style.display = "block";
+        return;
+      }
+
+      document.getElementById("emptyState").style.display = "none";
+      tableBody.innerHTML = filteredFolders.map((folder, idx) => {
+        const isOrphan = folder.child_of && !allFolders.some(f => f.drive_id === folder.child_of);
+        return `
+          <tr>
+            <td><input type="checkbox" class="folder-checkbox" data-id="${folder.drive_id}" ${selectedFolders.has(folder.drive_id) ? 'checked' : ''}></td>
+            <td><span class="folder-name">${escapeHtml(folder.name)}</span></td>
+            <td><span class="folder-id" title="${folder.drive_id}">${folder.drive_id}</span></td>
+            <td><span class="folder-id" title="${folder.child_of || 'Root'}">${folder.child_of ? folder.child_of.substring(0, 12) : 'Root'}</span></td>
+            <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-secondary);" title="${folder.description || ''}">${escapeHtml(folder.description || '—')}</td>
+            <td>${folder.src_id ? `<span class="badge badge-src">src</span>` : '—'}</td>
+            <td style="text-align: center; color: var(--fg-secondary);">${folder.files_count || 0}</td>
+            <td>
+              <div class="action-buttons">
+                ${isOrphan ? '<span class="badge badge-danger">Orphan</span>' : ''}
+                <button class="delete-btn" data-id="${folder.drive_id}" data-name="${escapeAttr(folder.name)}">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      // Attach checkbox listeners
+      document.querySelectorAll(".folder-checkbox").forEach(cb => {
+        cb.addEventListener("change", handleFolderCheckbox);
+      });
+
+      // Attach delete button listeners
+      document.querySelectorAll(".delete-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          deleteTargets = [{
+            id: btn.dataset.id,
+            name: btn.dataset.name
+          }];
+          showDeleteModal();
+        });
+      });
+    }
+
+    function handleFolderCheckbox(e) {
+      const folderId = e.target.dataset.id;
+      if (e.target.checked) {
+        selectedFolders.add(folderId);
+      } else {
+        selectedFolders.delete(folderId);
+      }
+      updateBulkActions();
+    }
+
+    function updateBulkActions() {
+      const count = selectedFolders.size;
+      if (count > 0) {
+        bulkActionsBar.style.display = "flex";
+        document.getElementById("selectedCountText").textContent = count;
+        document.getElementById("selectedCount").textContent = count;
+      } else {
+        bulkActionsBar.style.display = "none";
+      }
+      selectAllCheckbox.checked = selectedFolders.size === filteredFolders.length && filteredFolders.length > 0;
+    }
+
+    function filterFolders() {
+      const query = searchInput.value.toLowerCase().trim();
+      if (!query) {
+        filteredFolders = [...allFolders];
+      } else {
+        filteredFolders = allFolders.filter(f =>
+          f.name.toLowerCase().includes(query) ||
+          f.drive_id.toLowerCase().includes(query) ||
+          (f.child_of && f.child_of.toLowerCase().includes(query)) ||
+          (f.description && f.description.toLowerCase().includes(query))
+        );
+      }
+      renderTable();
+      updateStats();
+    }
+
+    function showStatus(message, type = "info") {
+      const el = document.getElementById("statusMessage");
+      el.className = `status-message status-${type}`;
+      el.textContent = message;
+      el.style.display = "block";
+      if (type === "success") {
+        setTimeout(() => el.style.display = "none", 3000);
+      }
+    }
+
+    function showDeleteModal() {
+      const count = deleteTargets.length;
+      const names = deleteTargets.map(t => t.name).join(", ");
+      document.getElementById("deleteWarningText").textContent =
+        count === 1
+          ? `Delete folder "${names}"? This action cannot be undone.`
+          : `Delete ${count} folders? This action cannot be undone.`;
+      deleteModal.style.display = "flex";
+    }
+
+    async function deleteFolders(folderIds) {
+      try {
+        showStatus("Deleting folders...", "info");
+
+        for (const folderId of folderIds) {
+          const res = await fetch(`${API_BASE}/api/drive/trash_folder`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ folder_id: folderId, cascade: true })
+          });
+
+          if (!res.ok) {
+            console.error(`Failed to delete ${folderId}`);
+          }
+        }
+
+        showStatus(`Successfully deleted ${folderIds.length} folder(s)`, "success");
+        selectedFolders.clear();
+        deleteTargets = [];
+        await loadFolders();
+      } catch (err) {
+        showStatus(`Error deleting folders: ${err.message}`, "error");
+      }
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function escapeAttr(str) {
+      return str.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    // Event listeners
+    document.getElementById("refreshBtn").addEventListener("click", loadFolders);
+
+    document.getElementById("showAllBtn").addEventListener("click", () => {
+      searchInput.value = "";
+      filterFolders();
+    });
+
+    document.getElementById("showOrphansBtn").addEventListener("click", () => {
+      filteredFolders = allFolders.filter(f => {
+        const parentExists = allFolders.some(p => p.drive_id === f.child_of);
+        return f.child_of && !parentExists;
+      });
+      renderTable();
+    });
+
+    searchInput.addEventListener("input", filterFolders);
+
+    selectAllCheckbox.addEventListener("change", (e) => {
+      if (e.target.checked) {
+        filteredFolders.forEach(f => selectedFolders.add(f.drive_id));
+      } else {
+        filteredFolders.forEach(f => selectedFolders.delete(f.drive_id));
+      }
+      renderTable();
+      updateBulkActions();
+    });
+
+    document.getElementById("deleteSelectedBtn").addEventListener("click", () => {
+      deleteTargets = Array.from(selectedFolders).map(id => ({
+        id,
+        name: allFolders.find(f => f.drive_id === id)?.name || id
+      }));
+      showDeleteModal();
+    });
+
+    document.getElementById("cancelDeleteBtn").addEventListener("click", () => {
+      deleteModal.style.display = "none";
+    });
+
+    document.getElementById("confirmDeleteBtn").addEventListener("click", () => {
+      deleteModal.style.display = "none";
+      deleteFolders(deleteTargets.map(t => t.id));
+    });
+
+    // Initial load
+    loadFolders();
+  </script>
+</body>
+</html>

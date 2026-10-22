@@ -1,0 +1,344 @@
+{
+  "id": "T6APTxfvxjuzmuB9",
+  "name": "Faust Antigravity IDE Native Bridge",
+  "description": null,
+  "active": true,
+  "activeVersionId": "00a96e16-0ca4-4dce-a9a3-d636b9172535",
+  "createdAt": "2026-10-16T11:25:29.352Z",
+  "updatedAt": "2026-10-16T12:20:20.778Z",
+  "isArchived": false,
+  "versionId": "00a96e16-0ca4-4dce-a9a3-d636b9172535",
+  "versionCounter": 6,
+  "sourceWorkflowId": null,
+  "triggerCount": 1,
+  "nodes": [
+    {
+      "id": "tg-trigger-antigravity",
+      "name": "Telegram Trigger",
+      "webhookId": "faust-antigravity-bridge",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "IZp8xzxT8B0swj6F",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "id": "sec-check-antigravity",
+      "name": "Verify Manager ID",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sec-check",
+              "leftValue": "={{ $json.message.from.id }}",
+              "rightValue": 8016442589,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "code-dispatch-antigravity",
+      "name": "Dispatch to Antigravity IDE",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        220
+      ],
+      "parameters": {
+        "jsCode": "const { execFileSync } = require('child_process');\nconst pythonExe = 'd:\\\\Program Files\\\\Python\\\\python.exe';\nconst script = 'd:\\\\My Drive\\\\SandBox Projetcs\\\\.agents\\\\scripts\\\\dispatch_to_faust.py';\nconst text = ($json && $json.message && $json.message.text) ? $json.message.text : '';\nconst msgId = String(($json && $json.message && $json.message.message_id) ? $json.message.message_id : '0');\nconst chatId = String(($json && $json.message && $json.message.chat && $json.message.chat.id) ? $json.message.chat.id : '');\nconst threadId = String(($json && $json.message && $json.message.message_thread_id) ? $json.message.message_thread_id : '');\ntry {\n  const res = execFileSync(pythonExe, [script, text, msgId, chatId, threadId], { encoding: 'utf8', timeout: 30000 });\n  return [{ json: { success: true, result: res.trim() } }];\n} catch (err) {\n  return [{ json: { success: false, error: err.message } }];\n}"
+      }
+    },
+    {
+      "id": "ack-telegram",
+      "name": "ACK to Manager Phone",
+      "webhookId": "322baa16-0545-4d0b-b59b-f3e8762649ee",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        380
+      ],
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=\ud83d\udd04 <b>Prescript Received:</b> <i>\"{{ $json.message.text }}\"</i>\n\nDispatched directly to Faust in Antigravity IDE (Gemini 3.8 Flash High). Computing...",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "replyToMessageId": "={{ $json.message.message_id }}"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "IZp8xzxT8B0swj6F",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "id": "faust-sticky-note-m1",
+      "name": "Sticky Note: Milestone 1 Verified",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        80
+      ],
+      "parameters": {
+        "content": "## \u26a1 Faust Antigravity IPC Bridge\n- **Status:** Live & Supervised on Local Disk D\n- **Milestone 1:** Automated REST Ingestion ACTIVE\n- **Sync:** Hot-reloaded with zero manual import",
+        "height": 160,
+        "width": 380,
+        "color": 4
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verify Manager ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Manager ID": {
+      "main": [
+        [
+          {
+            "node": "Dispatch to Antigravity IDE",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ACK to Manager Phone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "pinData": {},
+  "meta": null,
+  "tags": [],
+  "shared": [
+    {
+      "role": "workflow:owner",
+      "workflowId": "T6APTxfvxjuzmuB9",
+      "projectId": "zcMj49zNAdVcCVq5",
+      "project": {
+        "id": "zcMj49zNAdVcCVq5",
+        "name": "Rien Blue Rose <kha70929@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "084af8d5-dfbd-4f3e-9543-321d3d27f5e7",
+        "createdAt": "2026-10-16T10:59:30.501Z",
+        "updatedAt": "2026-10-16T11:04:15.441Z"
+      },
+      "createdAt": "2026-10-16T11:25:29.354Z",
+      "updatedAt": "2026-10-16T11:25:29.354Z"
+    }
+  ],
+  "activeVersion": {
+    "versionId": "00a96e16-0ca4-4dce-a9a3-d636b9172535",
+    "workflowId": "T6APTxfvxjuzmuB9",
+    "nodes": [
+      {
+        "id": "tg-trigger-antigravity",
+        "name": "Telegram Trigger",
+        "webhookId": "faust-antigravity-bridge",
+        "type": "n8n-nodes-base.telegramTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          200,
+          300
+        ],
+        "parameters": {
+          "updates": [
+            "message"
+          ],
+          "additionalFields": {}
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "IZp8xzxT8B0swj6F",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "id": "sec-check-antigravity",
+        "name": "Verify Manager ID",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          420,
+          300
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "sec-check",
+                "leftValue": "={{ $json.message.from.id }}",
+                "rightValue": 8016442589,
+                "operator": {
+                  "type": "number",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "code-dispatch-antigravity",
+        "name": "Dispatch to Antigravity IDE",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          660,
+          220
+        ],
+        "parameters": {
+          "jsCode": "const { execFileSync } = require('child_process');\nconst pythonExe = 'd:\\\\Program Files\\\\Python\\\\python.exe';\nconst script = 'd:\\\\My Drive\\\\SandBox Projetcs\\\\.agents\\\\scripts\\\\dispatch_to_faust.py';\nconst text = ($json && $json.message && $json.message.text) ? $json.message.text : '';\nconst msgId = String(($json && $json.message && $json.message.message_id) ? $json.message.message_id : '0');\nconst chatId = String(($json && $json.message && $json.message.chat && $json.message.chat.id) ? $json.message.chat.id : '');\nconst threadId = String(($json && $json.message && $json.message.message_thread_id) ? $json.message.message_thread_id : '');\ntry {\n  const res = execFileSync(pythonExe, [script, text, msgId, chatId, threadId], { encoding: 'utf8', timeout: 30000 });\n  return [{ json: { success: true, result: res.trim() } }];\n} catch (err) {\n  return [{ json: { success: false, error: err.message } }];\n}"
+        }
+      },
+      {
+        "id": "ack-telegram",
+        "name": "ACK to Manager Phone",
+        "webhookId": "322baa16-0545-4d0b-b59b-f3e8762649ee",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          660,
+          380
+        ],
+        "parameters": {
+          "chatId": "={{ $json.message.chat.id }}",
+          "text": "=\ud83d\udd04 <b>Prescript Received:</b> <i>\"{{ $json.message.text }}\"</i>\n\nDispatched directly to Faust in Antigravity IDE (Gemini 3.8 Flash High). Computing...",
+          "additionalFields": {
+            "parse_mode": "HTML",
+            "replyToMessageId": "={{ $json.message.message_id }}"
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "IZp8xzxT8B0swj6F",
+            "name": "Telegram account"
+          }
+        }
+      },
+      {
+        "id": "faust-sticky-note-m1",
+        "name": "Sticky Note: Milestone 1 Verified",
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          200,
+          80
+        ],
+        "parameters": {
+          "content": "## \u26a1 Faust Antigravity IPC Bridge\n- **Status:** Live & Supervised on Local Disk D\n- **Milestone 1:** Automated REST Ingestion ACTIVE\n- **Sync:** Hot-reloaded with zero manual import",
+          "height": 160,
+          "width": 380,
+          "color": 4
+        }
+      }
+    ],
+    "connections": {
+      "Telegram Trigger": {
+        "main": [
+          [
+            {
+              "node": "Verify Manager ID",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Verify Manager ID": {
+        "main": [
+          [
+            {
+              "node": "Dispatch to Antigravity IDE",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "ACK to Manager Phone",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Rien Blue Rose",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-10-16T12:20:20.781Z",
+    "updatedAt": "2026-10-16T12:20:20.781Z",
+    "workflowPublishHistory": [
+      {
+        "id": 2,
+        "workflowId": "T6APTxfvxjuzmuB9",
+        "versionId": "00a96e16-0ca4-4dce-a9a3-d636b9172535",
+        "event": "activated",
+        "userId": "084af8d5-dfbd-4f3e-9543-321d3d27f5e7",
+        "createdAt": "2026-10-16T12:20:20.843Z"
+      }
+    ]
+  }
+}

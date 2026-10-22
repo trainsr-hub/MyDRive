@@ -1,0 +1,79 @@
+@echo off
+REM ============================================================
+REM Faust Sovereign Junction Setup Script
+REM Recreates NTFS Directory Junctions for .agents and .claude
+REM Run as Administrator for proper junction creation
+REM ============================================================
+
+setlocal enabledelayedexpansion
+
+:: Configuration
+set "ROOT=D:\My Drive\Blue AI"
+set "MASTER_AGENTS=D:\My Heraclitus\Data Codex\Faust Memory\.agents"
+set "MASTER_CLAUDE=D:\My Heraclitus\Data Codex\Faust Memory\.claude"
+
+:: Strip trailing backslash from ROOT if present
+if "!ROOT:~-1!" == "\" set "ROOT=!ROOT:~0,-1!"
+
+echo ============================================================
+echo Faust Sovereign Junction Setup
+echo ============================================================
+echo Root: !ROOT!
+echo Master .agents: !MASTER_AGENTS!
+echo Master .claude: !MASTER_CLAUDE!
+echo ============================================================
+
+:: Function to create junction
+call :CreateJunction "%ROOT%\.agents" "%MASTER_AGENTS%"
+call :CreateJunction "%ROOT%\.claude" "%MASTER_CLAUDE%"
+
+echo.
+echo ============================================================
+echo Junction setup complete.
+echo ============================================================
+pause
+exit /b
+
+:CreateJunction
+set "TARGET=%~1"
+set "SOURCE=%~2"
+
+echo.
+echo Processing: %TARGET%
+
+:: Check if source exists
+if not exist "%SOURCE%\" (
+    echo   [ERROR] Source directory does not exist: %SOURCE%
+    echo   [INFO]  Create the master directory first, then re-run.
+    goto :eof
+)
+
+:: Remove existing junction/directory if present
+if exist "%TARGET%\" (
+    echo   [INFO]  Removing existing directory/junction...
+    rmdir "%TARGET%" 2>nul
+    if exist "%TARGET%\" (
+        echo   [WARN]  Could not remove via rmdir, trying force...
+        rd /s /q "%TARGET%" 2>nul
+    )
+)
+
+:: Create the junction
+echo   [INFO]  Creating junction: %TARGET% ^> %SOURCE%
+mklink /J "%TARGET%" "%SOURCE%" >nul 2>&1
+
+if errorlevel 1 (
+    echo   [ERROR] Failed to create junction. Run as Administrator?
+    echo   [HINT]  Right-click Command Prompt/PowerShell -> "Run as Administrator"
+) else (
+    echo   [OK]    Junction created successfully.
+)
+
+:: Verify
+if exist "%TARGET%\" (
+    echo   [VERIFY] Junction verified at %TARGET%
+) else (
+    echo   [ERROR] Junction verification failed.
+)
+
+goto :eof

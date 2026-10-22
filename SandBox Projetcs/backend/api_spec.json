@@ -1,0 +1,13 @@
+{
+  "formats": {
+    "json": {
+      "actions": ["read_all", "read_key", "overwrite", "backup"]
+    },
+    "jsonl": {
+      "actions": ["append", "read_all", "clear", "backup"]
+    },
+    "sqlite": {
+      "actions": ["read_all", "read_key", "upsert", "backup", "sample", "count", "get_channels", "list_channels", "curl_playlists", "get_playlists", "save_playlists"]
+    }
+  }
+}

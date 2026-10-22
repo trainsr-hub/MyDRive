@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ESP32 Backend Integration Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400;1,600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    /* Color Palette (Dark-first, intentional grays with blue bias for tech credibility) */
+    :root {
+      --bg-canvas: #0a0e1a;
+      --bg-card: #111827;
+      --bg-code: #0f172a;
+      --border-dim: #1e293b;
+      --border-mid: #334155;
+      --text-vivid: #f1f5f9;
+      --text-main: #cbd5e1;
+      --text-muted: #94a3b8;
+      --accent-cyan: #38bdf8;
+      --accent-gold: #f59e0b;
+      --semantic-success: #10b981;
+      --semantic-warning: #f59e0b;
+      --semantic-error: #ef4444;
+
+      /* Type Scale & Spacing */
+      --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "IBM Plex Mono", "Courier New", monospace;
+      --spacing-xs: 0.5rem;
+      --spacing-sm: 0.75rem;
+      --spacing-md: 1rem;
+      --spacing-lg: 1.5rem;
+      --spacing-xl: 2rem;
+      --spacing-2xl: 3rem;
+      --radius-sm: 0.5rem;
+      --radius-md: 0.75rem;
+      --radius-lg: 1rem;
+
+      color-scheme: dark;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --bg-canvas: #f8fafc;
+        --bg-card: #f1f5f9;
+        --bg-code: #e2e8f0;
+        --border-dim: #cbd5e1;
+        --border-mid: #94a3b8;
+        --text-vivid: #0f172a;
+        --text-main: #334155;
+        --text-muted: #64748b;
+        color-scheme: light;
+      }
+    }
+
+    :root[data-theme="light"] {
+      --bg-canvas: #f8fafc;
+      --bg-card: #f1f5f9;
+      --bg-code: #e2e8f0;
+      --border-dim: #cbd5e1;
+      --border-mid: #94a3b8;
+      --text-vivid: #0f172a;
+      --text-main: #334155;
+      --text-muted: #64748b;
+      color-scheme: light;
+    }
+
+    :root[data-theme="dark"] {
+      --bg-canvas: #0a0e1a;
+      --bg-card: #111827;
+      --bg-code: #0f172a;
+      --border-dim: #1e293b;
+      --border-mid: #334155;
+      --text-vivid: #f1f5f9;
+      --text-main: #cbd5e1;
+      --text-muted: #94a3b8;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      padding: env(safe-area-inset-top, 0) var(--spacing-md) env(safe-area-inset-bottom, 0);
+    }
+
+    /* Layout: Responsive single-column with max-width container */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: var(--spacing-xl) 0;
+    }
+
+    /* Typography Hierarchy */
+    h1, h2, h3, h4, h5, h6 {
+      color: var(--text-vivid);
+      font-weight: 700;
+      line-height: 1.3;
+      margin: var(--spacing-lg) 0 var(--spacing-md);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-top: 0;
+    }
+
+    h2 {
+      font-size: 1.875rem;
+      padding-bottom: var(--spacing-md);
+      border-bottom: 2px solid var(--accent-cyan);
+    }
+
+    h3 {
+      font-size: 1.5rem;
+      color: var(--accent-cyan);
+    }
+
+    h4 {
+      font-size: 1.125rem;
+      margin-top: var(--spacing-lg);
+    }
+
+    p {
+      margin: var(--spacing-md) 0;
+      max-width: 65ch;
+    }
+
+    a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+      border-bottom: 1px solid currentColor;
+    }
+
+    a:hover {
+      color: var(--accent-gold);
+    }
+
+    /* Code Blocks */
+    code, pre {
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+    }
+
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-lg);
+      overflow-x: auto;
+      margin: var(--spacing-lg) 0;
+      line-height: 1.5;
+    }
+
+    code {
+      background: var(--bg-code);
+      color: var(--accent-cyan);
+      padding: 0.125rem 0.375rem;
+      border-radius: var(--radius-sm);
+    }
+
+    pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+    }
+
+    /* Cards & Sections */
+    .section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-xl);
+      margin: var(--spacing-xl) 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .section-icon {
+      font-size: 1.75rem;
+      line-height: 1;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: var(--spacing-lg) 0;
+    }
+
+    th {
+      background: var(--bg-code);
+      color: var(--accent-cyan);
+      padding: var(--spacing-md);
+      text-align: left;
+      font-weight: 700;
+      border-bottom: 2px solid var(--border-mid);
+    }
+
+    td {
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-dim);
+    }
+
+    tr:hover {
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    /* Lists */
+    ul, ol {
+      margin: var(--spacing-md) 0 var(--spacing-md) var(--spacing-lg);
+    }
+
+    li {
+      margin: var(--spacing-sm) 0;
+    }
+
+    /* Badges & Labels */
+    .badge {
+      display: inline-block;
+      padding: var(--spacing-xs) var(--spacing-sm);
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-method-get {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--semantic-success);
+    }
+
+    .badge-method-post {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+    }
+
+    .badge-hardware {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-gold);
+    }
+
+    /* API Endpoint Cards */
+    .endpoint {
+      background: var(--bg-code);
+      border-left: 4px solid var(--accent-cyan);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-lg);
+      margin: var(--spacing-lg) 0;
+    }
+
+    .endpoint-header {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      flex-wrap: wrap;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .endpoint-path {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent-cyan);
+      word-break: break-all;
+    }
+
+    .endpoint-description {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: var(--spacing-sm);
+    }
+
+    .payload-schema {
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      padding: var(--spacing-md);
+      margin: var(--spacing-md) 0;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      overflow-x: auto;
+    }
+
+    /* Hardware Display Mock */
+    .display-mockup {
+      background: #000;
+      border: 2px solid var(--border-mid);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-lg);
+      margin: var(--spacing-xl) 0;
+      font-family: var(--font-mono);
+      color: #fff;
+      overflow-x: auto;
+    }
+
+    .display-line {
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Warning & Info Boxes */
+    .warning {
+      background: rgba(239, 68, 68, 0.1);
+      border-left: 4px solid var(--semantic-error);
+      padding: var(--spacing-lg);
+      border-radius: var(--spacing-xs);
+      margin: var(--spacing-lg) 0;
+    }
+
+    .info {
+      background: rgba(56, 189, 248, 0.1);
+      border-left: 4px solid var(--accent-cyan);
+      padding: var(--spacing-lg);
+      border-radius: var(--spacing-xs);
+      margin: var(--spacing-lg) 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      h1 { font-size: 1.875rem; }
+      h2 { font-size: 1.5rem; }
+      h3 { font-size: 1.25rem; }
+      .section { padding: var(--spacing-lg); }
+      table { font-size: 0.875rem; }
+      th, td { padding: var(--spacing-sm); }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <h1>🔌 ESP32 Backend Integration Guide</h1>
+    <p style="color: var(--text-muted); font-size: 1.125rem; margin-top: 0;">
+      Connect your Rien-Prescript-Beeper to the Blue Rose backend and fetch prescripts (quotes) over Wi-Fi for display on ST7789 / E-Paper screens.
+    </p>
+
+    <!-- ========================================================================== -->
+    <h2>📡 Backend API Overview</h2>
+
+    <p>The Blue Rose backend exposes a single, elegant REST API endpoint that serves personal prescripts (quotes) in a normalized 5-point bundle:</p>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">🌐</div>
+        <h3 style="margin: 0;">API Base URL</h3>
+      </div>
+      <pre><code>https://rien-bluerose-backend.kha70929.workers.dev/</code></pre>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin: var(--spacing-md) 0 0;">
+        Deployed on Cloudflare Workers. Responds with JSON payloads cached at the edge. Zero authentication required for read operations.
+      </p>
+    </div>
+
+    <!-- ========================================================================== -->
+    <h2>📋 The 5-Point Quote Payload</h2>
+
+    <p>Every prescript (quote) from the backend contains exactly 5 canonical fields that map directly to your display zones:</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Display Zone</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>idx</code></td>
+          <td>Integer</td>
+          <td>Header (left)</td>
+          <td>Unique quote identifier. Displayed as <code>#6</code>.</td>
+        </tr>
+        <tr>
+          <td><code>content</code></td>
+          <td>String</td>
+          <td>Body (center)</td>
+          <td>The main quote text. Supports multi-line. Up to ~200 chars typical.</td>
+        </tr>
+        <tr>
+          <td><code>specificName</code></td>
+          <td>String</td>
+          <td>Header (left, after #)</td>
+          <td>Context / origin label. E.g., "Đàn ông thích mèo, đàn bà yêu chó".</td>
+        </tr>
+        <tr>
+          <td><code>effectiveDate</code></td>
+          <td>String</td>
+          <td>Header (right)</td>
+          <td>Date or period. E.g., "2021~2023" or "2025-07".</td>
+        </tr>
+        <tr>
+          <td><code>containerName</code></td>
+          <td>String</td>
+          <td>Footer (right)</td>
+          <td>Source/attribution. E.g., "Spiderum - Linh Vũ".</td>
+        </tr>
+        <tr>
+          <td><code>hashtagThemes</code></td>
+          <td>String[]</td>
+          <td>Footer (left)</td>
+          <td>Array of theme tags. E.g., <code>["#Heartbroken", "#Wisdom"]</code>.</td>
+        </tr>
+        <tr>
+          <td><code>category</code></td>
+          <td>String</td>
+          <td>Typography (format)</td>
+          <td>One of <code>"writing"</code> | <code>"music"</code> | <code>"poem"</code>. Controls text alignment (writing=justified, music/poem=left).</td>
+        </tr>
+        <tr>
+          <td><code>context</code></td>
+          <td>String (optional)</td>
+          <td>Footer (optional callout)</td>
+          <td>Additional context note. Display on second page or callout box.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ========================================================================== -->
+    <h2>🔗 Available Endpoints</h2>
+
+    <h3>1. Fetch Random Prescript</h3>
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="badge badge-method-get">GET</span>
+        <code class="endpoint-path">/api/quote/random</code>
+      </div>
+      <p class="endpoint-description">Returns a single random prescript from the entire collection.</p>
+
+      <h4>Response (200 OK)</h4>
+      <div class="payload-schema">
+{
+  "idx": 6,
+  "content": "Nỗi sợ lớn nhất của một người đàn ông...",
+  "specificName": "Đàn ông thích mèo, đàn bà yêu chó",
+  "containerName": "Spiderum - Linh Vũ",
+  "category": "writing",
+  "effectiveDate": "2021~2023",
+  "context": "Suy ngẫm về sự yếu lòng...",
+  "hashtagThemes": ["#Heartbroken", "#Love", "#Wisdom"]
+}
+      </div>
+
+      <h4>Use Cases</h4>
+      <ul>
+        <li><strong>Initial Boot:</strong> Call on startup to seed the display with a fresh prescript.</li>
+        <li><strong>Page Navigation:</strong> User presses "Next Quote" button → call this endpoint to jump to a new random quote.</li>
+        <li><strong>Idle Rotation:</strong> Periodically fetch a new quote every N minutes to keep the display fresh.</li>
+      </ul>
+    </div>
+
+    <h3>2. Fetch Quote by Index</h3>
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="badge badge-method-get">GET</span>
+        <code class="endpoint-path">/api/quote/:idx</code>
+      </div>
+      <p class="endpoint-description">Returns a specific prescript by its unique <code>idx</code> identifier.</p>
+
+      <h4>Example Request</h4>
+      <pre><code>GET /api/quote/6 HTTP/1.1
+Host: rien-bluerose-backend.kha70929.workers.dev</code></pre>
+
+      <h4>Response (200 OK)</h4>
+      <div class="payload-schema">
+{
+  "idx": 6,
+  "content": "...",
+  "specificName": "...",
+  ...
+}
+      </div>
+
+      <h4>Error Response (404 Not Found)</h4>
+      <div class="payload-schema">
+{
+  "error": "Quote not found"
+}
+      </div>
+
+      <h4>Use Cases</h4>
+      <ul>
+        <li><strong>Direct Recall:</strong> User manually enters or recalls quote #6 → fetch by index for deterministic display.</li>
+        <li><strong>Bookmarking:</strong> Store the <code>idx</code> in ESP32 EEPROM/NVS for later retrieval.</li>
+      </ul>
+    </div>
+
+    <h3>3. List All Quotes (Metadata)</h3>
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="badge badge-method-get">GET</span>
+        <code class="endpoint-path">/api/quotes/list</code>
+      </div>
+      <p class="endpoint-description">Returns a lightweight list of all quotes with minimal metadata for pagination and indexing.</p>
+
+      <h4>Response (200 OK)</h4>
+      <div class="payload-schema">
+[
+  {
+    "id": "000101A1002AF5E9",
+    "idx": 6,
+    "snippet": "Nỗi sợ lớn nhất của một người đàn ông..."
+  },
+  {
+    "id": "M-00010001A1088D80",
+    "idx": 1,
+    "snippet": "Static, hum, tum, needle drops..."
+  },
+  ...
+]
+      </div>
+
+      <h4>Use Cases</h4>
+      <ul>
+        <li><strong>Caching:</strong> Fetch once on startup, store list in ESP32 SD card or flash for offline browsing.</li>
+        <li><strong>Menu Navigation:</strong> Display a scrollable list of all quotes on the screen to let user pick one.</li>
+      </ul>
+    </div>
+
+    <h3>4. Fetch Taxonomy (Categories, Tags)</h3>
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <span class="badge badge-method-get">GET</span>
+        <code class="endpoint-path">/api/taxonomy</code>
+      </div>
+      <p class="endpoint-description">Returns schema metadata: category definitions, available tags, and container info.</p>
+
+      <h4>Response (200 OK)</h4>
+      <div class="payload-schema">
+{
+  "specifics": [
+    {
+      "id": "000301A10025228C",
+      "name": "Đàn ông thích mèo, đàn bà yêu chó",
+      "category": "writing",
+      "container_id": "..."
+    }
+  ],
+  "themes": [
+    {
+      "id": "tag_heartbroken",
+      "name": "Heartbroken"
+    },
+    {
+      "id": "tag_wisdom",
+      "name": "Wisdom"
+    }
+  ]
+}
+      </div>
+
+      <h4>Use Cases</h4>
+      <ul>
+        <li><strong>Color Mapping:</strong> Map theme names to a color palette for display rendering.</li>
+        <li><strong>Filtering:</strong> Show quotes by category or tag on a menu screen.</li>
+      </ul>
+    </div>
+
+    <!-- ========================================================================== -->
+    <h2>🎨 Display Rendering (ST7789 320×170 Native)</h2>
+
+    <p>The 5-point payload maps exactly to the physical display zones on the Rien-Prescript-Beeper (1.9" ST7789, 320×170 px):</p>
+
+    <div class="display-mockup">
+<div class="display-line">┌──────────────────────────────────────────────────────────────────────────┐</div>
+<div class="display-line">│ [ZONE 1: HEADER] (Y: 0–30px, 9pt Gray)                                   │</div>
+<div class="display-line">│ #6 ~ Đàn ông thích mèo, đàn bà yêu chó            Date: 2021~2023        │</div>
+<div class="display-line">├──────────────────────────────────────────────────────────────────────────┤</div>
+<div class="display-line">│ [ZONE 2: BODY] (Y: 35–220px, 14pt Mono Italic, White, Centered)         │</div>
+<div class="display-line">│                                                                          │</div>
+<div class="display-line">│ "Nỗi sợ lớn nhất của một người đàn ông chính là nước mắt đàn bà.        │</div>
+<div class="display-line">│  Bản năng của phái mạnh là bao bọc, che chở chứ không phải giẫm đạp,    │</div>
+<div class="display-line">│  hủy hoại..."                                                             │</div>
+<div class="display-line">│                                                                          │</div>
+<div class="display-line">├──────────────────────────────────────────────────────────────────────────┤</div>
+<div class="display-line">│ [ZONE 3: FOOTER] (Y: 250–290px, 10pt Mono Bold)                         │</div>
+<div class="display-line">│ [#Heartbroken] [#Love]                  Spiderum - Linh Vũ (Gold)         │</div>
+<div class="display-line">└──────────────────────────────────────────────────────────────────────────┘</div>
+    </div>
+
+    <h4>Zone Breakdown</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Zone</th>
+          <th>Y Coords</th>
+          <th>Content</th>
+          <th>Color</th>
+          <th>Font</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Header (Left)</td>
+          <td>6–24px</td>
+          <td><code>#idx ~ specificName</code></td>
+          <td>Ghost Gray (#666)</td>
+          <td>9pt Mono</td>
+        </tr>
+        <tr>
+          <td>Header (Right)</td>
+          <td>6–24px</td>
+          <td><code>Date: effectiveDate</code></td>
+          <td>Ghost Gray (#666)</td>
+          <td>9pt Mono</td>
+        </tr>
+        <tr>
+          <td>Body (Centered)</td>
+          <td>35–220px</td>
+          <td><code>content</code> with quote marks</td>
+          <td>White (#FFF)</td>
+          <td>14pt Mono Italic</td>
+        </tr>
+        <tr>
+          <td>Footer (Tags)</td>
+          <td>260–280px</td>
+          <td><code>hashtagThemes[]</code> (left)</td>
+          <td>Multi-color pool</td>
+          <td>9.5pt Mono Bold</td>
+        </tr>
+        <tr>
+          <td>Footer (Attribution)</td>
+          <td>260–280px</td>
+          <td><code>containerName</code> (right)</td>
+          <td>Accent (Cyan/Gold)</td>
+          <td>9.5pt Mono Bold</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ========================================================================== -->
+    <h2>🔌 C++ Firmware Implementation Pattern</h2>
+
+    <h3>1. WiFi Connection Setup</h3>
+    <pre><code>#include &lt;WiFi.h&gt;
+#include &lt;HTTPClient.h&gt;
+#include &lt;ArduinoJson.h&gt;
+
+const char* SSID = "YOUR_SSID";
+const char* PASSWORD = "YOUR_PASSWORD";
+const char* API_BASE = "https://rien-bluerose-backend.kha70929.workers.dev";
+
+void setupWiFi() {
+  WiFi.begin(SSID, PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected!");
+}</code></pre>
+
+    <h3>2. Fetch Random Prescript</h3>
+    <pre><code>struct QuotePayload {
+  long idx;
+  String content;
+  String specificName;
+  String containerName;
+  String effectiveDate;
+  String category;
+  String context;
+  // hashtagThemes as comma-separated string or array
+};
+
+QuotePayload fetchRandomQuote() {
+  HTTPClient http;
+  String url = String(API_BASE) + "/api/quote/random";
+
+  http.begin(url);
+  int httpCode = http.GET();
+
+  QuotePayload result = {};
+
+  if (httpCode == 200) {
+    String payload = http.getString();
+    DynamicJsonDocument doc(4096); // Adjust size for your quote length
+    deserializeJson(doc, payload);
+
+    result.idx = doc["idx"];
+    result.content = doc["content"].as&lt;String&gt;();
+    result.specificName = doc["specificName"].as&lt;String&gt;();
+    result.containerName = doc["containerName"].as&lt;String&gt;();
+    result.effectiveDate = doc["effectiveDate"].as&lt;String&gt;();
+    result.category = doc["category"].as&lt;String&gt;();
+    result.context = doc["context"].as&lt;String&gt;();
+  }
+
+  http.end();
+  return result;
+}
+</code></pre>
+
+    <h3>3. Fetch Quote by Index</h3>
+    <pre><code>QuotePayload fetchQuoteByIndex(long idx) {
+  HTTPClient http;
+  String url = String(API_BASE) + "/api/quote/" + String(idx);
+
+  http.begin(url);
+  int httpCode = http.GET();
+
+  QuotePayload result = {};
+
+  if (httpCode == 200) {
+    String payload = http.getString();
+    DynamicJsonDocument doc(4096);
+    deserializeJson(doc, payload);
+
+    result.idx = doc["idx"];
+    result.content = doc["content"].as&lt;String&gt;();
+    // ... parse other fields
+  }
+
+  http.end();
+  return result;
+}
+</code></pre>
+
+    <h3>4. Render to ST7789 Display</h3>
+    <pre><code>void renderQuoteOnDisplay(const QuotePayload &q) {
+  // Clear screen to black
+  display.fillScreen(0x0000);
+
+  // 1. HEADER: #idx ~ specificName | Date: effectiveDate
+  display.setTextColor(0x632C); // Ghost Gray
+  display.setFont(&FreeMono9pt7b);
+  display.setCursor(16, 20);
+  display.printf("#%ld ~ %s", q.idx, q.specificName.c_str());
+
+  int headerRightX = display.width() - 120;
+  display.setCursor(headerRightX, 20);
+  display.printf("Date: %s", q.effectiveDate.c_str());
+
+  // 2. DIVIDER LINE
+  display.drawFastHLine(16, 30, display.width() - 32, 0x2104);
+
+  // 3. BODY: Quote text (center, italic, white)
+  display.setTextColor(0xFFFF); // White
+  display.setFont(&FreeMono14pt7b);
+  // Render content with text wrapping logic...
+  // Call your text wrapping function here
+  renderJustifiedOrLeftAlignedText(q.content, q.category, 16, 50);
+
+  // 4. FOOTER: Tags (left) | Container Name (right)
+  display.setFont(&FreeMono9pt7b);
+  display.setTextColor(0xFFFF);
+  display.setCursor(16, display.height() - 10);
+  display.print("[#Heartbroken] [#Love]");
+
+  // Container attribution (shared accent color)
+  uint16_t sharedAccent = (q.idx % 2 == 0) ? 0xFD01 : 0x3DF7; // Gold or Cyan
+  display.setTextColor(sharedAccent);
+  display.setCursor(display.width() - 120, display.height() - 10);
+  display.print(q.containerName.c_str());
+}
+</code></pre>
+
+    <!-- ========================================================================== -->
+    <h2>⚙️ Hardware Configuration</h2>
+
+    <div class="section">
+      <h3>Supported Display Hardware</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Display Type</th>
+            <th>Resolution</th>
+            <th>Driver</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-hardware">ST7789</span> IPS LCD (1.9")</td>
+            <td>320 × 170 px</td>
+            <td>TFT_eSPI / LovyanGFX</td>
+            <td><strong>Primary.</strong> Exact 1:1 native mode. Set rotation(1) or rotation(3) for landscape.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-hardware">ILI9341</span> TFT (2.4")</td>
+            <td>240 × 320 px</td>
+            <td>TFT_eSPI</td>
+            <td>Requires scaling and layout adaptation for 4:3 aspect.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-hardware">Waveshare</span> E-Paper (2.9")</td>
+            <td>296 × 128 px</td>
+            <td>GxEPD2</td>
+            <td>Monochrome. No real-time refresh. Full redraw every 30+ sec.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-hardware">SSD1306</span> OLED (0.96")</td>
+            <td>128 × 64 px</td>
+            <td>Adafruit_SSD1306</td>
+            <td>Too small for full prescript display. Use 2-line widget mode.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Pin Configuration (ESP32-S3)</h3>
+    <pre><code>// SPI Bus (TFT_eSPI / LovyanGFX)
+#define TFT_CS   5    // Chip Select
+#define TFT_DC   4    // Data / Command
+#define TFT_RST  9    // Reset
+#define TFT_MOSI 11   // SPI Master Out
+#define TFT_CLK  12   // SPI Clock
+#define TFT_MISO 13   // SPI Master In (optional)
+
+// User Input (Page Navigation)
+#define GPIO_UP   35   // Rotary Encoder or Button (prev page)
+#define GPIO_DOWN 36   // Rotary Encoder or Button (next page)
+#define GPIO_OK   37   // Center Click / Select
+
+// Power & Status
+#define LED_PIN   38   // Status LED (cyan pulse when fetching)</code></pre>
+
+    <!-- ========================================================================== -->
+    <h2>🔄 Connection & Caching Strategy</h2>
+
+    <div class="info">
+      <strong>Cold Start (No Cache):</strong> On first power-on, fetch a random quote immediately. Display while fetching.
+    </div>
+
+    <div class="info">
+      <strong>Warm Restart:</strong> Restore last viewed quote from NVS (Non-Volatile Storage). Fetch new ones on user navigation.
+    </div>
+
+    <div class="warning">
+      <strong>Network Timeout:</strong> If API is unreachable, fall back to embedded offline cache or last cached quote. Never leave display blank.
+    </div>
+
+    <h3>NVS Storage Pattern (ESP32)</h3>
+    <pre><code>#include &lt;Preferences.h&gt;
+
+Preferences prefs;
+
+void cacheQuote(const QuotePayload &q) {
+  prefs.begin("quotes", false); // false = read-write
+  prefs.putLong("lastIdx", q.idx);
+  prefs.putString("lastContent", q.content);
+  prefs.putString("lastSpecific", q.specificName);
+  prefs.putString("lastContainer", q.containerName);
+  prefs.putString("lastDate", q.effectiveDate);
+  prefs.end();
+}
+
+QuotePayload restoreCachedQuote() {
+  prefs.begin("quotes", true); // true = read-only
+  QuotePayload q;
+  q.idx = prefs.getLong("lastIdx", 0);
+  q.content = prefs.getString("lastContent", "");
+  q.specificName = prefs.getString("lastSpecific", "");
+  q.containerName = prefs.getString("lastContainer", "");
+  q.effectiveDate = prefs.getString("lastDate", "");
+  prefs.end();
+  return q;
+}
+</code></pre>
+
+    <!-- ========================================================================== -->
+    <h2>🎮 User Interaction Flow</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Button / Input</th>
+          <th>Action</th>
+          <th>API Call</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>GPIO_UP</code> (long press)</td>
+          <td>Previous Page (within current quote)</td>
+          <td>None (local pagination)</td>
+        </tr>
+        <tr>
+          <td><code>GPIO_DOWN</code> (long press)</td>
+          <td>Next Page (within current quote)</td>
+          <td>None (local pagination)</td>
+        </tr>
+        <tr>
+          <td><code>GPIO_OK</code> (tap)</td>
+          <td>Draw New Random Prescript</td>
+          <td><code>GET /api/quote/random</code></td>
+        </tr>
+        <tr>
+          <td><code>GPIO_OK</code> (double tap)</td>
+          <td>Fetch Quote List (for menu navigation)</td>
+          <td><code>GET /api/quotes/list</code></td>
+        </tr>
+        <tr>
+          <td><code>GPIO_UP + GPIO_DOWN</code> (hold 3s)</td>
+          <td>Power Down / Sleep Mode</td>
+          <td>None</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ========================================================================== -->
+    <h2>📊 Performance & Optimization</h2>
+
+    <div class="section">
+      <h3>Network Metrics</h3>
+      <ul>
+        <li><strong>Payload Size:</strong> ~500–2000 bytes (typical quote).</li>
+        <li><strong>Request Latency:</strong> 200–800ms (WiFi + Cloudflare edge routing).</li>
+        <li><strong>Refresh Rate:</strong> Keep minimum 30–60 second intervals between fetches to avoid hammering backend.</li>
+        <li><strong>Connection Pool:</strong> Reuse HTTPClient across requests; create new instance only if timeout.</li>
+      </ul>
+
+      <h3>Memory Footprint (ESP32-S3)</h3>
+      <ul>
+        <li><strong>JSON Buffer:</strong> Allocate 4–8 KB DynamicJsonDocument for typical payloads.</li>
+        <li><strong>Quote Cache:</strong> Keep last 3–5 quotes in RAM for fast page navigation.</li>
+        <li><strong>Free Heap:</strong> Monitor with <code>ESP.getFreeHeap()</code>; restart if &lt; 50 KB free.</li>
+      </ul>
+
+      <h3>Power Consumption</h3>
+      <ul>
+        <li><strong>Active (WiFi + Display):</strong> ~150–250 mA.</li>
+        <li><strong>Display Only (WiFi off):</strong> ~50–100 mA.</li>
+        <li><strong>Sleep Mode (Deep Sleep):</strong> ~100 µA (wake on GPIO interrupt).</li>
+      </ul>
+    </div>
+
+    <!-- ========================================================================== -->
+    <h2>🚨 Error Handling & Recovery</h2>
+
+    <h3>HTTP Status Codes</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Meaning</th>
+          <th>ESP32 Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>200</code></td>
+          <td>Success</td>
+          <td>Parse JSON and render to display.</td>
+        </tr>
+        <tr>
+          <td><code>404</code></td>
+          <td>Quote not found (invalid idx)</td>
+          <td>Log error, fetch random quote instead.</td>
+        </tr>
+        <tr>
+          <td><code>500</code></td>
+          <td>Server error</td>
+          <td>Retry after 5–10 seconds (exponential backoff).</td>
+        </tr>
+        <tr>
+          <td><code>0 (timeout)</code></td>
+          <td>Connection timeout (&gt; 10s)</td>
+          <td>Fall back to cached quote. Blink error LED.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Resilience Pattern</h3>
+    <pre><code>QuotePayload fetchQuoteWithRetry(int maxRetries = 3) {
+  int retryCount = 0;
+
+  while (retryCount &lt; maxRetries) {
+    QuotePayload q = fetchRandomQuote();
+    if (q.idx &gt; 0) {
+      cacheQuote(q); // Success: save to NVS
+      return q;
+    }
+
+    retryCount++;
+    delay(1000 * retryCount); // Exponential backoff
+  }
+
+  // All retries exhausted: restore from NVS
+  Serial.println("API unreachable. Using cached quote.");
+  return restoreCachedQuote();
+}
+</code></pre>
+
+    <!-- ========================================================================== -->
+    <h2>📝 Example: Complete Minimal Sketch</h2>
+
+    <pre><code>#include &lt;Arduino.h&gt;
+#include &lt;WiFi.h&gt;
+#include &lt;HTTPClient.h&gt;
+#include &lt;ArduinoJson.h&gt;
+#include &lt;TFT_eSPI.h&gt;
+#include &lt;Preferences.h&gt;
+
+TFT_eSPI display = TFT_eSPI();
+Preferences prefs;
+
+const char* SSID = "YourSSID";
+const char* PASSWORD = "YourPassword";
+const char* API_BASE = "https://rien-bluerose-backend.kha70929.workers.dev";
+
+struct QuotePayload {
+  long idx;
+  String content;
+  String specificName;
+  String containerName;
+  String effectiveDate;
+};
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize display
+  display.init();
+  display.setRotation(1); // Landscape
+  display.fillScreen(0x0000);
+  display.setTextColor(0xFFFF);
+  display.println("Initializing...");
+
+  // Connect WiFi
+  WiFi.begin(SSID, PASSWORD);
+  int timeout = 20;
+  while (WiFi.status() != WL_CONNECTED && timeout-- &gt; 0) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nWiFi connected!");
+    QuotePayload q = fetchRandomQuote();
+    renderQuote(q);
+    cacheQuote(q);
+  } else {
+    Serial.println("\nWiFi failed. Using cache.");
+    QuotePayload q = restoreCachedQuote();
+    renderQuote(q);
+  }
+}
+
+void loop() {
+  // Check GPIO buttons for user input
+  delay(100);
+}
+
+QuotePayload fetchRandomQuote() {
+  HTTPClient http;
+  http.begin(String(API_BASE) + "/api/quote/random");
+  int httpCode = http.GET();
+
+  QuotePayload result = {};
+  if (httpCode == 200) {
+    DynamicJsonDocument doc(4096);
+    deserializeJson(doc, http.getString());
+    result.idx = doc["idx"];
+    result.content = doc["content"].as&lt;String&gt;();
+    result.specificName = doc["specificName"].as&lt;String&gt;();
+    result.containerName = doc["containerName"].as&lt;String&gt;();
+    result.effectiveDate = doc["effectiveDate"].as&lt;String&gt;();
+  }
+  http.end();
+  return result;
+}
+
+void renderQuote(const QuotePayload &q) {
+  display.fillScreen(0x0000);
+  display.setTextColor(0x632C);
+  display.setFont(&FreeMono9pt7b);
+  display.setCursor(16, 20);
+  display.printf("#%ld ~ %s", q.idx, q.specificName.c_str());
+
+  display.setTextColor(0xFFFF);
+  display.setFont(&FreeMono14pt7b);
+  display.setCursor(16, 50);
+  display.println(q.content.c_str());
+
+  display.setTextColor(0xFD01); // Gold accent
+  display.setFont(&FreeMono9pt7b);
+  display.setCursor(display.width() - 120, display.height() - 10);
+  display.print(q.containerName.c_str());
+}
+
+void cacheQuote(const QuotePayload &q) {
+  prefs.begin("quotes", false);
+  prefs.putLong("idx", q.idx);
+  prefs.putString("content", q.content);
+  prefs.putString("specific", q.specificName);
+  prefs.putString("container", q.containerName);
+  prefs.putString("date", q.effectiveDate);
+  prefs.end();
+}
+
+QuotePayload restoreCachedQuote() {
+  prefs.begin("quotes", true);
+  QuotePayload q;
+  q.idx = prefs.getLong("idx", 0);
+  q.content = prefs.getString("content", "No cache");
+  q.specificName = prefs.getString("specific", "");
+  q.containerName = prefs.getString("container", "");
+  q.effectiveDate = prefs.getString("date", "");
+  prefs.end();
+  return q;
+}
+</code></pre>
+
+    <!-- ========================================================================== -->
+    <h2>🔐 Security & HTTPS</h2>
+
+    <div class="warning">
+      <strong>Certificate Validation:</strong> The backend uses Cloudflare's CA. ESP32 requires a root certificate bundle. Use <code>WiFiClientSecure</code> with <code>setCACert()</code> or disable cert validation only for testing (dangerous in production).
+    </div>
+
+    <pre><code>#include &lt;WiFiClientSecure.h&gt;
+
+const char* root_ca = \
+"-----BEGIN CERTIFICATE-----\n" \
+"MIIDXTCCAkWgAwIBAgIJAJC1/iNAZwqDMA0GCSqGSIb3\n" \
+"...(certificate data)...\n" \
+"-----END CERTIFICATE-----\n";
+
+void setup() {
+  HTTPClient http;
+  http.begin(url, root_ca); // Use certificate validation
+  int httpCode = http.GET();
+  // ... handle response
+}
+
+// For testing only (insecure!):
+http.begin(url);
+http.setInsecure(); // NEVER in production
+</code></pre>
+
+    <!-- ========================================================================== -->
+    <h2>📚 References</h2>
+
+    <ul>
+      <li><a href="https://github.com/bblanchon/ArduinoJson">ArduinoJson Library</a> — JSON parsing for embedded systems.</li>
+      <li><a href="https://github.com/Bodmer/TFT_eSPI">TFT_eSPI</a> — Fast SPI driver for ESP32 + ST7789/ILI9341.</li>
+      <li><a href="https://github.com/lovyan03/LovyanGFX">LovyanGFX</a> — Modern alternative to TFT_eSPI.</li>
+      <li><a href="https://randomnerdtutorials.com/esp32-ntp-server-time-sync-internet/">NTP Time Sync (Random Nerd Tutorials)</a> — Keep ESP32 clock synchronized.</li>
+      <li><a href="https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/storage/nvs_flash.html">ESP32 NVS Flash Documentation</a> — Persistent storage.</li>
+    </ul>
+
+    <!-- Footer -->
+    <div style="margin-top: var(--spacing-2xl); padding-top: var(--spacing-xl); border-top: 1px solid var(--border-dim); color: var(--text-muted); font-size: 0.875rem;">
+      <p>Faust & The Manager • Blue AI Project • 2026</p>
+      <p>This guide keeps your Rien-Prescript-Beeper connected, cached, and resilient. Always fall back gracefully when the network goes dark.</p>
+    </div>
+  </div>
+</body>
+</html>

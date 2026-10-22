@@ -1,0 +1,68 @@
+{
+  "table_name": "users",
+  "columns": [
+    {
+      "name": "id",
+      "type": "hex_id",
+      "metadata": {}
+    },
+    {
+      "name": "username",
+      "type": "text_single",
+      "metadata": {}
+    },
+    {
+      "name": "email",
+      "type": "text_single",
+      "metadata": {}
+    },
+    {
+      "name": "bio",
+      "type": "text_multi",
+      "metadata": {}
+    },
+    {
+      "name": "age",
+      "type": "int_scalar",
+      "metadata": {}
+    },
+    {
+      "name": "balance",
+      "type": "float_scalar",
+      "metadata": {}
+    },
+    {
+      "name": "is_active",
+      "type": "boolean",
+      "metadata": {}
+    },
+    {
+      "name": "role",
+      "type": "enum_single",
+      "metadata": {
+        "options": ["admin", "editor", "viewer", "guest"]
+      }
+    },
+    {
+      "name": "tags",
+      "type": "enum_multi",
+      "metadata": {
+        "options": ["premium", "verified", "staff", "beta"]
+      }
+    },
+    {
+      "name": "manager_id",
+      "type": "relation_single",
+      "metadata": {
+        "target": "users"
+      }
+    },
+    {
+      "name": "project_ids",
+      "type": "relation_multi",
+      "metadata": {
+        "target": "projects"
+      }
+    }
+  ]
+}

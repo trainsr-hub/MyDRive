@@ -1,0 +1,614 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Trash2,
+  AlertTriangle,
+  RefreshCw,
+  ExternalLink,
+  Search,
+  CheckCircle2,
+  Folder,
+  Layers,
+  Database,
+  ShieldAlert,
+  ArrowRight,
+  Filter,
+} from 'lucide-react';
+import { driveApi } from '../../services/driveApi';
+import { TrashCandidate, RawFolderRecord } from '../../types/drive';
+
+interface DriveTrashManagerProps {
+  onRefreshParent?: () => void;
+  showToast: (msg: string, type?: any) => void;
+}
+
+export const DriveTrashManager: React.FC<DriveTrashManagerProps> = ({
+  onRefreshParent,
+  showToast,
+}) => {
+  const [loading, setLoading] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState<'candidates' | 'raw_table'>('candidates');
+  const [trashItems, setTrashItems] = useState<TrashCandidate[]>([]);
+  const [rawFolders, setRawFolders] = useState<RawFolderRecord[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [counts, setCounts] = useState({ extraneous: 0, orphan: 0, duplicate: 0, total_db: 0 });
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState<'ALL' | 'EXTRANEOUS' | 'ORPHAN' | 'DUPLICATE'>('ALL');
+  const [trashOnDrive, setTrashOnDrive] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isPurgingAll, setIsPurgingAll] = useState(false);
+
+  const fetchTrashData = async () => {
+    setLoading(true);
+    try {
+      const [trashRes, rawRes] = await Promise.all([
+        driveApi.getTrashCandidates(),
+        driveApi.getAllFolders(),
+      ]);
+
+      if (trashRes.success) {
+        setTrashItems(trashRes.trash_items || []);
+        setTotalCount(trashRes.total_count || 0);
+        setCounts({
+          extraneous: trashRes.extraneous_count || 0,
+          orphan: trashRes.orphan_count || 0,
+          duplicate: trashRes.duplicate_count || 0,
+          total_db: trashRes.database_total_folders || 0,
+        });
+      }
+
+      if (rawRes.success) {
+        setRawFolders(rawRes.folders || []);
+      }
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTrashData();
+  }, []);
+
+  const handleDeleteSingle = async (folderId: string, folderName: string) => {
+    if (!window.confirm(`Permanently delete '${folderName}' (${folderId}) from local neo_drive.db?`)) {
+      return;
+    }
+    setDeletingId(folderId);
+    try {
+      const res = await driveApi.trashFolder(folderId, true, trashOnDrive);
+      showToast(`Deleted '${folderName}' (${res.deleted_count} record(s) removed)`);
+      await fetchTrashData();
+      onRefreshParent?.();
+    } catch (err: any) {
+      showToast(`Delete failed: ${err.message}`, 'error');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handlePurgeAll = async () => {
+    if (trashItems.length === 0) return;
+    const confirmMsg = trashOnDrive
+      ? `PURGE ALL ${trashItems.length} trash folders from BOTH local SQLite (neo_drive.db) AND Google Drive Trash?`
+      : `PURGE ALL ${trashItems.length} trash folders from local SQLite (neo_drive.db)?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsPurgingAll(true);
+    try {
+      const res = await driveApi.purgeTrash([], true, trashOnDrive);
+      showToast(`Purged ${res.deleted_count} folder records from neo_drive.db!`);
+      await fetchTrashData();
+      onRefreshParent?.();
+    } catch (err: any) {
+      showToast(`Purge failed: ${err.message}`, 'error');
+    } finally {
+      setIsPurgingAll(false);
+    }
+  };
+
+  const filteredTrash = useMemo(() => {
+    return trashItems.filter((item) => {
+      if (filterType !== 'ALL' && item.type !== filterType) return false;
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (
+        item.name.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q) ||
+        (item.reason && item.reason.toLowerCase().includes(q)) ||
+        (item.parent_name && item.parent_name.toLowerCase().includes(q))
+      );
+    });
+  }, [trashItems, filterType, search]);
+
+  const filteredRawFolders = useMemo(() => {
+    if (!search.trim()) return rawFolders;
+    const q = search.toLowerCase();
+    return rawFolders.filter(
+      (f) =>
+        f.name.toLowerCase().includes(q) ||
+        f.drive_id.toLowerCase().includes(q) ||
+        (f.parent_name && f.parent_name.toLowerCase().includes(q))
+    );
+  }, [rawFolders, search]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+      {/* 1. Metric Stat Tiles */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+        <div
+          style={{
+            background: 'var(--bg-card)',
+            border: totalCount > 0 ? '1px solid var(--danger-border)' : '1px solid var(--border-light)',
+            borderRadius: 'var(--radius-md)',
+            padding: '1rem 1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxShadow: totalCount > 0 ? '0 0 16px rgba(244, 63, 94, 0.15)' : 'none',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 700 }}>
+              Trash Candidates
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: totalCount > 0 ? 'var(--danger)' : 'var(--success)' }}>
+              {totalCount}
+            </div>
+          </div>
+          <Trash2 size={28} style={{ color: totalCount > 0 ? 'var(--danger)' : 'var(--text-dim)', opacity: 0.8 }} />
+        </div>
+
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 700 }}>
+              Extraneous Folders
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: '#f59e0b' }}>
+              {counts.extraneous}
+            </div>
+          </div>
+          <AlertTriangle size={28} style={{ color: '#f59e0b', opacity: 0.8 }} />
+        </div>
+
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 700 }}>
+              Orphan Folders
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: '#c084fc' }}>
+              {counts.orphan}
+            </div>
+          </div>
+          <ShieldAlert size={28} style={{ color: '#c084fc', opacity: 0.8 }} />
+        </div>
+
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 700 }}>
+              Duplicate Folders
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: '#38bdf8' }}>
+              {counts.duplicate}
+            </div>
+          </div>
+          <Layers size={28} style={{ color: '#38bdf8', opacity: 0.8 }} />
+        </div>
+
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: 700 }}>
+              Total DB Records
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)' }}>
+              {counts.total_db}
+            </div>
+          </div>
+          <Database size={28} style={{ color: 'var(--accent)', opacity: 0.8 }} />
+        </div>
+      </div>
+
+      {/* 2. Action Deck & Filters */}
+      <div
+        style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-light)',
+          borderRadius: 'var(--radius-md)',
+          padding: '1rem 1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Sub-tab view toggle */}
+          <div style={{ display: 'flex', background: 'var(--bg-canvas)', padding: '2px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+            <button
+              onClick={() => setActiveSubTab('candidates')}
+              style={{
+                border: 'none',
+                background: activeSubTab === 'candidates' ? 'var(--accent)' : 'transparent',
+                color: activeSubTab === 'candidates' ? '#000' : 'var(--text-secondary)',
+                fontWeight: 700,
+                fontSize: '12px',
+                padding: '0.4rem 0.85rem',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+              }}
+            >
+              🗑️ Trash Candidates ({trashItems.length})
+            </button>
+            <button
+              onClick={() => setActiveSubTab('raw_table')}
+              style={{
+                border: 'none',
+                background: activeSubTab === 'raw_table' ? 'var(--accent)' : 'transparent',
+                color: activeSubTab === 'raw_table' ? '#000' : 'var(--text-secondary)',
+                fontWeight: 700,
+                fontSize: '12px',
+                padding: '0.4rem 0.85rem',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+              }}
+            >
+              🗄️ Full SQLite Table ({rawFolders.length})
+            </button>
+          </div>
+
+          {/* Type Filter Buttons */}
+          {activeSubTab === 'candidates' && (
+            <div style={{ display: 'flex', gap: '0.35rem' }}>
+              {(['ALL', 'EXTRANEOUS', 'ORPHAN', 'DUPLICATE'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setFilterType(t)}
+                  style={{
+                    border: '1px solid var(--border-light)',
+                    background: filterType === t ? 'var(--bg-card-hover)' : 'transparent',
+                    color: filterType === t ? 'var(--accent)' : 'var(--text-dim)',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    padding: '0.35rem 0.65rem',
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Search Input */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <Search size={13} style={{ position: 'absolute', left: '0.65rem', color: 'var(--text-dim)' }} />
+            <input
+              type="text"
+              placeholder="Search folders or IDs..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                minHeight: '34px',
+                padding: '0.35rem 0.75rem 0.35rem 2rem',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-canvas)',
+                border: '1px solid var(--border-light)',
+                color: 'var(--text-primary)',
+                fontSize: '12px',
+                outline: 'none',
+                width: '200px',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Right: Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '11.5px', color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
+            <input
+              type="checkbox"
+              checked={trashOnDrive}
+              onChange={(e) => setTrashOnDrive(e.target.checked)}
+              style={{ accentColor: 'var(--danger)', cursor: 'pointer' }}
+            />
+            <span>Also trash on Google Drive</span>
+          </label>
+
+          <button
+            onClick={fetchTrashData}
+            disabled={loading}
+            style={{
+              padding: '0.45rem 0.85rem',
+              fontSize: '12px',
+              background: 'var(--bg-canvas)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-light)',
+              borderRadius: 'var(--radius-sm)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+            }}
+          >
+            <RefreshCw size={13} className={loading ? 'spin' : ''} />
+            <span>Refresh</span>
+          </button>
+
+          {trashItems.length > 0 && (
+            <button
+              onClick={handlePurgeAll}
+              disabled={isPurgingAll}
+              style={{
+                padding: '0.45rem 1.15rem',
+                fontSize: '12px',
+                fontWeight: 700,
+                background: 'var(--danger)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                boxShadow: '0 0 14px var(--danger-glow)',
+              }}
+            >
+              <Trash2 size={13} />
+              <span>{isPurgingAll ? 'Purging...' : `Purge All Trash (${trashItems.length})`}</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 3. Main Content: Trash Cards OR Raw SQLite Grid */}
+      {activeSubTab === 'candidates' ? (
+        filteredTrash.length === 0 ? (
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-light)',
+              borderRadius: 'var(--radius-md)',
+              padding: '3rem 2rem',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.75rem',
+            }}
+          >
+            <CheckCircle2 size={38} style={{ color: 'var(--success)' }} />
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              Zero Trash Folders in neo_drive.db
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-dim)', margin: 0, maxWidth: '420px' }}>
+              All database records are compliant with archetype templates and have valid hierarchy links.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {filteredTrash.map((item) => {
+              const isDeleting = deletingId === item.id;
+              const typeColor =
+                item.type === 'EXTRANEOUS' ? '#f59e0b' : item.type === 'ORPHAN' ? '#c084fc' : '#38bdf8';
+
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '0.9rem 1.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1rem',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {/* Left: Info */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: 1, minWidth: 0 }}>
+                    <Folder size={22} style={{ color: typeColor, flexShrink: 0 }} />
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: 0, overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          {item.name}
+                        </span>
+
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            background: `${typeColor}22`,
+                            color: typeColor,
+                            border: `1px solid ${typeColor}55`,
+                          }}
+                        >
+                          {item.type}
+                        </span>
+
+                        <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)' }}>
+                          ID: {item.id}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Reason: </span>
+                        <span>{item.reason}</span>
+                      </div>
+
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'flex', gap: '0.75rem' }}>
+                        {item.parent_name && (
+                          <span>
+                            Parent: <strong>{item.parent_name}</strong> ({item.parent_id})
+                          </span>
+                        )}
+                        {item.relative_path && (
+                          <span>
+                            Path: <code>{item.relative_path}</code>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Delete Action */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                    <a
+                      href={`https://drive.google.com/drive/folders/${item.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        padding: '0.35rem 0.6rem',
+                        fontSize: '11px',
+                        background: 'var(--bg-canvas)',
+                        color: 'var(--text-dim)',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: 'var(--radius-sm)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        textDecoration: 'none',
+                      }}
+                      title="Open in Google Drive"
+                    >
+                      <ExternalLink size={12} />
+                      <span>Drive</span>
+                    </a>
+
+                    <button
+                      onClick={() => handleDeleteSingle(item.id, item.name)}
+                      disabled={isDeleting}
+                      style={{
+                        padding: '0.4rem 0.85rem',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        background: 'var(--danger)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 'var(--radius-sm)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                      }}
+                      title="Delete this folder record from local SQLite neo_drive.db"
+                    >
+                      <Trash2 size={12} />
+                      <span>{isDeleting ? 'Deleting...' : 'Delete Record'}</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : (
+        /* Full SQLite Raw Table View */
+        <div
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-light)',
+            borderRadius: 'var(--radius-md)',
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+              <thead>
+                <tr style={{ background: 'var(--bg-card-hover)', borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--text-dim)' }}>
+                  <th style={{ padding: '0.65rem 1rem' }}>Folder Name</th>
+                  <th style={{ padding: '0.65rem 1rem' }}>Drive ID</th>
+                  <th style={{ padding: '0.65rem 1rem' }}>Parent (child_of)</th>
+                  <th style={{ padding: '0.65rem 1rem' }}>Sync Drive ID</th>
+                  <th style={{ padding: '0.65rem 1rem' }}>Children</th>
+                  <th style={{ padding: '0.65rem 1rem' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRawFolders.map((f) => {
+                  const isTrashCandidate = trashItems.some((t) => t.id === f.drive_id);
+                  const isDeleting = deletingId === f.drive_id;
+
+                  return (
+                    <tr
+                      key={f.drive_id}
+                      style={{
+                        borderBottom: '1px solid var(--border-table)',
+                        background: isTrashCandidate ? 'rgba(244, 63, 94, 0.05)' : 'transparent',
+                      }}
+                    >
+                      <td style={{ padding: '0.65rem 1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <Folder size={14} style={{ color: isTrashCandidate ? 'var(--danger)' : 'var(--accent)' }} />
+                          <span>{f.name}</span>
+                          {isTrashCandidate && (
+                            <span style={{ fontSize: '9.5px', background: 'rgba(244, 63, 94, 0.2)', color: 'var(--danger)', padding: '1px 5px', borderRadius: '3px' }}>
+                              Trash
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      <td style={{ padding: '0.65rem 1rem', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', fontSize: '11px' }}>
+                        {f.drive_id}
+                      </td>
+
+                      <td style={{ padding: '0.65rem 1rem', color: 'var(--text-secondary)' }}>
+                        {f.parent_name ? (
+                          <span>
+                            <strong>{f.parent_name}</strong> ({f.child_of})
+                          </span>
+                        ) : f.child_of ? (
+                          <span style={{ color: 'var(--danger)' }}>Non-existent ({f.child_of})</span>
+                        ) : (
+                          <span style={{ color: 'var(--text-dim)' }}>Root (NULL)</span>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '0.65rem 1rem', fontFamily: 'var(--font-mono)', color: 'var(--text-dim)', fontSize: '11px' }}>
+                        {f.sync_drive_id || '—'}
+                      </td>
+
+                      <td style={{ padding: '0.65rem 1rem', color: 'var(--text-dim)' }}>
+                        {f.child_folders_count}
+                      </td>
+
+                      <td style={{ padding: '0.65rem 1rem' }}>
+                        <button
+                          onClick={() => handleDeleteSingle(f.drive_id, f.name)}
+                          disabled={isDeleting}
+                          style={{
+                            padding: '3px 8px',
+                            fontSize: '11px',
+                            background: 'transparent',
+                            color: 'var(--danger)',
+                            border: '1px solid var(--danger-border)',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px',
+                          }}
+                          title="Delete row from SQLite neo_drive.db"
+                        >
+                          <Trash2 size={11} /> Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

@@ -1,0 +1,31 @@
+(index):722 [AvatarStudio Diagnostic] [Untitled folder] amelia (24).jpg: No anime face detected in: [Untitled folder] amelia (24).jpg (threshold: 0.5)
+(anonymous) @ (index):722
+(anonymous) @ (index):722
+setInterval
+startJobPolling @ (index):687
+startGpuCrop @ (index):672
+await in startGpuCrop
+onclick @ (index):510
+(index):722 [AvatarStudio Diagnostic] [Untitled folder] amelia (24).jpg: No anime face detected in: [Untitled folder] amelia (24).jpg (threshold: 0.5)
+(anonymous) @ (index):722
+(anonymous) @ (index):722
+setInterval
+startJobPolling @ (index):687
+startGpuCrop @ (index):672
+await in startGpuCrop
+onclick @ (index):510
+(index):722 [AvatarStudio Diagnostic] [Untitled folder] amelia (35).jpg: No anime face detected in: [Untitled folder] amelia (35).jpg (threshold: 0.5)
+(anonymous) @ (index):722
+(anonymous) @ (index):722
+setInterval
+startJobPolling @ (index):687
+startGpuCrop @ (index):672
+await in startGpuCrop
+onclick @ (index):510
+(index):735 [AvatarStudio Fatal Error] NotImplementedError: Non-relative patterns are unsupported
+(anonymous) @ (index):735
+setInterval
+startJobPolling @ (index):687
+startGpuCrop @ (index):672
+await in startGpuCrop
+onclick @ (index):510

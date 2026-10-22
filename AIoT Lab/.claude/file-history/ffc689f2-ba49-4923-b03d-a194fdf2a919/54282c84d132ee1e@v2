@@ -1,0 +1,357 @@
+"""
+Project Entry: Local REST Server & SQLite/JSON Storage Engine.
+Serves the Project Entry UI and handles persistent read/write operations
+directly to the local `data/` directory (Zero Downloads):
+  - JSON schema definitions: `data/<table_name>.json`
+  - Real SQLite database: `data/database.sqlite`
+"""
+
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+import json
+import os
+import sqlite3
+import urllib.parse
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+DB_PATH = os.path.join(DATA_DIR, "database.sqlite")
+PORT = 20139
+
+os.makedirs(DATA_DIR, exist_ok=True)
+
+
+def get_sqlite_type(field_type: str) -> str:
+    """Map the 10 atomic data types to SQLite column definitions."""
+    mapping = {
+        "hex_id": "TEXT PRIMARY KEY",
+        "text_single": "TEXT",
+        "text_multi": "TEXT",
+        "int_scalar": "INTEGER",
+        "float_scalar": "REAL",
+        "boolean": "INTEGER DEFAULT 0",
+        "enum_single": "TEXT",
+        "enum_multi": "TEXT",
+        "relation_single": "TEXT",
+        "relation_multi": "TEXT",
+    }
+    return mapping.get(field_type, "TEXT")
+
+
+def generate_ddl(table_name: str, columns: list) -> str:
+    """Generate SQL CREATE TABLE DDL from column specifications using computer slug."""
+    cols_sql = []
+    for col in columns:
+        c_slug = col.get("slug")
+        if not c_slug:
+            raw = col.get("name") or col.get("label", "unnamed")
+            c_slug = "".join(c if c.isalnum() else "_" for c in str(raw).strip().lower()).strip("_")
+            c_slug = c_slug or "field"
+        c_type = col.get("type", "text_single")
+        sql_type = get_sqlite_type(c_type)
+        cols_sql.append(f"    {c_slug} {sql_type}")
+
+    col_str = ",\n".join(cols_sql)
+    return f"CREATE TABLE IF NOT EXISTS {table_name} (\n{col_str}\n);"
+
+
+def sync_table_to_sqlite(table_name: str, columns: list):
+    """Sync table schema directly into SQLite database."""
+    ddl = generate_ddl(table_name, columns)
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        cursor = conn.cursor()
+        cursor.execute(ddl)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def sync_all_to_sqlite():
+    """Ensure all JSON schemas in data/ are reflected in SQLite."""
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        cursor = conn.cursor()
+        for fname in os.listdir(DATA_DIR):
+            if fname.endswith(".json"):
+                fpath = os.path.join(DATA_DIR, fname)
+                try:
+                    with open(fpath, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        tname = data.get("table_name")
+                        cols = data.get("columns", [])
+                        if tname and cols:
+                            ddl = generate_ddl(tname, cols)
+                            cursor.execute(ddl)
+                except Exception as e:
+                    print(f"Error syncing {fname} to SQLite: {e}")
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def seed_default_records():
+    """Seed initial sample records into SQLite if tables are empty."""
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        cursor = conn.cursor()
+        # Seed users if empty
+        cursor.execute("SELECT count(*) FROM users;")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+                INSERT INTO users (id, username, email, bio, age, balance, is_active, role, tags, manager_id, project_ids)
+                VALUES
+                ('USER_3f8a9b21', 'alex_mercer', 'alex@entropy.dev', 'Lead Systems Architect & Core Engineer', 34, 4850.50, 1, 'admin', '["premium", "staff"]', '', '["PROJ_10a2f4c9"]'),
+                ('USER_8c7d1e02', 'elena_rostova', 'elena@entropy.dev', 'Specialist in Cognitive Interfaces & Outliner UX', 29, 3120.00, 1, 'editor', '["verified"]', 'USER_3f8a9b21', '["PROJ_10a2f4c9"]'),
+                ('USER_5b2d9a44', 'marcus_vance', 'marcus@entropy.dev', 'Database Reliability & Transaction Engine', 41, 6200.75, 0, 'viewer', '["staff"]', 'USER_3f8a9b21', '[]');
+            """)
+        # Seed projects if empty
+        cursor.execute("SELECT count(*) FROM projects;")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+                INSERT INTO projects (id, title, description, budget, status, priority_tags, is_public, owner_id, member_ids)
+                VALUES
+                ('PROJ_10a2f4c9', 'Acoustic Core Synthesis', 'Zero-latency resident TTS daemon operating on Port 20129', 24000.00, 'active', '["high", "core"]', 1, 'USER_3f8a9b21', '["USER_3f8a9b21", "USER_8c7d1e02"]'),
+                ('PROJ_7e4b2d11', 'Project Entry Data Engine', 'Direct SQLite data entry spreadsheet with atomic type widgets', 15500.00, 'planning', '["p0"]', 1, 'USER_8c7d1e02', '["USER_8c7d1e02"]');
+            """)
+        # Seed notes if empty
+        cursor.execute("SELECT count(*) FROM notes;")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+                INSERT INTO notes (id, title, content, word_count, score, is_pinned, category, labels, project_id, linked_note_ids)
+                VALUES
+                ('NOTE_4a1f9e2b', 'Notion Table UX Specification', 'Direct row-based drag-and-drop column reordering with left-edge grab handle', 420, 9.8, 1, 'architecture', '["ux", "notion"]', 'PROJ_7e4b2d11', '[]'),
+                ('NOTE_9c8b3d01', 'SQLite ACID Invariant', 'All mutations must commit synchronously without temporary download files', 280, 9.5, 0, 'backend', '["sqlite"]', 'PROJ_7e4b2d11', '["NOTE_4a1f9e2b"]');
+            """)
+        conn.commit()
+    except Exception as e:
+        print(f"Seed error (non-fatal): {e}")
+    finally:
+        conn.close()
+
+
+class ProjectEntryHandler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=BASE_DIR, **kwargs)
+
+    def end_headers(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Origin, Accept")
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        super().end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.end_headers()
+
+    def _send_json(self, data, status=200):
+        body = json.dumps(data, indent=2).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+
+        if path == "/" or path == "/entry":
+            self.send_response(302)
+            self.send_header("Location", "/index.html")
+            self.end_headers()
+            return
+
+        if path == "/api/tables":
+            tables = {}
+            for fname in os.listdir(DATA_DIR):
+                if fname.endswith(".json"):
+                    fpath = os.path.join(DATA_DIR, fname)
+                    try:
+                        with open(fpath, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                            tname = data.get("table_name", fname[:-5])
+                            tables[tname] = data
+                    except Exception as e:
+                        print(f"Error loading {fname}: {e}")
+            self._send_json({"success": True, "tables": tables})
+            return
+
+        if path.startswith("/api/table/"):
+            tname = urllib.parse.unquote(path[len("/api/table/"):])
+            fpath = os.path.join(DATA_DIR, f"{tname}.json")
+            if os.path.exists(fpath):
+                with open(fpath, "r", encoding="utf-8") as f:
+                    self._send_json({"success": True, "table": json.load(f)})
+            else:
+                self._send_json({"success": False, "error": "Table not found"}, status=404)
+            return
+
+        if path.startswith("/api/records/"):
+            tname = urllib.parse.unquote(path[len("/api/records/"):])
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            try:
+                cursor = conn.cursor()
+                cursor.execute(f"SELECT * FROM {tname};")
+                rows = [dict(row) for row in cursor.fetchall()]
+                for r in rows:
+                    for k, v in r.items():
+                        if isinstance(v, str) and (v.startswith("[") and v.endswith("]")):
+                            try:
+                                r[k] = json.loads(v)
+                            except Exception:
+                                pass
+                self._send_json({"success": True, "records": rows})
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, status=500)
+            finally:
+                conn.close()
+            return
+
+        if path == "/api/sqlite_info":
+            tables_info = {}
+            if os.path.exists(DB_PATH):
+                conn = sqlite3.connect(DB_PATH)
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT name, sql FROM sqlite_master WHERE type='table';")
+                    for row in cursor.fetchall():
+                        tname, sql = row[0], row[1]
+                        cursor.execute(f"SELECT COUNT(*) FROM {tname};")
+                        cnt = cursor.fetchone()[0]
+                        tables_info[tname] = {"sql": sql, "row_count": cnt}
+                except Exception as e:
+                    tables_info["_error"] = str(e)
+                finally:
+                    conn.close()
+            self._send_json({"success": True, "db_path": DB_PATH, "tables": tables_info})
+            return
+
+        super().do_GET()
+
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length).decode("utf-8") if length > 0 else "{}"
+
+        try:
+            payload = json.loads(body)
+        except Exception:
+            payload = {}
+
+        if path.startswith("/api/table/"):
+            tname = urllib.parse.unquote(path[len("/api/table/"):])
+            if not tname:
+                self._send_json({"success": False, "error": "Missing table name"}, status=400)
+                return
+
+            fpath = os.path.join(DATA_DIR, f"{tname}.json")
+            with open(fpath, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+
+            # Sync SQLite DDL
+            cols = payload.get("columns", [])
+            if cols:
+                try:
+                    sync_table_to_sqlite(tname, cols)
+                except Exception as e:
+                    print(f"SQLite sync error: {e}")
+
+            self._send_json({"success": True, "message": f"Saved {tname} locally to data/{tname}.json"})
+            return
+
+        if path.startswith("/api/records/"):
+            tname = urllib.parse.unquote(path[len("/api/records/"):])
+            record = payload.get("record") if "record" in payload else payload
+            if not record or not isinstance(record, dict):
+                self._send_json({"success": False, "error": "Invalid record data"}, status=400)
+                return
+
+            conn = sqlite3.connect(DB_PATH)
+            try:
+                cursor = conn.cursor()
+                cursor.execute(f"PRAGMA table_info({tname});")
+                valid_cols = [c[1] for c in cursor.fetchall()]
+
+                filtered_record = {}
+                for col in valid_cols:
+                    if col in record:
+                        val = record[col]
+                        if isinstance(val, (list, dict)):
+                            val = json.dumps(val)
+                        filtered_record[col] = val
+
+                if not filtered_record:
+                    self._send_json({"success": False, "error": "No valid fields provided"}, status=400)
+                    return
+
+                keys = list(filtered_record.keys())
+                placeholders = [":" + k for k in keys]
+                sql = f"INSERT OR REPLACE INTO {tname} ({', '.join(keys)}) VALUES ({', '.join(placeholders)});"
+                cursor.execute(sql, filtered_record)
+                conn.commit()
+                self._send_json({"success": True, "record": record})
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, status=500)
+            finally:
+                conn.close()
+            return
+
+        if path == "/api/sync_all":
+            try:
+                sync_all_to_sqlite()
+                self._send_json({"success": True, "message": "All tables synchronized to SQLite database"})
+            except Exception as e:
+                self._send_json({"success": False, "error": str(e)}, status=500)
+            return
+
+        self._send_json({"error": "Endpoint not found"}, status=404)
+
+    def do_DELETE(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+
+        if path.startswith("/api/records/") or path.startswith("/api/record/"):
+            prefix = "/api/records/" if path.startswith("/api/records/") else "/api/record/"
+            parts = path[len(prefix):].split("/")
+            if len(parts) >= 2:
+                tname = urllib.parse.unquote(parts[0])
+                rec_id = urllib.parse.unquote(parts[1])
+                conn = sqlite3.connect(DB_PATH)
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute(f"DELETE FROM {tname} WHERE id = ?;", (rec_id,))
+                    conn.commit()
+                    self._send_json({"success": True, "message": f"Deleted record {rec_id}"})
+                except Exception as e:
+                    self._send_json({"success": False, "error": str(e)}, status=500)
+                finally:
+                    conn.close()
+                return
+
+        if path.startswith("/api/table/"):
+            tname = urllib.parse.unquote(path[len("/api/table/"):])
+            fpath = os.path.join(DATA_DIR, f"{tname}.json")
+            if os.path.exists(fpath):
+                os.remove(fpath)
+                self._send_json({"success": True, "message": f"Deleted {tname}.json from data/"})
+            else:
+                self._send_json({"success": False, "error": "Table not found"}, status=404)
+            return
+
+        self._send_json({"error": "Endpoint not found"}, status=404)
+
+
+if __name__ == "__main__":
+    sync_all_to_sqlite()
+    seed_default_records()
+    print(f"[*] Project Entry Server initialized at http://localhost:{PORT}")
+    print(f"[*] Storing schemas in: {DATA_DIR}")
+    print(f"[*] SQLite Database: {DB_PATH}")
+    server = ThreadingHTTPServer(("0.0.0.0", PORT), ProjectEntryHandler)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\n[*] Server shutdown gracefully.")

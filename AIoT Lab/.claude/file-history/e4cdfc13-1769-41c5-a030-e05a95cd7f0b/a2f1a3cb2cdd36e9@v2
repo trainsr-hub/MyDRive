@@ -1,0 +1,9 @@
+name=I2SSpeaker
+version=1.0.0
+author=Faust & The Manager
+maintainer=Faust Acoustic Core
+sentence=High-performance zero-pop I2S speaker driver for ESP32 Faust field presence.
+paragraph=Supports MAX98357A, PCM5102, UDA1334A and standard I2S DACs with DMA streaming and mono-to-stereo expansion.
+category=Audio
+url=https://github.com/varis-gear
+architectures=esp32

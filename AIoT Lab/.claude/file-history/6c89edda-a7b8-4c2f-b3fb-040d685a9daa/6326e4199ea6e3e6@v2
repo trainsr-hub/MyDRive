@@ -1,0 +1,567 @@
+# core/mock_store.py
+"""
+Sovereign In-Memory Mock Store for Zero-Latency UI/UX Development.
+Provides instant 0ms responses for Drive Browsing, Template Cloning,
+and Declarative Reconciliation without network roundtrips.
+"""
+
+import copy
+import time
+from typing import Dict, List, Any, Optional
+
+MOCK_TEMPLATE_ID = "mock_tpl_entropy_0"
+MOCK_ROOT_ID = "mock_root_testaments"
+
+
+def get_default_mock_db() -> Dict[str, Any]:
+    """Builds the canonical rich mock dataset with all reconciliation cases."""
+    return {
+        "template": {
+            "id": MOCK_TEMPLATE_ID,
+            "name": "Entropy 0 Archetype",
+            "description": "Master Story & Production Archetype",
+            "subfolders": {
+                "01_Source_Clips": {
+                    "id": "tpl_video_01",
+                    "name": "01_Source_Clips",
+                    "description": "src:tpl_video_01\nType: Video, Format: ProRes",
+                    "subfolders": {
+                        "Sub_Cuts": {
+                            "id": "tpl_video_cuts",
+                            "name": "Sub_Cuts",
+                            "description": "src:tpl_video_cuts\nType: Rushes",
+                            "subfolders": {},
+                        }
+                    },
+                },
+                "01_Audio": {
+                    "id": "tpl_audio_01",
+                    "name": "01_Audio",
+                    "description": "src:tpl_audio_01\nType: Audio, Format: WAV 24-bit",
+                    "subfolders": {},
+                },
+                "03_Docs": {
+                    "id": "tpl_docs_01",
+                    "name": "03_Docs",
+                    "description": "src:tpl_docs_01\nType: Narrative, Worldbuilding",
+                    "subfolders": {},
+                },
+                "04_VFX": {
+                    "id": "tpl_vfx_01",
+                    "name": "04_VFX",
+                    "description": "src:tpl_vfx_01\nType: Compositing, Clean Plates",
+                    "subfolders": {},
+                },
+            },
+        },
+        "folders": {
+            # Root
+            MOCK_ROOT_ID: {
+                "id": MOCK_ROOT_ID,
+                "name": "Testaments Data Root",
+                "description": "Root directory for all Testament entity groups",
+                "parent_id": None,
+                "properties": {},
+                "files": [],
+            },
+            # Level 1 Groups
+            "mock_grp_t01": {
+                "id": "mock_grp_t01",
+                "name": "Testament 01",
+                "description": "Active Production Entities",
+                "parent_id": MOCK_ROOT_ID,
+                "properties": {},
+                "files": [],
+            },
+            "mock_grp_t02": {
+                "id": "mock_grp_t02",
+                "name": "Testament 02",
+                "description": "Pre-Production Entities",
+                "parent_id": MOCK_ROOT_ID,
+                "properties": {},
+                "files": [],
+            },
+            "mock_grp_t03": {
+                "id": "mock_grp_t03",
+                "name": "Testament 03",
+                "description": "Empty Staging Group",
+                "parent_id": MOCK_ROOT_ID,
+                "properties": {},
+                "files": [],
+            },
+            # Entities in Testament 01
+            "mock_ent_c24": {
+                "id": "mock_ent_c24",
+                "name": "C24 - Zephyr",
+                "description": f"src:{MOCK_TEMPLATE_ID}\nEntity Archetype: Entropy 0",
+                "parent_id": "mock_grp_t01",
+                "properties": {"src": MOCK_TEMPLATE_ID},
+                "files": [],
+            },
+            "mock_ent_c25": {
+                "id": "mock_ent_c25",
+                "name": "C25 - Elena",
+                "description": f"src:{MOCK_TEMPLATE_ID}\nEntity Archetype: Entropy 0",
+                "parent_id": "mock_grp_t01",
+                "properties": {"src": MOCK_TEMPLATE_ID},
+                "files": [],
+            },
+            # Entities in Testament 02
+            "mock_ent_c26": {
+                "id": "mock_ent_c26",
+                "name": "C26 - Kaelen",
+                "description": f"src:{MOCK_TEMPLATE_ID}\nEntity Archetype: Entropy 0",
+                "parent_id": "mock_grp_t02",
+                "properties": {"src": MOCK_TEMPLATE_ID},
+                "files": [],
+            },
+            # Subfolders of C24 (Contains Rename drift, Desc mismatch, Empty Prune, and Populated Anomaly)
+            "mock_c24_audio": {
+                "id": "mock_c24_audio",
+                "name": "01_Audio",
+                "description": "src:tpl_audio_01\nType: Audio, Format: WAV 24-bit",
+                "parent_id": "mock_ent_c24",
+                "properties": {"src": "tpl_audio_01"},
+                "files": [{"id": "f_aud_1", "name": "dialogue_scene1.wav", "mimeType": "audio/wav"}],
+            },
+            "mock_c24_video": {
+                "id": "mock_c24_video",
+                "name": "01_Raw_Footage",  # RENAMED IN TEMPLATE to '01_Source_Clips'!
+                "description": "src:tpl_video_01\nType: Video, Format: ProRes",
+                "parent_id": "mock_ent_c24",
+                "properties": {"src": "tpl_video_01"},
+                "files": [{"id": "f_vid_1", "name": "take_01.mp4", "mimeType": "video/mp4"}],
+            },
+            "mock_c24_video_cuts": {
+                "id": "mock_c24_video_cuts",
+                "name": "Sub_Cuts",
+                "description": "src:tpl_video_cuts\nType: Rushes",
+                "parent_id": "mock_c24_video",
+                "properties": {"src": "tpl_video_cuts"},
+                "files": [],
+            },
+            "mock_c24_docs": {
+                "id": "mock_c24_docs",
+                "name": "03_Docs",
+                "description": "Old Mismatched Description Notes",  # UPDATE_DESC!
+                "parent_id": "mock_ent_c24",
+                "properties": {"src": "tpl_docs_01"},
+                "files": [{"id": "f_doc_1", "name": "bible_v1.md", "mimeType": "text/markdown"}],
+            },
+            "mock_c24_temp": {
+                "id": "mock_c24_temp",
+                "name": "Temp_Scratch_Empty",  # Extraneous empty -> PRUNE_EMPTY!
+                "description": "Temporary scratchpad",
+                "parent_id": "mock_ent_c24",
+                "properties": {},
+                "files": [],
+            },
+            "mock_c24_legacy": {
+                "id": "mock_c24_legacy",
+                "name": "Legacy_Archive_Populated",  # Extraneous with files -> FLAG_RED ANOMALY!
+                "description": "Old project files from previous season",
+                "parent_id": "mock_ent_c24",
+                "properties": {},
+                "files": [
+                    {"id": "f_leg_1", "name": "season_0_finale.mov", "mimeType": "video/quicktime"},
+                    {"id": "f_leg_2", "name": "storyboards.pdf", "mimeType": "application/pdf"},
+                    {"id": "f_leg_3", "name": "voiceover_master.wav", "mimeType": "audio/wav"},
+                ],
+            },
+            # Subfolders of C25 (Compliant)
+            "mock_c25_audio": {
+                "id": "mock_c25_audio",
+                "name": "01_Audio",
+                "description": "src:tpl_audio_01\nType: Audio, Format: WAV 24-bit",
+                "parent_id": "mock_ent_c25",
+                "properties": {"src": "tpl_audio_01"},
+                "files": [],
+            },
+            "mock_c25_video": {
+                "id": "mock_c25_video",
+                "name": "01_Source_Clips",
+                "description": "src:tpl_video_01\nType: Video, Format: ProRes",
+                "parent_id": "mock_ent_c25",
+                "properties": {"src": "tpl_video_01"},
+                "files": [],
+            },
+            "mock_c25_docs": {
+                "id": "mock_c25_docs",
+                "name": "03_Docs",
+                "description": "src:tpl_docs_01\nType: Narrative, Worldbuilding",
+                "parent_id": "mock_ent_c25",
+                "properties": {"src": "tpl_docs_01"},
+                "files": [],
+            },
+            # Subfolders of C26 (Missing 01_Source_Clips, 03_Docs, 04_VFX -> CREATE!)
+            "mock_c26_audio": {
+                "id": "mock_c26_audio",
+                "name": "01_Audio",
+                "description": "src:tpl_audio_01\nType: Audio, Format: WAV 24-bit",
+                "parent_id": "mock_ent_c26",
+                "properties": {"src": "tpl_audio_01"},
+                "files": [],
+            },
+        },
+    }
+
+
+class MockDriveStore:
+    """Thread-safe In-Memory Google Drive Simulator."""
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self._db = get_default_mock_db()
+
+    def get_template(self) -> Dict[str, Any]:
+        return copy.deepcopy(self._db["template"])
+
+    def get_folder(self, folder_id: str) -> Optional[Dict[str, Any]]:
+        f = self._db["folders"].get(folder_id)
+        return copy.deepcopy(f) if f else None
+
+    def list_subfolders(self, parent_id: str) -> List[Dict[str, Any]]:
+        results = []
+        for fid, f in self._db["folders"].items():
+            if f.get("parent_id") == parent_id:
+                results.append(copy.deepcopy(f))
+        results.sort(key=lambda x: x["name"])
+        return results
+
+    def list_contents(self, parent_id: str) -> List[Dict[str, Any]]:
+        subfolders = self.list_subfolders(parent_id)
+        for s in subfolders:
+            s["mimeType"] = "application/vnd.google-apps.folder"
+
+        parent_f = self._db["folders"].get(parent_id)
+        files = copy.deepcopy(parent_f.get("files", [])) if parent_f else []
+        return subfolders + files
+
+    def create_folder(
+        self, name: str, parent_id: str, description: str = "", properties: Optional[Dict[str, str]] = None
+    ) -> Dict[str, Any]:
+        new_id = f"mock_fld_{int(time.time() * 1000)}_{len(self._db['folders'])}"
+        new_folder = {
+            "id": new_id,
+            "name": name.strip(),
+            "description": description or "",
+            "parent_id": parent_id,
+            "properties": properties or {},
+            "files": [],
+            "mimeType": "application/vnd.google-apps.folder",
+        }
+        self._db["folders"][new_id] = new_folder
+        return copy.deepcopy(new_folder)
+
+    def update_folder(
+        self, folder_id: str, name: Optional[str] = None, description: Optional[str] = None, properties: Optional[Dict[str, str]] = None
+    ) -> Dict[str, Any]:
+        f = self._db["folders"].get(folder_id)
+        if not f:
+            raise KeyError(f"Folder {folder_id} not found in mock store")
+        if name is not None:
+            f["name"] = name.strip()
+        if description is not None:
+            f["description"] = description.strip()
+        if properties:
+            f["properties"].update(properties)
+        return copy.deepcopy(f)
+
+    def trash_folder(self, folder_id: str) -> bool:
+        if folder_id in self._db["folders"]:
+            del self._db["folders"][folder_id]
+            return True
+        return False
+
+    def clone_template(self, target_parent_id: str, clone_name: str, template_id: str = MOCK_TEMPLATE_ID) -> Dict[str, Any]:
+        tpl = self.get_template()
+        root_desc = f"src:{template_id}\n{tpl.get('description', '')}".strip()
+        root_folder = self.create_folder(
+            name=clone_name,
+            parent_id=target_parent_id,
+            description=root_desc,
+            properties={"src": template_id},
+        )
+
+        total_cloned = 1
+
+        def _clone_tree(sub_dict: Dict[str, Any], curr_parent_id: str):
+            nonlocal total_cloned
+            for name, node in sub_dict.items():
+                c_id = node.get("id", f"tpl_{name}")
+                c_desc = node.get("description", "")
+                created = self.create_folder(
+                    name=name,
+                    parent_id=curr_parent_id,
+                    description=c_desc,
+                    properties={"src": c_id},
+                )
+                total_cloned += 1
+                if node.get("subfolders"):
+                    _clone_tree(node["subfolders"], created["id"])
+
+        _clone_tree(tpl.get("subfolders", {}), root_folder["id"])
+
+        return {
+            "success": True,
+            "cloned_root_id": root_folder["id"],
+            "clone_name": clone_name,
+            "template_id": template_id,
+            "total_folders_created": total_cloned,
+        }
+
+    def generate_mock_plan(self) -> Dict[str, Any]:
+        """
+        Builds a full MultiEntityReconciliationPlan dict dynamically based on
+        current mock store state.
+        """
+        tpl = self.get_template()
+        expected_subs = tpl.get("subfolders", {})
+
+        groups = [
+            {"group_id": "mock_grp_t01", "group_name": "Testament 01", "empty_note": "", "entities": ["mock_ent_c24", "mock_ent_c25"]},
+            {"group_id": "mock_grp_t02", "group_name": "Testament 02", "empty_note": "", "entities": ["mock_ent_c26"]},
+            {"group_id": "mock_grp_t03", "group_name": "Testament 03", "empty_note": "Trống (Không có entity nào trong nhóm này)", "entities": []},
+        ]
+
+        # Check for any newly spawned entities in groups
+        for fid, f in self._db["folders"].items():
+            pid = f.get("parent_id")
+            for g in groups:
+                if pid == g["group_id"] and fid not in g["entities"]:
+                    g["entities"].append(fid)
+
+        group_plans = []
+        all_items = []
+
+        for g in groups:
+            ent_plans = []
+            for ent_id in g["entities"]:
+                ent_f = self.get_folder(ent_id)
+                if not ent_f:
+                    continue
+                ent_name = ent_f["name"]
+                actual_subs = self.list_subfolders(ent_id)
+
+                actual_by_src = {f["properties"].get("src"): f for f in actual_subs if f.get("properties", {}).get("src")}
+                actual_by_name = {f["name"]: f for f in actual_subs}
+                matched_ids = set()
+
+                items = []
+
+                # Root match
+                items.append({
+                    "action_type": "MATCH",
+                    "relative_path": f"{g['group_name']}/{ent_name}",
+                    "folder_name": ent_name,
+                    "target_id": ent_id,
+                    "target_parent_id": g["group_id"],
+                    "current_desc": ent_f.get("description", ""),
+                    "expected_desc": ent_f.get("description", ""),
+                    "reason": "Entity root compliant",
+                    "subfolders_count": len(actual_subs),
+                    "files_count": len(ent_f.get("files", [])),
+                })
+
+                # Check expected folders
+                for exp_name, exp_node in expected_subs.items():
+                    exp_id = exp_node.get("id")
+                    child_path = f"{g['group_name']}/{ent_name}/{exp_name}"
+                    exp_desc = exp_node.get("description", "")
+
+                    act_f = None
+                    if exp_id and exp_id in actual_by_src:
+                        act_f = actual_by_src[exp_id]
+                    elif exp_name in actual_by_name and actual_by_name[exp_name]["id"] not in matched_ids:
+                        act_f = actual_by_name[exp_name]
+
+                    if act_f:
+                        matched_ids.add(act_f["id"])
+                        if act_f["name"] != exp_name:
+                            items.append({
+                                "action_type": "RENAME",
+                                "relative_path": child_path,
+                                "folder_name": exp_name,
+                                "current_name": act_f["name"],
+                                "target_id": act_f["id"],
+                                "target_parent_id": ent_id,
+                                "current_desc": act_f.get("description", ""),
+                                "expected_desc": exp_desc,
+                                "source_id": exp_id,
+                                "reason": f"Renamed in template from '{act_f['name']}' to '{exp_name}'",
+                                "subfolders_count": len(self.list_subfolders(act_f["id"])),
+                                "files_count": len(act_f.get("files", [])),
+                            })
+                        elif exp_desc and exp_desc not in act_f.get("description", ""):
+                            items.append({
+                                "action_type": "UPDATE_DESC",
+                                "relative_path": child_path,
+                                "folder_name": exp_name,
+                                "current_name": act_f["name"],
+                                "target_id": act_f["id"],
+                                "target_parent_id": ent_id,
+                                "current_desc": act_f.get("description", ""),
+                                "expected_desc": exp_desc,
+                                "source_id": exp_id,
+                                "reason": "Description mismatch with template metadata",
+                                "subfolders_count": len(self.list_subfolders(act_f["id"])),
+                                "files_count": len(act_f.get("files", [])),
+                            })
+                        else:
+                            items.append({
+                                "action_type": "MATCH",
+                                "relative_path": child_path,
+                                "folder_name": exp_name,
+                                "current_name": act_f["name"],
+                                "target_id": act_f["id"],
+                                "target_parent_id": ent_id,
+                                "current_desc": act_f.get("description", ""),
+                                "expected_desc": exp_desc,
+                                "source_id": exp_id,
+                                "reason": "Folder and metadata fully compliant",
+                                "subfolders_count": len(self.list_subfolders(act_f["id"])),
+                                "files_count": len(act_f.get("files", [])),
+                            })
+                    else:
+                        items.append({
+                            "action_type": "CREATE",
+                            "relative_path": child_path,
+                            "folder_name": exp_name,
+                            "target_id": None,
+                            "target_parent_id": ent_id,
+                            "current_desc": "",
+                            "expected_desc": exp_desc,
+                            "source_id": exp_id,
+                            "reason": "Missing required archetype folder",
+                            "subfolders_count": 0,
+                            "files_count": 0,
+                        })
+
+                # Check extraneous
+                for act_f in actual_subs:
+                    if act_f["id"] not in matched_ids:
+                        child_path = f"{g['group_name']}/{ent_name}/{act_f['name']}"
+                        num_files = len(act_f.get("files", []))
+                        num_subs = len(self.list_subfolders(act_f["id"]))
+                        if num_files == 0 and num_subs == 0:
+                            items.append({
+                                "action_type": "PRUNE_EMPTY",
+                                "relative_path": child_path,
+                                "folder_name": act_f["name"],
+                                "current_name": act_f["name"],
+                                "target_id": act_f["id"],
+                                "target_parent_id": ent_id,
+                                "current_desc": act_f.get("description", ""),
+                                "expected_desc": "",
+                                "reason": "Extraneous folder not present in archetype template; safely prunable",
+                                "subfolders_count": 0,
+                                "files_count": 0,
+                            })
+                        else:
+                            items.append({
+                                "action_type": "FLAG_RED",
+                                "relative_path": child_path,
+                                "folder_name": act_f["name"],
+                                "current_name": act_f["name"],
+                                "target_id": act_f["id"],
+                                "target_parent_id": ent_id,
+                                "current_desc": act_f.get("description", ""),
+                                "expected_desc": "",
+                                "reason": f"Extraneous folder contains {num_files} file(s). PRESERVED UNTOUCHED.",
+                                "subfolders_count": num_subs,
+                                "files_count": num_files,
+                            })
+
+                ent_summary = {
+                    "create_count": sum(1 for i in items if i["action_type"] == "CREATE"),
+                    "rename_count": sum(1 for i in items if i["action_type"] == "RENAME"),
+                    "update_desc_count": sum(1 for i in items if i["action_type"] == "UPDATE_DESC"),
+                    "prune_empty_count": sum(1 for i in items if i["action_type"] == "PRUNE_EMPTY"),
+                    "flagged_red_count": sum(1 for i in items if i["action_type"] == "FLAG_RED"),
+                    "compliant_count": sum(1 for i in items if i["action_type"] == "MATCH"),
+                }
+                ent_plans.append({
+                    "target_root_id": ent_id,
+                    "target_root_name": ent_name,
+                    "template_name": f"{tpl['name']} -> {ent_name}",
+                    "summary": ent_summary,
+                    "items": items,
+                })
+                all_items.extend(items)
+
+            group_plans.append({
+                "group_name": g["group_name"],
+                "group_id": g["group_id"],
+                "empty_note": g.get("empty_note", ""),
+                "entity_plans": ent_plans,
+            })
+
+        summary = {
+            "total_groups": len(groups),
+            "total_entities": sum(len(g["entity_plans"]) for g in group_plans),
+            "create_count": sum(1 for i in all_items if i["action_type"] == "CREATE"),
+            "rename_count": sum(1 for i in all_items if i["action_type"] == "RENAME"),
+            "update_desc_count": sum(1 for i in all_items if i["action_type"] == "UPDATE_DESC"),
+            "prune_empty_count": sum(1 for i in all_items if i["action_type"] == "PRUNE_EMPTY"),
+            "flagged_red_count": sum(1 for i in all_items if i["action_type"] == "FLAG_RED"),
+            "compliant_count": sum(1 for i in all_items if i["action_type"] == "MATCH"),
+            "total_evaluated": len(all_items),
+        }
+
+        return {
+            "data_root_id": MOCK_ROOT_ID,
+            "data_root_name": "Testaments Data Root (Mock)",
+            "template_name": tpl["name"],
+            "template_schema": tpl,
+            "summary": summary,
+            "groups": group_plans,
+        }
+
+    def execute_mock_reconcile(self, plan: Dict[str, Any]) -> Dict[str, Any]:
+        """Applies plan mutations directly onto the mock store in 0ms."""
+        created = 0
+        renamed = 0
+        updated = 0
+        pruned = 0
+
+        for g in plan.get("groups", []):
+            for ep in g.get("entity_plans", []):
+                ent_id = ep["target_root_id"]
+                for item in ep.get("items", []):
+                    action = item["action_type"]
+                    if action == "RENAME" and item.get("target_id"):
+                        self.update_folder(item["target_id"], name=item["folder_name"], properties={"src": item.get("source_id")})
+                        renamed += 1
+                    elif action == "UPDATE_DESC" and item.get("target_id"):
+                        self.update_folder(item["target_id"], description=item["expected_desc"], properties={"src": item.get("source_id")})
+                        updated += 1
+                    elif action == "PRUNE_EMPTY" and item.get("target_id"):
+                        self.trash_folder(item["target_id"])
+                        pruned += 1
+                    elif action == "CREATE":
+                        self.create_folder(
+                            name=item["folder_name"],
+                            parent_id=item.get("target_parent_id", ent_id),
+                            description=item.get("expected_desc", ""),
+                            properties={"src": item.get("source_id")},
+                        )
+                        created += 1
+
+        return {
+            "dry_run": False,
+            "created_count": created,
+            "renamed_count": renamed,
+            "updated_desc_count": updated,
+            "pruned_empty_count": pruned,
+            "flagged_red_count": plan.get("summary", {}).get("flagged_red_count", 0),
+            "summary": plan.get("summary", {}),
+            "duration_ms": 2.5,
+            "executed": True,
+        }
+
+
+# Singleton Mock Store Instance
+mock_store = MockDriveStore()
+

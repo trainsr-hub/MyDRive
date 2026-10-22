@@ -1,0 +1,4 @@
+# Cloudflare Worker Local & Cloud Environment Secrets
+TURSO_DATABASE_URL=https://heraclitus-rien-bluerose.aws-ap-southeast-2.turso.io
+TURSO_AUTH_TOKEN=your_turso_jwt_token_here
+ESP32_SECRET_KEY=optional_shared_secret_here

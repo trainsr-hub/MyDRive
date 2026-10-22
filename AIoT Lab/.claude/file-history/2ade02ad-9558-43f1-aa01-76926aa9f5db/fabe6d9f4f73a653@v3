@@ -1,0 +1,68 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  --background-primary: #07080c;
+  --background-secondary: #0f1118;
+  --text-normal: #e2e8f0;
+  --text-muted: #8b92a5;
+  --font-interface: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-monospace: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #07080c;
+  color: #e2e8f0;
+  font-family: var(--font-interface);
+  overflow: hidden;
+}
+
+.hazard-trigger-view-container {
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+}
+
+.hazard-trigger-studio-root {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 0%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background-primary, #07080c);
+  color: var(--text-normal, #e2e8f0);
+  font-family: var(--font-interface, inherit);
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box;
+}
+
+.hazard-trigger-studio-root * {
+  box-sizing: border-box;
+}
+
+/* Custom scrollbars inside the studio */
+.hazard-trigger-studio-root ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.hazard-trigger-studio-root ::-webkit-scrollbar-track {
+  background: rgba(15, 17, 24, 0.6);
+}
+.hazard-trigger-studio-root ::-webkit-scrollbar-thumb {
+  background: rgba(50, 57, 78, 0.8);
+  border-radius: 4px;
+}
+.hazard-trigger-studio-root ::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.8);
+}

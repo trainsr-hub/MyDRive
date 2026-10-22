@@ -1,0 +1,252 @@
+GEMINI.md:18:    python .agents/scripts/c2.py "<speech_text>"
+GEMINI.md:25:    5. *GitHub Push*: Every push to remote: `python .agents/scripts/c2.py "Pushed <commit/branch> to GitHub: <summary>"`
+GEMINI.md:30:  - When Faust wakes up via `faust_listener.py` completion callback, Faust must immediately re-arm the listener as a background task (`python .agents/scripts/faust_listener.py` with `WaitMsBeforeAsync=500`) to guarantee zero-latency intake for subsequent remote directives.
+GEMINI.md:32:  - Personal revelations, philosophical reflections, narrative archetypes (e.g. Deus & Raye lore), and personal partner preferences shared by the Manager must **always be automatically persisted to `.agents/memory/manager/`** and mirrored to `D:\My Heraclitus\Data Codex\Faust Memory\The Manager\`.
+ZZZZZ.md:992:  2. Created technical plan in [`.agents/plans/faust_sovereign_headless_daemon_plan.md`](file:///D:/My%20Drive/Blue%20AI/.agents/plans/faust_sovereign_headless_daemon_plan.md).
+ZZZZZ.md:994:     - Tier 1: [`domain.py`](file:///D:/My%20Drive/Blue%20AI/.agents/scripts/daemon/domain.py) (45 lines) — Pure typed data models (`TelegramDirective`, `ExecutionResult`, `SessionMessage`).
+ZZZZZ.md:995:     - Tier 2: [`repository.py`](file:///D:/My%20Drive/Blue%20AI/.agents/scripts/daemon/repository.py) (113 lines) — SQLite ACID session store (`D:\Program Data\faust_daemon\sessions.db`) & workspaces registry lookup.
+ZZZZZ.md:996:     - Tier 3: [`tools.py`](file:///D:/My%20Drive/Blue%20AI/.agents/scripts/daemon/tools.py) (99 lines) & [`agent_service.py`](file:///D:/My%20Drive/Blue%20AI/.agents/scripts/daemon/agent_service.py) (115 lines) — Subprocess execution, Git telemetry, fast-path commands (`/status`, `/git`, `/diff`, `/workspaces`), Manager user ID security lock (`8016442589`), and acoustic reflex.
+ZZZZZ.md:997:     - Tier 4: [`telegram_egress.py`](file:///D:/My%20Drive/Blue%20AI/.agents/scripts/daemon/telegram_egress.py) (98 lines) & [`faust_runner.py`](file:///D:/My%20Drive/Blue%20AI/.agents/scripts/faust_runner.py) (76 lines) — Telegram Bot API client with 4-tier emoji protocol (`⚡`, `🔄`, `✅`, `❌`) and master CLI entrypoint.
+Archived\plugins\cache\ecc\ecc\2.2.3\.codex\AGENTS.md:19:Skills are auto-loaded from `.agents/skills/`. Each skill contains:
+Archived\plugins\cache\ecc\ecc\2.2.3\.codex\AGENTS.md:92:| Skills | Skills loaded via plugin | Native plugin skills and repo `.agents/skills/` |
+Archived\plugins\cache\ecc\ecc\2.2.3\.claude\team\ecc-team-config.json:6:    ".agents/skills/ecc-conventions/SKILL.md"
+Archived\plugins\cache\ecc\ecc\2.2.3\.github\PULL_REQUEST_TEMPLATE.md:38:- [ ] Cross-harness surfaces updated if applicable (for Codex, `.agents/skills/<name>/` plus `agents/openai.yaml`; the Codex frontmatter validator allows only `name`, `description`, `metadata`, `license`, `allowed-tools`, so drop keys like `version` from that copy)
+Archived\plugins\cache\ecc\ecc\2.2.3\.claude\homunculus\instincts\inherited\ecc-instincts.yaml:117:Treat the root repo as the source of truth, then mirror shipped changes to `.cursor/`, `.codex/`, `.opencode/`, and `.agents/` only where the feature actually exists.
+Archived\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:137:    ".agents/skills/ecc-conventions/SKILL.md",
+Archived\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:138:    ".agents/skills/ecc-conventions/agents/openai.yaml",
+Archived\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:156:      ".agents/skills/ecc-conventions/SKILL.md",
+Archived\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:157:      ".agents/skills/ecc-conventions/agents/openai.yaml",
+Archived\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:186:      ".agents/skills/ecc-conventions/SKILL.md",
+Archived\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:187:      ".agents/skills/ecc-conventions/agents/openai.yaml",
+Archived\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:217:      "path": ".agents/skills/ecc-conventions/SKILL.md",
+Archived\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:222:      "path": ".agents/skills/ecc-conventions/agents/openai.yaml",
+Archived\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:312:      "skillPath": ".agents/skills/ecc-conventions/SKILL.md",
+Archived\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:323:      "skillPath": ".agents/skills/ecc-conventions/SKILL.md"
+Archived\.claude\plugins\plugin-directory-cache-v2.json:1:[Omitted long matching line]
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\sync-ecc-to-codex.test.js:79:    // Skills sync rm/cp calls were removed — Codex reads from ~/.agents/skills/ natively
+Archived\plugins\cache\ecc\ecc\2.2.3\.agents\skills\ecc-conventions\SKILL.md:357:1. Copy or adapt SKILL.md to .agents/skills/{skill}/SKILL.md and/or .cursor/skills/{skill}/SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\.agents\skills\ecc-conventions\SKILL.md:362:- `.agents/skills/*/SKILL.md`
+Archived\plugins\cache\ecc\ecc\2.2.3\.agents\skills\ecc-conventions\SKILL.md:364:- `.agents/skills/*/agents/openai.yaml`
+Archived\plugins\cache\ecc\ecc\2.2.3\.agents\skills\ecc-conventions\SKILL.md:368:Copy or adapt SKILL.md to .agents/skills/{skill}/SKILL.md and/or .cursor/skills/{skill}/SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\.agents\skills\ecc-conventions\SKILL.md:413:- `.agents/skills/*/SKILL.md`
+Archived\plugins\cache\ecc\ecc\2.2.3\.kimi\README.md:9:- `.agents/skills/` — an additional project-level Agent Skills location supported by Kimi Code
+Archived\plugins\cache\ecc\ecc\2.2.3\CHANGELOG.md:64:- Native Antigravity 2.0 installation under `.agents/`, including rules, workflows, skills, and adapted agents, plus a cross-platform installation guide.
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\sync-ecc-to-codex.test.js:79:    // Skills sync rm/cp calls were removed — Codex reads from ~/.agents/skills/ natively
+Archived\plugins\cache\ecc\ecc\2.2.3\ecc_dashboard.py:307:        self.agents = load_agents(self.project_path)
+Archived\plugins\cache\ecc\ecc\2.2.3\ecc_dashboard.py:389:                                       text=f"Ready | Agents: {len(self.agents)} | Skills: {len(self.skills)} | Commands: {len(self.commands)}",
+Archived\plugins\cache\ecc\ecc\2.2.3\ecc_dashboard.py:400:        self.notebook.add(frame, text=f"Agents ({len(self.agents)})")
+Archived\plugins\cache\ecc\ecc\2.2.3\ecc_dashboard.py:412:        self.agent_count_label = ttk.Label(search_frame, text=str(len(self.agents)))
+Archived\plugins\cache\ecc\ecc\2.2.3\ecc_dashboard.py:452:        self.populate_agents(self.agents)
+Archived\plugins\cache\ecc\ecc\2.2.3\ecc_dashboard.py:467:            filtered = self.agents
+Archived\plugins\cache\ecc\ecc\2.2.3\ecc_dashboard.py:469:            filtered = [a for a in self.agents 
+Archived\plugins\cache\ecc\ecc\2.2.3\ecc_dashboard.py:484:        agent = next((a for a in self.agents if a['name'] == agent_name), None)
+Archived\plugins\cache\ecc\ecc\2.2.3\ecc_dashboard.py:864:        self.agents = load_agents(self.project_path)
+Archived\plugins\cache\ecc\ecc\2.2.3\ecc_dashboard.py:870:        self.notebook.tab(0, text=f"Agents ({len(self.agents)})")
+Archived\plugins\cache\ecc\ecc\2.2.3\ecc_dashboard.py:876:        self.populate_agents(self.agents)
+Archived\plugins\cache\ecc\ecc\2.2.3\ecc_dashboard.py:883:            text=f"Ready | Agents: {len(self.agents)} | Skills: {len(self.skills)} | Commands: {len(self.commands)}"
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.kimi\README.md:9:- `.agents/skills/` — an additional project-level Agent Skills location supported by Kimi Code
+Archived\plugins\cache\ecc\ecc\2.2.3\docker\context-profiles\native-probe.js:81:      for (const dir of [codexHome, cwd, path.join(marketplace, '.agents/plugins')]) {
+Archived\plugins\cache\ecc\ecc\2.2.3\docker\context-profiles\native-probe.js:112:      fs.writeFileSync(path.join(marketplace, '.agents/plugins/marketplace.json'), JSON.stringify({
+Archived\plugins\cache\ecc\ecc\2.2.3\CONTRIBUTING.md:417:- **Codex:** `.agents/skills/` — skills listed in `agents/openai.yaml` are loaded by Codex.
+Archived\plugins\cache\ecc\ecc\2.2.3\CONTRIBUTING.md:423:2. If it should be available on **Codex**, add it to `.agents/skills/` (copy the skill directory or add a reference) and ensure it is referenced in `agents/openai.yaml` if required.
+Archived\plugins\cache\ecc\ecc\2.2.3\CONTRIBUTING.md:478:  - Cross-harness: for Codex, add `.agents/skills/<name>/` plus `agents/openai.yaml`. The Codex frontmatter validator only allows `name`, `description`, `metadata`, `license`, and `allowed-tools`, so drop keys like `version` from that copy.
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\package.json:55:    ".agents/",
+Archived\plugins\cache\ecc\ecc\2.2.3\docs\zh-CN\skills\context-budget\SKILL.md:35:* 检查 `.agents/skills/` 中的重复副本 — 跳过相同副本以避免重复计数
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\manifests\install-modules.json:35:        ".agents",
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\npm-publish-surface.test.js:244:        ".agents/skills/unified-memory/SKILL.md",
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\npm-publish-surface.test.js:245:        ".agents/skills/unified-memory/agents/openai.yaml",
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.github\PULL_REQUEST_TEMPLATE.md:38:- [ ] Cross-harness surfaces updated if applicable (for Codex, `.agents/skills/<name>/` plus `agents/openai.yaml`; the Codex frontmatter validator allows only `name`, `description`, `metadata`, `license`, `allowed-tools`, so drop keys like `version` from that copy)
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\dashboard-web.test.js:765:  assert.ok(en.agents);
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\dashboard-web.test.js:923:    assert.ok(Array.isArray(parsed.agents));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-ps1.test.js:118:        canonicalizePlannedPath(path.join(expectedProject, '.agents')),
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-ps1.test.js:119:        canonicalizePlannedPath(path.join(unrelatedProject, '.agents'))
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-ps1.test.js:142:        canonicalizePlannedPath(path.join(projectDir, '.agents')),
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-ps1.test.js:143:        `dry-run output should target the project .agents directory:\n${result.stdout}`
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-ps1.test.js:145:      assert.ok(!fs.existsSync(path.join(projectDir, '.agents')));
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\npm-publish-surface.test.js:244:        ".agents/skills/unified-memory/SKILL.md",
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\npm-publish-surface.test.js:245:        ".agents/skills/unified-memory/agents/openai.yaml",
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\docs\codex-navigation-map.test.js:39:    '.agents/skills/',
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:92:  const agentsHome = path.join(homeDir, '.agents');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:801:      assert.strictEqual(parsed.agents.max_threads, 6);
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:802:      assert.strictEqual(parsed.agents.explorer.config_file, 'agents/explorer.toml');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1184:      assert.ok(parsedConfig.agents);
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1185:      assert.strictEqual(parsedConfig.agents.max_threads, 6);
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1186:      assert.strictEqual(parsedConfig.agents.max_depth, 1);
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1187:      assert.strictEqual(parsedConfig.agents.explorer.config_file, 'agents/explorer.toml');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1188:      assert.strictEqual(parsedConfig.agents.reviewer.config_file, 'agents/reviewer.toml');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1189:      assert.strictEqual(parsedConfig.agents.docs_researcher.config_file, 'agents/docs-researcher.toml');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1233:      assert.strictEqual(parsedConfig.agents.max_threads, 6);
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1234:      assert.strictEqual(parsedConfig.agents.max_depth, 1);
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1235:      assert.strictEqual(parsedConfig.agents.explorer.config_file, 'agents/explorer.toml');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\docs\antigravity-guide.test.js:32:    'Guide should state the minimum ECC version that installs into .agents'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:316:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'rules', 'common-coding-style.md')));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:317:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'rules', 'typescript-testing.md')));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:318:      assert.ok(!fs.existsSync(path.join(projectDir, '.agents', 'rules', 'python-testing.md')));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:319:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'workflows', 'plan.md')));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:320:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'skills', 'tdd-workflow', 'SKILL.md')));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:321:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'agents', 'architect.md')));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:323:        path.join(projectDir, '.agents', 'agents', 'tdd-guide.md')
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:331:        path.join(projectDir, '.agents', 'agents', 'docs-lookup.md')
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:335:        path.join(projectDir, '.agents', 'agents', 'harness-optimizer.md')
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:339:      const statePath = path.join(projectDir, '.agents', 'ecc-install-state.json');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:357:          operation.destinationPath.endsWith(path.join('.agents', 'workflows', 'plan.md'))
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:378:      const rulesDir = path.join(projectDir, '.agents', 'rules');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:597:  if (test('home installs do not copy the repo .agents staging directory into Claude or Codex homes', () => {
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:609:        !fs.existsSync(path.join(claudeRoot, '.agents')),
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:610:        'Claude home must not receive the repo .agents staging directory'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:616:          String(operation.sourceRelativePath || '').replace(/\\/g, '/').split('/')[0] === '.agents'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:618:        'Claude install-state must not record .agents copy operations'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:628:        !fs.existsSync(path.join(codexRoot, '.agents')),
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:629:        'Codex home must not receive the repo .agents staging directory'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:635:          String(operation.sourceRelativePath || '').replace(/\\/g, '/').split('/')[0] === '.agents'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:637:        'Codex install-state must not record .agents copy operations'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:645:  if (test('reconciles legacy .agents files and state operations on Claude and Codex home upgrades', () => {
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:684:      // Claude home seeded as installed before the .agents exclusion.
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:687:      const claudeSkillCopy = path.join(claudeRoot, '.agents', 'skills', 'legacy-skill', 'SKILL.md');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:688:      const claudeModifiedCopy = path.join(claudeRoot, '.agents', 'plugins', 'marketplace.json');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:689:      const claudeUserFile = path.join(claudeRoot, '.agents', 'user-note.txt');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:697:        legacyOperation(claudeSkillCopy, '.agents/skills/legacy-skill/SKILL.md', '# legacy skill\n'),
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:698:        legacyOperation(claudeModifiedCopy, '.agents/plugins/marketplace.json', '{"original": true}\n'),
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:704:      assert.ok(!fs.existsSync(claudeSkillCopy), 'Unchanged managed .agents file should be removed');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:707:          `- removed ${path.join(fs.realpathSync(claudeRoot), '.agents', 'skills', 'legacy-skill', 'SKILL.md')}`
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:722:        !fs.existsSync(path.join(claudeRoot, '.agents', 'skills')),
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:723:        'Emptied .agents subdirectories should be pruned'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:729:          String(operation.sourceRelativePath || '').replace(/\\/g, '/').split('/')[0] === '.agents'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:731:        'Claude install-state must drop the excluded .agents operations'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:739:      const codexSkillCopy = path.join(codexRoot, '.agents', 'skills', 'legacy-skill', 'SKILL.md');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:740:      const codexMarketplaceCopy = path.join(codexRoot, '.agents', 'plugins', 'marketplace.json');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:747:        legacyOperation(codexSkillCopy, '.agents/skills/legacy-skill/SKILL.md', '# legacy skill\n'),
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:748:        legacyOperation(codexMarketplaceCopy, '.agents/plugins/marketplace.json', '{"original": true}\n'),
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:755:        !fs.existsSync(path.join(codexRoot, '.agents')),
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:756:        'Fully reconciled .agents directory should be pruned from the Codex home'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:761:          String(operation.sourceRelativePath || '').replace(/\\/g, '/').split('/')[0] === '.agents'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:763:        'Codex install-state must drop the excluded .agents operations'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:897:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'rules', 'common-coding-style.md')));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:899:        fs.existsSync(path.join(projectDir, '.agents', 'rules', 'python-testing.md')),
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:902:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'agents', 'architect.md')));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:903:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'workflows', 'plan.md')));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:904:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'skills', 'tdd-workflow', 'SKILL.md')));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:906:      const state = readJson(path.join(projectDir, '.agents', 'ecc-install-state.json'));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\build-opencode.test.js:224:        packagedPaths.has(".agents/plugins/marketplace.json"),
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\build-opencode.test.js:225:        "npm pack should include .agents/plugins/marketplace.json"
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\auto-update.test.js:533:        'Run the Antigravity installer once to migrate it to .agents'
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:6: *   - .agents/plugins/marketplace.json (Codex marketplace discovery)
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:496:// Per official docs: repo marketplace lives at $REPO_ROOT/.agents/plugins/marketplace.json
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:497:console.log('\n=== .agents/plugins/marketplace.json ===\n');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:499:const marketplacePath = path.join(repoRoot, '.agents', 'plugins', 'marketplace.json');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:501:test('marketplace.json exists at .agents/plugins/', () => {
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:502:  assert.ok(fs.existsSync(marketplacePath), 'Expected .agents/plugins/marketplace.json for Codex repo marketplace discovery');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:505:const marketplace = loadJsonObject(marketplacePath, '.agents/plugins/marketplace.json');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.codex\AGENTS.md:19:Skills are auto-loaded from `.agents/skills/`. Each skill contains:
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.codex\AGENTS.md:92:| Skills | Skills loaded via plugin | Native plugin skills and repo `.agents/skills/` |
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\pi\pi-package-manifest.test.js:119:        "pi.agents is not supported by Pi's core manifest — subagent conversion belongs to the pi-subagents companion package and would be silently ignored if placed here"
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-ps1.test.js:118:        canonicalizePlannedPath(path.join(expectedProject, '.agents')),
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-ps1.test.js:119:        canonicalizePlannedPath(path.join(unrelatedProject, '.agents'))
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-ps1.test.js:142:        canonicalizePlannedPath(path.join(projectDir, '.agents')),
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-ps1.test.js:143:        `dry-run output should target the project .agents directory:\n${result.stdout}`
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-ps1.test.js:145:      assert.ok(!fs.existsSync(path.join(projectDir, '.agents')));
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:316:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'rules', 'common-coding-style.md')));
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:317:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'rules', 'typescript-testing.md')));
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:318:      assert.ok(!fs.existsSync(path.join(projectDir, '.agents', 'rules', 'python-testing.md')));
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:319:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'workflows', 'plan.md')));
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:320:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'skills', 'tdd-workflow', 'SKILL.md')));
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:321:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'agents', 'architect.md')));
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:323:        path.join(projectDir, '.agents', 'agents', 'tdd-guide.md')
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:331:        path.join(projectDir, '.agents', 'agents', 'docs-lookup.md')
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:335:        path.join(projectDir, '.agents', 'agents', 'harness-optimizer.md')
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:339:      const statePath = path.join(projectDir, '.agents', 'ecc-install-state.json');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:357:          operation.destinationPath.endsWith(path.join('.agents', 'workflows', 'plan.md'))
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:378:      const rulesDir = path.join(projectDir, '.agents', 'rules');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:597:  if (test('home installs do not copy the repo .agents staging directory into Claude or Codex homes', () => {
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:609:        !fs.existsSync(path.join(claudeRoot, '.agents')),
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:610:        'Claude home must not receive the repo .agents staging directory'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:616:          String(operation.sourceRelativePath || '').replace(/\\/g, '/').split('/')[0] === '.agents'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:618:        'Claude install-state must not record .agents copy operations'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:628:        !fs.existsSync(path.join(codexRoot, '.agents')),
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:629:        'Codex home must not receive the repo .agents staging directory'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:635:          String(operation.sourceRelativePath || '').replace(/\\/g, '/').split('/')[0] === '.agents'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:637:        'Codex install-state must not record .agents copy operations'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:645:  if (test('reconciles legacy .agents files and state operations on Claude and Codex home upgrades', () => {
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:684:      // Claude home seeded as installed before the .agents exclusion.
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:687:      const claudeSkillCopy = path.join(claudeRoot, '.agents', 'skills', 'legacy-skill', 'SKILL.md');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:688:      const claudeModifiedCopy = path.join(claudeRoot, '.agents', 'plugins', 'marketplace.json');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:689:      const claudeUserFile = path.join(claudeRoot, '.agents', 'user-note.txt');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:697:        legacyOperation(claudeSkillCopy, '.agents/skills/legacy-skill/SKILL.md', '# legacy skill\n'),
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:698:        legacyOperation(claudeModifiedCopy, '.agents/plugins/marketplace.json', '{"original": true}\n'),
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:704:      assert.ok(!fs.existsSync(claudeSkillCopy), 'Unchanged managed .agents file should be removed');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:707:          `- removed ${path.join(fs.realpathSync(claudeRoot), '.agents', 'skills', 'legacy-skill', 'SKILL.md')}`
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:722:        !fs.existsSync(path.join(claudeRoot, '.agents', 'skills')),
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:723:        'Emptied .agents subdirectories should be pruned'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:729:          String(operation.sourceRelativePath || '').replace(/\\/g, '/').split('/')[0] === '.agents'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:731:        'Claude install-state must drop the excluded .agents operations'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:739:      const codexSkillCopy = path.join(codexRoot, '.agents', 'skills', 'legacy-skill', 'SKILL.md');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:740:      const codexMarketplaceCopy = path.join(codexRoot, '.agents', 'plugins', 'marketplace.json');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:747:        legacyOperation(codexSkillCopy, '.agents/skills/legacy-skill/SKILL.md', '# legacy skill\n'),
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:748:        legacyOperation(codexMarketplaceCopy, '.agents/plugins/marketplace.json', '{"original": true}\n'),
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:755:        !fs.existsSync(path.join(codexRoot, '.agents')),
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:756:        'Fully reconciled .agents directory should be pruned from the Codex home'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:761:          String(operation.sourceRelativePath || '').replace(/\\/g, '/').split('/')[0] === '.agents'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:763:        'Codex install-state must drop the excluded .agents operations'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:897:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'rules', 'common-coding-style.md')));
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:899:        fs.existsSync(path.join(projectDir, '.agents', 'rules', 'python-testing.md')),
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:902:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'agents', 'architect.md')));
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:903:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'workflows', 'plan.md')));
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:904:      assert.ok(fs.existsSync(path.join(projectDir, '.agents', 'skills', 'tdd-workflow', 'SKILL.md')));
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js:906:      const state = readJson(path.join(projectDir, '.agents', 'ecc-install-state.json'));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\validators.test.js:262:    readmeProjectTreeAgents = readmeCounts.agents,
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\validators.test.js:309:[Omitted long matching line]
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\validators.test.js:310:  fs.writeFileSync(agentsPath, `This is a **production-ready AI coding plugin** providing ${summaryCounts.agents} specialized agents, ${summaryCounts.skills} skills, ${summaryCounts.commands} commands, and automated hook workflows for software development.\n\n\`\`\`\n${structureLines.join('\n')}\n\`\`\`\n`);
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\validators.test.js:311:  fs.writeFileSync(zhRootReadmePath, `**完成！** 你现在可以使用 ${zhRootReadmeCounts.agents} 个代理、${zhRootReadmeCounts.skills} 个技能和 ${zhRootReadmeCounts.commands} 个命令。\n`);
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\validators.test.js:312:[Omitted long matching line]
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\validators.test.js:313:  fs.writeFileSync(zhAgentsPath, `这是一个**生产就绪的 AI 编码插件**，提供 ${zhAgentsSummaryCounts.agents} 个专业代理、${zhAgentsSummaryCounts.skills} 项技能、${zhAgentsSummaryCounts.commands} 条命令以及自动化钩子工作流，用于软件开发。\n\n\`\`\`\n${zhAgentsStructureLines.join('\n')}\n\`\`\`\n`);
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\validators.test.js:316:    description: `Battle-tested plugin — ${pluginCounts.agents} agents, ${pluginCounts.skills} skills, ${pluginCounts.commands} legacy command shims`,
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\validators.test.js:321:      description: `Marketplace plugin — ${marketplaceCounts.agents} agents, ${marketplaceCounts.skills} skills, ${marketplaceCounts.commands} legacy command shims`,
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\validators.test.js:326:    `ECC is a production-ready AI coding plugin with ${crossHarnessCounts.agents} specialized agents, ${crossHarnessCounts.skills} skills, ${crossHarnessCounts.commands} commands, and automated hook workflows.\n`
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\validators.test.js:330:    `ECC is a cross-harness coding system with ${crossHarnessCounts.agents} specialized agents, ${crossHarnessCounts.skills} skills, and ${crossHarnessCounts.commands} commands.\n`
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\validators.test.js:786:    assert.ok(readme.includes('| Skills | 16 | .agents/skills/ |'), 'Should not rewrite unrelated README tables');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\validators.test.js:793:    assert.ok(zhDocsReadme.includes('| 技能 | 16 | .agents/skills/ |'), 'Should not rewrite unrelated docs/zh-CN/README tables');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.claude\team\ecc-team-config.json:6:    ".agents/skills/ecc-conventions/SKILL.md"
+Archived\plugins\cache\ecc\ecc\2.2.3\docs\ko-KR\README.md:589:- **Antigravity**: `.agents/`에 워크플로우, 스킬, 에이전트, 평탄화된 룰 통합
+Archived\.claude\plugins\marketplaces\ecc\tests\scripts\sync-ecc-to-codex.test.js:79:    // Skills sync rm/cp calls were removed — Codex reads from ~/.agents/skills/ natively
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\unified-memory-surface.test.js:10:  '.agents/skills/unified-memory/SKILL.md',
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\dashboard-web.test.js:765:  assert.ok(en.agents);
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\dashboard-web.test.js:923:    assert.ok(Array.isArray(parsed.agents));
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\release-packed-artifact-workflow.test.js:722:  assert.match(lifecycleRunnerSource, /path\.join\(projectDir, '\.agents'\)/);
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.claude\homunculus\instincts\inherited\ecc-instincts.yaml:117:Treat the root repo as the source of truth, then mirror shipped changes to `.cursor/`, `.codex/`, `.opencode/`, and `.agents/` only where the feature actually exists.
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\packed-artifact-lifecycle.js:845:    const antigravityRoot = path.join(projectDir, '.agents');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:137:    ".agents/skills/ecc-conventions/SKILL.md",
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:138:    ".agents/skills/ecc-conventions/agents/openai.yaml",
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:156:      ".agents/skills/ecc-conventions/SKILL.md",
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:157:      ".agents/skills/ecc-conventions/agents/openai.yaml",
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:186:      ".agents/skills/ecc-conventions/SKILL.md",
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:187:      ".agents/skills/ecc-conventions/agents/openai.yaml",
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:217:      "path": ".agents/skills/ecc-conventions/SKILL.md",
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:222:      "path": ".agents/skills/ecc-conventions/agents/openai.yaml",
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:312:      "skillPath": ".agents/skills/ecc-conventions/SKILL.md",
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\.claude\ecc-tools.json:323:      "skillPath": ".agents/skills/ecc-conventions/SKILL.md"
+Archived\plugins\cache\ecc\ecc\2.2.3\docs\ko-KR\CONTRIBUTING.md:357:- **Codex:** `.agents/skills/` — `agents/openai.yaml`에 나열된 스킬이 Codex에서 로드됩니다.
+Archived\plugins\cache\ecc\ecc\2.2.3\docs\ko-KR\CONTRIBUTING.md:363:2. **Codex**에서도 제공해야 하면 `.agents/skills/`에 반영하고, 필요하면 `agents/openai.yaml`에도 참조를 추가합니다.
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:92:  const agentsHome = path.join(homeDir, '.agents');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:801:      assert.strictEqual(parsed.agents.max_threads, 6);
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:802:      assert.strictEqual(parsed.agents.explorer.config_file, 'agents/explorer.toml');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1184:      assert.ok(parsedConfig.agents);
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1185:      assert.strictEqual(parsedConfig.agents.max_threads, 6);
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1186:      assert.strictEqual(parsedConfig.agents.max_depth, 1);
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1187:      assert.strictEqual(parsedConfig.agents.explorer.config_file, 'agents/explorer.toml');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1188:      assert.strictEqual(parsedConfig.agents.reviewer.config_file, 'agents/reviewer.toml');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1189:      assert.strictEqual(parsedConfig.agents.docs_researcher.config_file, 'agents/docs-researcher.toml');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1233:      assert.strictEqual(parsedConfig.agents.max_threads, 6);
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1234:      assert.strictEqual(parsedConfig.agents.max_depth, 1);
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js:1235:      assert.strictEqual(parsedConfig.agents.explorer.config_file, 'agents/explorer.toml');
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\mle-workflow-coverage.test.js:7:const CODEX_SKILL = path.join(REPO_ROOT, '.agents', 'skills', 'mle-workflow', 'SKILL.md');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\build-opencode.test.js:224:        packagedPaths.has(".agents/plugins/marketplace.json"),
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\build-opencode.test.js:225:        "npm pack should include .agents/plugins/marketplace.json"
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\auto-update.test.js:533:        'Run the Antigravity installer once to migrate it to .agents'
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:6: *   - .agents/plugins/marketplace.json (Codex marketplace discovery)
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:496:// Per official docs: repo marketplace lives at $REPO_ROOT/.agents/plugins/marketplace.json
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:497:console.log('\n=== .agents/plugins/marketplace.json ===\n');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:499:const marketplacePath = path.join(repoRoot, '.agents', 'plugins', 'marketplace.json');
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:501:test('marketplace.json exists at .agents/plugins/', () => {
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\plugin-manifest.test.js:502:  assert.ok(fs.existsSync(marketplacePath), 'Expected .agents/plugins/marketplace.json for Codex repo marketplace discovery');
+
+[Showing results with pagination = limit: 250]

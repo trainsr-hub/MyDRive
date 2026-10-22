@@ -1,0 +1,187 @@
+// path: src/apps/heraclitus/components/YellowPoolTab.tsx
+// Tier 4 Presentation Component: 100% Submersed Chrono Gacha Arena with 5 Kinetic Variants
+
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { fetchPoolState, depositToPool } from '../services/heraclitusApi'
+import { ChronoGachaRollPanel } from './ChronoGachaRollPanel'
+import type { GachaRollResult } from '../core/chronoGachaEngine'
+
+export interface ChronoEngineModule {
+  id: string
+  file: string
+  name: string
+  desc: string
+  icon: string
+  themeColor: string
+}
+
+export const TWO_PHASE_ENGINES: ChronoEngineModule[] = [
+  {
+    id: 'spool_shatter',
+    file: 'phase_005_spool_and_shatter.html',
+    name: 'Thermal',
+    desc: 'Golden Thermal Blast & Downward Dissolve',
+    icon: '⏳',
+    themeColor: '#fbbf24',
+  },
+  {
+    id: 'singularity',
+    file: 'phase_009_chronos_singularity.html',
+    name: 'Singularity',
+    desc: 'Gravitational Collapse & Violet Swarm',
+    icon: '⚛',
+    themeColor: '#c084fc',
+  },
+  {
+    id: 'prismatic',
+    file: 'phase_006_prismatic_crystal.html',
+    name: 'Prism',
+    desc: 'Hexagonal Crystal Stress & Shard Swarm',
+    icon: '💎',
+    themeColor: '#e879f9',
+  },
+  {
+    id: 'cyber',
+    file: 'phase_007_cyber_matrix.html',
+    name: 'Cyber',
+    desc: 'Isometric Voxel Compile & Binary Stream',
+    icon: '💾',
+    themeColor: '#00f0ff',
+  },
+  {
+    id: 'supernova',
+    file: 'phase_010_supernova_spool.html',
+    name: 'Supernova',
+    desc: 'Protostar Ingestion & Stellar Flare',
+    icon: '☀️',
+    themeColor: '#f59e0b',
+  },
+]
+
+export const YellowPoolTab: React.FC = () => {
+  const [activeEngineId, setActiveEngineId] = useState<string>('spool_shatter')
+  const [balanceSec, setBalanceSec] = useState<number>(0)
+  const [isDepositing, setIsDepositing] = useState<boolean>(false)
+
+  const balanceSecRef = useRef<number>(0)
+  const iframeRef = useRef<HTMLIFrameElement | null>(null)
+  const activeEngine = TWO_PHASE_ENGINES.find((e) => e.id === activeEngineId) || TWO_PHASE_ENGINES[0]
+
+  useEffect(() => {
+    balanceSecRef.current = balanceSec
+  }, [balanceSec])
+
+  // Load authoritative balance from SQLite on mount
+  const loadPoolState = useCallback(async () => {
+    try {
+      const state = await fetchPoolState()
+      setBalanceSec(state.balance_seconds)
+      balanceSecRef.current = state.balance_seconds
+
+      // Sync to iframe stage
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          { type: 'SET_BALANCE', seconds: state.balance_seconds },
+          '*'
+        )
+      }
+    } catch {
+      // Offline fallback
+    }
+  }, [])
+
+  useEffect(() => {
+    loadPoolState()
+  }, [loadPoolState])
+
+  // PostMessage listener for iframe lifecycle
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (!event.data || typeof event.data !== 'object') return
+
+      if (event.data.type === 'IFRAME_READY') {
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: 'SET_BALANCE', seconds: balanceSecRef.current },
+            '*'
+          )
+        }
+      } else if (event.data.type === 'DEPOSIT_STARTED') {
+        setIsDepositing(true)
+      } else if (event.data.type === 'DEPOSIT_COMMITTED') {
+        setIsDepositing(false)
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [])
+
+  const handleIframeLoad = () => {
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        { type: 'SET_BALANCE', seconds: balanceSecRef.current },
+        '*'
+      )
+    }
+  }
+
+  // Handle single Gacha Roll trigger
+  const handleGachaRoll = async (rollResult: GachaRollResult, wagerMultiplier: number) => {
+    if (isDepositing || rollResult.seconds <= 0) return
+    setIsDepositing(true)
+
+    // 1. Immediately channel rolled duration into the kinetic stage
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        { type: 'TRIGGER_DEPOSIT', seconds: rollResult.seconds },
+        '*'
+      )
+    }
+
+    // 2. Commit atomically to shared SQLite database
+    try {
+      const updatedState = await depositToPool({
+        seconds: rollResult.seconds,
+        source: `Chrono Summon [${rollResult.tier}]`,
+        category: 'gacha',
+        speed: 1.0,
+        notes: `${rollResult.label} • ${wagerMultiplier}x Wager • ${activeEngine.name}`,
+      })
+      setBalanceSec(updatedState.balance_seconds)
+      balanceSecRef.current = updatedState.balance_seconds
+    } catch {
+      setBalanceSec((prev) => prev + rollResult.seconds)
+      balanceSecRef.current += rollResult.seconds
+    } finally {
+      setIsDepositing(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center w-full max-w-4xl mx-auto space-y-4 py-2">
+      {/* ── 1. The 100% Submersed Kinetic Stage (Arc Jurassic Golden Standard) ── */}
+      <div className="w-full flex flex-col items-center justify-center relative overflow-visible bg-transparent border-0 shadow-none">
+        <iframe
+          key={activeEngine.id}
+          ref={iframeRef}
+          src={`/animations/2-phases/${activeEngine.file}`}
+          title="Chrono Accumulator Stage"
+          onLoad={handleIframeLoad}
+          className="w-full h-[520px] md:h-[560px] border-0 outline-none bg-transparent block overflow-visible"
+        />
+      </div>
+
+      {/* ── 2. The Golden Standard Gacha Summon Button, Variants & Wager Bar ── */}
+      <ChronoGachaRollPanel
+        isDepositing={isDepositing}
+        activeEngineId={activeEngineId}
+        engines={TWO_PHASE_ENGINES}
+        onSelectEngine={setActiveEngineId}
+        onRoll={handleGachaRoll}
+      />
+    </div>
+  )
+}
+
+export default YellowPoolTab

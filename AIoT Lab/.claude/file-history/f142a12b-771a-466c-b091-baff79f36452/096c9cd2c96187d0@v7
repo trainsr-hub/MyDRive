@@ -1,0 +1,242 @@
+#!/usr/bin/env python3
+"""
+Tier 3: Autonomous Agent Loop
+Multi-turn ReAct reasoning and tool calling cycle.
+Integrates SovereignTools and JobManager with pure model providers.
+"""
+
+import json
+import logging
+from typing import Dict, Any, List, Optional, Callable
+
+from domain import ExecutionResult, ToolResult
+from tools import SovereignTools
+from jobs import JobManager
+from model_provider import ModelProvider, load_secrets
+from repository import SessionRepository
+from cli_runner import run_cli_with_watchdog
+
+
+TOOLS_DECLARATION = [
+    {
+        "name": "run_shell",
+        "description": "Execute a safe PowerShell terminal command inside the active workspace.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "command": {"type": "string", "description": "PowerShell command to execute."}
+            },
+            "required": ["command"]
+        }
+    },
+    {
+        "name": "read_file",
+        "description": "Read file lines with line numbering from the active workspace.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "file_path": {"type": "string", "description": "Relative or absolute path on D:\\."},
+                "max_lines": {"type": "integer", "description": "Maximum lines to read (default 150)."},
+                "offset": {"type": "integer", "description": "Start line number (default 1)."}
+            },
+            "required": ["file_path"]
+        }
+    },
+    {
+        "name": "write_file",
+        "description": "Write or overwrite a file on Local Disk D:\\.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "file_path": {"type": "string", "description": "Relative or absolute path on D:\\."},
+                "content": {"type": "string", "description": "File text content."}
+            },
+            "required": ["file_path", "content"]
+        }
+    },
+    {
+        "name": "edit_file",
+        "description": "Perform exact unique string replacement in an existing file.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "file_path": {"type": "string", "description": "Target file path."},
+                "old_str": {"type": "string", "description": "Exact text to replace."},
+                "new_str": {"type": "string", "description": "Replacement text."}
+            },
+            "required": ["file_path", "old_str", "new_str"]
+        }
+    },
+    {
+        "name": "list_dir",
+        "description": "List files and subdirectories in a workspace path.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "dir_path": {"type": "string", "description": "Directory path relative to workspace or on D:\\."}
+            },
+            "required": ["dir_path"]
+        }
+    },
+    {
+        "name": "git_status",
+        "description": "Get current branch name, uncommitted changes, and last commit.",
+        "parameters": {"type": "object", "properties": {}}
+    },
+    {
+        "name": "git_diff",
+        "description": "View git diff statistics or full diff.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "stat_only": {"type": "boolean", "description": "True for summary stats, False for full diff."}
+            }
+        }
+    },
+    {
+        "name": "start_background",
+        "description": "Run a long-running process or dev server detached without blocking the agent.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "command": {"type": "string", "description": "Command to start in background."},
+                "name": {"type": "string", "description": "Short human-readable label (e.g. dev-server)."}
+            },
+            "required": ["command", "name"]
+        }
+    },
+    {
+        "name": "stop_background",
+        "description": "Terminate a running background dev server by its job ID.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "job_id": {"type": "string", "description": "Job ID (e.g. job_a1b2)."}
+            },
+            "required": ["job_id"]
+        }
+    },
+    {
+        "name": "tail_log",
+        "description": "Read recent output lines from a background dev server log.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "job_id": {"type": "string", "description": "Job ID."},
+                "lines": {"type": "integer", "description": "Number of lines (default 50)."}
+            },
+            "required": ["job_id"]
+        }
+    }
+]
+
+
+class AgentExecutionLoop:
+    """Executes multi-step ReAct agent loops for natural language directives."""
+
+    def __init__(self, session_repo: Optional[SessionRepository] = None) -> None:
+        self.session_repo = session_repo or SessionRepository()
+        self.secrets = load_secrets()
+
+    def _execute_tool(self, name: str, args: Dict[str, Any], cwd: str) -> str:
+        """Dispatches tool call to SovereignTools or JobManager."""
+        try:
+            if name == "run_shell":
+                res = SovereignTools.run_shell(args.get("command", ""), cwd=cwd)
+            elif name == "read_file":
+                res = SovereignTools.read_file(
+                    args.get("file_path", ""), cwd=cwd,
+                    max_lines=args.get("max_lines", 150),
+                    offset=args.get("offset", 1)
+                )
+            elif name == "write_file":
+                res = SovereignTools.write_file(args.get("file_path", ""), args.get("content", ""), cwd=cwd)
+            elif name == "edit_file":
+                res = SovereignTools.edit_file(
+                    args.get("file_path", ""),
+                    args.get("old_str", ""),
+                    args.get("new_str", ""),
+                    cwd=cwd
+                )
+            elif name == "list_dir":
+                res = SovereignTools.list_dir(args.get("dir_path", "."), cwd=cwd)
+            elif name == "git_status":
+                res = SovereignTools.git_status(cwd=cwd)
+            elif name == "git_diff":
+                res = SovereignTools.git_diff(cwd=cwd, stat_only=args.get("stat_only", True))
+            elif name == "start_background":
+                res = JobManager.start_background(args.get("command", ""), args.get("name", "app"), cwd=cwd)
+            elif name == "stop_background":
+                res = JobManager.stop_background(args.get("job_id", ""))
+            elif name == "tail_log":
+                res = JobManager.tail_log(args.get("job_id", ""), lines=args.get("lines", 50))
+            else:
+                return f"Error: Unknown tool '{name}'."
+
+            out = res.output if res.success else f"Error: {res.error}"
+            return out[:3500]
+        except Exception as e:
+            return f"Tool execution exception: {str(e)}"
+
+    def execute_directive(
+        self,
+        text: str,
+        cwd: str,
+        workspace_name: str,
+        thread_id: str,
+        progress_cb: Optional[Callable[[str], None]] = None
+    ) -> ExecutionResult:
+        """Runs iterative agent loop until resolution or max steps."""
+        gemini_key = self.secrets.get("GEMINI_API_KEY", "")
+        anthropic_key = self.secrets.get("ANTHROPIC_API_KEY", "")
+
+        if not gemini_key and not anthropic_key:
+            # Fallback to local authenticated Claude Code CLI with Sliding Heartbeat Watchdog
+            return run_cli_with_watchdog(
+                text=text,
+                cwd=cwd,
+                progress_cb=progress_cb,
+                inactivity_timeout=360,
+                max_timeout=1800,
+                max_retries=2
+            )
+
+        system_prompt = (
+            f"You are Faust, sovereign analytical intelligence for The Manager.\n"
+            f"Active Workspace: {workspace_name} (Directory: {cwd})\n"
+            f"Storage Policy: Local Disk D:\\ STRICTLY. Never write to C:\\.\n"
+            f"Modularity: Keep code clean, modular, and fail-loud with clear errors.\n"
+            f"Tools: Call tools to inspect, edit, build, or run apps. Once done, provide a clear briefing."
+        )
+
+        # Load recent context
+        history = self.session_repo.get_recent_history(thread_id, limit=8)
+        messages = [{"role": h.role, "content": h.content} for h in history]
+        messages.append({"role": "user", "content": text})
+
+        for step in range(10):
+            try:
+                if gemini_key:
+                    resp = ModelProvider.call_gemini(messages, TOOLS_DECLARATION, system_prompt, gemini_key)
+                else:
+                    resp = ModelProvider.call_anthropic(messages, TOOLS_DECLARATION, system_prompt, anthropic_key)
+            except Exception as e:
+                return ExecutionResult(success=False, output="", error=f"Model API error: {str(e)}")
+
+            tool_calls = resp.get("tool_calls", [])
+            reply_text = resp.get("text", "")
+
+            if not tool_calls:
+                return ExecutionResult(success=True, output=reply_text or "Task completed.")
+
+            for tc in tool_calls:
+                t_name = tc.get("name")
+                t_args = tc.get("args", {})
+                if progress_cb:
+                    progress_cb(f"🔄 Executing <code>{t_name}</code>...")
+
+                t_out = self._execute_tool(t_name, t_args, cwd=cwd)
+                messages.append({"role": "assistant", "content": f"Called tool {t_name} with {json.dumps(t_args)}"})
+                messages.append({"role": "user", "content": f"Tool {t_name} result:\n{t_out}"})
+
+        return ExecutionResult(success=True, output="Completed maximum allowed execution steps.")

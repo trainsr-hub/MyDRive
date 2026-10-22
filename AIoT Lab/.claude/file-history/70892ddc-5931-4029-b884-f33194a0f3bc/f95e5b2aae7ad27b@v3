@@ -1,0 +1,1428 @@
+import React, { useMemo, useState, useEffect, useRef, useLayoutEffect, memo } from 'react';
+import { calcDinoActiveStats, getDinoAvatarUrl } from '../../../core/evolutionEngine';
+import { calcGachaPool } from '../../../core/calcGachaPool';
+import {
+    getDinoCatalogTier,
+    getMinFerocityForTier,
+    getTierSubDivisions,
+    getTierFerocityRangeLabel,
+    type SubTierDivision,
+    type DinoCatalogTier,
+    DINO_CATALOG_TIERS
+} from '../../../core/hazardEngine';
+import {
+    RANK_THEMATIC_REGISTRY,
+    type GlobalRankTier
+} from '../../../../../utils/rank';
+import { HazardBadge } from '../../../../../components/HazardBadge';
+import { EvoAvatar } from '../../molecule/EvoAvatar/EvoAvatar';
+import { EvoUpPopupModal, type EvoTierData } from './EvoUpPopupModal';
+import { NewPoolUnlocksModal } from './NewPoolUnlocksModal';
+import { useGlobalStore } from '../../../../../store/useGlobalStore';
+import type { BuyAnimationTarget, PoolDino } from '../gacha/types';
+import { rutGonTime } from '../../../core/rutGonTime';
+import { Sparkles, Unlock, TrendingUp, Zap, Layers } from 'lucide-react';
+
+interface AllDinosTabProps {
+    objects: any[];
+    lookup: any;
+    userProgress: any;
+    buyAnimationTarget?: BuyAnimationTarget | null;
+    isRapidMode?: boolean;
+    isAutoGachaBuy?: boolean;
+    onClearAnimation?: () => void;
+    onSelectDino: (uuid: string) => void;
+    onReturnToGacha?: () => void;
+}
+
+interface DinoTransformAnimationState {
+    targetUuid: string;
+    phase: 'unlocking' | 'charging' | 'evolving' | 'celebrating';
+    isUnlocked: boolean;
+    isShadow?: boolean;
+    currentRank: number;
+    currentLevel: number;
+    currentFerocity: number;
+    currentDamage: number;
+    currentHealth: number;
+    currentEvoImg: string | null;
+    totalTargetRank: number;
+    dinoName: string;
+    statusText: string;
+    isFlash: boolean;
+}
+
+interface DinoItemData {
+    uuid: string;
+    isUnlocked: boolean;
+    isShadow?: boolean;
+    number: number;
+    rank: number;
+    level: number;
+    maximumNumber: number;
+    ferocity: number;
+    damage: number;
+    health: number;
+    hatchTime: number;
+    sellPrice: number;
+    efficiency: number;
+    releaseTime: number;
+    evoImg: string | null;
+    rarity: string;
+    class: string;
+    name: string;
+    image_url: string;
+    hybrid_type: string;
+    region: string;
+    facts: any[];
+    ingredients: any[];
+    evolutions: any[];
+}
+
+interface DinoCardProps {
+    data: DinoItemData;
+    isAnimated: boolean;
+    animPhase: 'unlocking' | 'charging' | 'evolving' | 'celebrating' | null;
+    isFlash: boolean;
+    animRank: number;
+    isClimbingActive: boolean;
+    leaderboardRank?: number | null;
+    dropRatePercent?: number | null;
+    costSeconds?: number;
+    remainingTimeSeconds?: number;
+    frameUrl: string;
+    classIconUrl: string;
+    ferocityIconUrl: string;
+    damageIconUrl: string;
+    healthIconUrl: string;
+    onSelectDino: (uuid: string) => void;
+}
+
+// Dynamic Typography Sizing: Constant Height & Font Size, pure X-axis compression for long names
+const getDinoNameStyle = (name: string): React.CSSProperties => {
+    const len = (name || '').length;
+    // Up to 10 characters fit at 100% scale without overflowing card header
+    const scaleX = len > 10 ? Math.max(0.48, 10.2 / len) : 1.0;
+    return {
+        fontSize: '13px',
+        lineHeight: '16px',
+        transform: `scaleX(${scaleX})`,
+        transformOrigin: 'center',
+        letterSpacing: scaleX < 0.8 ? '-0.025em' : '0.01em',
+    };
+};
+
+// Memoized Individual Dinosaur Card matching JWTG Battle Deck UI
+const DinoCard = memo<DinoCardProps>(({
+    data,
+    isAnimated,
+    animPhase,
+    isFlash,
+    animRank,
+    isClimbingActive,
+    leaderboardRank,
+    dropRatePercent,
+    costSeconds,
+    remainingTimeSeconds,
+    frameUrl,
+    classIconUrl,
+    ferocityIconUrl,
+    damageIconUrl,
+    healthIconUrl,
+    onSelectDino
+}) => {
+    const nameStyle = getDinoNameStyle(data.name);
+
+    return (
+        <div
+            id={`dino-card-${data.uuid}`}
+            data-dino-card={data.uuid}
+            className={`flex flex-col items-center w-full relative ${
+                isAnimated ? 'dino-animating-target' : ''
+            }`}
+        >
+            {/* Prominent Real-time Temporal Cost & Remaining Time Badge right over dinosaur card */}
+            {isAnimated && costSeconds !== undefined && costSeconds > 0 && (
+                <div className="absolute -top-6.5 left-1/2 -translate-x-1/2 z-40 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-black tracking-tight text-center whitespace-nowrap shadow-[0_0_15px_rgba(244,63,94,0.85)] pointer-events-none bg-gradient-to-r from-[#22040c] via-[#380816] to-[#22040c] text-rose-200 border-2 border-rose-400 animate-pulse flex items-center gap-1.5">
+                    <span className="text-rose-300">⚡ -{rutGonTime(costSeconds, 'seconds')}</span>
+                    {remainingTimeSeconds !== undefined && (
+                        <span className="text-sky-300 border-l border-white/20 pl-1.5">⏱️ {rutGonTime(remainingTimeSeconds, 'seconds')} left</span>
+                    )}
+                </div>
+            )}
+
+            {/* Floating Rank Climb Badge */}
+            {isAnimated && (
+                <div className={`dino-climb-floating-badge ${
+                    isFlash ? 'is-flash' :
+                    animPhase === 'charging' ? 'is-charging' :
+                    animPhase === 'unlocking' ? 'is-unlock' :
+                    animPhase === 'celebrating' ? 'is-max' : 'is-climb'
+                }`}>
+                    {animPhase === 'unlocking' && (
+                        <span>
+                            🔒 UNLOCKING{leaderboardRank ? ` • #${leaderboardRank}` : ''}
+                            {dropRatePercent !== undefined && dropRatePercent !== null ? ` • 🎲 ${dropRatePercent.toFixed(2)}%` : ''}
+                        </span>
+                    )}
+                    {animPhase === 'charging' && (
+                        <span>
+                            ⚡ EVO {animRank} CHARGING...{leaderboardRank ? ` • #${leaderboardRank}` : ''}
+                            {dropRatePercent !== undefined && dropRatePercent !== null ? ` • 🎲 ${dropRatePercent.toFixed(2)}%` : ''}
+                        </span>
+                    )}
+                    {animPhase === 'evolving' && (
+                        <span>
+                            {isFlash ? `✨ EVO ${animRank} AWAKENED!` : `⬆ EVO ${animRank}`}
+                            {leaderboardRank ? ` • #${leaderboardRank}` : ''}
+                            {dropRatePercent !== undefined && dropRatePercent !== null ? ` • 🎲 ${dropRatePercent.toFixed(2)}%` : ''}
+                        </span>
+                    )}
+                    {animPhase === 'celebrating' && (
+                        <span>
+                            🌟 EVO {animRank} MAXED{leaderboardRank ? ` • #${leaderboardRank}` : ''}
+                            {dropRatePercent !== undefined && dropRatePercent !== null ? ` • 🎲 ${dropRatePercent.toFixed(2)}%` : ''}
+                        </span>
+                    )}
+                </div>
+            )}
+
+            {/* Dinosaur Name Header: Constant height and font size across all dinos, pure horizontal scaling */}
+            <div
+                className="w-full text-center font-sans font-bold text-gray-100 uppercase px-0.5 mb-1 h-[17px] max-w-full flex items-center justify-center overflow-visible select-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]"
+                title={data.name}
+            >
+                <span
+                    className="inline-block whitespace-nowrap transform origin-center transition-transform"
+                    style={nameStyle}
+                >
+                    {data.name}
+                </span>
+            </div>
+
+            {/* Avatar Container: Authentic Edge-to-Edge Frame, No outer golden round spare */}
+            <div
+                onClick={() => onSelectDino(data.uuid)}
+                className={`relative w-full aspect-square rounded-sm transition-transform duration-200 hover:scale-105 cursor-pointer select-none overflow-hidden ${
+                    isFlash
+                        ? 'dino-evo-flash'
+                        : isAnimated && animPhase === 'charging'
+                        ? 'dino-evo-charging'
+                        : isAnimated && animPhase === 'unlocking'
+                        ? 'dino-unlocking-pulse'
+                        : isAnimated && animPhase === 'evolving'
+                        ? 'dino-evolving-surge'
+                        : isAnimated && animPhase === 'celebrating'
+                        ? 'dino-celebrating-aura'
+                        : data.isUnlocked
+                        ? 'shadow-md'
+                        : 'opacity-70'
+                }`}
+                title={`Click to inspect ${data.name}`}
+            >
+                <EvoAvatar
+                    size="100%"
+                    borderRadius="2px"
+                    imageUrl={data.evoImg}
+                    frameUrl={frameUrl}
+                    isUnlocked={data.isUnlocked}
+                    isShadow={data.isShadow}
+                />
+
+                {/* Dinosaur Level & Ferocity Telemetry Badge at Bottom-Left: Level [LV] • [Rank #] ~ [Ferocity] */}
+                {(data.isUnlocked && !data.isShadow && animPhase !== 'unlocking') && (
+                    <div
+                        className="absolute bottom-1 left-1 z-20 px-1.5 py-0.5 bg-black/85 border border-white/25 rounded-[3px] text-[8.5px] sm:text-[9.5px] font-mono font-black text-amber-300 tracking-tight pointer-events-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)] leading-none flex items-center gap-1"
+                        title={`Level ${data.level || 10}${isAnimated && leaderboardRank ? ` • Rank #${leaderboardRank}` : ''} ~ ${Math.round(data.ferocity).toLocaleString()}`}
+                    >
+                        <span className="text-gray-300 font-sans">Level {data.level || 10}</span>
+                        {isAnimated && leaderboardRank && (
+                            <>
+                                <span className="text-amber-400/80 font-sans">•</span>
+                                <span className="text-cyan-300 font-bold font-mono">#{leaderboardRank}</span>
+                            </>
+                        )}
+                        <span className="text-amber-400/80 font-sans">~</span>
+                        <span className="text-amber-300 font-bold font-mono">{Math.round(data.ferocity).toLocaleString()}</span>
+                    </div>
+                )}
+
+                {/* Dinosaur Class Icon: Subtly placed at bottom-right without dominating */}
+                {classIconUrl && (
+                    <div
+                        className="absolute bottom-1 right-1 z-20 pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]"
+                        title={`Class: ${data.class}`}
+                    >
+                        <img
+                            src={classIconUrl}
+                            className="w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 object-contain filter drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.9)]"
+                            alt={data.class}
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Combat Statistics directly below Avatar Container */}
+            {data.isUnlocked || isAnimated ? (
+                <div className="flex flex-col items-center justify-center mt-1 w-full text-center min-h-[22px] gap-0.5">
+                    {/* When climbing/racing: Hide Damage and Health for ultra-lightweight UI and display ONLY the active Ferocity */}
+                    {isClimbingActive ? (
+                        <div
+                            className={`flex items-center justify-center gap-1.5 px-2 py-0.5 rounded text-[10px] sm:text-[11.5px] font-mono font-extrabold ${
+                                isAnimated
+                                    ? 'bg-amber-950/95 border border-amber-400/80 text-amber-300 shadow-[0_0_12px_rgba(255,215,0,0.6)] animate-pulse'
+                                    : 'bg-black/70 border border-white/20 text-amber-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]'
+                            }`}
+                            title="Active Ferocity"
+                        >
+                            {isAnimated && leaderboardRank && (
+                                <span className="bg-amber-500/30 text-amber-200 border border-amber-400/50 px-1 py-0.2 rounded text-[9.5px] font-black tracking-tight">
+                                    #{leaderboardRank}
+                                </span>
+                            )}
+                            <img
+                                src={ferocityIconUrl}
+                                width="11"
+                                height="11"
+                                className={`object-contain shrink-0 ${
+                                    isAnimated ? 'drop-shadow-[0_0_5px_rgba(255,215,0,0.9)]' : 'drop-shadow-sm'
+                                }`}
+                                alt="Fero"
+                            />
+                            <span className={isAnimated ? "drop-shadow-[0_0_6px_rgba(255,215,0,0.7)] font-black" : ""}>
+                                {Math.round(data.ferocity).toLocaleString()}
+                            </span>
+                            {isAnimated && dropRatePercent !== undefined && dropRatePercent !== null && (
+                                <span className="bg-cyan-950/90 border border-cyan-400/60 text-cyan-300 px-1 py-0.2 rounded text-[9px] font-black tracking-tight" title="Gacha Drop Rate">
+                                    {dropRatePercent.toFixed(2)}%
+                                </span>
+                            )}
+                        </div>
+                    ) : (
+                        /* Static Browsing Mode: Health on Left (sky-400) and Damage on Right (red-400) with close-knit icon affinity */
+                        <div className="flex items-center justify-center gap-3.5 w-full">
+                            {/* Health (HP) on Left: Close-knit icon & number */}
+                            <div
+                                className="flex items-center gap-0.5 text-[11px] sm:text-[12.5px] font-mono font-black text-sky-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
+                                title="Health"
+                            >
+                                <img src={healthIconUrl} width="12" height="12" className="object-contain shrink-0 drop-shadow-sm" alt="HP" />
+                                <span className="tracking-tight">{Math.round(data.health).toLocaleString()}</span>
+                            </div>
+
+                            {/* Damage (DMG) on Right: Close-knit icon & number */}
+                            <div
+                                className="flex items-center gap-0.5 text-[11px] sm:text-[12.5px] font-mono font-black text-red-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]"
+                                title="Damage"
+                            >
+                                <img src={damageIconUrl} width="12" height="12" className="object-contain shrink-0 drop-shadow-sm" alt="DMG" />
+                                <span className="tracking-tight">{Math.round(data.damage).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="text-[9.5px] sm:text-[10px] text-gray-500 mt-1 font-mono font-bold tracking-wider min-h-[22px] flex items-center justify-center">
+                    LOCKED
+                </div>
+            )}
+        </div>
+    );
+});
+
+DinoCard.displayName = 'DinoCard';
+
+// Helper to resolve thematic container styling for each Hazard Tier section
+function getTierContainerClass(tier: GlobalRankTier | DinoCatalogTier | string): string {
+    switch (tier) {
+        case '✦':
+            return 'bg-gradient-to-r from-[#1c1505]/95 via-[#2b1e05]/90 to-[#120e03]/95 border-amber-400/60 shadow-[0_0_24px_rgba(255,215,0,0.25)]';
+        case 'Ø':
+            return 'bg-gradient-to-r from-[#0e0e14]/95 via-[#1a1a24]/90 to-[#08080c]/95 border-white/50 shadow-[0_0_20px_rgba(255,255,255,0.18)]';
+        case 'Ψ':
+            return 'bg-gradient-to-r from-[#021b2c]/95 via-[#043759]/90 to-[#01121d]/95 border-sky-400/60 shadow-[0_0_20px_rgba(56,189,248,0.25)]';
+        case 'S':
+        case 'S₄':
+            return 'bg-gradient-to-r from-[#3a0909]/95 via-[#5a0e0e]/90 to-[#220606]/95 border-red-500/60 shadow-[0_0_18px_rgba(239,68,68,0.25)]';
+        case 'S₃':
+            return 'bg-gradient-to-r from-[#2e1005]/95 via-[#4e1c09]/90 to-[#1b0903]/95 border-orange-500/50 shadow-[0_0_16px_rgba(249,115,22,0.2)]';
+        case 'S₂':
+            return 'bg-gradient-to-r from-[#261705]/95 via-[#402709]/90 to-[#160d03]/95 border-amber-500/50';
+        case 'S₁':
+            return 'bg-gradient-to-r from-[#201907]/95 via-[#362a0c]/90 to-[#120e04]/95 border-yellow-500/40';
+        case 'A+':
+            return 'bg-gradient-to-r from-[#0c2d1d]/90 via-[#14472e]/85 to-[#071910]/90 border-emerald-500/40';
+        case 'A':
+            return 'bg-gradient-to-r from-[#092418]/90 via-[#0f3826]/85 to-[#05160f]/90 border-emerald-600/30';
+        case 'B+':
+            return 'bg-gradient-to-r from-[#0b223f]/90 via-[#123665]/85 to-[#061221]/90 border-blue-500/40';
+        case 'B':
+            return 'bg-gradient-to-r from-[#09182b]/90 via-[#0f2746]/85 to-[#050d17]/90 border-blue-600/30';
+        case 'C+':
+            return 'bg-gradient-to-r from-[#1c1827]/85 via-[#2b243b]/80 to-[#100e16]/85 border-slate-500/30';
+        case 'C':
+            return 'bg-gradient-to-r from-[#16131c]/85 via-[#221d2d]/80 to-[#0c0a10]/85 border-slate-600/30';
+        case 'D+':
+            return 'bg-gradient-to-r from-[#2e0e14]/85 via-[#44151e]/80 to-[#19080c]/85 border-rose-900/40';
+        case 'D':
+            return 'bg-gradient-to-r from-[#400911]/85 via-[#580d17]/80 to-[#240409]/85 border-rose-950/60';
+        case 'F':
+        default:
+            return 'bg-gradient-to-r from-[#121216]/80 via-[#1b1b22]/75 to-[#0b0b0e]/80 border-white/10';
+    }
+}
+
+export const AllDinosTab: React.FC<AllDinosTabProps> = ({
+    objects,
+    lookup,
+    userProgress,
+    buyAnimationTarget = null,
+    isRapidMode = false,
+    isAutoGachaBuy = false,
+    onClearAnimation,
+    onSelectDino,
+    onReturnToGacha
+}) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterClasses, setFilterClasses] = useState<string[]>([]);
+    const [filterRarities, setFilterRarities] = useState<string[]>([]);
+    const [sortBy, setSortBy] = useState<string>('ferocity');
+    const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+
+    // Persistent Ref Mirrors to decouple animation loop from component prop updates
+    const isRapidModeRef = useRef(isRapidMode);
+    isRapidModeRef.current = isRapidMode;
+
+    const isAutoGachaBuyRef = useRef(isAutoGachaBuy);
+    isAutoGachaBuyRef.current = isAutoGachaBuy;
+
+    const objectsRef = useRef(objects);
+    objectsRef.current = objects;
+
+    const onClearAnimationRef = useRef(onClearAnimation);
+    onClearAnimationRef.current = onClearAnimation;
+
+    const onReturnToGachaRef = useRef(onReturnToGacha);
+    onReturnToGachaRef.current = onReturnToGacha;
+
+    const runningTargetRef = useRef<BuyAnimationTarget | null>(null);
+    const activeAnimTokenRef = useRef<number>(0);
+
+    // Post-Purchase Transformation & Rank Climb State Machine
+    const [animState, setAnimState] = useState<DinoTransformAnimationState | null>(null);
+
+    // Up-EVO Milestone Popup Modal State
+    const [evoUpModalState, setEvoUpModalState] = useState<{
+        isOpen: boolean;
+        dino: any;
+        prevTier: EvoTierData;
+        newTier: EvoTierData;
+    } | null>(null);
+
+    const evoModalResolverRef = useRef<(() => void) | null>(null);
+
+    const showEvoUpModal = (dinoData: any, prevTierData: EvoTierData, newTierData: EvoTierData): Promise<void> => {
+        return new Promise<void>((resolve) => {
+            evoModalResolverRef.current = resolve;
+            setEvoUpModalState({
+                isOpen: true,
+                dino: dinoData,
+                prevTier: prevTierData,
+                newTier: newTierData
+            });
+        });
+    };
+
+    const handleContinueEvoModal = () => {
+        if (evoModalResolverRef.current) {
+            const res = evoModalResolverRef.current;
+            evoModalResolverRef.current = null;
+            res();
+        }
+        setEvoUpModalState(null);
+    };
+
+    // Genetic Nexus Expansion (New Pool Unlocks) Modal State
+    const [poolUnlocksModalState, setPoolUnlocksModalState] = useState<{
+        isOpen: boolean;
+        newlyUnlockedDinos: PoolDino[];
+        prevCap?: number;
+        newCap?: number;
+    } | null>(null);
+
+    const poolUnlocksModalResolverRef = useRef<(() => void) | null>(null);
+
+    const showPoolUnlocksModal = (newlyUnlockedDinos: PoolDino[], prevCap?: number, newCap?: number): Promise<void> => {
+        return new Promise<void>((resolve) => {
+            poolUnlocksModalResolverRef.current = resolve;
+            setPoolUnlocksModalState({
+                isOpen: true,
+                newlyUnlockedDinos,
+                prevCap,
+                newCap
+            });
+        });
+    };
+
+    const handleClosePoolUnlocksModal = () => {
+        if (poolUnlocksModalResolverRef.current) {
+            const res = poolUnlocksModalResolverRef.current;
+            poolUnlocksModalResolverRef.current = null;
+            res();
+        }
+        setPoolUnlocksModalState(null);
+    };
+
+    // Grid container and FLIP position tracking references
+    const gridRef = useRef<HTMLDivElement>(null);
+    const positionsRef = useRef<Map<string, DOMRect>>(new Map());
+    const prevOrderKeyRef = useRef<string>('');
+
+    const getImage = (category: string, key: string, fallback: string) => {
+        return lookup?.[category]?.[key] ?? fallback;
+    };
+
+    const uniqueClasses = useMemo(() => Array.from(new Set(objects.map(o => (o.class || '').toLowerCase()))).filter(Boolean), [objects]);
+    const uniqueRarities = useMemo(() => Array.from(new Set(objects.map(o => (o.rarity || '').toLowerCase()))).filter(Boolean), [objects]);
+
+    const toggleFilter = (item: string, list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>) => {
+        if (list.includes(item)) setList(list.filter(i => i !== item));
+        else setList([...list, item]);
+    };
+
+    // 1. Static base list computed from objects & userProgress (stable reference)
+    const baseCatalog = useMemo<DinoItemData[]>(() => {
+        if (!objects || !Array.isArray(objects)) return [];
+
+        return objects.map(item => {
+            const uuid = item.uuid || item.id || item.name;
+            const userDino = userProgress?.owned_dinos?.[uuid];
+            const number = userDino ? (Number(userDino.number) || 0) : 0;
+
+            const stats = calcDinoActiveStats(item, number);
+            const { isUnlocked, rank, level, damage, health, ferocity, image_url: evoImg, maxCapacity: maximumNumber } = stats;
+
+            const hatchTime = Number(item.hatch_time_mins) || 0;
+            const sellPrice = (Number(item.sell_price_dna) || 0) * 2;
+            const efficiency = (sellPrice > 0 && hatchTime > 0) ? (ferocity / (sellPrice * hatchTime)) : 0;
+            const releaseTime = new Date(item.release_date || "1970-01-01").getTime();
+
+            return {
+                uuid,
+                isUnlocked,
+                number,
+                rank,
+                level,
+                maximumNumber,
+                ferocity,
+                damage,
+                health,
+                hatchTime,
+                sellPrice,
+                efficiency,
+                releaseTime,
+                evoImg,
+                rarity: (item.rarity || "").toLowerCase(),
+                class: (item.class || "").toLowerCase(),
+                name: item.name || "",
+                image_url: item.image_url || "",
+                hybrid_type: item.hybrid_type || "",
+                region: item.region || "",
+                facts: item.facts || [],
+                ingredients: item.ingredients || [],
+                evolutions: item.evolutions || []
+            };
+        });
+    }, [objects, userProgress]);
+
+    // Safe Scroll Helper guarding against cross-app & background scrolling
+    const safeScrollIntoView = (elementId: string) => {
+        if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+        // Guard 1: Active App Guard - never scroll if player is working in another app (Golden Hour, Vinyl Angel, etc.)
+        const activeApp = useGlobalStore.getState().activeApp;
+        if (activeApp !== 'arc-jurassic') return;
+
+        // Guard 2: Document Visibility Guard - never scroll if browser tab or window is hidden
+        if (document.visibilityState !== 'visible') return;
+
+        // Guard 3: Element & Layout Visibility Guard (offsetParent is null if element or its container is display: none)
+        const el = document.getElementById(elementId);
+        if (!el || el.offsetParent === null) return;
+
+        try {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        } catch {
+            // Safe fallback
+        }
+    };
+
+    // Dedicated Continuous Dead-Lock Camera Tracking Engine with Visibility Guards
+    useEffect(() => {
+        if (!animState || !animState.targetUuid) return;
+        const targetUuid = animState.targetUuid;
+
+        let rafId: number;
+        let isRunning = true;
+
+        const trackTarget = () => {
+            if (!isRunning) return;
+
+            // Guard 1: Active App Guard - never scroll if player is working in another app (Golden Hour, Vinyl Angel)
+            if (useGlobalStore.getState().activeApp !== 'arc-jurassic') {
+                rafId = requestAnimationFrame(trackTarget);
+                return;
+            }
+
+            // Guard 2: Document Visibility Guard - never scroll if browser tab or window is hidden
+            if (document.visibilityState !== 'visible') {
+                rafId = requestAnimationFrame(trackTarget);
+                return;
+            }
+
+            const el = document.getElementById(`dino-card-${targetUuid}`);
+            // Guard 3: Layout Visibility Guard (offsetParent !== null ensures element is visible in layout)
+            if (el && el.offsetParent !== null) {
+                const rect = el.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    const targetY = window.innerHeight * 0.44;
+                    const cardCenterY = rect.top + rect.height / 2;
+                    const diffY = cardCenterY - targetY;
+
+                    // Dead-lock camera lerp to maintain climbing dino centered in view
+                    if (Math.abs(diffY) > 6) {
+                        window.scrollBy({ top: diffY * 0.18, behavior: 'auto' });
+                    }
+                }
+            }
+            rafId = requestAnimationFrame(trackTarget);
+        };
+
+        rafId = requestAnimationFrame(trackTarget);
+
+        return () => {
+            isRunning = false;
+            cancelAnimationFrame(rafId);
+        };
+    }, [animState?.targetUuid, animState !== null]);
+
+    // Transformation & Rank Climbing Engine on Purchase Event
+    useEffect(() => {
+        if (!buyAnimationTarget || !buyAnimationTarget.uuid) {
+            if (runningTargetRef.current !== null) {
+                activeAnimTokenRef.current += 1;
+                runningTargetRef.current = null;
+                setAnimState(null);
+            }
+            return;
+        }
+
+        // If this exact target is already actively executing its climb sequence, DO NOT restart!
+        if (runningTargetRef.current === buyAnimationTarget) {
+            return;
+        }
+
+        activeAnimTokenRef.current += 1;
+        const thisToken = activeAnimTokenRef.current;
+        runningTargetRef.current = buyAnimationTarget;
+
+        const { uuid, wasFirstBuy, prevRank, newRank } = buyAnimationTarget;
+        const dino = objectsRef.current.find(o => (o.uuid || o.id || o.name) === uuid);
+        if (!dino) {
+            runningTargetRef.current = null;
+            return;
+        }
+
+        // Force Ferocity Descending sort so the dinosaur visibly climbs UP towards top ranks
+        setSortBy('ferocity');
+        setSortOrder('desc');
+
+        const evolutions = dino.evolutions || [];
+        const isCancelled = () => activeAnimTokenRef.current !== thisToken;
+
+        const getEvoTierData = (rank: number) => {
+            const index = Math.min(Math.max(0, rank - 1), Math.max(0, evolutions.length - 1));
+            const evo = evolutions[index] || null;
+            const level = Number(evo?.level || rank * 10);
+            const damage = Number(evo?.damage || 0);
+            const health = Number(evo?.health || 0);
+            const ferocity = evo?.ferocity !== undefined
+                ? Number(evo.ferocity)
+                : Math.floor(damage + (health / 3.2));
+            const image_url = getDinoAvatarUrl(dino, rank, false);
+            return { level, damage, health, ferocity, image_url };
+        };
+
+        const runSequence = async () => {
+            // Helper to get dynamic stepping parameters based on latest mode state via refs
+            const getStepParams = () => ({
+                stepSize: isAutoGachaBuyRef.current ? 150 : isRapidModeRef.current ? 50 : 30,
+                stepDelay: isAutoGachaBuyRef.current ? 400 : isRapidModeRef.current ? 600 : 1000
+            });
+
+            // Helper to scroll and dead-lock directly on the target dinosaur
+            const focusOnDino = async (delay = 1000) => {
+                safeScrollIntoView(`dino-card-${uuid}`);
+                if (delay > 0) {
+                    await new Promise(r => setTimeout(r, delay));
+                }
+            };
+
+            const startRank = wasFirstBuy ? 1 : Math.max(1, prevRank);
+            const initialStats = getEvoTierData(startRank);
+            const finalStats = getEvoTierData(newRank);
+
+            // Helper function to step through a single evolution tier's ferocity cap
+            const climbTier = async (
+                fromFero: number,
+                targetTierRank: number,
+                isShadowFlight: boolean = false
+            ) => {
+                const targetTier = getEvoTierData(targetTierRank);
+                const targetFero = targetTier.ferocity;
+                let currentFero = fromFero;
+
+                if (targetFero <= currentFero) return;
+
+                while (currentFero < targetFero) {
+                    if (isCancelled()) return;
+                    const { stepSize, stepDelay } = getStepParams();
+                    currentFero = Math.min(targetFero, currentFero + stepSize);
+                    const isCapReached = currentFero >= targetFero;
+
+                    if (!isCapReached) {
+                        // Intermediate in-flight step
+                        setAnimState(prev => prev ? ({
+                            ...prev,
+                            currentFerocity: currentFero,
+                            isShadow: isShadowFlight,
+                            isFlash: false,
+                            statusText: `⬆ Ferocity +${currentFero} • Climbing towards EVO ${targetTierRank} (${targetFero} Fero)...`
+                        }) : null);
+
+                        safeScrollIntoView(`dino-card-${uuid}`);
+
+                        await new Promise(r => setTimeout(r, stepDelay));
+                    } else {
+                        // EXACT TIER CAP ATTAINED:
+                        const prevTierObj: EvoTierData = targetTierRank === 1 && wasFirstBuy
+                            ? { rank: 0, level: 0, damage: 0, health: 0, ferocity: 0, image_url: dino.image_url, isShadow: true }
+                            : { ...getEvoTierData(targetTierRank - 1), rank: targetTierRank - 1 };
+
+                        const newTierObj: EvoTierData = {
+                            ...targetTier,
+                            rank: targetTierRank
+                        };
+
+                        // Phase 1: Genetic Energy Overload / Tension buildup (800ms)
+                        setAnimState(prev => prev ? ({
+                            ...prev,
+                            phase: 'charging',
+                            currentFerocity: targetFero,
+                            isShadow: isShadowFlight,
+                            isFlash: false,
+                            statusText: `⚡ GENETIC OVERLOAD: EVO ${targetTierRank} Threshold Reached! Accumulating Energy...`
+                        }) : null);
+
+                        safeScrollIntoView(`dino-card-${uuid}`);
+
+                        await new Promise(r => setTimeout(r, 800));
+                        if (isCancelled()) return;
+
+                        // Phase 2: Metamorphosis Nova Burst & Shadow Awaken into True Evo Art
+                        setAnimState(prev => prev ? ({
+                            ...prev,
+                            phase: 'evolving',
+                            currentFerocity: targetFero,
+                            currentRank: targetTierRank,
+                            currentLevel: targetTier.level,
+                            currentEvoImg: targetTier.image_url,
+                            currentDamage: initialStats.damage,
+                            currentHealth: initialStats.health,
+                            isShadow: false,
+                            isFlash: true,
+                            statusText: `💥 EVOLUTION AWAKENED! EVO ${targetTierRank} (LV.${targetTier.level}) ASCENDED!`
+                        }) : null);
+
+                        safeScrollIntoView(`dino-card-${uuid}`);
+
+                        await new Promise(r => setTimeout(r, 1200));
+                        if (isCancelled()) return;
+
+                        // TRIGGER THE COMPACT UP-EVO MILESTONE POPUP MODAL!
+                        if (isAutoGachaBuyRef.current) {
+                            // In Auto Gacha: show the modal with auto-advance timer so player clearly experiences the Evo Up
+                            const modalPromise = showEvoUpModal(dino, prevTierObj, newTierObj);
+                            const autoTimer = setTimeout(() => {
+                                handleContinueEvoModal();
+                            }, 1200);
+                            await modalPromise;
+                            clearTimeout(autoTimer);
+                            if (isCancelled()) return;
+                        } else {
+                            await showEvoUpModal(dino, prevTierObj, newTierObj);
+                            if (isCancelled()) return;
+                        }
+
+                        // Phase 3: Form Stabilization after modal dismissed (600ms)
+                        setAnimState(prev => prev ? ({
+                            ...prev,
+                            isFlash: false,
+                            isShadow: false,
+                            statusText: `✨ EVO ${targetTierRank} Form Stabilized (Ferocity: ${targetFero.toLocaleString()}). Preparing next climb...`
+                        }) : null);
+
+                        await new Promise(r => setTimeout(r, 600));
+                        break;
+                    }
+                }
+            };
+
+            if (wasFirstBuy) {
+                // STEP 1A: Start in LOCKED state at 0 ferocity
+                setAnimState({
+                    targetUuid: uuid,
+                    phase: 'unlocking',
+                    isUnlocked: false,
+                    isShadow: true,
+                    currentRank: 0,
+                    currentLevel: 0,
+                    currentFerocity: 0,
+                    currentDamage: initialStats.damage,
+                    currentHealth: initialStats.health,
+                    currentEvoImg: dino.image_url,
+                    totalTargetRank: newRank,
+                    dinoName: dino.name || 'Specimen',
+                    statusText: `🔒 Specimen Acquired: Focusing on ${dino.name}...`,
+                    isFlash: false
+                });
+
+                // Move camera to dinosaur location FIRST and settle
+                await focusOnDino(1100);
+                if (isCancelled()) return;
+
+                // STEP 1B: UNLOCK BURST (Lock removed, shadow silhouette ready to climb from 0)
+                setAnimState(prev => ({
+                    ...prev!,
+                    isUnlocked: true,
+                    isShadow: true,
+                    currentRank: 1,
+                    currentLevel: initialStats.level,
+                    currentFerocity: 0,
+                    currentDamage: initialStats.damage,
+                    currentHealth: initialStats.health,
+                    currentEvoImg: dino.image_url,
+                    phase: 'evolving',
+                    isFlash: true,
+                    statusText: `🔓 Genetic Lock Shattered! Climbing towards EVO 1...`
+                }));
+
+                await focusOnDino(1000);
+                if (isCancelled()) return;
+
+                // STEP 2A: Tier 1 Climb (0 => steps of 30 + final step < 30 => Evo 1 cap) with SHADOW
+                await climbTier(0, 1, true);
+                if (isCancelled()) return;
+
+                // STEP 2B: Subsequent Tiers Climb (Evo 1 => ... => Evo N) with normal art
+                if (newRank > 1) {
+                    for (let r = 2; r <= newRank; r++) {
+                        if (isCancelled()) return;
+                        const prevTierFero = getEvoTierData(r - 1).ferocity;
+                        await climbTier(prevTierFero, r, false);
+                    }
+                }
+            } else {
+                // ALREADY OWNED: Start at initial stats
+                const startFero = initialStats.ferocity;
+
+                setAnimState({
+                    targetUuid: uuid,
+                    phase: 'evolving',
+                    isUnlocked: true,
+                    isShadow: false,
+                    currentRank: startRank,
+                    currentLevel: initialStats.level,
+                    currentFerocity: startFero,
+                    currentDamage: initialStats.damage,
+                    currentHealth: initialStats.health,
+                    currentEvoImg: initialStats.image_url,
+                    totalTargetRank: newRank,
+                    dinoName: dino.name || 'Specimen',
+                    statusText: `🧬 Evolution Upgrade: Focusing on ${dino.name}...`,
+                    isFlash: false
+                });
+
+                // Move camera to dinosaur location FIRST and settle
+                await focusOnDino(1100);
+                if (isCancelled()) return;
+
+                // Subsequent Tiers Climb (startRank => ... => newRank)
+                if (newRank > startRank) {
+                    for (let r = startRank + 1; r <= newRank; r++) {
+                        if (isCancelled()) return;
+                        const prevTierFero = getEvoTierData(r - 1).ferocity;
+                        await climbTier(prevTierFero, r, false);
+                    }
+                }
+            }
+
+            // STEP 3: FINAL CELEBRATION & COMBAT STAT SNAP
+            setAnimState(prev => prev ? ({
+                ...prev,
+                phase: 'celebrating',
+                currentRank: newRank,
+                currentLevel: finalStats.level,
+                currentFerocity: finalStats.ferocity,
+                currentDamage: finalStats.damage, // SNAP TO FINAL STATS!
+                currentHealth: finalStats.health, // SNAP TO FINAL STATS!
+                currentEvoImg: finalStats.image_url,
+                isFlash: true,
+                statusText: isAutoGachaBuyRef.current
+                    ? `🤖 AUTO GACHA • ${buyAnimationTarget.costSeconds ? `⚡ -${rutGonTime(buyAnimationTarget.costSeconds, 'seconds')} • ` : ''}${buyAnimationTarget.remainingTimeSeconds !== undefined ? `⏱️ ${rutGonTime(buyAnimationTarget.remainingTimeSeconds, 'seconds')} REMAINING • ` : ''}EVO ${newRank} (LV.${finalStats.level}) ATTAINED`
+                    : `🎉 FINAL EVO ${newRank} (LV.${finalStats.level}) ATTAINED • STATS UPGRADED!`
+            }) : null);
+
+            safeScrollIntoView(`dino-card-${uuid}`);
+
+            const celebrationDelay = isAutoGachaBuyRef.current ? 800 : isRapidModeRef.current ? 1200 : 2000;
+            await new Promise(r => setTimeout(r, celebrationDelay));
+            if (isCancelled()) return;
+
+            // Trigger Genetic Nexus Expansion (New Pool Unlocks) modal if new species entered the Gacha pool
+            if (buyAnimationTarget.newlyUnlockedPoolDinos && buyAnimationTarget.newlyUnlockedPoolDinos.length > 0) {
+                if (isAutoGachaBuyRef.current) {
+                    // In Auto Gacha: show the new species modal with auto-advance timer so player clearly sees pool unlocks
+                    const modalPromise = showPoolUnlocksModal(
+                        buyAnimationTarget.newlyUnlockedPoolDinos,
+                        buyAnimationTarget.prevCap,
+                        buyAnimationTarget.newCap
+                    );
+                    const autoTimer = setTimeout(() => {
+                        handleClosePoolUnlocksModal();
+                    }, 1400);
+                    await modalPromise;
+                    clearTimeout(autoTimer);
+                    if (isCancelled()) return;
+                } else {
+                    await showPoolUnlocksModal(
+                        buyAnimationTarget.newlyUnlockedPoolDinos,
+                        buyAnimationTarget.prevCap,
+                        buyAnimationTarget.newCap
+                    );
+                    if (isCancelled()) return;
+                }
+            }
+
+            // Cleanup
+            setAnimState(null);
+            runningTargetRef.current = null;
+            if (onClearAnimationRef.current) {
+                onClearAnimationRef.current();
+            }
+        };
+
+        runSequence();
+
+        return () => {
+            // Note: harmless re-renders do NOT cancel the active sequence token
+        };
+    }, [buyAnimationTarget]);
+
+    // 2. Filtered & Ranked Leaderboard (Bar Chart Race Sorting Engine)
+    const sortedList = useMemo(() => {
+        let mapped = baseCatalog.map(item => {
+            // Apply live animation overrides to the active racing specimen
+            if (animState && animState.targetUuid === item.uuid) {
+                return {
+                    ...item,
+                    isUnlocked: animState.isUnlocked,
+                    isShadow: animState.isShadow,
+                    rank: animState.currentRank,
+                    level: animState.currentLevel,
+                    damage: animState.currentDamage,
+                    health: animState.currentHealth,
+                    ferocity: animState.currentFerocity,
+                    evoImg: animState.currentEvoImg || item.evoImg
+                };
+            }
+            return item;
+        });
+
+        // Filter by search
+        if (searchTerm.trim() !== '') {
+            const term = searchTerm.toLowerCase().trim();
+            mapped = mapped.filter(d =>
+                d.name.toLowerCase().includes(term) ||
+                d.class.includes(term) ||
+                d.rarity.includes(term) ||
+                d.hybrid_type.includes(term) ||
+                d.region.includes(term)
+            );
+        }
+
+        // Filter by class
+        if (filterClasses.length > 0) {
+            mapped = mapped.filter(d => filterClasses.includes(d.class));
+        }
+        // Filter by rarity
+        if (filterRarities.length > 0) {
+            mapped = mapped.filter(d => filterRarities.includes(d.rarity));
+        }
+
+        // Leaderboard Ranking Sort: Unlocked first by selected sort metric, locked last
+        mapped.sort((a, b) => {
+            const isAActiveUnlocking = animState && animState.targetUuid === a.uuid && animState.phase === 'unlocking';
+            const isBActiveUnlocking = animState && animState.targetUuid === b.uuid && animState.phase === 'unlocking';
+
+            // When the active dino is in the 'unlocking' phase, position it right behind the weakest unlocked dino
+            // (i.e. AFTER all other unlocked dinos, but BEFORE all other locked dinos)
+            if (isAActiveUnlocking) {
+                if (b.isUnlocked && !isBActiveUnlocking) return 1; // standard unlocked comes before A
+                if (!b.isUnlocked) return -1; // A comes before standard locked
+            }
+            if (isBActiveUnlocking) {
+                if (a.isUnlocked && !isAActiveUnlocking) return -1; // standard unlocked comes before B
+                if (!a.isUnlocked) return 1; // B comes before standard locked
+            }
+
+            if (a.isUnlocked && !b.isUnlocked) return -1;
+            if (!a.isUnlocked && b.isUnlocked) return 1;
+
+            const valA = (a as any)[sortBy] || 0;
+            const valB = (b as any)[sortBy] || 0;
+            const modifier = sortOrder === 'asc' ? 1 : -1;
+
+            if (valA !== valB) {
+                return (valA - valB) * modifier;
+            }
+
+            return b.releaseTime - a.releaseTime;
+        });
+
+        return mapped;
+    }, [baseCatalog, animState, searchTerm, filterClasses, filterRarities, sortBy, sortOrder]);
+
+    // 3. High-Performance FLIP (First, Last, Invert, Play) GPU Grid Layout Animation
+    // Strictly triggers coordinate calculations ONLY when an actual rank overtake / order change occurs
+    useLayoutEffect(() => {
+        const gridContainer = gridRef.current;
+        if (!gridContainer || gridContainer.offsetParent === null) return;
+
+        const currentOrderKey = sortedList.map(d => d.uuid).join(',');
+        const orderChanged = currentOrderKey !== prevOrderKeyRef.current;
+        prevOrderKeyRef.current = currentOrderKey;
+
+        // Skip heavy DOM measurements if the rank ordering of dinosaurs did not change on this frame
+        if (!orderChanged && positionsRef.current.size > 0) {
+            return;
+        }
+
+        const cards = gridContainer.querySelectorAll<HTMLElement>('[data-dino-card]');
+        const newPositions = new Map<string, DOMRect>();
+
+        cards.forEach(card => {
+            const id = card.getAttribute('data-dino-card');
+            if (id) {
+                newPositions.set(id, card.getBoundingClientRect());
+            }
+        });
+
+        if (positionsRef.current.size > 0) {
+            cards.forEach(card => {
+                const id = card.getAttribute('data-dino-card');
+                if (!id) return;
+                const prevRect = positionsRef.current.get(id);
+                const newRect = newPositions.get(id);
+
+                if (prevRect && newRect) {
+                    const deltaX = prevRect.left - newRect.left;
+                    const deltaY = prevRect.top - newRect.top;
+
+                    if (deltaX !== 0 || deltaY !== 0) {
+                        card.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0)`;
+                        card.style.transition = 'none';
+
+                        requestAnimationFrame(() => {
+                            card.style.transition = 'transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)';
+                            card.style.transform = '';
+                        });
+                    }
+                }
+            });
+        }
+
+        positionsRef.current = newPositions;
+    }, [sortedList]);
+
+    const damageIconUrl = getImage("stats", "damage", "https://cdn.paleo.gg/games/jwtg/images/stats/damage.png");
+    const healthIconUrl = getImage("stats", "health", "https://cdn.paleo.gg/games/jwtg/images/stats/health.png");
+
+    // Summary statistics for Catalog Header
+    const unlockedCount = useMemo(() => baseCatalog.filter(d => d.isUnlocked).length, [baseCatalog]);
+
+    const highestActiveTier = useMemo(() => {
+        const unlocked = baseCatalog.filter(d => d.isUnlocked);
+        for (const tier of DINO_CATALOG_TIERS) {
+            if (unlocked.some(d => getDinoCatalogTier(d.ferocity) === tier)) {
+                return tier;
+            }
+        }
+        return 'D';
+    }, [baseCatalog]);
+
+    // Grouping sorted specimens into Universe 25 Hazard Tier Sections
+    const tierSections = useMemo(() => {
+        return DINO_CATALOG_TIERS.map(tier => {
+            const meta = tier === 'S'
+                ? { ...RANK_THEMATIC_REGISTRY['S₄'], label: 'S Apex' }
+                : (RANK_THEMATIC_REGISTRY[tier] || RANK_THEMATIC_REGISTRY['F']);
+            const minScore = meta.minScore;
+            const minFerocity = getMinFerocityForTier(tier === 'S' ? 'S₁' : (tier as GlobalRankTier));
+            const dinos = sortedList.filter(d => {
+                const dTier = getDinoCatalogTier(d.isUnlocked ? d.ferocity : 0);
+                return dTier === tier;
+            });
+
+            // Sub-tier divisions (4 sub-tier lines for Tier S; 3 sub-tier lines for Tiers D through A)
+            const subDefs = getTierSubDivisions(tier);
+            let subDivisions: (SubTierDivision & { dinos: DinoItemData[] })[] | null = null;
+            if (subDefs) {
+                const list = subDefs.map(sub => {
+                    const subDinos = dinos.filter(d => {
+                        const fero = d.isUnlocked ? d.ferocity : 0;
+                        return fero >= sub.minFerocity && fero < sub.maxFerocity;
+                    });
+                    return {
+                        ...sub,
+                        dinos: subDinos
+                    };
+                });
+                if (sortOrder === 'asc') {
+                    list.reverse();
+                }
+                subDivisions = list;
+            }
+
+            return {
+                tier,
+                meta,
+                minScore,
+                minFerocity,
+                dinos,
+                subDivisions
+            };
+        }).filter(sec => sec.dinos.length > 0);
+    }, [sortedList, sortOrder]);
+
+    // Dynamic Leaderboard Rank position (#1 to #N) during active climbing
+    const currentLeaderboardRank = useMemo(() => {
+        if (!animState?.targetUuid) return null;
+        const idx = sortedList.findIndex(d => d.uuid === animState.targetUuid);
+        return idx !== -1 ? idx + 1 : null;
+    }, [animState?.targetUuid, sortedList]);
+
+    // Gacha Pool Drop Rate Telemetry for the climbing specimen
+    const rolledDinoDropRate = useMemo(() => {
+        if (!animState?.targetUuid) return null;
+        if (buyAnimationTarget?.dropRatePercent !== undefined && buyAnimationTarget?.dropRatePercent !== null) {
+            return buyAnimationTarget.dropRatePercent;
+        }
+        const poolRes = calcGachaPool(objects, userProgress, []);
+        const match = poolRes.pool.find(p => p.uuid === animState.targetUuid);
+        return match ? match.dropRatePercent : null;
+    }, [animState?.targetUuid, buyAnimationTarget?.dropRatePercent, objects, userProgress]);
+
+    const renderDinoGrid = (dinoList: DinoItemData[]) => (
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3 justify-items-center w-full">
+            {dinoList.map(data => {
+                const frameUrl = getImage("portrait_frames", data.rarity, `https://cdn.paleo.gg/games/jwtg/images/portrait-frame/${data.rarity}.png`);
+                const classIconUrl = getImage("class_icons", data.class, `https://cdn.paleo.gg/games/jwtg/images/class/${data.class}.png`);
+                const ferocityIconUrl = getImage("stats", "ferocity", "https://cdn.paleo.gg/games/jwtg/images/stats/ferocity.png");
+
+                const isAnimated = animState ? animState.targetUuid === data.uuid : false;
+                const animPhase = isAnimated && animState ? animState.phase : null;
+                const isFlash = isAnimated && animState ? animState.isFlash : false;
+                const animRank = isAnimated && animState ? animState.currentRank : (data.rank || 1);
+                const isClimbingActive = animState !== null;
+                const animCostSeconds = isAnimated && buyAnimationTarget ? buyAnimationTarget.costSeconds : undefined;
+                const animRemainingTimeSeconds = isAnimated && buyAnimationTarget ? buyAnimationTarget.remainingTimeSeconds : undefined;
+
+                return (
+                    <DinoCard
+                        key={data.uuid}
+                        data={data}
+                        isAnimated={isAnimated}
+                        animPhase={animPhase}
+                        isFlash={isFlash}
+                        animRank={animRank}
+                        isClimbingActive={isClimbingActive}
+                        leaderboardRank={isAnimated ? currentLeaderboardRank : null}
+                        dropRatePercent={isAnimated ? rolledDinoDropRate : null}
+                        costSeconds={animCostSeconds}
+                        remainingTimeSeconds={animRemainingTimeSeconds}
+                        frameUrl={frameUrl}
+                        classIconUrl={classIconUrl}
+                        ferocityIconUrl={ferocityIconUrl}
+                        damageIconUrl={damageIconUrl}
+                        healthIconUrl={healthIconUrl}
+                        onSelectDino={onSelectDino}
+                    />
+                );
+            })}
+        </div>
+    );
+
+    return (
+        <div className="w-full space-y-6">
+            {/* Header Telemetry Summary Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-white/10">
+                <div>
+                    <h3 className="text-base sm:text-lg font-cinzel font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <Layers className="w-5 h-5 text-amber-400" />
+                        <span>All Dinosaurs • Hazard Tier Catalog</span>
+                    </h3>
+                    <p className="text-xs font-sans text-gray-400 mt-0.5">
+                        Categorized by Universe 25 Dinosaur Hazard Tiers (D • C • B • A • S₁–S₄ • Ψ • Ø • ✦ Polaris)
+                    </p>
+                </div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                    <div className="flex items-center gap-2 bg-[#161208] px-3 py-1.5 rounded-xl border border-amber-500/40 text-xs font-mono font-bold text-amber-300 shadow-sm">
+                        <span>{baseCatalog.length} Total Species</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-[#0b291a] px-3 py-1.5 rounded-xl border border-emerald-500/40 text-xs font-mono font-bold text-emerald-300 shadow-sm">
+                        <span>{unlockedCount} Unlocked</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-[#1c1424] px-3 py-1.5 rounded-xl border border-sky-500/40 text-xs font-mono font-bold text-sky-300 shadow-sm">
+                        <span>
+                            Apex: {highestActiveTier === 'S' ? 'S Apex' : (RANK_THEMATIC_REGISTRY[highestActiveTier as GlobalRankTier]?.label || highestActiveTier)}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Hero Transformation Monitor Banner */}
+            {animState && (
+                <div className="dino-hero-transform-banner">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-300 shadow-[0_0_15px_rgba(255,215,0,0.3)]">
+                            {animState.phase === 'unlocking' ? (
+                                <Unlock className="w-5 h-5 text-cyan-400 animate-bounce" />
+                            ) : animState.phase === 'charging' ? (
+                                <Zap className="w-5 h-5 text-amber-300 animate-bounce" />
+                            ) : animState.phase === 'celebrating' ? (
+                                <Sparkles className="w-5 h-5 text-amber-300 animate-spin" />
+                            ) : (
+                                <TrendingUp className="w-5 h-5 text-amber-400 animate-pulse" />
+                            )}
+                        </div>
+                        <div>
+                            <div className="text-xs font-cinzel font-bold text-white tracking-wider flex items-center gap-2 flex-wrap">
+                                <span>{animState.dinoName}</span>
+                                {currentLeaderboardRank && (
+                                    <span className="text-[10.5px] font-mono font-black px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 shadow-sm">
+                                        RANK #{currentLeaderboardRank}
+                                    </span>
+                                )}
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                    {animState.isUnlocked ? `EVO ${animState.currentRank} / ${animState.totalTargetRank}` : 'LOCKED'}
+                                </span>
+                                {rolledDinoDropRate !== null && rolledDinoDropRate !== undefined && (
+                                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-200 border border-cyan-500/40">
+                                        🎲 {rolledDinoDropRate.toFixed(2)}% Pool Rate
+                                    </span>
+                                )}
+                            </div>
+                            <div className="text-[11px] font-mono text-cyan-300 font-bold mt-0.5">
+                                {animState.statusText}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="text-right hidden sm:flex items-center gap-4">
+                        <div className="text-right">
+                            <div className="text-[10px] font-mono text-gray-400">
+                                {animState.phase === 'celebrating' ? 'COMBAT STATS (UPGRADED)' : 'COMBAT STATS (FROZEN)'}
+                            </div>
+                            <div className="flex items-center justify-end gap-3 text-xs font-mono font-bold mt-0.5">
+                                <div className="flex items-center gap-1 text-sky-400">
+                                    <img src={healthIconUrl} className="w-3.5 h-3.5 object-contain" alt="HP" />
+                                    <span>{Math.round(animState.currentHealth).toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-red-400">
+                                    <img src={damageIconUrl} className="w-3.5 h-3.5 object-contain" alt="DMG" />
+                                    <span>{Math.round(animState.currentDamage).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-right pl-3 border-l border-white/15">
+                            <div className="text-[10px] font-mono text-gray-400">CURRENT FEROCITY</div>
+                            <div className="text-sm font-mono font-extrabold text-amber-400 flex items-center justify-end gap-1 mt-0.5">
+                                <img src="https://cdn.paleo.gg/games/jwtg/images/stats/ferocity.png" className="w-3.5 h-3.5 object-contain" alt="Fero" />
+                                <span>{animState.currentFerocity.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Filter & Search Bar */}
+            <div className="p-4 bg-black/40 border border-white/10 rounded-xl space-y-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-xs font-bold text-gray-400 uppercase min-w-[50px]">Search:</span>
+                    <input
+                        type="text"
+                        placeholder="Search by name, class, rarity..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="bg-black/60 text-white border border-white/15 px-3 py-1.5 rounded-lg text-xs outline-none min-w-[200px]"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-gray-400 uppercase min-w-[50px]">Class:</span>
+                    {uniqueClasses.map(cls => (
+                        <button
+                            key={cls}
+                            type="button"
+                            onClick={() => toggleFilter(cls, filterClasses, setFilterClasses)}
+                            className={`px-3 py-1 text-xs rounded-full font-bold capitalize transition border cursor-pointer ${
+                                filterClasses.includes(cls)
+                                    ? 'bg-emerald-600 border-emerald-400 text-white'
+                                    : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            {cls}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-gray-400 uppercase min-w-[50px]">Rarity:</span>
+                    {uniqueRarities.map(rarity => (
+                        <button
+                            key={rarity}
+                            type="button"
+                            onClick={() => toggleFilter(rarity, filterRarities, setFilterRarities)}
+                            className={`px-3 py-1 text-xs rounded-full font-bold capitalize transition border cursor-pointer ${
+                                filterRarities.includes(rarity)
+                                    ? 'bg-purple-600 border-purple-400 text-white'
+                                    : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            {rarity}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="flex items-center gap-3 pt-3 border-t border-white/10 flex-wrap">
+                    <span className="text-xs font-bold text-gray-400 uppercase min-w-[50px]">Sort:</span>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="bg-black/60 text-white border border-white/15 px-3 py-1.5 rounded-lg text-xs outline-none cursor-pointer"
+                    >
+                        <option value="ferocity">Ferocity</option>
+                        <option value="damage">Damage</option>
+                        <option value="health">Health</option>
+                        <option value="hatchTime">Hatching Time</option>
+                        <option value="sellPrice">Sell Price (DNA)</option>
+                        <option value="efficiency">Efficiency Index (Fero / Price×Time)</option>
+                    </select>
+                    <button
+                        type="button"
+                        onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                        className="px-3 py-1.5 rounded-lg bg-gradient-to-b from-gray-700 to-gray-800 border border-gray-500 text-white text-xs font-bold cursor-pointer"
+                    >
+                        {sortOrder === 'desc' ? '⬇ DESCENDING' : '⬆ ASCENDING'}
+                    </button>
+                </div>
+            </div>
+
+            {/* Master Container enclosing all Hazard Tier Sections for FLIP DOM measurement */}
+            <div ref={gridRef} className="w-full space-y-6">
+                {tierSections.length === 0 ? (
+                    <div className="p-8 text-center text-sm font-mono text-gray-400 bg-black/40 border border-white/10 rounded-xl">
+                        No dinosaur specimens match the specified filter or search criteria.
+                    </div>
+                ) : (
+                    tierSections.map(section => {
+                        const { tier, meta, minScore, dinos } = section;
+                        const containerThemeClass = getTierContainerClass(tier);
+
+                        return (
+                            <section
+                                key={tier}
+                                className={`w-full rounded-2xl border p-4 sm:p-5 transition-all ${containerThemeClass}`}
+                            >
+                                {/* Right-Oriented Streamlined Thematic Hazard Tier Header: Title, Hazard Level (Badge), Ferocity Cap */}
+                                <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-3 sm:gap-4 pb-3 mb-4 border-b border-white/10 w-full">
+                                    <div className="flex items-center justify-end gap-3 sm:gap-4 flex-wrap">
+                                        {/* 1. Title */}
+                                        <div className="text-right">
+                                            <h4 className="text-base sm:text-lg md:text-xl font-cinzel font-black text-white tracking-wide">
+                                                {meta.label}
+                                            </h4>
+                                        </div>
+
+                                        {/* 2. Hazard Level Badge */}
+                                        <HazardBadge score={minScore} rank={tier === 'S' ? 'S₄' : tier} size="lg" />
+
+                                        {/* 3. Ferocity Cap / Range */}
+                                        <div className="px-3.5 py-1.5 rounded-xl bg-black/70 border border-white/20 text-xs sm:text-sm font-mono font-black text-cyan-300 shadow-md">
+                                            {getTierFerocityRangeLabel(tier)}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Sub-divided Lines (Tiers D through A separated by a simple soft silver line) or Unified Grid (S1 through Singularity) */}
+                                {section.subDivisions ? (
+                                    <div className="w-full space-y-4">
+                                        {section.subDivisions
+                                            .filter(subDiv => subDiv.dinos.length > 0)
+                                            .map((subDiv, idx) => (
+                                                <div key={subDiv.label} className="w-full">
+                                                    {idx > 0 && (
+                                                        <div className="w-full border-t border-slate-400/25 my-4" />
+                                                    )}
+                                                    {renderDinoGrid(subDiv.dinos)}
+                                                </div>
+                                            ))}
+                                    </div>
+                                ) : (
+                                    renderDinoGrid(dinos)
+                                )}
+                            </section>
+                        );
+                    })
+                )}
+            </div>
+
+            {/* Up-EVO Milestone Popup Modal */}
+            {evoUpModalState && evoUpModalState.isOpen && (
+                <EvoUpPopupModal
+                    isOpen={evoUpModalState.isOpen}
+                    dino={evoUpModalState.dino}
+                    prevTier={evoUpModalState.prevTier}
+                    newTier={evoUpModalState.newTier}
+                    lookup={lookup}
+                    onContinue={handleContinueEvoModal}
+                    autoContinueSeconds={(isRapidMode || isAutoGachaBuy) ? 5 : undefined}
+                />
+            )}
+
+            {/* Genetic Nexus Expansion (New Pool Unlocks) Milestone Modal */}
+            {poolUnlocksModalState && poolUnlocksModalState.isOpen && (
+                <NewPoolUnlocksModal
+                    isOpen={poolUnlocksModalState.isOpen}
+                    newlyUnlockedDinos={poolUnlocksModalState.newlyUnlockedDinos}
+                    prevCap={poolUnlocksModalState.prevCap}
+                    newCap={poolUnlocksModalState.newCap}
+                    lookup={lookup}
+                    onClose={handleClosePoolUnlocksModal}
+                    onGoToGacha={onReturnToGacha}
+                    autoContinueSeconds={(isRapidMode || isAutoGachaBuy) ? 5 : undefined}
+                />
+            )}
+        </div>
+    );
+};

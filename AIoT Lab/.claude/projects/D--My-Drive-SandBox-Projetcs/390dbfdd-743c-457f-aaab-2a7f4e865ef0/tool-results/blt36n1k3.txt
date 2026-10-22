@@ -1,0 +1,1312 @@
+warning: in the working copy of 'universe-25/src/apps/arc-jurassic/ArcJurassic.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'universe-25/src/apps/arc-jurassic/components/tabs/alldinos/AllDinosTab.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'universe-25/src/apps/arc-jurassic/components/tabs/details/DinoDetailsTab.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'universe-25/src/apps/arc-jurassic/components/tabs/gacha/GachaTab.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'universe-25/src/apps/arc-jurassic/components/tabs/gacha/workers/GachaResultWorker/GachaResultWorker.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'universe-25/src/apps/arc-jurassic/components/tabs/settings/SettingsTab.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'universe-25/src/apps/arc-jurassic/core/calcGachaPool.ts', LF will be replaced by CRLF the next time Git touches it
+diff --git a/universe-25/src/apps/arc-jurassic/ArcJurassic.tsx b/universe-25/src/apps/arc-jurassic/ArcJurassic.tsx
+index c8192b8..a6d3f9b 100644
+--- a/universe-25/src/apps/arc-jurassic/ArcJurassic.tsx
++++ b/universe-25/src/apps/arc-jurassic/ArcJurassic.tsx
+@@ -12,11 +12,12 @@ import { DinoDetailsTab } from './components/tabs/details/DinoDetailsTab';
+ import { AllDinosTab } from './components/tabs/alldinos/AllDinosTab';
+ import { SettingsTab } from './components/tabs/settings/SettingsTab';
+ 
++import { useArcJurassicStore, type ResourceData } from './store/useArcJurassicStore';
++export type { ResourceData };
+ import { calcUserTop3Ferocity, calcUserTotalFerocity } from './core/calcGachaPool';
++import { calcDinoMaxCapacity } from './core/evolutionEngine';
+ import { rutGonTime } from './core/rutGonTime';
+ import {
+-  fetchArcResources,
+-  persistArcResources,
+   fetchArcProgress,
+   persistArcProgress,
+   resetArcProgress
+@@ -26,7 +27,6 @@ import type { DueDinoData } from './components/tabs/gacha/types';
+ // Import raw game data directly for optimal Vite bundling and zero runtime fetch errors
+ import dinoRawData from './data/dino.json';
+ import lookupRawData from './data/lookup.json';
+-import resourceRawData from './data/resource.json';
+ import userProgressRawData from './data/user_progress.json';
+ 
+ // Complete data structures for Universe 25 integration
+@@ -66,36 +66,9 @@ interface UserProgress {
+   owned_dinos: Record<string, { number: number; rank: number; ferocity?: number }>;
+ }
+ 
+-export interface ResourceData {
+-  jurassic_time?: { amount: number; icon?: string; name?: string };
+-  dna?: { amount: number; icon?: string; name?: string };
+-  red_orbs?: { amount: number; icon?: string; name?: string };
+-  [key: string]: any;
+-}
+-
+ const LOCAL_STORAGE_CHEAT_KEY = 'arc_jurassic_free_buy_cheat_v1';
+ const LOCAL_STORAGE_DUE_DINO_KEY = 'arc_jurassic_due_dino_v1';
+ 
+-const normalizeResources = (raw: any): ResourceData => {
+-  return {
+-    jurassic_time: {
+-      amount: Number(raw?.jurassic_time?.amount ?? raw?.elemental_time?.golden?.amount ?? 14400),
+-      icon: raw?.jurassic_time?.icon || 'https://cdn.paleo.gg/games/jwtg/images/stats/speed.png',
+-      name: 'Jurassic Time'
+-    },
+-    dna: {
+-      amount: Number(raw?.dna?.amount ?? raw?.dna ?? raw?.elemental_time?.jurassic?.amount ?? 50000),
+-      icon: raw?.dna?.icon || 'https://cdn.paleo.gg/games/jwtg/images/resource/dna.png',
+-      name: 'DNA'
+-    },
+-    red_orbs: {
+-      amount: Number(raw?.red_orbs?.amount ?? raw?.orbs?.red_orb?.amount ?? 50),
+-      icon: raw?.red_orbs?.icon || 'https://cdn.paleo.gg/games/jwtg/images/hybrid-type/super-hybrid.png',
+-      name: 'Red Orbs'
+-    }
+-  };
+-};
+-
+ export const ArcJurassic: React.FC = () => {
+   const setActiveApp = useGlobalStore((s) => s.setActiveApp);
+ 
+@@ -110,11 +83,9 @@ export const ArcJurassic: React.FC = () => {
+     stats: {},
+   });
+   const [userProgress, setUserProgress] = useState<UserProgress>({ owned_dinos: {} });
+-  const [myResources, setMyResources] = useState<ResourceData>({
+-    jurassic_time: { amount: 14400 },
+-    dna: { amount: 50000 },
+-    red_orbs: { amount: 50 }
+-  });
++  const myResources = useArcJurassicStore((s) => s.resources);
++  const setMyResources = useArcJurassicStore((s) => s.setResources);
++  const hydrateArcResources = useArcJurassicStore((s) => s.hydrateFromBackend);
+   const [loading, setLoading] = useState(true);
+   const [view, setView] = useState<'gacha' | 'details' | 'alldinos' | 'settings'>('gacha');
+   const [rosterTargetUuid, setRosterTargetUuid] = useState<string | null>(null);
+@@ -163,23 +134,12 @@ export const ArcJurassic: React.FC = () => {
+           console.warn('[ARC Jurassic] Backend SQLite progress hydration notice:', err);
+         }
+ 
+-        // 3. Authoritative Backend SQLite Resources Hydration
+-        let initialResources: ResourceData = normalizeResources(resourceRawData);
+-        try {
+-          const backendResources = await fetchArcResources();
+-          if (backendResources && Object.keys(backendResources).length > 0) {
+-            initialResources = normalizeResources(backendResources);
+-          } else {
+-            await persistArcResources(initialResources as any);
+-          }
+-        } catch (err) {
+-          console.warn('[ARC Jurassic] Backend SQLite resources hydration notice:', err);
+-        }
++        // 3. Authoritative Backend SQLite Resources Hydration via Shared Store
++        await hydrateArcResources();
+ 
+         setObjects(dinoObjects);
+         setLookup(lookupRawData as unknown as LookupData);
+         setUserProgress(initialProgress);
+-        setMyResources(initialResources);
+ 
+         // 4. Calculate top 3 ferocity stats & excluded IDs
+         const calculatedExcludedIds: string[] = [];
+@@ -187,7 +147,7 @@ export const ArcJurassic: React.FC = () => {
+         for (const [uuid, data] of Object.entries(initialProgress.owned_dinos || {})) {
+           const dino = dinoObjects.find((d: DinoObject) => (d.uuid || (d as any).id || (d as any).name) === uuid);
+           if (dino) {
+-            const limit = Number((dino as any).maximum_number || Math.pow(2, Math.max(0, (dino.evolutions?.length || 1) - 1)));
++            const limit = calcDinoMaxCapacity(dino);
+             if ((data as any).number >= limit) {
+               calculatedExcludedIds.push(uuid);
+             }
+@@ -217,6 +177,19 @@ export const ArcJurassic: React.FC = () => {
+     setTotalArmyFerocity(totalFero);
+     setTop3Ferocity(top3);
+ 
++    // Recalculate excluded IDs for creatures reaching max capacity
++    const calculatedExcludedIds: string[] = [];
++    for (const [uuid, data] of Object.entries(prog.owned_dinos || {})) {
++      const dino = objects.find((d: DinoObject) => (d.uuid || (d as any).id || (d as any).name) === uuid);
++      if (dino) {
++        const limit = calcDinoMaxCapacity(dino);
++        if ((data as any).number >= limit) {
++          calculatedExcludedIds.push(uuid);
++        }
++      }
++    }
++    setExcludedIds(calculatedExcludedIds);
++
+     try {
+       await persistArcProgress(prog as any);
+     } catch (e) {
+@@ -228,6 +201,7 @@ export const ArcJurassic: React.FC = () => {
+     setUserProgress({ owned_dinos: {} });
+     setTotalArmyFerocity(0);
+     setTop3Ferocity(0);
++    setExcludedIds([]);
+     try {
+       await resetArcProgress();
+     } catch (e) {
+@@ -235,14 +209,8 @@ export const ArcJurassic: React.FC = () => {
+     }
+   };
+ 
+-  const handleUpdateResources = async (res: ResourceData) => {
+-    const normalized = normalizeResources(res);
+-    setMyResources(normalized);
+-    try {
+-      await persistArcResources(normalized as any);
+-    } catch (e) {
+-      console.warn('Failed to save resources to SQLite backend:', e);
+-    }
++  const handleUpdateResources = (res: ResourceData) => {
++    setMyResources(res);
+   };
+ 
+   const handleSetDueDino = (data: DueDinoData | null) => {
+diff --git a/universe-25/src/apps/arc-jurassic/components/tabs/alldinos/AllDinosTab.tsx b/universe-25/src/apps/arc-jurassic/components/tabs/alldinos/AllDinosTab.tsx
+index 82ea418..f35063e 100644
+--- a/universe-25/src/apps/arc-jurassic/components/tabs/alldinos/AllDinosTab.tsx
++++ b/universe-25/src/apps/arc-jurassic/components/tabs/alldinos/AllDinosTab.tsx
+@@ -1,5 +1,6 @@
+ import React, { useMemo, useState } from 'react';
+ import { rutGonTime } from '../../../core/rutGonTime';
++import { calcDinoActiveStats } from '../../../core/evolutionEngine';
+ import { EvoAvatar } from '../../molecule/EvoAvatar/EvoAvatar';
+ 
+ interface AllDinosTabProps {
+@@ -39,33 +40,19 @@ export const AllDinosTab: React.FC<AllDinosTabProps> = ({
+         let mapped = objects.map(item => {
+             const uuid = item.uuid || item.id || item.name;
+             const userDino = userProgress?.owned_dinos?.[uuid];
+-
+             const number = userDino ? (Number(userDino.number) || 0) : 0;
+-            const rank = userDino ? (Number(userDino.rank) || 0) : 0;
+-            const isUnlocked = number > 0;
+-
+-            const evolutions = item.evolutions || [];
+-            const maxIndex = Math.max(0, evolutions.length - 1);
+-            const targetRank = Math.max(1, rank);
+-            let evoIndex = targetRank - 1;
+-            if (evoIndex > maxIndex) evoIndex = maxIndex;
+ 
+-            const currentEvo = evolutions[evoIndex] || {};
++            const stats = calcDinoActiveStats(item, number);
++            const { isUnlocked, rank, level, damage, health, ferocity, image_url: evoImg, maxCapacity: maximumNumber } = stats;
+ 
+-            const damage = currentEvo.damage || 0;
+-            const health = currentEvo.health || 0;
+-            const ferocity = damage + (health / 3.2);
+             const hatchTime = Number(item.hatch_time_mins) || 0;
+-
+             const sellPrice = (Number(item.sell_price_dna) || 0) * 2;
+             const efficiency = (sellPrice > 0 && hatchTime > 0) ? (ferocity / (sellPrice * hatchTime)) : 0;
+             const releaseTime = new Date(item.release_date || "1970-01-01").getTime();
+ 
+-            const maximumNumber = Number(item.maximum_number || Math.pow(2, Math.max(0, evolutions.length - 1)));
+-
+             return {
+-                uuid, isUnlocked, number, rank, maximumNumber, ferocity, damage, health, hatchTime, sellPrice, efficiency, releaseTime,
+-                evoImg: currentEvo.image_url || "",
++                uuid, isUnlocked, number, rank, level, maximumNumber, ferocity, damage, health, hatchTime, sellPrice, efficiency, releaseTime,
++                evoImg,
+                 rarity: (item.rarity || "").toLowerCase(),
+                 class: (item.class || "").toLowerCase(),
+                 name: item.name || "",
+@@ -265,7 +252,7 @@ export const AllDinosTab: React.FC<AllDinosTabProps> = ({
+                                 />
+                                 {data.isUnlocked && (
+                                     <div className="mt-1 text-[9px] bg-white/10 px-1.5 py-0.5 rounded font-bold text-gray-200">
+-                                        LV{data.rank > 0 ? data.rank * 10 : 10} ({data.number}/{data.maximumNumber})
++                                        LV{data.level || (data.rank * 10)} ({data.number}/{data.maximumNumber})
+                                     </div>
+                                 )}
+                             </div>
+diff --git a/universe-25/src/apps/arc-jurassic/components/tabs/details/DinoDetailsTab.tsx b/universe-25/src/apps/arc-jurassic/components/tabs/details/DinoDetailsTab.tsx
+index 8136467..2f953f8 100644
+--- a/universe-25/src/apps/arc-jurassic/components/tabs/details/DinoDetailsTab.tsx
++++ b/universe-25/src/apps/arc-jurassic/components/tabs/details/DinoDetailsTab.tsx
+@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
+ import { DinoCard } from '../../molecule/DinoCard/DinoCard';
+ import { EvoAvatar } from '../../molecule/EvoAvatar/EvoAvatar';
+ import { calcDinoCost } from '../../../core/calcDinoCost';
++import { calcDinoMaxCapacity, calcDinoRank, calcDinoCurrentEvo, calcDinoProgressWidth, isDinoEvoUnlocked } from '../../../core/evolutionEngine';
+ 
+ interface DinoDetailsTabProps {
+     uuid: string;
+@@ -59,12 +60,11 @@ export const DinoDetailsTab: React.FC<DinoDetailsTabProps> = ({
+     }
+ 
+     const userDinoData = userProgress?.owned_dinos?.[uuid] || { number: 0, rank: 0 };
+-    const dinoRank = Number(userDinoData.rank) || 0;
+     const dinoNumber = Number(userDinoData.number) || 0;
+-    const isLeftCardUnlocked = dinoNumber !== 0;
+-
+     const evolutions = dino.evolutions || [];
+-    const maxCapacity = Number(dino.maximum_number || Math.pow(2, Math.max(0, evolutions.length - 1)));
++    const dinoRank = calcDinoRank(dinoNumber, evolutions.length || 4);
++    const isLeftCardUnlocked = dinoNumber !== 0;
++    const maxCapacity = calcDinoMaxCapacity(dino);
+ 
+     const cost = calcDinoCost(dino);
+ 
+@@ -80,7 +80,7 @@ export const DinoDetailsTab: React.FC<DinoDetailsTabProps> = ({
+ 
+     const capitalize = (str: string) => str ? str.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "N/A";
+ 
+-    const currentEvo = evolutions.length === 0 ? null : !isLeftCardUnlocked ? evolutions[evolutions.length - 1] : evolutions[Math.min(Math.max(dinoRank - 1, 0), evolutions.length - 1)];
++    const currentEvo = calcDinoCurrentEvo(dino, dinoRank, isLeftCardUnlocked);
+     const currentDamage = currentEvo?.damage !== undefined ? currentEvo.damage.toLocaleString() : "N/A";
+     const currentHealth = currentEvo?.health !== undefined ? currentEvo.health.toLocaleString() : "N/A";
+     const currentFerocity = currentEvo?.damage !== undefined && currentEvo?.health !== undefined ? Math.floor(currentEvo.damage + currentEvo.health / 3.2) : "N/A";
+@@ -88,18 +88,12 @@ export const DinoDetailsTab: React.FC<DinoDetailsTabProps> = ({
+     const damageIconUrl = getImage("stats", "damage", "https://cdn.paleo.gg/games/jwtg/images/stats/damage.png");
+     const healthIconUrl = getImage("stats", "health", "https://cdn.paleo.gg/games/jwtg/images/stats/health.png");
+ 
+-    let progressWidth = 0;
+-    if (dinoNumber <= 0) progressWidth = 0;
+-    else if (dinoNumber <= 1) progressWidth = dinoNumber * 12.5;
+-    else if (dinoNumber <= 2) progressWidth = 12.5 + (dinoNumber - 1) * 25;
+-    else if (dinoNumber <= 4) progressWidth = 37.5 + ((dinoNumber - 2) / 2) * 25;
+-    else if (dinoNumber <= 8) progressWidth = 62.5 + ((dinoNumber - 4) / 4) * 25;
+-    else progressWidth = 100;
++    const progressWidth = calcDinoProgressWidth(dinoNumber, evolutions.length || 4);
+ 
+     useEffect(() => {
+         if (!progressBarRef.current || evoNodeRefs.current.length === 0) return;
+ 
+-        const evoMilestones = [12.5, 37.5, 62.5, 87.5];
++        const evoMilestones = evolutions.map((_: any, i: number) => ((i + 0.5) / evolutions.length) * 100);
+         const evoUnlockedScale = 1.10;
+         const evoTemporaryScale = 1.12;
+         const animationDuration = 1400;
+@@ -244,9 +238,12 @@ export const DinoDetailsTab: React.FC<DinoDetailsTabProps> = ({
+                     <div className="absolute top-10 left-0 h-1.5 w-full bg-white/10 rounded-full z-0" />
+                     <div ref={progressBarRef} className="absolute top-10 left-0 h-1.5 w-0 bg-sky-500 rounded-full z-1 shadow-[0_0_8px_rgba(33,150,243,0.6)]" />
+ 
+-                    <div className="grid grid-cols-4 gap-2 justify-items-center relative z-10">
++                    <div
++                        className="gap-2 justify-items-center relative z-10 grid"
++                        style={{ gridTemplateColumns: `repeat(${evolutions.length || 4}, minmax(0, 1fr))` }}
++                    >
+                         {evolutions.map((evo: any, index: number) => {
+-                            const isEvoUnlocked = index + 1 <= dinoRank;
++                            const isEvoUnlocked = isDinoEvoUnlocked(dinoNumber, index, evolutions.length, true);
+                             const frameUrl = getImage("portrait_frames", dino.rarity, `https://cdn.paleo.gg/games/jwtg/images/portrait-frame/${dino.rarity}.png`);
+ 
+                             return (
+diff --git a/universe-25/src/apps/arc-jurassic/components/tabs/gacha/GachaTab.tsx b/universe-25/src/apps/arc-jurassic/components/tabs/gacha/GachaTab.tsx
+index af2c9b8..6745082 100644
+--- a/universe-25/src/apps/arc-jurassic/components/tabs/gacha/GachaTab.tsx
++++ b/universe-25/src/apps/arc-jurassic/components/tabs/gacha/GachaTab.tsx
+@@ -4,6 +4,7 @@ import { GachaAnimationWorker } from './workers/GachaAnimationWorker/GachaAnimat
+ import { GachaResultWorker } from './workers/GachaResultWorker/GachaResultWorker';
+ import { calcGachaPool, selectWeightedRoll } from '../../../core/calcGachaPool';
+ import { calcDinoCost } from '../../../core/calcDinoCost';
++import { calcDinoMaxCapacity, calcDinoRank } from '../../../core/evolutionEngine';
+ import type { GachaStep, DueDinoData } from './types';
+ 
+ interface GachaTabProps {
+@@ -135,7 +136,7 @@ export const GachaTab: React.FC<GachaTabProps> = ({
+ 
+         const currentData = userProgress?.owned_dinos?.[resultUuid] || { number: 0, rank: 0 };
+         const currentCount = Number(currentData.number || 0);
+-        const maxCapacity = Number(dino.maximum_number || Math.pow(2, Math.max(0, (dino.evolutions?.length || 1) - 1)));
++        const maxCapacity = calcDinoMaxCapacity(dino);
+         const maxBuyable = Math.max(1, maxCapacity - currentCount);
+         const buyQty = Math.min(Math.max(1, quantity), maxBuyable);
+ 
+@@ -194,12 +195,13 @@ export const GachaTab: React.FC<GachaTabProps> = ({
+             onUpdateResources(newRes);
+         }
+ 
+-        // Update progress
++        // Update progress with new evolution rank
+         const newProg = { ...userProgress, owned_dinos: { ...(userProgress?.owned_dinos || {}) } };
+         const updatedCount = currentCount + buyQty;
++        const evoCount = dino.evolutions?.length || 4;
+         newProg.owned_dinos[resultUuid] = {
+             number: updatedCount,
+-            rank: 1 + Math.floor(Math.log2(updatedCount))
++            rank: calcDinoRank(updatedCount, evoCount)
+         };
+         onUpdateProgress(newProg);
+ 
+diff --git a/universe-25/src/apps/arc-jurassic/components/tabs/gacha/workers/GachaResultWorker/GachaResultWorker.tsx b/universe-25/src/apps/arc-jurassic/components/tabs/gacha/workers/GachaResultWorker/GachaResultWorker.tsx
+index 83b31f9..daac2d7 100644
+--- a/universe-25/src/apps/arc-jurassic/components/tabs/gacha/workers/GachaResultWorker/GachaResultWorker.tsx
++++ b/universe-25/src/apps/arc-jurassic/components/tabs/gacha/workers/GachaResultWorker/GachaResultWorker.tsx
+@@ -3,6 +3,7 @@ import { DinoCard } from '../../../../molecule/DinoCard/DinoCard';
+ import { EvoAvatar } from '../../../../molecule/EvoAvatar/EvoAvatar';
+ import { rutGonTime } from '../../../../../core/rutGonTime';
+ import { calcDinoCost } from '../../../../../core/calcDinoCost';
++import { calcDinoMaxCapacity, calcDinoRank, calcDinoCurrentEvo } from '../../../../../core/evolutionEngine';
+ import { X, ArrowLeft } from 'lucide-react';
+ import type { GachaResultWorkerProps } from '../../types';
+ import './GachaResultWorker.css';
+@@ -39,11 +40,11 @@ export const GachaResultWorker: React.FC<GachaResultWorkerProps> = ({
+     if (!dino) return <div className="text-red-400 text-center py-8">Dino specimen data not found</div>;
+ 
+     const userDinoData = userProgress.owned_dinos?.[resultUuid] || { number: 0, rank: 0 };
+-    const currentRank = Number(userDinoData.rank) || 0;
+     const currentNumber = Number(userDinoData.number) || 0;
+-
+     const evolutions = dino.evolutions || [];
+-    const maxCapacity = Number(dino.maximum_number || Math.pow(2, Math.max(0, evolutions.length - 1)));
++    const evoCount = evolutions.length || 4;
++    const currentRank = calcDinoRank(currentNumber, evoCount);
++    const maxCapacity = calcDinoMaxCapacity(dino);
+     const remainingToCap = Math.max(1, maxCapacity - currentNumber);
+ 
+     // Clamped buy quantity: cannot exceed evolution requirement
+@@ -52,14 +53,14 @@ export const GachaResultWorker: React.FC<GachaResultWorkerProps> = ({
+ 
+     // Projected evolution rank achieved from this purchase
+     const projectedCount = currentNumber + effectiveQuantity;
+-    const projectedRank = 1 + Math.floor(Math.log2(projectedCount));
++    const projectedRank = calcDinoRank(projectedCount, evoCount);
+ 
+     // Highest Owned Evo index (0 if unowned) vs Achieved Target index
+     const highestOwnedIndex = Math.max(0, currentRank - 1);
+     const achievedTargetIndex = Math.min(Math.max(0, projectedRank - 1), Math.max(0, evolutions.length - 1));
+ 
+     const highestOwnedEvo = currentRank > 0 ? evolutions[highestOwnedIndex] : null;
+-    const achievedTargetEvo = evolutions[achievedTargetIndex];
++    const achievedTargetEvo = calcDinoCurrentEvo(dino, projectedRank, true) || evolutions[achievedTargetIndex];
+ 
+     // Compute intermediate skipped evolution tiers
+     const startEvoRank = currentRank > 0 ? currentRank : 0;
+@@ -238,7 +239,7 @@ export const GachaResultWorker: React.FC<GachaResultWorkerProps> = ({
+                     <div className="dino-gacha-stats-title flex justify-between items-center mb-1">
+                         <span className="text-xs font-bold text-white tracking-wider">PROJECTED STATS</span>
+                         <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-cyan-400 font-mono">
+-                            LV.{projectedRank * 10 || 10}
++                            LV.{achievedTargetEvo?.level || (projectedRank * 10 || 10)}
+                         </span>
+                     </div>
+                     <div className="dino-gacha-stats">
+diff --git a/universe-25/src/apps/arc-jurassic/components/tabs/settings/SettingsTab.tsx b/universe-25/src/apps/arc-jurassic/components/tabs/settings/SettingsTab.tsx
+index 3b1fd1e..5c7205b 100644
+--- a/universe-25/src/apps/arc-jurassic/components/tabs/settings/SettingsTab.tsx
++++ b/universe-25/src/apps/arc-jurassic/components/tabs/settings/SettingsTab.tsx
+@@ -8,10 +8,6 @@ import {
+   ToggleRight,
+   ToggleLeft,
+   Database,
+-  Sparkles,
+-  ShieldCheck,
+-  ShieldAlert,
+-  Trash2
+ } from 'lucide-react';
+ 
+ interface SettingsTabProps {
+diff --git a/universe-25/src/apps/arc-jurassic/core/calcGachaPool.ts b/universe-25/src/apps/arc-jurassic/core/calcGachaPool.ts
+index d1d9a14..7f71595 100644
+--- a/universe-25/src/apps/arc-jurassic/core/calcGachaPool.ts
++++ b/universe-25/src/apps/arc-jurassic/core/calcGachaPool.ts
+@@ -2,6 +2,7 @@
+ // Pure Mathematical Engine for Gacha Pool Gating, Ingredient Inflation, True Inverse Ferocity Drop Rates, Top 3 Dinos, Total Army Ferocity, and Next Cap Milestones
+ 
+ import { calcDinoCost, type DinoCostResult } from './calcDinoCost';
++import { calcDinoMaxCapacity, calcDinoRank } from './evolutionEngine';
+ 
+ export interface PoolDino {
+     uuid: string;
+@@ -77,31 +78,34 @@ export function getUserTop3Dinos(objects: any[], userProgress: any): TopDinoInfo
+     for (const [uuid, data] of Object.entries(ownedDinos)) {
+         const ownedData = data as { number?: number; rank?: number; ferocity?: number };
+         const number = Number(ownedData.number || 0);
+-        const rank = Number(ownedData.rank || 0);
+ 
+-        if (number > 0 && rank > 0) {
++        if (number > 0) {
+             const dino = objects.find((d: any) => (d.uuid || d.id || d.name) === uuid);
+             if (dino && dino.evolutions?.length > 0) {
+-                const targetLevel = rank * 10;
+-                const evo = dino.evolutions.find((e: any) => e.level === targetLevel) || dino.evolutions[Math.min(rank - 1, dino.evolutions.length - 1)];
+-                if (evo) {
+-                    const fero = evo.ferocity !== undefined
+-                        ? Number(evo.ferocity)
+-                        : Math.floor(Number(evo.damage || 0) + (Number(evo.health || 0) / 3.2));
+-                    list.push({
+-                        uuid,
+-                        name: dino.name || '',
+-                        rarity: String(dino.rarity || '').toLowerCase(),
+-                        class: dino.class,
+-                        rank,
+-                        level: targetLevel,
+-                        ownedCount: number,
+-                        ferocity: fero,
+-                        damage: Number(evo.damage || 0),
+-                        health: Number(evo.health || 0),
+-                        evoImg: evo.image_url || dino.image_url,
+-                        image_url: dino.image_url,
+-                    });
++                const rank = calcDinoRank(number, dino.evolutions.length);
++                if (rank > 0) {
++                    const activeIndex = Math.min(rank - 1, dino.evolutions.length - 1);
++                    const evo = dino.evolutions[activeIndex];
++                    if (evo) {
++                        const fero = evo.ferocity !== undefined
++                            ? Number(evo.ferocity)
++                            : Math.floor(Number(evo.damage || 0) + (Number(evo.health || 0) / 3.2));
++                        const targetLevel = Number(evo.level || rank * 10);
++                        list.push({
++                            uuid,
++                            name: dino.name || '',
++                            rarity: String(dino.rarity || '').toLowerCase(),
++                            class: dino.class,
++                            rank,
++                            level: targetLevel,
++                            ownedCount: number,
++                            ferocity: fero,
++                            damage: Number(evo.damage || 0),
++                            health: Number(evo.health || 0),
++                            evoImg: evo.image_url || dino.image_url,
++                            image_url: dino.image_url,
++                        });
++                    }
+                 }
+             }
+         }
+@@ -129,18 +133,20 @@ export function calcUserTotalFerocity(objects: any[], userProgress: any): number
+     for (const [uuid, data] of Object.entries(ownedDinos)) {
+         const ownedData = data as { number?: number; rank?: number; ferocity?: number };
+         const number = Number(ownedData.number || 0);
+-        const rank = Number(ownedData.rank || 0);
+ 
+-        if (number > 0 && rank > 0) {
++        if (number > 0) {
+             const dino = objects.find((d: any) => (d.uuid || d.id || d.name) === uuid);
+             if (dino && dino.evolutions?.length > 0) {
+-                const targetLevel = rank * 10;
+-                const evo = dino.evolutions.find((e: any) => e.level === targetLevel) || dino.evolutions[Math.min(rank - 1, dino.evolutions.length - 1)];
+-                if (evo) {
+-                    const fero = evo.ferocity !== undefined
+-                        ? Number(evo.ferocity)
+-                        : Math.floor(Number(evo.damage || 0) + (Number(evo.health || 0) / 3.2));
+-                    total += fero;
++                const rank = calcDinoRank(number, dino.evolutions.length);
++                if (rank > 0) {
++                    const activeIndex = Math.min(rank - 1, dino.evolutions.length - 1);
++                    const evo = dino.evolutions[activeIndex];
++                    if (evo) {
++                        const fero = evo.ferocity !== undefined
++                            ? Number(evo.ferocity)
++                            : Math.floor(Number(evo.damage || 0) + (Number(evo.health || 0) / 3.2));
++                        total += fero;
++                    }
+                 }
+             }
+         }
+@@ -174,8 +180,7 @@ export function calcGachaPool(
+     // 1. Identify creatures exceeding max limit
+     for (const dino of objects) {
+         const uuid = dino.uuid || dino.id || dino.name;
+-        const evolutions = dino.evolutions || [];
+-        const maxLimit = Number(dino.maximum_number || Math.pow(2, Math.max(0, evolutions.length - 1)));
++        const maxLimit = calcDinoMaxCapacity(dino);
+         const userCount = Number(ownedDinos[uuid]?.number || 0);
+ 
+         if (userCount >= maxLimit) {
+@@ -261,8 +266,9 @@ export function calcGachaPool(
+ 
+         const userDinoData = ownedDinos[uuid] || { number: 0, rank: 0 };
+         const ownedCount = Number(userDinoData.number || 0);
+-        const currentRank = Number(userDinoData.rank || 0);
+-        const maximumNumber = Number(dino.maximum_number || Math.pow(2, Math.max(0, evolutions.length - 1)));
++        const currentRank = calcDinoRank(ownedCount, evolutions.length);
++        const maximumNumber = calcDinoMaxCapacity(dino);
++        const maxEvo = evolutions[evolutions.length - 1] || evo4;
+ 
+         const cost = calcDinoCost(dino);
+ 
+@@ -276,9 +282,9 @@ export function calcGachaPool(
+             modifiedFerocity,
+             rawWeight: 0,
+             dropRatePercent: 0,
+-            maxDamage: Number(evo4.damage || 0),
+-            maxHealth: Number(evo4.health || 0),
+-            maxEvoImg: evo4.image_url || dino.image_url,
++            maxDamage: Number(maxEvo.damage || 0),
++            maxHealth: Number(maxEvo.health || 0),
++            maxEvoImg: maxEvo.image_url || dino.image_url,
+             evo1Img: evolutions[0]?.image_url || dino.image_url,
+             isOwned: ownedCount > 0,
+             ownedCount,
+diff --git a/universe-25/src/apps/arc-jurassic/data/dino.json b/universe-25/src/apps/arc-jurassic/data/dino.json
+index 63badd0..2a99d93 100644
+--- a/universe-25/src/apps/arc-jurassic/data/dino.json
++++ b/universe-25/src/apps/arc-jurassic/data/dino.json
+@@ -70,7 +70,7 @@
+             "Acrocanthosaurus means 'high spined lizard.' This apex predator looks like a Tyrannosaurus with a hunchback!",
+             "At 38 feet and weighing over 6 tons, the Acrocanthosaurus was one of the biggest land-dwelling predators ever!",
+             "The best preserved Acrocanthosaurus skeleton ever discovered was found in Oklahoma - its name is Fran!",
+-            "The Acrocanthosaurus has incredibly short forelimbs - so short, it can’t even scratch its own neck!"
++            "The Acrocanthosaurus has incredibly short forelimbs - so short, it can\u2019t even scratch its own neck!"
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -394,7 +394,7 @@
+         ],
+         "max_ferocity": 2264,
+         "evo4_ferocity": 150,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "albertosaurus": {
+         "name": "ALBERTOSAURUS",
+@@ -645,8 +645,8 @@
+         "buy_price_dna": 4000,
+         "sell_price_dna": 2000,
+         "facts": [
+-            "Did you know that Ammonite gets its name from the spiral shape of its shell, which resembles tightly coiled rams’ horns?",
+-            "Ancient Roman author, Pliny the Elder, called Ammonite fossils ‘ammonis cornua’ (‘horns of Ammon’), after the Egyptian god, Ammon.",
++            "Did you know that Ammonite gets its name from the spiral shape of its shell, which resembles tightly coiled rams\u2019 horns?",
++            "Ancient Roman author, Pliny the Elder, called Ammonite fossils \u2018ammonis cornua\u2019 (\u2018horns of Ammon\u2019), after the Egyptian god, Ammon.",
+             "As excellent swimmers, the Ammonite prefer open water to the sea floor.",
+             "The shell of the Ammonites consist of chambers joined together by sutures, which help the Ammonite float."
+         ],
+@@ -813,7 +813,7 @@
+         "buy_price_dna": 3550,
+         "sell_price_dna": 1780,
+         "facts": [
+-            "The Andrewsarchus gets its name from Roy Chapman Andrews. It means ‘Andrews commander’.",
++            "The Andrewsarchus gets its name from Roy Chapman Andrews. It means \u2018Andrews commander\u2019.",
+             "Discovered in 1923, only a skull of the Andrewsarchus was discovered in Inner Mongolia, China.",
+             "To recreate the Andrewsarchus for Jurassic World, DNA from the Mesonyx was used, which is believed to be a larger relative.",
+             "Did you know that the Andrewsarchus is related to Entelodonts, hippos, and whales?"
+@@ -1636,9 +1636,9 @@
+         "buy_price_dna": 8000,
+         "sell_price_dna": 4000,
+         "facts": [
+-            "Did you know that Archelon means ‘ruler turtle’? Its closest modern relative is the leatherback sea turtle!",
++            "Did you know that Archelon means \u2018ruler turtle\u2019? Its closest modern relative is the leatherback sea turtle!",
+             "The Archelon is the largest sea turtle known to exist!",
+-            "An Archelon can grow up to 13 feet in length and 16 feet in width. That’s bigger than an ambulance!",
++            "An Archelon can grow up to 13 feet in length and 16 feet in width. That\u2019s bigger than an ambulance!",
+             "Unlike the modern turtle, the Archelon does not have a solid shell. Instead, a skeletal framework supports a bony carapace!"
+         ],
+         "ingredients": [],
+@@ -1929,10 +1929,10 @@
+         "buy_price_dna": 3000,
+         "sell_price_dna": 1500,
+         "facts": [
+-            "The Baculites’ name, which means ‘walking stick rock’, comes from the straight shape of its shell!",
++            "The Baculites\u2019 name, which means \u2018walking stick rock\u2019, comes from the straight shape of its shell!",
+             "A Baculite can reach 6 feet in length! Like other cephalopods, it has tentacle-like arms, allowing it to feed on zooplankton.",
+-            "Although researchers speculated that the Baculites lived vertically, Jurassic World’s equivalent lives horizontally!",
+-            "Did you know that parts of Baculites shell fossils are sometimes referred to as ‘stone buffaloes’ due to their shape?"
++            "Although researchers speculated that the Baculites lived vertically, Jurassic World\u2019s equivalent lives horizontally!",
++            "Did you know that parts of Baculites shell fossils are sometimes referred to as \u2018stone buffaloes\u2019 due to their shape?"
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -1988,7 +1988,7 @@
+             "The Bageherpeton is an extinct genus of large, long-snouted temnospondyls known as archaegosaurid.",
+             "Bageherpeton originated in the Permian geologic period of Rio Grande do Sul, Brazil.",
+             "Like other archaegosaurid, the Bageherpeton is a fully aquatic animal.",
+-            "Found in the Rio do Rasto Formation, the Bageherpeton got its name from the nearby city of Bagé."
++            "Found in the Rio do Rasto Formation, the Bageherpeton got its name from the nearby city of Bag\u00e9."
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -2169,7 +2169,7 @@
+             "Did you know that the Bananogmius is related to modern-day angelfish?",
+             "Like an angelfish, the Bananogmius has a huge dorsal fin!",
+             "The Bananogmius has small, comb-like teeth which it uses to filter food, such as brine shrimp, bloodworms, and daphnia!",
+-            "A full grown Bananogmius can reach 4-6 feet in length. That’s the same as an ocean sunfish!"
++            "A full grown Bananogmius can reach 4-6 feet in length. That\u2019s the same as an ocean sunfish!"
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -2592,7 +2592,7 @@
+         ],
+         "max_ferocity": 8857,
+         "evo4_ferocity": 1771,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "bonitasaura": {
+         "name": "BONITASAURA",
+@@ -2998,7 +2998,7 @@
+         "buy_price_dna": 6750,
+         "sell_price_dna": 3380,
+         "facts": [
+-            "Bumpy’s horns are asymmetrical, with one being rounder and less blunt than the other, giving her a uniquely adorable appearance.",
++            "Bumpy\u2019s horns are asymmetrical, with one being rounder and less blunt than the other, giving her a uniquely adorable appearance.",
+             "Bumpy is a particularly loyal Ankylosaurus, acting as a protector to those she has bonded with. This makes her an invaluable companion and friend.",
+             "Bumpy is roughly 60% the size of a normal ankylosaurus due to her shortened incubation period.",
+             "The armored shell and heavy club at the end of her tail provide Bumpy with protection from any potential enemies."
+@@ -3405,7 +3405,7 @@
+         "facts": [
+             "InGen scientists brought this creature to life using dino DNA, giving it a wilder roar than any Ceratosaurus before it.",
+             "Its flexible, movable joints let it strike lifelike poses and launch into action at a moment's notice.",
+-            "The distinctive horn on its snout is its pride and joy — perfect for intimidating rivals before a mega chomp attack.",
++            "The distinctive horn on its snout is its pride and joy \u2014 perfect for intimidating rivals before a mega chomp attack.",
+             "When it attacks, its markings seem to light up with excitement, dazzling prey just before its ferocious jaws snap shut."
+         ],
+         "ingredients": [],
+@@ -4377,10 +4377,10 @@
+         "buy_price_dna": 2000,
+         "sell_price_dna": 1000,
+         "facts": [
+-            "Meaning ‘biter lizard’, the Dakosaurus gets its name from its large, serrated teeth.",
+-            "Most marine crocodiles ate a fish-based diet, but Dakosaurus’s skull and jaws indicate it was a predator of larger prey.",
++            "Meaning \u2018biter lizard\u2019, the Dakosaurus gets its name from its large, serrated teeth.",
++            "Most marine crocodiles ate a fish-based diet, but Dakosaurus\u2019s skull and jaws indicate it was a predator of larger prey.",
+             "Spending most of its time at sea, the crocodilian Dakosaurus has developed flippers and a fluke-like tail.",
+-            "Reaching upwards of 15 feet in length, the Dakosaurus is twice as long as Shaquille O’Neil is tall!"
++            "Reaching upwards of 15 feet in length, the Dakosaurus is twice as long as Shaquille O\u2019Neil is tall!"
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -4881,7 +4881,7 @@
+         "buy_price_dna": 85400,
+         "sell_price_dna": 42700,
+         "facts": [
+-            "Don't let this hybrid near the thermostat! Its preferred temperature is approximately 90 °F.",
++            "Don't let this hybrid near the thermostat! Its preferred temperature is approximately 90 \u00b0F.",
+             "Titanoboa likes to prey on aquatic creatures, while Dilophoboa hunts mainly on land.",
+             "This hybrid has more vertebrae than Titanoboa, allowing it to better support its massive body when traveling on land.",
+             "Dilophoboa is a venomous constrictor. It can spit poison halfway across the average American basketball court!"
+@@ -5040,7 +5040,7 @@
+         ],
+         "max_ferocity": 3992,
+         "evo4_ferocity": 274,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "dilophosaurus_gen_2": {
+         "name": "DILOPHOSAURUS GEN 2",
+@@ -5877,7 +5877,7 @@
+         "buy_price_dna": 2000,
+         "sell_price_dna": 1000,
+         "facts": [
+-            "Did you know that Dolichorhynchops means ‘long-nosed face’? It gets its name from its long snout!",
++            "Did you know that Dolichorhynchops means \u2018long-nosed face\u2019? It gets its name from its long snout!",
+             "The Dolichorhynchops has long, thin teeth and a powerful bite which it uses to capture fish.",
+             "Because the Dolichorhynchops swallowed its prey whole, it also would swallow small stones to aid with digestion.",
+             "At 10 feet in length, the Dolichorhynchops is smaller than an average car!"
+@@ -6073,7 +6073,7 @@
+         "facts": [
+             "This herbivore has leaf-shaped teeth, which are perfect for chewing foliage.",
+             "Dracorex means \"Dragon King\". Its head is circled in spikes, like a crown.",
+-            "The spikes that protrude from Dracorex’s skull prevent predators from attacking it head-on.",
++            "The spikes that protrude from Dracorex\u2019s skull prevent predators from attacking it head-on.",
+             "The identity of Dracorex is heavily debated by paleontologists. Some believe it is a juvenile Pachycephalosaurus."
+         ],
+         "ingredients": [],
+@@ -6657,7 +6657,7 @@
+         "buy_price_dna": 9000,
+         "sell_price_dna": 4500,
+         "facts": [
+-            "Known as the ‘scissor-tooth shark’, the Edestus’ teeth resemble pinking shears!",
++            "Known as the \u2018scissor-tooth shark\u2019, the Edestus\u2019 teeth resemble pinking shears!",
+             "Did you know that the Edestus belongs to the same family as the Helicoprion? They even share the same unique dental structure!",
+             "The Edestus can grow up to 20 feet in length, the size of a modern great white shark!",
+             "Unlike modern sharks, the Edestus does not shed its serrated teeth. Instead, they are worn down over time."
+@@ -6881,7 +6881,7 @@
+         "buy_price_dna": 1400,
+         "sell_price_dna": 700,
+         "facts": [
+-            "Did you know that Elasmotherium means ‘thin plate beast’? It’s also known as the ‘Giant Rhinoceros of Siberia’!",
++            "Did you know that Elasmotherium means \u2018thin plate beast\u2019? It\u2019s also known as the \u2018Giant Rhinoceros of Siberia\u2019!",
+             "Reaching the size of an adult Mammoth, the Elasmotherium has a large, thick horn on its forehead.",
+             "The Elasmotherium uses its horn for multiple functions, which include attracting mates, foraging, and digging for water.",
+             "Like the Woolly Rhinoceros, the Elasmotherium has a thick, wool-like coat, which insulates it from its colder habitat."
+@@ -6937,7 +6937,7 @@
+         "buy_price_dna": 1600,
+         "sell_price_dna": 800,
+         "facts": [
+-            "Meaning ‘complete teeth’, the Entelodon gets its name from the number of teeth it has!",
++            "Meaning \u2018complete teeth\u2019, the Entelodon gets its name from the number of teeth it has!",
+             "Despite having a pig-like head, the Entelodon is actually closely related to hippos and whales!",
+             "Fast on its feet, this pig-like mammal can give a horse a run for its money!",
+             "Did you know that the Entelodon has a 2 foot long skull, and is 4.4 feet tall at the shoulders?"
+@@ -7738,7 +7738,7 @@
+         ],
+         "max_ferocity": 3992,
+         "evo4_ferocity": 274,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "gastornis": {
+         "name": "GASTORNIS",
+@@ -7877,10 +7877,10 @@
+         "buy_price_dna": 2900,
+         "sell_price_dna": 1450,
+         "facts": [
+-            "The Geosaurus, meaning ‘Mother of Giants lizard’ is named after the Greek ‘Ge’, who was the mythical mother of giants!",
++            "The Geosaurus, meaning \u2018Mother of Giants lizard\u2019 is named after the Greek \u2018Ge\u2019, who was the mythical mother of giants!",
+             "Did you know that the Geosaurus has a short snout with serrated teeth? It preys on large fish and other marine reptiles.",
+             "Like modern crocodiles, the Geosaurus ambushes its prey! It hides in murky water and waits for the perfect moment to strike.",
+-            "Although an ancestor of modern crocodiles, the Geosaurus only grew up to 10 feet in length. That’s smaller than today's crocs!"
++            "Although an ancestor of modern crocodiles, the Geosaurus only grew up to 10 feet in length. That\u2019s smaller than today's crocs!"
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -9062,7 +9062,7 @@
+         "buy_price_dna": 10000,
+         "sell_price_dna": 5000,
+         "facts": [
+-            "Did you know that Hainosaurus means ‘lizard from Haino’ which is located in Belgium? It was named by Louis Dollo in 1885!",
++            "Did you know that Hainosaurus means \u2018lizard from Haino\u2019 which is located in Belgium? It was named by Louis Dollo in 1885!",
+             "Feeding on turtles, smaller mosasaurs, plesiosaurs, fish, and sharks, the Hainosaurus has even been known to eat birds!",
+             "Closely related to the Tylosaurus and Taniwhasaurus, the Hainosaurus is rivaled only by the Mosasaurus!",
+             "At 40 feet in length, the Hainosaurus is one of the largest mosasaurs to have roamed prehistoric oceans!"
+@@ -9230,10 +9230,10 @@
+         "buy_price_dna": 2500,
+         "sell_price_dna": 1250,
+         "facts": [
+-            "Greek for ‘spiral saw’, Helicoprion gets its name from the shape of its teeth, which are called ‘tooth whorls’.",
++            "Greek for \u2018spiral saw\u2019, Helicoprion gets its name from the shape of its teeth, which are called \u2018tooth whorls\u2019.",
+             "This prehistoric shark can grow up to 33 feet in length, making the Helicoprion one of the largest ocean predators of its time!",
+             "Did you know that the Helicoprion shares many skull features with the modern goblin shark?",
+-            "At 24 inches long, the Helicoprion’s tooth whorl stumped scientists. Early guesses placed it on the dorsal fin and even the tail!"
++            "At 24 inches long, the Helicoprion\u2019s tooth whorl stumped scientists. Early guesses placed it on the dorsal fin and even the tail!"
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -9286,10 +9286,10 @@
+         "buy_price_dna": 10000,
+         "sell_price_dna": 5000,
+         "facts": [
+-            "Did you know that Henodus means ‘single tooth’? It gets its name from the single tooth located on either side of its mouth.",
++            "Did you know that Henodus means \u2018single tooth\u2019? It gets its name from the single tooth located on either side of its mouth.",
+             "The Henodus, which resembles a turtle, is actually a placodont: an extinct type of marine reptile that includes plesiosaurs!",
+             "The Henodus has weak limbs. Because of this, it spends most of its life in the water, feeding on vegetation.",
+-            "The Henodus’s shell is composed of many bones that form a mosaic pattern. This bony armor is fused to its spine."
++            "The Henodus\u2019s shell is composed of many bones that form a mosaic pattern. This bony armor is fused to its spine."
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -9706,7 +9706,7 @@
+         "facts": [
+             "Iguanodon is one of the few creatures that can move as a quadruped and a biped.",
+             "Iguanodon was the second species to be scientifically labeled a dinosaur.",
+-            "Iguanodon's teeth are very similar to the modern day Iguana’s, which it was named after.",
++            "Iguanodon's teeth are very similar to the modern day Iguana\u2019s, which it was named after.",
+             "Many groups of Iguanodon tracks have been excavated from Late Jurassic deposits, proving that the creature travelled in herds."
+         ],
+         "ingredients": [],
+@@ -9831,7 +9831,7 @@
+         "facts": [
+             "Did you know that the name Indominus rex means 'fierce' or 'untamable king'?",
+             "The birth of the Indominus rex was achieved by genetically modifying existing DNA in the Hammond Creation Lab.",
+-            "The Indominus rex's roar can reach an estimated 140-160db – the same level as a 747 taking off and landing!",
++            "The Indominus rex's roar can reach an estimated 140-160db \u2013 the same level as a 747 taking off and landing!",
+             "The distinct head ornamentation of the Indominus rex is an ultra-tough bony osteoderm that protects the cranium from attackers!"
+         ],
+         "ingredients": [
+@@ -9898,8 +9898,8 @@
+         "buy_price_dna": 29400,
+         "sell_price_dna": 14700,
+         "facts": [
+-            "An experiment conducted to better understand the Indominus rex’s predatory instinct resulted in this equally dangerous Gen 2.",
+-            "This apex predator’s preferred meal is Apatosaurus.",
++            "An experiment conducted to better understand the Indominus rex\u2019s predatory instinct resulted in this equally dangerous Gen 2.",
++            "This apex predator\u2019s preferred meal is Apatosaurus.",
+             "The Indominus rex Gen 2 is able to communicate with the Gen 2 creatures it was hybridized with.",
+             "The cuttlefish DNA added to this hybrid makes it a master of camouflage."
+         ],
+@@ -10174,7 +10174,7 @@
+         "buy_price_dna": 3250,
+         "sell_price_dna": 1630,
+         "facts": [
+-            "Did you know that Indricotherium is a synonym of Paraceratherium? They’re both the same animal!",
++            "Did you know that Indricotherium is a synonym of Paraceratherium? They\u2019re both the same animal!",
+             "Paraceratherium means 'near the hornless beast', in reference to a similar species, Aceratherium.",
+             "The Indricotherium is massive, weighing up to 44,000 pounds! At its shoulder, it is nearly 16 feet tall!",
+             "Giraffe-like in build but more robust, the Indricotherium's prehensile upper lip allows it to graze on tall foliage."
+@@ -10432,7 +10432,7 @@
+         ],
+         "max_ferocity": 17998,
+         "evo4_ferocity": 4655,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "junior": {
+         "name": "JUNIOR",
+@@ -11032,7 +11032,7 @@
+         "buy_price_dna": 4400,
+         "sell_price_dna": 2200,
+         "facts": [
+-            "The Kronosaurus is named after the Greek titan, Kronos. It means ‘lizard of Kronos’!",
++            "The Kronosaurus is named after the Greek titan, Kronos. It means \u2018lizard of Kronos\u2019!",
+             "Did you know that the Kronosaurus is an incredibly fast swimmer? Its powerful pectoral girdle supports very strong strokes.",
+             "At 33 feet long, and weighing 11 metric tons, the Kronosaurus is one of the largest plesiosaurs!",
+             "As an apex predator, the Kronosaurus eats in a similar fashion to the modern crocodile, clamping onto its prey with its jaws!"
+@@ -11269,7 +11269,7 @@
+         "buy_price_dna": 2150,
+         "sell_price_dna": 1080,
+         "facts": [
+-            "Did you know that Leptocleidus means ‘slender clavicle’? Its name comes from its shoulder bones.",
++            "Did you know that Leptocleidus means \u2018slender clavicle\u2019? Its name comes from its shoulder bones.",
+             "The Leptocleidus prefers grassy, fresh water over open lakes. As a piscivore, it primarily eats fish.",
+             "Like other plesiosaurs, the Leptocleidus is capable of giving birth to live young.",
+             "An adult Leptocleidus can reach 10 feet in length, with a shorter neck than its plesiosaur relatives."
+@@ -11575,7 +11575,7 @@
+         "buy_price_dna": 4500,
+         "sell_price_dna": 2250,
+         "facts": [
+-            "Ancient Greek for ‘smooth-sided teeth’, the Liopleurodon earns its name from the state of its teeth!",
++            "Ancient Greek for \u2018smooth-sided teeth\u2019, the Liopleurodon earns its name from the state of its teeth!",
+             "Did you know that the Liopleurodon can grow to be 23 feet long and weigh 3000 pounds?",
+             "An apex predator of the Jurassic seas, the Liopleurodon has eight-inch teeth making for a powerful bite!",
+             "The Liopleurodon has an awesome sense of smell. Just like a shark, it can smell blood, and it uses this sense to ambush prey!"
+@@ -12220,7 +12220,7 @@
+             "The Mauisaurus was first discovered in New Zealand, and gets its name from the Maori mythical demigod, Maui.",
+             "Did you know that the Mauisaurus has one of the longest necks of the plesiosaurs? It has 68 cervical vertebrae!",
+             "At 26 feet long, the Mauisaurus has a slender body that allows for agile movement while swimming.",
+-            "The Mauisaurus has sharp, jagged teeth which it uses to grip fish and squid. It’s even been known to hunt on the shoreline!"
++            "The Mauisaurus has sharp, jagged teeth which it uses to grip fish and squid. It\u2019s even been known to hunt on the shoreline!"
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -12273,10 +12273,10 @@
+         "buy_price_dna": 3080,
+         "sell_price_dna": 1540,
+         "facts": [
+-            "Also known as the ‘Irish Elk’ and ‘Giant Elk’, Megaloceros is Greek for ‘Great Horn’.",
++            "Also known as the \u2018Irish Elk\u2019 and \u2018Giant Elk\u2019, Megaloceros is Greek for \u2018Great Horn\u2019.",
+             "With massive antlers and a massive build, the Megaloceros stands at 7 feet tall at the head!",
+             "Did you know that early human cave art depicts the Megaloceros to have a dark coat of fur with a white underside?",
+-            "After breeding season has passed, the Megaloceros sheds its impressive antlers. But don’t worry, a new set will grow in!"
++            "After breeding season has passed, the Megaloceros sheds its impressive antlers. But don\u2019t worry, a new set will grow in!"
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -12398,7 +12398,7 @@
+         "buy_price_dna": 4600,
+         "sell_price_dna": 2300,
+         "facts": [
+-            "Did you know that Megalodon means ‘big tooth’? This massive shark is 59 feet long!",
++            "Did you know that Megalodon means \u2018big tooth\u2019? This massive shark is 59 feet long!",
+             "The teeth of the Megalodon are the most common of its remains to be found. These teeth can reach up to 7 inches in length!",
+             "Sharing similar teeth serration, the Megalodon and modern white shark both bite down and shake their prey when attacking!",
+             "At four times the size of a great white shark, the Megalodon is much stockier, weighing up to 103 metric tons!"
+@@ -12582,7 +12582,7 @@
+             "The Megatherium is also called the Giant Ground Sloth. It is one of the biggest mammals to ever live!",
+             "As one of the slowest and largest mammals in its ecosystem, the Megatherium has no reason to run from a predator!",
+             "Still around during the Holocene, Megatherium probably interacted with humans!",
+-            "The average Megatherium, standing on its hind legs, can reach 20 feet in height! That’s the same as the Easter Island statues!"
++            "The average Megatherium, standing on its hind legs, can reach 20 feet in height! That\u2019s the same as the Easter Island statues!"
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -13449,7 +13449,7 @@
+         ],
+         "max_ferocity": 20775,
+         "evo4_ferocity": 6047,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "mosasaurus": {
+         "name": "MOSASAURUS",
+@@ -13519,10 +13519,10 @@
+         "buy_price_dna": 8250,
+         "sell_price_dna": 4130,
+         "facts": [
+-            "Jurassic World’s geneticists modified their method of artificial size inflation since creating the Mosasaurus. The result is a Gen 2 similar in size, but with less bone density.",
+-            "The Mosasaurus Gen 2’s lungs are a different shape than the original, allowing it to explore further below the water’s surface.",
++            "Jurassic World\u2019s geneticists modified their method of artificial size inflation since creating the Mosasaurus. The result is a Gen 2 similar in size, but with less bone density.",
++            "The Mosasaurus Gen 2\u2019s lungs are a different shape than the original, allowing it to explore further below the water\u2019s surface.",
+             "Due to their slower speed, massive size, and tendency to live in bales like other turtle species, Archelon is the most popular prey targeted by the Mosasaurus Gen 2.",
+-            "The Mosasaurus Gen 2 has been observed to breach the water’s surface without reason. Experts speculate that this is a form of play."
++            "The Mosasaurus Gen 2 has been observed to breach the water\u2019s surface without reason. Experts speculate that this is a form of play."
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -14070,7 +14070,7 @@
+         ],
+         "max_ferocity": 17999,
+         "evo4_ferocity": 4652,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "onchopristis": {
+         "name": "ONCHOPRISTIS",
+@@ -14084,9 +14084,9 @@
+         "buy_price_dna": 2000,
+         "sell_price_dna": 1000,
+         "facts": [
+-            "Did you know that Onchopristis means ‘giant saw’? It is named after its rostrum, which resembles a saw blade!",
++            "Did you know that Onchopristis means \u2018giant saw\u2019? It is named after its rostrum, which resembles a saw blade!",
+             "Resembling a massive, 26 foot long sawfish, the Onchopristis is actually more closely related to the modern ray.",
+-            "The Onchopristis’ 8 foot rostrum is equipped with electrosensors, which it uses to sense nearby prey along the seafloor.",
++            "The Onchopristis\u2019 8 foot rostrum is equipped with electrosensors, which it uses to sense nearby prey along the seafloor.",
+             "Sweeping the seafloor, the Onchopristis impales its prey on the barbed spikes that run down the edges of its rostrum!"
+         ],
+         "ingredients": [],
+@@ -14310,7 +14310,7 @@
+         "facts": [
+             "Although this hybrid inherited a carnivorous set of teeth, its primary source of food is vegetation. The blades inside its mouth function as weapons rather than as utensils.",
+             "Ophiacomimus maintained the ostrich-like skeleton of the Gallimimus after its fusion, making it extremely fast.",
+-            "Both creatures involved in this hybrid’s fusion contributed pigmentation genetics that make up the lively coloration on its back.",
++            "Both creatures involved in this hybrid\u2019s fusion contributed pigmentation genetics that make up the lively coloration on its back.",
+             "The crests on the back and chest of the adult Ophiacomimus function as fins underwater, allowing this land creature to retrieve aquatic plants that grow in deep rivers."
+         ],
+         "ingredients": [
+@@ -14502,7 +14502,7 @@
+         "buy_price_dna": 7850,
+         "sell_price_dna": 3930,
+         "facts": [
+-            "Ornithocheirus’ snout is shaped like a rudder, and its mouth is full of sharp vertical teeth - great for catching fish!",
++            "Ornithocheirus\u2019 snout is shaped like a rudder, and its mouth is full of sharp vertical teeth - great for catching fish!",
+             "This pterosaur has a total wingspan of about 20 feet. That's just a bit shorter than a school bus!",
+             "The skin on Ornithocheirus' wings connect to its legs, making it great at flying and terrible at walking!",
+             "Ornithocheirus can fly great distances. Its fossils have been discovered in South America and Europe."
+@@ -14558,9 +14558,9 @@
+         "buy_price_dna": 10000,
+         "sell_price_dna": 5000,
+         "facts": [
+-            "Did you know that Orthacanthus means ‘vertical spike’? It’s derived from the defensive spike on the back of its head.",
++            "Did you know that Orthacanthus means \u2018vertical spike\u2019? It\u2019s derived from the defensive spike on the back of its head.",
+             "A freshwater shark, the Orthacanthus has a long dorsal fin and an eel-like body.",
+-            "The Orthacanthus can grow to be 10 feet long. That’s nearly as long as a great white shark!",
++            "The Orthacanthus can grow to be 10 feet long. That\u2019s nearly as long as a great white shark!",
+             "The Orthacanthus hunts in murky swamps. Its double-fanged teeth are specialized for grappling with larger, more powerful prey!"
+         ],
+         "ingredients": [],
+@@ -15340,7 +15340,7 @@
+         "facts": [
+             "This Gen 2 is identical to the original creature, with exception to the luminous coloration on its back.",
+             "The Parasaurolophus and Parasaurolophus Gen 2 live together in harmonious herds. This relationship is uncommon among other species.",
+-            "The Parasaurolophus Gen 2’s favorite meal is freshwater crab, and they are most commonly located near freshwater springs on Isla Nublar and Isla Sorna.",
++            "The Parasaurolophus Gen 2\u2019s favorite meal is freshwater crab, and they are most commonly located near freshwater springs on Isla Nublar and Isla Sorna.",
+             "The violet glow on the back of this special Gen 2 is the product of unusual marine DNA added during its creation."
+         ],
+         "ingredients": [],
+@@ -15644,7 +15644,7 @@
+         "buy_price_dna": 3000,
+         "sell_price_dna": 1500,
+         "facts": [
+-            "Phorusrhacos gets its name from Greek. It has been translated as ‘rag thief’ and ‘branch holder.’",
++            "Phorusrhacos gets its name from Greek. It has been translated as \u2018rag thief\u2019 and \u2018branch holder.\u2019",
+             "Did you know that at 8 feet in height, the Phorusrhacos weighs 290 pounds?",
+             "Although flightless, the Phorusrhacos is a predatory bird. Its small wings have sharp hooks, which it uses to grip its prey!",
+             "The Phorusrhacos has a curved, pointed beak, which it uses to pierce the skull of its prey!"
+@@ -15700,10 +15700,10 @@
+         "buy_price_dna": 9100,
+         "sell_price_dna": 4550,
+         "facts": [
+-            "Pierce is a Kentrosaurus—armed with long shoulder and tail spikes. These aren’t just for show—when threatened, Pierce knows how to swing that tail with precision!",
+-            "Though built for defense, Pierce isn’t aggressive by nature. In Camp Cretaceous, this stegosaur shows calm loyalty, proving that even the toughest dinos can have a gentle side.",
+-            "Pierce’s low-slung body and plated back make him look like a living tank. This natural armor helped him stand his ground against predators and protect those around him.",
+-            "Unlike many dinosaurs on Isla Nublar, Pierce develops a bond with the campers—showing trust, bravery, and a heart as strong as his spikes."
++            "Pierce is a Kentrosaurus\u2014armed with long shoulder and tail spikes. These aren\u2019t just for show\u2014when threatened, Pierce knows how to swing that tail with precision!",
++            "Though built for defense, Pierce isn\u2019t aggressive by nature. In Camp Cretaceous, this stegosaur shows calm loyalty, proving that even the toughest dinos can have a gentle side.",
++            "Pierce\u2019s low-slung body and plated back make him look like a living tank. This natural armor helped him stand his ground against predators and protect those around him.",
++            "Unlike many dinosaurs on Isla Nublar, Pierce develops a bond with the campers\u2014showing trust, bravery, and a heart as strong as his spikes."
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -15868,8 +15868,8 @@
+         "buy_price_dna": 4500,
+         "sell_price_dna": 2250,
+         "facts": [
+-            "Feeling the Plesiosaurus was closer to modern reptiles, William Conybeare and Henry De la Beche named it ‘near lizard’.",
+-            "Did you know that the Plesiosaurus was the first plesiosaur to be discovered? It was unlike anything they’d seen before!",
++            "Feeling the Plesiosaurus was closer to modern reptiles, William Conybeare and Henry De la Beche named it \u2018near lizard\u2019.",
++            "Did you know that the Plesiosaurus was the first plesiosaur to be discovered? It was unlike anything they\u2019d seen before!",
+             "In classical art and reconstructions, the Plesiosaurus was often depicted with its neck arcing out of the water.",
+             "Many unconfirmed Plesiosaurus sightings have been reported in modern history. Most famously at Loch Ness in Scotland!"
+         ],
+@@ -15926,7 +15926,7 @@
+         "facts": [
+             "This creature lived during the Kimmeridge stage, which is named after a village located on England's Dorset coast. Dorset is where Plesiosuchus fossils were first discovered.",
+             "Paleontologists have yet to discover a complete set of Plesiosuchus remains, making it difficult to classify this creature. However, most experts believe it is crocodilian.",
+-            "Scientists estimate that the adult Plesiosuchus grew to be approximately 17 ft long. That’s 2 feet longer than the modern American Crocodile!",
++            "Scientists estimate that the adult Plesiosuchus grew to be approximately 17 ft long. That\u2019s 2 feet longer than the modern American Crocodile!",
+             "Plesiosuchus had large, ridged, rectangular-shaped teeth. These teeth - in combination with a powerful jaw bone - made chewing through thick material quite easy."
+         ],
+         "ingredients": [],
+@@ -15980,8 +15980,8 @@
+         "buy_price_dna": 4000,
+         "sell_price_dna": 2000,
+         "facts": [
+-            "Did you know that Pliosaurus means ‘more lizard’? It’s colloquially known as ‘Predator X’!",
+-            "The Pliosaurus can reach up to 40 feet in length. Propped on its end, that’s nearly 4 stories high!",
++            "Did you know that Pliosaurus means \u2018more lizard\u2019? It\u2019s colloquially known as \u2018Predator X\u2019!",
++            "The Pliosaurus can reach up to 40 feet in length. Propped on its end, that\u2019s nearly 4 stories high!",
+             "Unlike other plesiosaurs, the Pliosaurus has a massive head and jaws, a stocky body, and a short neck.",
+             "With 12 inch long teeth, the bite of the Pliosaurus is devastating to other marine reptiles!"
+         ],
+@@ -16036,8 +16036,8 @@
+         "buy_price_dna": 10000,
+         "sell_price_dna": 5000,
+         "facts": [
+-            "Of the mosasaurs, the Plotosaurus is one of the best adapted swimmers. Its name literally means ‘swimmer lizard’.",
+-            "Did you know that an adult Plotosaurus can grow up to 43 feet in length?! That’s nearly as long as a school bus!",
++            "Of the mosasaurs, the Plotosaurus is one of the best adapted swimmers. Its name literally means \u2018swimmer lizard\u2019.",
++            "Did you know that an adult Plotosaurus can grow up to 43 feet in length?! That\u2019s nearly as long as a school bus!",
+             "A deep diver, the Plotosaurus has a streamlined and rigid forward body that reduces drag, allowing it to swim faster.",
+             "The Plotosaurus has specially adapted scales similar to a shark. These scales create vortices which reduce drag even more!"
+         ],
+@@ -16182,7 +16182,7 @@
+         ],
+         "max_ferocity": 5458,
+         "evo4_ferocity": 574,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "poukadei": {
+         "name": "POUKADEI",
+@@ -16614,8 +16614,8 @@
+         "buy_price_dna": 2250,
+         "sell_price_dna": 1130,
+         "facts": [
+-            "Pronounced pro-nayf-o-don, the Prognathodon’s name means ‘forejaw tooth’.",
+-            "In 1998 a complete skull fossil of the Prognathodon was found in The Netherlands. It was nicknamed ‘Bèr’!",
++            "Pronounced pro-nayf-o-don, the Prognathodon\u2019s name means \u2018forejaw tooth\u2019.",
++            "In 1998 a complete skull fossil of the Prognathodon was found in The Netherlands. It was nicknamed \u2018B\u00e8r\u2019!",
+             "At 46 feet long, the Prognathodon is a mid-sized mosasaur with bony rings surrounding its eyes.",
+             "The Prognathodon has specialized, dual-purpose teeth adapted for crushing shells and shearing flesh!"
+         ],
+@@ -16726,10 +16726,10 @@
+         "buy_price_dna": 2200,
+         "sell_price_dna": 1100,
+         "facts": [
+-            "The Protostega’s name means ‘first roof’ after its carapace and plastron (breastplate).",
+-            "Nose to tail, the Protostega can grow up to 11 feet in length. That’s pretty big for a sea turtle!",
++            "The Protostega\u2019s name means \u2018first roof\u2019 after its carapace and plastron (breastplate).",
++            "Nose to tail, the Protostega can grow up to 11 feet in length. That\u2019s pretty big for a sea turtle!",
+             "Like the Archelon and modern leatherback turtle, the Protostega has a soft shell!",
+-            "Did you know that the Protostega is the second largest sea turtle that ever lived? It’s overshadowed by the Archelon!"
++            "Did you know that the Protostega is the second largest sea turtle that ever lived? It\u2019s overshadowed by the Archelon!"
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -16782,7 +16782,7 @@
+         "buy_price_dna": 3000,
+         "sell_price_dna": 1500,
+         "facts": [
+-            "Did you know that Psephoderma means ‘pebbly skin’? It gets its name from the pebbly surface of its shell!",
++            "Did you know that Psephoderma means \u2018pebbly skin\u2019? It gets its name from the pebbly surface of its shell!",
+             "Feeding primarily on shellfish, the Psephoderma has a beak-shaped mouth, allowing it to pick its prey from between rocks.",
+             "Resembling a turtle with a long tail, the Psephoderma has a segmented shell like a horseshoe crab.",
+             "The Psephoderma is quite small compared to other placodonts, growing up to only 5 1/2 feet in length!"
+@@ -16928,7 +16928,7 @@
+         ],
+         "max_ferocity": 6334,
+         "evo4_ferocity": 1056,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "pteranodon_gen_2": {
+         "name": "PTERANODON GEN 2",
+@@ -17459,10 +17459,10 @@
+         "buy_price_dna": null,
+         "sell_price_dna": 157110,
+         "facts": [
+-            "Quetzaljara is the result of fusing Pteraquetzal—itself a hybrid of Quetzalcoatlus and Pteranodon Gen 2—with Tapejara DNA, creating a tri-lineage super hybrid built for the skies.",
+-            "With the sleek agility of Tapejara and the wingspan of Quetzalcoatlus, Quetzaljara soars with unmatched precision—twisting, diving, and striking with midair mastery.",
+-            "Quetzaljara’s vibrant head crest isn’t just for show—it reflects its Tapejara roots and is believed to be used for communication, intimidation, and balance during flight.",
+-            "This pterosaur doesn’t just dominate the skies with power—it uses advanced instincts and hybrid intelligence to outmaneuver foes and control the aerial battlefield."
++            "Quetzaljara is the result of fusing Pteraquetzal\u2014itself a hybrid of Quetzalcoatlus and Pteranodon Gen 2\u2014with Tapejara DNA, creating a tri-lineage super hybrid built for the skies.",
++            "With the sleek agility of Tapejara and the wingspan of Quetzalcoatlus, Quetzaljara soars with unmatched precision\u2014twisting, diving, and striking with midair mastery.",
++            "Quetzaljara\u2019s vibrant head crest isn\u2019t just for show\u2014it reflects its Tapejara roots and is believed to be used for communication, intimidation, and balance during flight.",
++            "This pterosaur doesn\u2019t just dominate the skies with power\u2014it uses advanced instincts and hybrid intelligence to outmaneuver foes and control the aerial battlefield."
+         ],
+         "ingredients": [
+             {
+@@ -17855,7 +17855,7 @@
+         ],
+         "max_ferocity": 8977,
+         "evo4_ferocity": 1795,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "rhamphorhynchus": {
+         "name": "RHAMPHORHYNCHUS",
+@@ -18446,7 +18446,7 @@
+         ],
+         "max_ferocity": 17998,
+         "evo4_ferocity": 4656,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "sarcomantarx": {
+         "name": "SARCOMANTARX",
+@@ -18643,7 +18643,7 @@
+         "facts": [
+             "The Sarkastodon, meaning 'flesh-tearing tooth', is named after its bear-like maw.",
+             "The Sarkastodon has strong canine teeth which it uses to seize its prey. Its sharp premolars easily slice through flesh!",
+-            "At 3 feet in height, an adult Sarkastodon can reach 10 feet in length! That’s the average length of an Indochinese tiger!",
++            "At 3 feet in height, an adult Sarkastodon can reach 10 feet in length! That\u2019s the average length of an Indochinese tiger!",
+             "A powerful predator of its time, the Sarkastodon is a hypercarnivore, meaning that its diet is exclusively made up of meat."
+         ],
+         "ingredients": [],
+@@ -19615,7 +19615,7 @@
+         "buy_price_dna": 6700,
+         "sell_price_dna": 3350,
+         "facts": [
+-            "Famously known as the ‘Sabre Toothed Tiger’ or ‘Sabre Toothed Cat’, the Smilodon is an iconic Ice Age predator!",
++            "Famously known as the \u2018Sabre Toothed Tiger\u2019 or \u2018Sabre Toothed Cat\u2019, the Smilodon is an iconic Ice Age predator!",
+             "The Smilodon, meaning 'knife tooth', has slender, 11-inch teeth which are serrated on the front and back sides.",
+             "The Smilodon can reach up to half a metric ton in mass, whereas its smaller cousin, S. Gracilis, is the size of a modern leopard!",
+             "Described as 'he who brings devastation' by Danish naturalist Wilhelm Lund, the Smilodon earned its name in 1842."
+@@ -19740,10 +19740,10 @@
+         "buy_price_dna": 9050,
+         "sell_price_dna": 4530,
+         "facts": [
+-            "Don’t let Smoothie’s size fool you! Even as a hatchling, this baby Ankylosaurus has a tough hide and a curious spirit—ready to explore the world with a wag of its tail.",
++            "Don\u2019t let Smoothie\u2019s size fool you! Even as a hatchling, this baby Ankylosaurus has a tough hide and a curious spirit\u2014ready to explore the world with a wag of its tail.",
+             "Named Smoothie by the Chaos Theory team, this little dino charmed everyone with its round shape, calm demeanor, and love of belly rubs.",
+             "Smoothie may not have its full armor or clubbed tail yet, but those signature Ankylosaurus traits are just beneath the surface, waiting to grow with every bite and step.",
+-            "With every wobble and snort, Smoothie proves that courage isn’t about size—this dino’s loyalty and bravery shine even in the smallest moments."
++            "With every wobble and snort, Smoothie proves that courage isn\u2019t about size\u2014this dino\u2019s loyalty and bravery shine even in the smallest moments."
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -19830,7 +19830,7 @@
+         ],
+         "max_ferocity": 9316,
+         "evo4_ferocity": 2166,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "sonorasaurus": {
+         "name": "SONORASAURUS",
+@@ -19900,10 +19900,10 @@
+         "buy_price_dna": 7150,
+         "sell_price_dna": 3580,
+         "facts": [
+-            "Sphenacodon means \"wedge point tooth\". This carnivore’s mouth contains a variety of razor-sharp teeth, which make tearing meat effortless.",
++            "Sphenacodon means \"wedge point tooth\". This carnivore\u2019s mouth contains a variety of razor-sharp teeth, which make tearing meat effortless.",
+             "Sphenacodon is a close relative of Dimetrodon, as can be seen from its large and narrow skull. Also, both creatures have long torsos, short limbs, and move as quadrupeds.",
+-            "Some scientists believe that Sphenacodon had exceptionally strong back muscles which strengthened the creature’s mobility, and even made it capable of leaping.",
+-            "Sharp bones jutting from the vertebrae make up this creature’s back crest. There are at least two known species of Sphenacodon, and each is distinguished by their different crest lengths."
++            "Some scientists believe that Sphenacodon had exceptionally strong back muscles which strengthened the creature\u2019s mobility, and even made it capable of leaping.",
++            "Sharp bones jutting from the vertebrae make up this creature\u2019s back crest. There are at least two known species of Sphenacodon, and each is distinguished by their different crest lengths."
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -20331,10 +20331,10 @@
+         "buy_price_dna": null,
+         "sell_price_dna": 237080,
+         "facts": [
+-            "Spinotops is a rare example of a super hybrid, formed by merging the DNA of Spinoceratops—itself a hybrid of Spinosaurus Gen 2 and Sinoceratops—with the spiked defenses of Kentrosaurus.",
+-            "Thanks to its ceratopsian ancestry and stegosaurian infusion, Spinotops boasts both a powerful frill and tail spikes—offering offense and defense in one fearsome package.",
++            "Spinotops is a rare example of a super hybrid, formed by merging the DNA of Spinoceratops\u2014itself a hybrid of Spinosaurus Gen 2 and Sinoceratops\u2014with the spiked defenses of Kentrosaurus.",
++            "Thanks to its ceratopsian ancestry and stegosaurian infusion, Spinotops boasts both a powerful frill and tail spikes\u2014offering offense and defense in one fearsome package.",
+             "The genetic memory of Spinosaurus Gen 2 provides raw power, while Sinoceratops contributes agility and flair. Kentrosaurus completes the trio with razor-sharp reflexes and a tail built for battle.",
+-            "Spinotops isn’t just strong—it’s smart. Its hybrid lineage grants it adaptive instincts, blending herding defense tactics from ceratopsians with the strategic tail strikes of stegosaurs."
++            "Spinotops isn\u2019t just strong\u2014it\u2019s smart. Its hybrid lineage grants it adaptive instincts, blending herding defense tactics from ceratopsians with the strategic tail strikes of stegosaurs."
+         ],
+         "ingredients": [
+             {
+@@ -20806,7 +20806,7 @@
+         "sell_price_dna": 2400,
+         "facts": [
+             "The Styxosaurus is named after the River Styx that, in Greek mythology, separated the land of the living from that of the dead.",
+-            "At 40 feet long, the Styxosaurus has a incredibly long neck that makes up half of its body’s length!",
++            "At 40 feet long, the Styxosaurus has a incredibly long neck that makes up half of its body\u2019s length!",
+             "Like other plesiosaurs, the Styxosaurus relies on small stones called gastroliths to digest its food.",
+             "Did you know the Styxosaurus swallows its prey whole? It has interlocking, conical sharp teeth that puncture and grip prey!"
+         ],
+@@ -21475,7 +21475,7 @@
+         "facts": [
+             "Tarbosaurus hatchlings are playful, but as they mature their behavior becomes highly aggressive.",
+             "Tarbosaurus is an apex predator, and a close relative of Tyrannosaurus rex. Its name means \"Alarming Lizard\".",
+-            "This carnivore’s front teeth are extremely sharp and closely packed together, allowing it to bite through tough skin.",
++            "This carnivore\u2019s front teeth are extremely sharp and closely packed together, allowing it to bite through tough skin.",
+             "By clapping its powerful jaws together, the Tarbosaurus signals that it has made a kill. This sound acts as a warning to other creatures."
+         ],
+         "ingredients": [],
+@@ -21698,7 +21698,7 @@
+         "sell_price_dna": 7000,
+         "facts": [
+             "The cranial structure of The Cerato is slightly different from the original. It features a more prominent eyebrow crest, shielding its eyes from the sun.",
+-            "In the wilds of Isla Sorna, Ceratosaurus could be recognized by its prominent nasal horn and bold coloration. However, while it can be every bit as dangerous as other carnivores, it still bowed out when it sniffed Spinosaurus’s Territory.",
++            "In the wilds of Isla Sorna, Ceratosaurus could be recognized by its prominent nasal horn and bold coloration. However, while it can be every bit as dangerous as other carnivores, it still bowed out when it sniffed Spinosaurus\u2019s Territory.",
+             "Silent in the jungle mist, Ceratosaurus ambushed prey with its dark hide. Yet in a realm of deadlier giants, Scorpios rex soon outmatched it.",
+             "The nasal horn of The Cerato seems to serve as a mark of status and might among others of its species."
+         ],
+@@ -22291,7 +22291,7 @@
+         ],
+         "max_ferocity": 2333,
+         "evo4_ferocity": 155,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "triceratops_gen_2": {
+         "name": "TRICERATOPS GEN 2",
+@@ -22361,7 +22361,7 @@
+         "buy_price_dna": 2500,
+         "sell_price_dna": 1250,
+         "facts": [
+-            "Named after its powerful flippers, Trinacromerum means ‘three-tipped femur.’",
++            "Named after its powerful flippers, Trinacromerum means \u2018three-tipped femur.\u2019",
+             "Feeding on small fish, the Trinacromerum has thin, needle-like teeth and elongated jaws.",
+             "The Trinacromerum is a powerful swimmer, relying on its long flippers to propel it through water!",
+             "Did you know that Richard Ellis referred to the Trinacromerum as a four-flippered penguin?"
+@@ -22825,7 +22825,7 @@
+             "Tusoteuthis can grow up to 20-35 feet (6-11 meters)!",
+             "Though some call it a giant squid, Tusoteuthis is actually more closely related to the Vampire Squid than the modern-day Giant Squid.",
+             "Fossil evidence from the stomach of a Cimolichthys suggests Tusoteuthis was hunted by other large predators.",
+-            "Although the Tusoteuthis was prey for some large predators, it’s likely it was also a mosasaur hunter!"
++            "Although the Tusoteuthis was prey for some large predators, it\u2019s likely it was also a mosasaur hunter!"
+         ],
+         "ingredients": [],
+         "evolutions": [
+@@ -23227,8 +23227,8 @@
+         "buy_price_dna": 8500,
+         "sell_price_dna": 4250,
+         "facts": [
+-            "‘Umoona’ is an aboriginal word that means ‘long life,’ so this plesiosaur's name translates to \"long life lizard.'",
+-            "The Umoonasaurus was discovered in Coober Pedy, which is considered the ‘opal capital of the world’!",
++            "\u2018Umoona\u2019 is an aboriginal word that means \u2018long life,\u2019 so this plesiosaur's name translates to \"long life lizard.'",
++            "The Umoonasaurus was discovered in Coober Pedy, which is considered the \u2018opal capital of the world\u2019!",
+             "Unlike other plesiosaurs, the Umoonasaurus has three distinct crest-ridges on its skull.",
+             "Did you know that fossils of the Umoonasaurus were found preserved in opal?"
+         ],
+@@ -23610,7 +23610,7 @@
+         ],
+         "max_ferocity": 17997,
+         "evo4_ferocity": 4683,
+-        "maximum_number": 512
++        "maximum_number": 32
+     },
+     "velociraptor": {
+         "name": "VELOCIRAPTOR",
+@@ -23681,7 +23681,7 @@
+         "sell_price_dna": 750,
+         "facts": [
+             "One Velociraptor Gen 2 was found living among a pack of Velociraptor, proving that both types can live together harmoniously.",
+-            "The Velociraptor Gen 2 is known to ‘tease’ other creatures, sometimes without any intent to harm.",
++            "The Velociraptor Gen 2 is known to \u2018tease\u2019 other creatures, sometimes without any intent to harm.",
+             "The Velociraptor Gen 2 runs with longer strides than the first Velociraptor.",
+             "The yellow spines on the matured Velociraptor Gen 2 signify to her pack that she is qualified to lead."
+         ],
+@@ -23792,7 +23792,7 @@
+         "buy_price_dna": 7000,
+         "sell_price_dna": 3500,
+         "facts": [
+-            "This creature’s name references the main difference between it and the modern day Rhinoceros: a thick, woolly fur coat.",
++            "This creature\u2019s name references the main difference between it and the modern day Rhinoceros: a thick, woolly fur coat.",
+             "The Woolly Rhinoceros stores fat in the hump on its back, just like the modern day camel!",
+             "This herbivore's mouth has sharp incisors in the front and flat molars in the back.",
+             "The Woolly Rhinoceros is thought to have evolved from Dicerorhinus, a huge two horned mammal that survived during the Pleistocene Epoch."
+@@ -23973,7 +23973,7 @@
+         "buy_price_dna": 2500,
+         "sell_price_dna": 1250,
+         "facts": [
+-            "Did you know that Xiphactinus means ‘sword-ray’?",
++            "Did you know that Xiphactinus means \u2018sword-ray\u2019?",
+             "The Xiphactinus is similar in build to the tarpon. Both have streamlined bodies and upturned mouths.",
+             "Fully grown, the Xiphactinus can reach between 15-20 feet in length.",
+             "With its enlarged teeth, the Xiphactinus can grip larger prey, consuming it a bite at a time!"
+@@ -24211,9 +24211,9 @@
+         "sell_price_dna": 27750,
+         "facts": [
+             "Zalmonodon hatchlings can take up to 6 months before learning to fly. This delay is likely the result of its mammal DNA.",
+-            "Zalmonodon’s preferred meal is berries, and is an expert at plucking them off bushes while in mid-flight.",
++            "Zalmonodon\u2019s preferred meal is berries, and is an expert at plucking them off bushes while in mid-flight.",
+             "Zalmonodons nest on cliffs, where they store food. They stockpile berries in their nests to eat during the dry season.",
+-            "This hybrid’s wingspan can reach up to 35 feet, making it even bigger than the pterosaur it was fused from!"
++            "This hybrid\u2019s wingspan can reach up to 35 feet, making it even bigger than the pterosaur it was fused from!"
+         ],
+         "ingredients": [
+             {

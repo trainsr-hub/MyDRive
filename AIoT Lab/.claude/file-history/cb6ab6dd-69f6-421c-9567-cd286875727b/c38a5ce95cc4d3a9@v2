@@ -1,0 +1,498 @@
+<title>Channel Purge Tool</title>
+<style>
+  :root {
+    --bg-void: #0a0812;
+    --bg-surface: #120f18;
+    --bg-elevated: #1a1424;
+    --border-subtle: #2b2238;
+    --border-medium: #3b2b4d;
+    --text-primary: #f5f0e8;
+    --text-secondary: #a394b5;
+    --text-muted: #8c7a9e;
+    --accent: #d4af37;
+    --accent-bright: #ffd86b;
+    --success: #10b981;
+    --error: #ef4444;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg-void);
+    color: var(--text-primary);
+    padding: 24px;
+    line-height: 1.6;
+  }
+
+  .container { max-width: 900px; margin: 0 auto; }
+
+  .header {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent-bright);
+    margin-bottom: 12px;
+  }
+
+  .header p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .search-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .search-box label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  .input-group {
+    display: flex;
+    gap: 12px;
+  }
+
+  input {
+    flex: 1;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-medium);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 15px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+  button {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  button:hover {
+    background: var(--accent-bright);
+    transform: translateY(-1px);
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  button.danger {
+    background: var(--error);
+    color: white;
+  }
+
+  button.danger:hover { background: #dc2626; }
+
+  .status {
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-top: 16px;
+    display: none;
+  }
+
+  .status.show { display: block; }
+
+  .status.info {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+  }
+
+  .status.success {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: var(--success);
+  }
+
+  .status.error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--error);
+  }
+
+  .results {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 24px;
+    min-height: 200px;
+  }
+
+  .result-item {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-medium);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .result-item:last-child { margin-bottom: 0; }
+
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 16px;
+    gap: 16px;
+  }
+
+  .result-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    word-break: break-word;
+  }
+
+  .result-count {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-bright);
+    background: rgba(212, 175, 55, 0.15);
+    padding: 6px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  .result-id {
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    word-break: break-all;
+  }
+
+  .sample-tracks {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.7;
+  }
+
+  .sample-tracks strong { color: var(--text-primary); }
+
+  .result-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    color: var(--text-muted);
+  }
+
+  .empty-state svg {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 20px;
+    opacity: 0.4;
+  }
+
+  .empty-state p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 600px) {
+    .result-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .result-count {
+      align-self: flex-start;
+    }
+
+    .input-group {
+      flex-direction: column;
+    }
+
+    button {
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="container">
+  <div class="header">
+    <h1>🔍 Channel Purge Tool</h1>
+    <p>Search for channels by exact name (like "Yugo Kanno") and permanently delete all their songs from the SQLite database. Use this to clean up orphaned channels before re-ingesting with refined filters.</p>
+  </div>
+
+  <div class="search-box">
+    <label>Search Channel by Name</label>
+    <div class="input-group">
+      <input
+        type="text"
+        id="channelSearch"
+        placeholder='Enter exact channel name (e.g., "Yugo Kanno")'
+        autocomplete="off"
+      />
+      <button id="searchBtn" onclick="searchChannel()">Search Catalog</button>
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="empty-state">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+      <p>Enter a channel name above to search the catalog.<br/>This will find songs even if the channel was previously deleted from the UI.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:5130';
+  const PROJECT_ID = 'music_app';
+
+  function showStatus(message, type = 'info') {
+    const statusDiv = document.getElementById('status');
+    statusDiv.className = `status ${type} show`;
+    statusDiv.textContent = message;
+  }
+
+  function hideStatus() {
+    const statusDiv = document.getElementById('status');
+    statusDiv.className = 'status';
+  }
+
+  async function searchChannel() {
+    const query = document.getElementById('channelSearch').value.trim();
+    if (!query) {
+      showStatus('Please enter a channel name', 'error');
+      return;
+    }
+
+    const searchBtn = document.getElementById('searchBtn');
+    const originalText = searchBtn.textContent;
+    searchBtn.disabled = true;
+    searchBtn.innerHTML = '<span class="spinner"></span>Searching...';
+    hideStatus();
+
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/execute_order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: PROJECT_ID,
+          tier: '1',
+          order: {
+            action: 'sample',
+            data: { limit: 500, channel_name: query }
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      const tracks = result.data || {};
+      const trackCount = Object.keys(tracks).length;
+
+      if (trackCount === 0) {
+        showStatus(`No tracks found for channel "${query}"`, 'info');
+        displayResults([]);
+        return;
+      }
+
+      const firstTrack = Object.values(tracks)[0];
+      const channelId = firstTrack.channel_id || firstTrack.channelId || '';
+
+      displayResults([{
+        name: query,
+        channel_id: channelId,
+        count: trackCount,
+        sample_tracks: Object.entries(tracks).slice(0, 5).map(([id, t]) => ({
+          id,
+          title: t.title || 'Unknown'
+        }))
+      }]);
+
+      showStatus(`Found ${trackCount} tracks in catalog`, 'success');
+
+    } catch (error) {
+      console.error('Search error:', error);
+      showStatus(`Search failed: ${error.message}`, 'error');
+      displayResults([]);
+    } finally {
+      searchBtn.disabled = false;
+      searchBtn.textContent = originalText;
+    }
+  }
+
+  function displayResults(channels) {
+    const resultsDiv = document.getElementById('results');
+
+    if (channels.length === 0) {
+      resultsDiv.innerHTML = `
+        <div class="empty-state">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <p>No tracks found in catalog for this channel.<br/>It may have been fully deleted, or the name doesn't match exactly.</p>
+        </div>
+      `;
+      return;
+    }
+
+    resultsDiv.innerHTML = channels.map(ch => `
+      <div class="result-item">
+        <div class="result-header">
+          <div style="flex: 1; min-width: 0;">
+            <div class="result-title">${escapeHtml(ch.name)}</div>
+            <div class="result-id">Channel ID: ${ch.channel_id || 'N/A'}</div>
+          </div>
+          <div class="result-count">${ch.count.toLocaleString()} songs</div>
+        </div>
+        ${ch.sample_tracks && ch.sample_tracks.length > 0 ? `
+          <div class="sample-tracks">
+            <strong>Sample tracks:</strong><br/>
+            ${ch.sample_tracks.map(t => `• ${escapeHtml(t.title)}`).join('<br/>')}
+          </div>
+        ` : ''}
+        <div class="result-actions">
+          <button class="danger" onclick="purgeChannel('${escapeHtml(ch.name)}', '${ch.channel_id}', ${ch.count})">
+            🗑️ Purge All ${ch.count.toLocaleString()} Songs
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function purgeChannel(channelName, channelId, count) {
+    const confirmed = confirm(
+      `⚠️ PERMANENT DELETION\n\n` +
+      `Delete all ${count.toLocaleString()} songs from "${channelName}"?\n\n` +
+      `This will:\n` +
+      `• Remove all tracks from _1_static.db (Tier 1)\n` +
+      `• Cascade delete from _3_state.db and _4_display.db\n` +
+      `• Delete channel metadata from channel_state\n` +
+      `• Cannot be undone\n\n` +
+      `You can then re-curl this channel with refined filters.\n\n` +
+      `Proceed?`
+    );
+
+    if (!confirmed) return;
+
+    showStatus(`Purging ${count.toLocaleString()} songs from "${channelName}"...`, 'info');
+
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/execute_order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: PROJECT_ID,
+          tier: '1',
+          order: {
+            action: 'purge_channel',
+            data: {
+              channel_name: channelName,
+              channel_id: channelId
+            }
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        showStatus(
+          `✅ Successfully purged ${result.purged_count?.toLocaleString() || count.toLocaleString()} songs from "${channelName}"`,
+          'success'
+        );
+        setTimeout(() => {
+          displayResults([]);
+          document.getElementById('channelSearch').value = '';
+          hideStatus();
+        }, 3000);
+      } else {
+        showStatus(`Purge completed: ${result.status}`, 'info');
+      }
+
+    } catch (error) {
+      console.error('Purge error:', error);
+      showStatus(`Purge failed: ${error.message}`, 'error');
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  document.getElementById('channelSearch').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      searchChannel();
+    }
+  });
+</script>

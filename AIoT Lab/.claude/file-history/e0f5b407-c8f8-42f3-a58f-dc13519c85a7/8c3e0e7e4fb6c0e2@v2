@@ -1,0 +1,155 @@
+/**
+ * Project Entry: REST & SQLite API Bridge
+ */
+import { API_BASE, state, showToast } from './state.js';
+
+export async function checkServerHealth() {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  try {
+    const res = await fetch(`${API_BASE}/api/tables`, { method: 'GET' });
+    if (res.ok) {
+      state.isServerConnected = true;
+      if (dot) dot.className = 'status-dot';
+      if (txt) txt.textContent = 'Server Connected (:20139)';
+    } else {
+      setOffline();
+    }
+  } catch (e) {
+    setOffline();
+  }
+}
+
+export function setOffline() {
+  state.isServerConnected = false;
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  if (dot) dot.className = 'status-dot offline';
+  if (txt) txt.textContent = 'Standalone Mode';
+}
+
+export async function loadTables() {
+  // 1. Try REST server API
+  try {
+    const res = await fetch(`${API_BASE}/api/tables`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.tables && Object.keys(data.tables).length > 0) {
+        state.tables = data.tables;
+        if (!state.tables[state.activeTable]) {
+          state.activeTable = Object.keys(state.tables)[0];
+        }
+        return;
+      }
+    }
+  } catch (e) { }
+
+  // 2. Try localStorage fallback
+  try {
+    const stored = localStorage.getItem('project_entry_schemas');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && Object.keys(parsed).length > 0) {
+        state.tables = { ...parsed, ...state.tables };
+      }
+    }
+  } catch (e) { }
+}
+
+export async function saveActiveTable() {
+  const current = state.tables[state.activeTable];
+  if (!current) return;
+
+  // 1. Backup to localStorage
+  try {
+    localStorage.setItem('project_entry_schemas', JSON.stringify(state.tables));
+  } catch (e) { }
+
+  // 2. Persistent save to server data/<table_name>.json + SQLite sync
+  try {
+    const res = await fetch(`${API_BASE}/api/table/${encodeURIComponent(state.activeTable)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(current, null, 2)
+    });
+    if (res.ok) {
+      showToast(`Saved to data/${state.activeTable}.json & synced SQLite!`);
+      checkServerHealth();
+      return;
+    }
+  } catch (e) { }
+
+  showToast(`Saved "${state.activeTable}" to local storage`);
+}
+
+export async function syncSqlite() {
+  try {
+    const res = await fetch(`${API_BASE}/api/sync_all`, { method: 'POST' });
+    if (res.ok) {
+      showToast('All schemas synchronized to database.sqlite!');
+      checkServerHealth();
+      return;
+    }
+  } catch (e) { }
+
+  showToast('SQLite sync: Local standalone mode active');
+}
+
+export async function ensureRecordsLoaded(tableName, onLoadedCallback) {
+  if (state.tableRecords[tableName]) {
+    if (onLoadedCallback) onLoadedCallback();
+    return;
+  }
+
+  // Try fetching SQLite records from server
+  try {
+    const res = await fetch(`${API_BASE}/api/records/${encodeURIComponent(tableName)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.records)) {
+        state.tableRecords[tableName] = data.records;
+        if (onLoadedCallback) onLoadedCallback();
+        return;
+      }
+    }
+  } catch (e) { }
+
+  // Fallback: localStorage
+  try {
+    const local = localStorage.getItem(`records_${tableName}`);
+    if (local) {
+      state.tableRecords[tableName] = JSON.parse(local);
+      if (onLoadedCallback) onLoadedCallback();
+      return;
+    }
+  } catch (e) { }
+
+  state.tableRecords[tableName] = [];
+  if (onLoadedCallback) onLoadedCallback();
+}
+
+export async function persistRecord(tableName, rec) {
+  try {
+    await fetch(`${API_BASE}/api/records/${encodeURIComponent(tableName)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rec)
+    });
+  } catch (e) { }
+
+  try {
+    localStorage.setItem(`records_${tableName}`, JSON.stringify(state.tableRecords[tableName]));
+  } catch (e) { }
+}
+
+export async function deleteRecord(tableName, recId) {
+  try {
+    await fetch(`${API_BASE}/api/records/${encodeURIComponent(tableName)}/${encodeURIComponent(recId)}`, {
+      method: 'DELETE'
+    });
+  } catch (e) { }
+
+  try {
+    localStorage.setItem(`records_${tableName}`, JSON.stringify(state.tableRecords[tableName]));
+  } catch (e) { }
+}

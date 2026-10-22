@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animation Gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap">
+<style>
+/* ─── Token System ─────────────────────────────────────────── */
+:root {
+  --bg:        #080b12;
+  --surface:   #0d1220;
+  --border:    rgba(255,255,255,0.07);
+  --border-hi: rgba(100,180,255,0.35);
+  --fg:        #e0e8f5;
+  --fg-muted:  rgba(200,215,240,0.45);
+  --accent:    #4fa3e8;
+  --accent-glow: rgba(79,163,232,0.25);
+  --active-bg: rgba(79,163,232,0.12);
+  --panel-w:   280px;
+  --font-ui:   'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'Space Mono', 'Courier New', monospace;
+  color-scheme: dark;
+}
+
+/* ─── Reset ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  display: flex;
+  flex-direction: row;
+}
+
+/* ─── Sidebar Panel ────────────────────────────────────────── */
+#panel {
+  width: var(--panel-w);
+  min-width: var(--panel-w);
+  height: 100%;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#panel-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#panel-header h1 {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+}
+
+#panel-header .subtitle {
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.2;
+}
+
+/* ─── Animation List ───────────────────────────────────────── */
+#anim-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+#anim-list::-webkit-scrollbar { width: 4px; }
+#anim-list::-webkit-scrollbar-track { background: transparent; }
+#anim-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.anim-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  border-left: 2px solid transparent;
+  user-select: none;
+}
+
+.anim-item:hover {
+  background: rgba(255,255,255,0.04);
+  border-left-color: var(--border-hi);
+}
+
+.anim-item.active {
+  background: var(--active-bg);
+  border-left-color: var(--accent);
+}
+
+.anim-item.active .item-num { color: var(--accent); }
+.anim-item.active .item-name { color: var(--fg); }
+
+.item-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-muted);
+  min-width: 26px;
+  transition: color 0.15s;
+}
+
+.item-info { flex: 1; min-width: 0; }
+
+.item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(200,215,240,0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s;
+}
+
+.item-file {
+  margin-top: 2px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.6;
+}
+
+.item-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.anim-item.active .item-dot {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* ─── Footer Controls ──────────────────────────────────────── */
+#panel-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-row {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-btn {
+  flex: 1;
+  height: 36px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.03);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.nav-btn:hover {
+  background: rgba(255,255,255,0.07);
+  color: var(--fg);
+  border-color: var(--border-hi);
+}
+
+.nav-btn svg { flex-shrink: 0; }
+
+#toggle-btn {
+  height: 36px;
+  border: 1px solid rgba(79,163,232,0.25);
+  background: var(--active-bg);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+}
+
+#toggle-btn:hover {
+  background: rgba(79,163,232,0.2);
+  border-color: var(--accent);
+}
+
+/* ─── Main View ────────────────────────────────────────────── */
+#main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top bar */
+#topbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  background: linear-gradient(to bottom, rgba(8,11,18,0.9), transparent);
+  z-index: 5;
+  pointer-events: none;
+}
+
+#current-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+}
+
+#panel-toggle-mobile {
+  pointer-events: all;
+  display: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  border-radius: 8px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Frame */
+#frame-wrap {
+  flex: 1;
+  position: relative;
+}
+
+#anim-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: #000;
+}
+
+/* Empty state */
+#empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--fg-muted);
+  text-align: center;
+  padding: 24px;
+}
+
+#empty-state .es-icon {
+  font-size: 40px;
+  opacity: 0.4;
+}
+
+#empty-state h2 {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--fg);
+  opacity: 0.6;
+}
+
+#empty-state p {
+  font-size: 13px;
+  max-width: 280px;
+  line-height: 1.6;
+  opacity: 0.5;
+}
+
+/* ─── Keyboard hint ────────────────────────────────────────── */
+#kb-hint {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--fg-muted);
+  opacity: 0.4;
+  pointer-events: none;
+  line-height: 1.8;
+  text-align: right;
+}
+
+kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 3px;
+  font-size: 9px;
+  background: rgba(255,255,255,0.05);
+}
+
+/* ─── Mobile ───────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  :root { --panel-w: 240px; }
+
+  #panel {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.6);
+  }
+
+  #panel.hidden {
+    transform: translateX(-100%);
+  }
+
+  #panel-toggle-mobile {
+    display: flex;
+  }
+
+  #kb-hint { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ─── Sidebar ─────────────────────────────────────── -->
+<div id="panel">
+  <div id="panel-header">
+    <h1>Faust Studio</h1>
+    <div class="subtitle">Animations</div>
+  </div>
+
+  <div id="anim-list">
+    <!-- populated by JS -->
+  </div>
+
+  <div id="panel-footer">
+    <div class="nav-row">
+      <button class="nav-btn" id="prev-btn" title="Previous (←)">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M7.5 2L3.5 6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Prev
+      </button>
+      <button class="nav-btn" id="next-btn" title="Next (→)">
+        Next
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M4.5 2L8.5 6l-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <button id="toggle-btn" title="Open in new tab">⬡ Open Fullscreen</button>
+  </div>
+</div>
+
+<!-- ─── Main View ───────────────────────────────────── -->
+<div id="main">
+  <div id="topbar">
+    <button id="panel-toggle-mobile" aria-label="Toggle panel">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="4" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+        <rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+        <rect x="2" y="10.5" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+      </svg>
+    </button>
+    <span id="current-label">—</span>
+  </div>
+
+  <div id="frame-wrap">
+    <div id="empty-state">
+      <div class="es-icon">◈</div>
+      <h2>No animation selected</h2>
+      <p>Pick one from the panel, or drop new <code>anim_*.html</code> files into this folder and reload.</p>
+    </div>
+    <iframe id="anim-frame" hidden title="Animation preview"></iframe>
+  </div>
+</div>
+
+<div id="kb-hint">
+  <kbd>←</kbd><kbd>→</kbd> navigate &nbsp;·&nbsp; <kbd>F</kbd> fullscreen
+</div>
+
+<script>
+// ─── Animation registry ────────────────────────────────────────────────────
+// Because this runs as a local file (file://) we cannot use fetch() to list
+// siblings. Instead, we maintain a manifest here. The naming convention is
+// anim_NNN_slug.html. Add new entries as files are created.
+const ANIMS = [
+  { id: "001", name: "Particle Field",   file: "anim_001_particle_field.html" },
+  { id: "002", name: "Aurora Waves",     file: "anim_002_aurora_waves.html" },
+  { id: "003", name: "Geometry Morph",   file: "anim_003_geometry_morph.html" },
+];
+
+// ─── State ─────────────────────────────────────────────────────────────────
+let current = -1;
+
+// ─── DOM refs ──────────────────────────────────────────────────────────────
+const list       = document.getElementById('anim-list');
+const frame      = document.getElementById('anim-frame');
+const emptyState = document.getElementById('empty-state');
+const label      = document.getElementById('current-label');
+const prevBtn    = document.getElementById('prev-btn');
+const nextBtn    = document.getElementById('next-btn');
+const toggleBtn  = document.getElementById('toggle-btn');
+const panel      = document.getElementById('panel');
+const mobileBtn  = document.getElementById('panel-toggle-mobile');
+
+// ─── Build list ────────────────────────────────────────────────────────────
+function buildList() {
+  list.innerHTML = '';
+  ANIMS.forEach((anim, idx) => {
+    const el = document.createElement('div');
+    el.className = 'anim-item';
+    el.dataset.idx = idx;
+    el.innerHTML = `
+      <span class="item-num">${anim.id}</span>
+      <div class="item-info">
+        <div class="item-name">${anim.name}</div>
+        <div class="item-file">${anim.file}</div>
+      </div>
+      <div class="item-dot"></div>
+    `;
+    el.addEventListener('click', () => select(idx));
+    list.appendChild(el);
+  });
+}
+
+// ─── Select ────────────────────────────────────────────────────────────────
+function select(idx) {
+  if (idx < 0 || idx >= ANIMS.length) return;
+  current = idx;
+  const anim = ANIMS[idx];
+
+  // Update list highlight
+  document.querySelectorAll('.anim-item').forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+  });
+
+  // Scroll into view
+  const activeEl = list.querySelector('.anim-item.active');
+  if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+  // Load iframe
+  frame.hidden = false;
+  emptyState.hidden = true;
+  frame.src = anim.file;
+  label.textContent = `${anim.id} · ${anim.name}`;
+
+  // Persist last selection
+  try { localStorage.setItem('fg-anim-idx', idx); } catch (_) {}
+}
+
+// ─── Navigation ────────────────────────────────────────────────────────────
+function prev() { select(current <= 0 ? ANIMS.length - 1 : current - 1); }
+function next() { select(current >= ANIMS.length - 1 ? 0 : current + 1); }
+
+prevBtn.addEventListener('click', prev);
+nextBtn.addEventListener('click', next);
+
+// ─── Fullscreen / open ─────────────────────────────────────────────────────
+toggleBtn.addEventListener('click', () => {
+  if (current < 0) return;
+  window.open(ANIMS[current].file, '_blank');
+});
+
+// ─── Mobile panel toggle ───────────────────────────────────────────────────
+mobileBtn.addEventListener('click', () => {
+  panel.classList.toggle('hidden');
+});
+
+// ─── Keyboard ─────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') { e.preventDefault(); prev(); }
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { e.preventDefault(); next(); }
+  if (e.key === 'f' || e.key === 'F') {
+    if (current >= 0) window.open(ANIMS[current].file, '_blank');
+  }
+  // Number keys 1–9
+  const n = parseInt(e.key);
+  if (!isNaN(n) && n >= 1 && n <= ANIMS.length) select(n - 1);
+});
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+buildList();
+
+// Restore last or load first
+let startIdx = 0;
+try {
+  const saved = parseInt(localStorage.getItem('fg-anim-idx'));
+  if (!isNaN(saved) && saved >= 0 && saved < ANIMS.length) startIdx = saved;
+} catch (_) {}
+
+select(startIdx);
+</script>
+</body>
+</html>

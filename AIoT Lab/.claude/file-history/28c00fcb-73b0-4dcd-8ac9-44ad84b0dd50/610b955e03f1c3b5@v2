@@ -1,0 +1,212 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { execute } from '../../../core/api';
+
+export interface Clean2HSession {
+  sessionId: string;
+  startedAt: number; // timestamp
+  hoursRemaining: number; // decimal: 0-2
+  pomodorosCompleted: number; // count of completed 2H sessions
+  isRunning: boolean;
+  pausedAt?: number; // timestamp when paused
+}
+
+interface Clean2HPomodoroState {
+  currentSession: Clean2HSession | null;
+  timersLeftToday: number; // 0-5
+  endOfDayTime: number; // 10:30 PM in milliseconds from midnight
+
+  // Actions
+  initSession: () => void;
+  startSession: () => void;
+  pauseSession: () => void;
+  resumeSession: () => void;
+  completeSession: () => Promise<void>;
+  tick: () => void;
+  fetchFromBackend: () => Promise<void>;
+  syncToBackend: () => Promise<void>;
+}
+
+const END_OF_DAY_HOURS = 22;
+const END_OF_DAY_MINUTES = 30;
+const SESSION_DURATION_SECONDS = 2 * 60 * 60; // 2 hours in seconds
+const MAX_TIMERS_PER_DAY = 5;
+
+function getEndOfDayMillis(): number {
+  const now = new Date();
+  const endOfDay = new Date(now);
+  endOfDay.setHours(END_OF_DAY_HOURS, END_OF_DAY_MINUTES, 0, 0);
+
+  // If end of day has passed, it's tomorrow's end
+  if (endOfDay < now) {
+    endOfDay.setDate(endOfDay.getDate() + 1);
+  }
+
+  return endOfDay.getTime();
+}
+
+function generateSessionId(): string {
+  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+export const useClean2HPomodoroStore = create<Clean2HPomodoroState>()(
+  persist(
+    (set, get) => ({
+      currentSession: null,
+      timersLeftToday: MAX_TIMERS_PER_DAY,
+      endOfDayTime: getEndOfDayMillis(),
+
+      initSession: () => {
+        const now = Date.now();
+        const newSession: Clean2HSession = {
+          sessionId: generateSessionId(),
+          startedAt: now,
+          hoursRemaining: 2,
+          pomodorosCompleted: 0,
+          isRunning: false,
+        };
+        set({ currentSession: newSession });
+      },
+
+      startSession: () => {
+        set((state) => {
+          if (!state.currentSession) return state;
+          return {
+            currentSession: {
+              ...state.currentSession,
+              isRunning: true,
+              pausedAt: undefined,
+            },
+          };
+        });
+      },
+
+      pauseSession: () => {
+        set((state) => {
+          if (!state.currentSession) return state;
+          return {
+            currentSession: {
+              ...state.currentSession,
+              isRunning: false,
+              pausedAt: Date.now(),
+            },
+          };
+        });
+      },
+
+      resumeSession: () => {
+        set((state) => {
+          if (!state.currentSession || !state.currentSession.pausedAt) return state;
+
+          const pauseDuration = Date.now() - state.currentSession.pausedAt;
+          // Extend the start time to account for pause
+          return {
+            currentSession: {
+              ...state.currentSession,
+              isRunning: true,
+              startedAt: state.currentSession.startedAt + pauseDuration,
+              pausedAt: undefined,
+            },
+          };
+        });
+      },
+
+      completeSession: async () => {
+        const { currentSession, timersLeftToday } = get();
+        if (!currentSession) return;
+
+        const newCompleted = currentSession.pomodorosCompleted + 1;
+        const newTimersLeft = Math.max(0, timersLeftToday - 1);
+
+        set({
+          currentSession: {
+            ...currentSession,
+            pomodorosCompleted: newCompleted,
+            hoursRemaining: 0,
+            isRunning: false,
+          },
+          timersLeftToday: newTimersLeft,
+        });
+
+        // Persist to backend
+        try {
+          await execute('clean_2h_pomodoro', 'update', undefined, {
+            session_id: currentSession.sessionId,
+            pomodorosCompleted: newCompleted,
+            timersLeftToday: newTimersLeft,
+            completedAt: new Date().toISOString(),
+          });
+        } catch (err) {
+          console.warn('[Clean2HPomodoro] Backend sync failed:', err);
+        }
+      },
+
+      tick: () => {
+        set((state) => {
+          const { currentSession } = state;
+          if (!currentSession || !currentSession.isRunning) return state;
+
+          const elapsedSeconds = (Date.now() - currentSession.startedAt) / 1000;
+          const remainingSeconds = Math.max(0, SESSION_DURATION_SECONDS - elapsedSeconds);
+          const hoursRemaining = remainingSeconds / 3600;
+
+          // Auto-complete when time runs out
+          if (remainingSeconds <= 0) {
+            get().completeSession();
+            return state;
+          }
+
+          return {
+            currentSession: {
+              ...currentSession,
+              hoursRemaining: hoursRemaining,
+            },
+          };
+        });
+      },
+
+      fetchFromBackend: async () => {
+        try {
+          const res = await execute('clean_2h_pomodoro', 'read_all');
+          const data = res.data as any;
+
+          if (data) {
+            set({
+              timersLeftToday: data.timersLeftToday ?? MAX_TIMERS_PER_DAY,
+            });
+          }
+        } catch (err) {
+          console.warn('[Clean2HPomodoro] Fetch from backend failed:', err);
+        }
+      },
+
+      syncToBackend: async () => {
+        const { currentSession, timersLeftToday } = get();
+        if (!currentSession) return;
+
+        try {
+          await execute('clean_2h_pomodoro', 'batch_upsert', undefined, {
+            [currentSession.sessionId]: {
+              session_id: currentSession.sessionId,
+              hoursRemaining: currentSession.hoursRemaining,
+              pomodorosCompleted: currentSession.pomodorosCompleted,
+              isRunning: currentSession.isRunning,
+              timersLeftToday: timersLeftToday,
+              updatedAt: new Date().toISOString(),
+            },
+          });
+        } catch (err) {
+          console.warn('[Clean2HPomodoro] Sync to backend failed:', err);
+        }
+      },
+    }),
+    {
+      name: 'clean_2h_pomodoro_storage',
+      partialize: (state) => ({
+        currentSession: state.currentSession,
+        timersLeftToday: state.timersLeftToday,
+        endOfDayTime: state.endOfDayTime,
+      }),
+    }
+  )
+);

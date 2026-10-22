@@ -1,0 +1,178 @@
+import "./style.css";
+
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
+
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+
+import { auth, db } from "./firebase.js";
+
+const authView = document.querySelector("#auth-view");
+const appView = document.querySelector("#app-view");
+
+const authForm = document.querySelector("#auth-form");
+const signupButton = document.querySelector("#signup-btn");
+const logoutButton = document.querySelector("#logout-btn");
+
+const emailInput = document.querySelector("#email");
+const passwordInput = document.querySelector("#password");
+
+const authMessage = document.querySelector("#auth-message");
+const taskMessage = document.querySelector("#task-message");
+
+const taskForm = document.querySelector("#task-form");
+const taskTitle = document.querySelector("#task-title");
+const taskList = document.querySelector("#task-list");
+const userInfo = document.querySelector("#user-info");
+
+let unsubscribeTasks = null;
+
+function setMessage(element, message = "") {
+  element.textContent = message;
+}
+
+authForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  setMessage(authMessage, "");
+
+  try {
+    await signInWithEmailAndPassword(
+      auth,
+      emailInput.value.trim(),
+      passwordInput.value
+    );
+  } catch (error) {
+    setMessage(authMessage, error.message);
+  }
+});
+
+signupButton.addEventListener("click", async () => {
+  setMessage(authMessage, "");
+
+  try {
+    await createUserWithEmailAndPassword(
+      auth,
+      emailInput.value.trim(),
+      passwordInput.value
+    );
+    setMessage(authMessage, "Account created.");
+  } catch (error) {
+    setMessage(authMessage, error.message);
+  }
+});
+
+logoutButton.addEventListener("click", async () => {
+  await signOut(auth);
+});
+
+taskForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const title = taskTitle.value.trim();
+  const user = auth.currentUser;
+
+  if (!user || !title) return;
+
+  setMessage(taskMessage, "");
+
+  try {
+    await addDoc(collection(db, "tasks"), {
+      uid: user.uid,
+      title,
+      completed: false,
+      createdAt: serverTimestamp(),
+    });
+
+    taskTitle.value = "";
+  } catch (error) {
+    setMessage(taskMessage, error.message);
+  }
+});
+
+function renderTasks(snapshot) {
+  taskList.innerHTML = "";
+
+  snapshot.forEach((taskDoc) => {
+    const task = taskDoc.data();
+
+    const item = document.createElement("li");
+    item.className = "task-item";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = Boolean(task.completed);
+
+    checkbox.addEventListener("change", async () => {
+      await updateDoc(doc(db, "tasks", taskDoc.id), {
+        completed: checkbox.checked,
+      });
+    });
+
+    const title = document.createElement("span");
+    title.textContent = task.title;
+    title.className = task.completed ? "completed" : "";
+
+    const removeButton = document.createElement("button");
+    removeButton.textContent = "Delete";
+    removeButton.className = "danger";
+
+    removeButton.addEventListener("click", async () => {
+      await deleteDoc(doc(db, "tasks", taskDoc.id));
+    });
+
+    item.append(checkbox, title, removeButton);
+    taskList.appendChild(item);
+  });
+}
+
+function subscribeToTasks(user) {
+  if (unsubscribeTasks) unsubscribeTasks();
+
+  const tasksQuery = query(
+    collection(db, "tasks"),
+    where("uid", "==", user.uid)
+  );
+
+  unsubscribeTasks = onSnapshot(
+    tasksQuery,
+    (snapshot) => renderTasks(snapshot),
+    (error) => setMessage(taskMessage, error.message)
+  );
+}
+
+onAuthStateChanged(auth, (user) => {
+  const isLoggedIn = Boolean(user);
+
+  authView.classList.toggle("hidden", isLoggedIn);
+  appView.classList.toggle("hidden", !isLoggedIn);
+
+  if (!user) {
+    userInfo.textContent = "";
+    taskList.innerHTML = "";
+
+    if (unsubscribeTasks) {
+      unsubscribeTasks();
+      unsubscribeTasks = null;
+    }
+
+    return;
+  }
+
+  userInfo.textContent = user.email ?? user.uid;
+  subscribeToTasks(user);
+});

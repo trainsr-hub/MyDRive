@@ -1,0 +1,744 @@
+# core/db.py
+"""
+SQLite Storage Layer for Arc-2-Neo-Drives.
+Provides ACID-compliant local storage for metadata tag pools, cloning logs, and exported trees.
+Replaces legacy remote MongoDB cluster with deterministic, fast, zero-dependency local SQLite.
+"""
+
+import sqlite3
+from typing import Dict, List, Optional, Tuple, Any
+from pathlib import Path
+from .config import config
+
+
+def get_connection() -> sqlite3.Connection:
+    """Returns a thread-safe connection to the local SQLite database."""
+    db_path = config.db_path
+    conn = sqlite3.connect(str(db_path), timeout=10.0, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    # Enable WAL mode for high concurrency and write speed
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA foreign_keys=ON;")
+    return conn
+
+
+def init_db():
+    """Initializes the database schema if tables do not exist."""
+    with get_connection() as conn:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS metadata_tags (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tag_key TEXT NOT NULL,
+                tag_value TEXT NOT NULL,
+                source_folder_id TEXT DEFAULT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(tag_key, tag_value)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_tag_key ON metadata_tags(tag_key);
+            CREATE INDEX IF NOT EXISTS idx_tag_value ON metadata_tags(tag_value);
+
+            CREATE TABLE IF NOT EXISTS cloned_trees_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_id TEXT NOT NULL,
+                source_name TEXT NOT NULL,
+                target_id TEXT NOT NULL,
+                target_name TEXT NOT NULL,
+                folders_cloned INTEGER DEFAULT 0,
+                tags_harvested INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS exported_trees_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                folder_id TEXT NOT NULL,
+                folder_name TEXT NOT NULL,
+                json_path TEXT NOT NULL,
+                node_count INTEGER DEFAULT 0,
+                image_count INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS template_schemas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE NOT NULL,
+                description TEXT DEFAULT '',
+                schema_json TEXT NOT NULL,
+                source_folder_id TEXT DEFAULT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS reconciliation_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                target_folder_id TEXT NOT NULL,
+                target_folder_name TEXT NOT NULL,
+                template_name TEXT NOT NULL,
+                created_count INTEGER DEFAULT 0,
+                updated_desc_count INTEGER DEFAULT 0,
+                pruned_empty_count INTEGER DEFAULT 0,
+                flagged_red_count INTEGER DEFAULT 0,
+                dry_run BOOLEAN DEFAULT 0,
+                details_json TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS folder_tree_cache (
+                root_id TEXT PRIMARY KEY,
+                tree_json TEXT NOT NULL,
+                synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- =================================================================
+            -- THE TWO-TABLE GOLDEN STANDARD: FOLDERS & CONFIG
+            -- =================================================================
+            CREATE TABLE IF NOT EXISTS folders (
+                drive_id         TEXT PRIMARY KEY,
+                name             TEXT NOT NULL,
+                child_of         TEXT DEFAULT NULL,
+                description      TEXT DEFAULT '',
+                src_id           TEXT DEFAULT NULL,
+                files_count      INTEGER DEFAULT 0,
+                updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_folders_child_of ON folders(child_of);
+            CREATE INDEX IF NOT EXISTS idx_folders_src_id   ON folders(src_id);
+
+            CREATE TABLE IF NOT EXISTS config (
+                key        TEXT PRIMARY KEY,
+                value      TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS sync_log (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                entity_id     TEXT NOT NULL,
+                action_type   TEXT NOT NULL,
+                folder_name   TEXT NOT NULL,
+                details       TEXT DEFAULT '',
+                executed_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            INSERT OR IGNORE INTO config (key, value) VALUES ('root_id', '14J8QBCqdSQOPerLBIaR2jLyYhZ4WbJUA');
+            INSERT OR IGNORE INTO config (key, value) VALUES ('template_id', '1qPYOlZ3-LlnfiBRorXUnNa_0yVZcILvM');
+            INSERT OR IGNORE INTO config (key, value) VALUES ('mock_mode', 'true');
+        """)
+
+
+# =====================================================================
+# VAULT & TAG OPERATIONS
+# =====================================================================
+
+def load_vault_data() -> Dict[str, List[str]]:
+    """
+    Loads all tags as a structured dictionary:
+    { "Category": ["Val1", "Val2"], "Theme": ["Dark", "Neon"] }
+    Matches the exact legacy vault format.
+    """
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT tag_key, tag_value FROM metadata_tags ORDER BY tag_key ASC, tag_value ASC;")
+        rows = cursor.fetchall()
+
+    vault_dict: Dict[str, List[str]] = {}
+    for row in rows:
+        k = row["tag_key"]
+        v = row["tag_value"]
+        if k not in vault_dict:
+            vault_dict[k] = []
+        if v not in vault_dict[k]:
+            vault_dict[k].append(v)
+
+    return vault_dict
+
+
+def merge_harvested_tags(harvested: Dict[str, List[str]], source_folder_id: Optional[str] = None) -> int:
+    """
+    Merges newly discovered Key: [Values] from folder descriptions into SQLite.
+    Returns the count of newly inserted tag pairs.
+    """
+    init_db()
+    if not harvested:
+        return 0
+
+    inserted_count = 0
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        for key, values in harvested.items():
+            clean_key = str(key).strip()
+            if not clean_key:
+                continue
+            for val in values:
+                clean_val = str(val).strip()
+                if not clean_val:
+                    continue
+                try:
+                    cursor.execute(
+                        """
+                        INSERT OR IGNORE INTO metadata_tags (tag_key, tag_value, source_folder_id)
+                        VALUES (?, ?, ?);
+                        """,
+                        (clean_key, clean_val, source_folder_id),
+                    )
+                    if cursor.rowcount > 0:
+                        inserted_count += 1
+                except sqlite3.Error:
+                    pass
+        conn.commit()
+
+    return inserted_count
+
+
+def add_single_tag(tag_key: str, tag_value: str, source_folder_id: Optional[str] = None) -> bool:
+    """Adds a single key-value tag pair. Returns True if inserted, False if already exists."""
+    init_db()
+    clean_k = tag_key.strip()
+    clean_v = tag_value.strip()
+    if not clean_k or not clean_v:
+        return False
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO metadata_tags (tag_key, tag_value, source_folder_id)
+            VALUES (?, ?, ?);
+            """,
+            (clean_k, clean_v, source_folder_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def delete_tag(tag_key: str, tag_value: str) -> bool:
+    """Deletes a specific tag value under a key."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "DELETE FROM metadata_tags WHERE tag_key = ? AND tag_value = ?;",
+            (tag_key.strip(), tag_value.strip()),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def delete_key(tag_key: str) -> int:
+    """Deletes an entire key and all associated values. Returns count of deleted rows."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM metadata_tags WHERE tag_key = ?;", (tag_key.strip(),))
+        deleted = cursor.rowcount
+        conn.commit()
+        return deleted
+
+
+def clear_all_vault_data() -> int:
+    """Wipes all metadata tags from the database. Returns count of cleared records."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM metadata_tags;")
+        deleted = cursor.rowcount
+        conn.commit()
+        return deleted
+
+
+def get_all_keys() -> List[str]:
+    """Returns a sorted list of all unique tag keys in the vault."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT tag_key FROM metadata_tags ORDER BY tag_key ASC;")
+        return [row["tag_key"] for row in cursor.fetchall()]
+
+
+def get_values_for_key(tag_key: str) -> List[str]:
+    """Returns a sorted list of values for a specific tag key."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT tag_value FROM metadata_tags WHERE tag_key = ? ORDER BY tag_value ASC;",
+            (tag_key.strip(),),
+        )
+        return [row["tag_value"] for row in cursor.fetchall()]
+
+
+# =====================================================================
+# AUDIT & LOGGING OPERATIONS
+# =====================================================================
+
+def log_cloned_tree(
+    source_id: str,
+    source_name: str,
+    target_id: str,
+    target_name: str,
+    folders_cloned: int = 0,
+    tags_harvested: int = 0,
+):
+    """Records a folder tree clone operation in the log table."""
+    init_db()
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO cloned_trees_log 
+            (source_id, source_name, target_id, target_name, folders_cloned, tags_harvested)
+            VALUES (?, ?, ?, ?, ?, ?);
+            """,
+            (source_id, source_name, target_id, target_name, folders_cloned, tags_harvested),
+        )
+        conn.commit()
+
+
+def log_exported_tree(
+    folder_id: str,
+    folder_name: str,
+    json_path: str,
+    node_count: int = 0,
+    image_count: int = 0,
+):
+    """Records a JSON tree export operation in the log table."""
+    init_db()
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO exported_trees_log
+            (folder_id, folder_name, json_path, node_count, image_count)
+            VALUES (?, ?, ?, ?, ?);
+            """,
+            (folder_id, folder_name, json_path, node_count, image_count),
+        )
+        conn.commit()
+
+
+def get_vault_stats() -> Dict[str, Any]:
+    """Returns summary statistics for the vault database."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(DISTINCT tag_key) as total_keys, COUNT(*) as total_tags FROM metadata_tags;")
+        row1 = cursor.fetchone()
+        cursor.execute("SELECT COUNT(*) as total_clones FROM cloned_trees_log;")
+        row2 = cursor.fetchone()
+        cursor.execute("SELECT COUNT(*) as total_exports FROM exported_trees_log;")
+        row3 = cursor.fetchone()
+        cursor.execute("SELECT COUNT(*) as total_schemas FROM template_schemas;")
+        row4 = cursor.fetchone()
+        cursor.execute("SELECT COUNT(*) as total_reconciliations FROM reconciliation_log;")
+        row5 = cursor.fetchone()
+
+        return {
+            "total_keys": row1["total_keys"] if row1 else 0,
+            "total_tags": row1["total_tags"] if row1 else 0,
+            "total_clones": row2["total_clones"] if row2 else 0,
+            "total_exports": row3["total_exports"] if row3 else 0,
+            "total_schemas": row4["total_schemas"] if row4 else 0,
+            "total_reconciliations": row5["total_reconciliations"] if row5 else 0,
+            "db_path": str(config.db_path),
+        }
+
+
+# =====================================================================
+# TEMPLATE SCHEMA MANAGEMENT
+# =====================================================================
+
+def save_template_schema(name: str, schema_dict: dict, description: str = "", source_folder_id: Optional[str] = None):
+    """Saves or updates a named template schema in SQLite."""
+    import json
+    init_db()
+    schema_json = json.dumps(schema_dict, ensure_ascii=False)
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO template_schemas (name, description, schema_json, source_folder_id, updated_at)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(name) DO UPDATE SET
+                description = excluded.description,
+                schema_json = excluded.schema_json,
+                source_folder_id = excluded.source_folder_id,
+                updated_at = CURRENT_TIMESTAMP;
+            """,
+            (name.strip(), description.strip(), schema_json, source_folder_id),
+        )
+        conn.commit()
+
+
+def get_template_schema(name: str) -> Optional[dict]:
+    """Retrieves a template schema by name as a parsed dictionary."""
+    import json
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT schema_json FROM template_schemas WHERE name = ?;", (name.strip(),))
+        row = cursor.fetchone()
+        if row and row["schema_json"]:
+            return json.loads(row["schema_json"])
+    return None
+
+
+def get_template_schema_by_source_id(source_id: str) -> Optional[dict]:
+    """Retrieves a template schema by its Google Drive source folder ID."""
+    import json
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT schema_json FROM template_schemas WHERE source_folder_id = ? ORDER BY id DESC LIMIT 1;", (source_id.strip(),))
+        row = cursor.fetchone()
+        if row and row["schema_json"]:
+            return json.loads(row["schema_json"])
+    return None
+
+
+def list_template_schemas() -> List[Dict[str, Any]]:
+    """Returns a list of all saved template schema metadata."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name, description, source_folder_id, updated_at FROM template_schemas ORDER BY name ASC;")
+        return [dict(r) for r in cursor.fetchall()]
+
+
+def delete_template_schema(name: str) -> bool:
+    """Deletes a template schema by name."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM template_schemas WHERE name = ?;", (name.strip(),))
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+# =====================================================================
+# RECONCILIATION AUDIT LOGGING
+# =====================================================================
+
+def log_reconciliation_run(
+    target_folder_id: str,
+    target_folder_name: str,
+    template_name: str,
+    created_count: int,
+    updated_desc_count: int,
+    pruned_empty_count: int,
+    flagged_red_count: int,
+    dry_run: bool = False,
+    details: Optional[dict] = None,
+):
+    """Records a reconciliation execution run with full action metrics."""
+    import json
+    init_db()
+    details_json = json.dumps(details or {}, ensure_ascii=False)
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO reconciliation_log
+            (target_folder_id, target_folder_name, template_name, created_count, 
+             updated_desc_count, pruned_empty_count, flagged_red_count, dry_run, details_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """,
+            (
+                target_folder_id,
+                target_folder_name,
+                template_name,
+                created_count,
+                updated_desc_count,
+                pruned_empty_count,
+                flagged_red_count,
+                1 if dry_run else 0,
+                details_json,
+            ),
+        )
+        conn.commit()
+
+
+def get_recent_reconciliations(limit: int = 15) -> List[Dict[str, Any]]:
+    """Retrieves recent reconciliation audit logs from SQLite."""
+    import json
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, target_folder_id, target_folder_name, template_name,
+                   created_count, updated_desc_count, pruned_empty_count,
+                   flagged_red_count, dry_run, details_json, created_at
+            FROM reconciliation_log
+            ORDER BY id DESC
+            LIMIT ?;
+            """,
+            (limit,),
+        )
+        rows = cursor.fetchall()
+        results = []
+        for r in rows:
+            details = {}
+            if r["details_json"]:
+                try:
+                    details = json.loads(r["details_json"])
+                except Exception:
+                    pass
+            results.append({
+                "id": r["id"],
+                "target_folder_id": r["target_folder_id"],
+                "target_folder_name": r["target_folder_name"],
+                "template_name": r["template_name"],
+                "created_count": r["created_count"],
+                "updated_desc_count": r["updated_desc_count"],
+                "pruned_empty_count": r["pruned_empty_count"],
+                "flagged_red_count": r["flagged_red_count"],
+                "dry_run": bool(r["dry_run"]),
+                "details": details,
+                "created_at": str(r["created_at"]),
+            })
+        return results
+
+
+# =====================================================================
+# FOLDER TREE CACHE OPERATIONS
+# =====================================================================
+
+def cache_folder_tree(root_id: str, tree_dict: dict):
+    """Saves a serialized folder tree hierarchy into SQLite for sub-second recall."""
+    import json
+    init_db()
+    raw_json = json.dumps(tree_dict, ensure_ascii=False)
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO folder_tree_cache (root_id, tree_json, synced_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(root_id) DO UPDATE SET
+                tree_json = excluded.tree_json,
+                synced_at = CURRENT_TIMESTAMP;
+            """,
+            (root_id, raw_json),
+        )
+        conn.commit()
+
+
+def get_cached_folder_tree(root_id: str) -> Optional[Tuple[dict, str]]:
+    """Retrieves cached folder tree dict and synced_at timestamp if present."""
+    import json
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT tree_json, synced_at FROM folder_tree_cache WHERE root_id = ?;", (root_id,))
+        row = cursor.fetchone()
+        if row and row["tree_json"]:
+            return json.loads(row["tree_json"]), str(row["synced_at"])
+    return None
+
+
+def clear_folder_tree_cache(root_id: Optional[str] = None):
+    """Clears cached tree for specific root or wipes all."""
+    init_db()
+    with get_connection() as conn:
+        if root_id:
+            conn.execute("DELETE FROM folder_tree_cache WHERE root_id = ?;", (root_id,))
+        else:
+            conn.execute("DELETE FROM folder_tree_cache;")
+        conn.commit()
+
+
+# =====================================================================
+# THE TWO-TABLE REPOSITORY METHODS: FOLDERS & CONFIG
+# =====================================================================
+
+def save_folder(
+    drive_id: str,
+    name: str,
+    child_of: Optional[str] = None,
+    description: str = "",
+    src_id: Optional[str] = None,
+    files_count: int = 0,
+) -> Dict[str, Any]:
+    """Inserts or updates a folder row in the folders table."""
+    init_db()
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO folders (drive_id, name, child_of, description, src_id, files_count, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(drive_id) DO UPDATE SET
+                name = excluded.name,
+                child_of = excluded.child_of,
+                description = excluded.description,
+                src_id = excluded.src_id,
+                files_count = excluded.files_count,
+                updated_at = CURRENT_TIMESTAMP;
+            """,
+            (drive_id, name, child_of, description or "", src_id, files_count),
+        )
+        conn.commit()
+    return {
+        "drive_id": drive_id,
+        "name": name,
+        "child_of": child_of,
+        "description": description,
+        "src_id": src_id,
+        "files_count": files_count,
+    }
+
+
+def get_folder(drive_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieves a folder row by its Google Drive ID."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM folders WHERE drive_id = ?;", (drive_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def list_children(parent_id: Optional[str]) -> List[Dict[str, Any]]:
+    """Returns immediate child folders of parent_id (or root folders if parent_id is None)."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        if parent_id is None:
+            cursor.execute("SELECT * FROM folders WHERE child_of IS NULL ORDER BY name ASC;")
+        else:
+            cursor.execute("SELECT * FROM folders WHERE child_of = ? ORDER BY name ASC;", (parent_id,))
+        return [dict(r) for r in cursor.fetchall()]
+
+
+def bulk_save_folders(folders_list: List[Dict[str, Any]]):
+    """Inserts or updates multiple folder records in a single atomic transaction."""
+    init_db()
+    with get_connection() as conn:
+        conn.executemany(
+            """
+            INSERT INTO folders (drive_id, name, child_of, description, src_id, files_count, updated_at)
+            VALUES (:drive_id, :name, :child_of, :description, :src_id, :files_count, CURRENT_TIMESTAMP)
+            ON CONFLICT(drive_id) DO UPDATE SET
+                name = excluded.name,
+                child_of = excluded.child_of,
+                description = excluded.description,
+                src_id = excluded.src_id,
+                files_count = excluded.files_count,
+                updated_at = CURRENT_TIMESTAMP;
+            """,
+            folders_list,
+        )
+        conn.commit()
+
+
+def update_folder_fields(drive_id: str, **kwargs) -> bool:
+    """Updates specific fields (name, child_of, description, src_id, files_count) of a folder."""
+    init_db()
+    allowed = {"name", "child_of", "description", "src_id", "files_count"}
+    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    if not fields:
+        return False
+
+    set_clause = ", ".join(f"{k} = ?" for k in fields.keys()) + ", updated_at = CURRENT_TIMESTAMP"
+    values = list(fields.values()) + [drive_id]
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"UPDATE folders SET {set_clause} WHERE drive_id = ?;", values)
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def delete_folder_record(drive_id: str) -> bool:
+    """Deletes a folder record from the folders table."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM folders WHERE drive_id = ?;", (drive_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def rekey_folder_id(old_id: str, new_id: str):
+    """
+    Updates a folder's drive_id (and references in child_of) from a temporary local ID
+    to the permanent Google Drive ID.
+    """
+    if old_id == new_id:
+        return
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT drive_id FROM folders WHERE drive_id = ?;", (new_id,))
+        if cursor.fetchone():
+            conn.execute("UPDATE folders SET child_of = ? WHERE child_of = ?;", (new_id, old_id))
+            conn.execute("DELETE FROM folders WHERE drive_id = ?;", (old_id,))
+        else:
+            conn.execute("UPDATE folders SET child_of = ? WHERE child_of = ?;", (new_id, old_id))
+            conn.execute("UPDATE folders SET drive_id = ? WHERE drive_id = ?;", (new_id, old_id))
+        conn.commit()
+
+
+# =====================================================================
+# CONFIG REPOSITORY
+# =====================================================================
+
+def get_config(key: str, default: Optional[str] = None) -> Optional[str]:
+    """Retrieves a configuration value by key."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM config WHERE key = ?;", (key,))
+        row = cursor.fetchone()
+        return row["value"] if row else default
+
+
+def set_config(key: str, value: str):
+    """Sets a configuration value."""
+    init_db()
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO config (key, value, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(key) DO UPDATE SET
+                value = excluded.value,
+                updated_at = CURRENT_TIMESTAMP;
+            """,
+            (key, str(value)),
+        )
+        conn.commit()
+
+
+def get_all_configs() -> Dict[str, str]:
+    """Returns all configuration key-values as a dictionary."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT key, value FROM config;")
+        return {r["key"]: r["value"] for r in cursor.fetchall()}
+
+
+# =====================================================================
+# SYNC LOG REPOSITORY
+# =====================================================================
+
+def log_sync_action(entity_id: str, action_type: str, folder_name: str, details: str = ""):
+    """Records a single sync action in the sync_log table."""
+    init_db()
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO sync_log (entity_id, action_type, folder_name, details, executed_at)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP);
+            """,
+            (entity_id, action_type, folder_name, details),
+        )
+        conn.commit()
+
+
+def get_sync_logs(limit: int = 30) -> List[Dict[str, Any]]:
+    """Returns recent sync audit logs."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM sync_log ORDER BY id DESC LIMIT ?;", (limit,))
+        return [dict(r) for r in cursor.fetchall()]
+
+
+

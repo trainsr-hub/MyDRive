@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "plugins": {
+    "ecc@ecc": [
+      {
+        "scope": "user",
+        "installPath": "C:\\Users\\Admin\\.claude\\plugins\\cache\\ecc\\ecc\\2.2.3",
+        "version": "2.2.3",
+        "installedAt": "2026-10-04T10:21:34.804Z",
+        "lastUpdated": "2026-10-04T10:21:34.804Z",
+        "gitCommitSha": "ef648e01899ba3e8dc6371642deaaf64b4477775"
+      }
+    ]
+  }
+}

@@ -1,0 +1,1956 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rien-Prescript-Beeper — Hardware Screen &amp; Ratio Studio</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📟</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Fira+Code:wght@400;600&family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Share+Tech+Mono&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=VT323&display=swap">
+  <style>
+    :root {
+      --bg-canvas:        #060606;
+      --bg-card:          #101010;
+      --bg-card-hover:    #181818;
+      --bg-input:         #141414;
+      --text-vivid:       #ffffff;
+      --text-main:        #d4d4d4;
+      --text-muted:       #737373;
+      --border-dim:       #202020;
+      --border-mid:       #303030;
+      --accent-cyan:      #38bdf8;
+      --accent-gold:      #f59e0b;
+      --radius-sm:        5px;
+      --radius-md:        9px;
+      font-family: "JetBrains Mono", monospace;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      padding: 1.5rem 1rem 4rem;
+      display: flex;
+      justify-content: center;
+      line-height: 1.5;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* Top Navigation Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--border-dim);
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .title-group h1 {
+      font-size: 1.12rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .title-group p {
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-family: "JetBrains Mono", monospace;
+      user-select: none;
+    }
+    .btn:hover { background: var(--bg-card-hover); border-color: #555555; color: #fff; }
+    .btn.active { background: #ffffff; color: #000000; border-color: #ffffff; font-weight: 700; }
+    .btn:active { transform: translateY(1px); }
+
+    select.select-picker {
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      color: var(--text-vivid);
+      font-size: 0.75rem;
+      outline: none;
+      cursor: pointer;
+      font-family: "JetBrains Mono", monospace;
+      max-width: 320px;
+    }
+
+    /* Speed Slider Widget */
+    .speed-slider-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      padding: 0.22rem 0.65rem;
+      font-size: 0.72rem;
+    }
+    .speed-slider-wrap input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 95px;
+      height: 4px;
+      background: #262626;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    .speed-slider-wrap input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 6px var(--accent-cyan);
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    .speed-slider-wrap input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    .speed-slider-wrap input[type=range]::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border: none;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 6px var(--accent-cyan);
+      cursor: pointer;
+    }
+    .control-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .control-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .section-label {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .ratio-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .ratio-btn {
+      padding: 0.3rem 0.55rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-mid);
+      background: var(--bg-input);
+      color: #999;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: "JetBrains Mono", monospace;
+      transition: all 0.12s ease;
+      white-space: nowrap;
+    }
+    .ratio-btn:hover { color: #fff; border-color: #555; }
+    .ratio-btn.active { background: #ffffff; color: #000000; border-color: #ffffff; font-weight: 700; }
+
+    /* Clarification Callout */
+    .clarification-box {
+      font-size: 0.72rem;
+      color: #888;
+      background: rgba(255, 255, 255, 0.02);
+      border-left: 2px solid var(--accent-cyan);
+      padding: 0.4rem 0.65rem;
+      line-height: 1.45;
+    }
+
+    /* ==========================================================================
+       HARDWARE CHASSIS: RIEN-PRESCRIPT-BEEPER
+       ========================================================================== */
+    .beeper-housing {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0.5rem 0;
+      position: relative;
+    }
+
+    /* Tactile Beeper Top Badge */
+    .beeper-badge-bar {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 7.5px;
+      font-weight: 700;
+      color: #555555;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+      padding: 0 0.5rem;
+      user-select: none;
+    }
+
+    .beeper-led {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 8px var(--accent-cyan);
+      display: inline-block;
+      animation: pulse-signal 2.4s infinite ease-in-out;
+    }
+    .beeper-led.drawing {
+      animation: pulse-drawing 0.12s infinite alternate !important;
+      background: #f59e0b !important;
+      box-shadow: 0 0 12px #f59e0b !important;
+    }
+    @keyframes pulse-signal {
+      0%, 100% { opacity: 0.9; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.8); }
+    }
+    @keyframes pulse-drawing {
+      0% { opacity: 0.2; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1.3); }
+    }
+
+    /* Physical Industrial Bezel */
+    .beeper-outer-case {
+      position: relative;
+      background: #111111;
+      border: 2px solid #282828;
+      border-radius: 14px;
+      padding: 18px 24px 22px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95), inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 0 0 1px #000;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+
+    /* Metallic Chassis Screws */
+    .screw {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #282828;
+      border: 1px solid #1a1a1a;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    }
+    .screw::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 1px;
+      width: 3px;
+      height: 1px;
+      background: #444;
+    }
+    .screw.top-left { top: 7px; left: 8px; }
+    .screw.top-right { top: 7px; right: 8px; }
+    .screw.bottom-left { bottom: 7px; left: 8px; }
+    .screw.bottom-right { bottom: 7px; right: 8px; }
+
+    /* Silkscreen Markings on Bezel */
+    .bezel-silkscreen-top {
+      font-size: 8px;
+      font-weight: 700;
+      color: #4a4a4a;
+      letter-spacing: 0.18em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      user-select: none;
+    }
+
+    .bezel-silkscreen-bottom {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 7px;
+      font-weight: 700;
+      color: #3e3e3e;
+      letter-spacing: 0.12em;
+      margin-top: 10px;
+      text-transform: uppercase;
+      user-select: none;
+    }
+
+    /* ==========================================================================
+       THE SCREEN FRAMEBUFFER (LOCKED ASPECT RATIO & RESOLUTION)
+       ========================================================================== */
+    .epaper-screen {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-radius: 4px;
+      border: 2px solid #000000;
+      box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.8), 0 0 0 1px #222;
+      transition: width 0.2s ease, height 0.2s ease, background 0.2s ease;
+      user-select: text;
+    }
+
+    /* Display Color Profiles */
+    .theme-obsidian {
+      background: #000000 !important;
+      color: #ffffff !important;
+    }
+    .theme-obsidian .ep-status-bar, .theme-obsidian .ep-footer {
+      border-color: #1e1e1e !important;
+      color: #666666 !important;
+    }
+
+    .theme-eink {
+      background: #f4f3ef !important;
+      color: #111111 !important;
+    }
+    .theme-eink .ep-status-bar, .theme-eink .ep-footer {
+      border-color: #d0cfcb !important;
+      color: #666666 !important;
+    }
+    .theme-eink .ep-content em { color: #111111 !important; }
+    .theme-eink .ep-context {
+      background: #e9e8e3 !important;
+      border-left-color: #888888 !important;
+      color: #444444 !important;
+    }
+
+    .theme-amber {
+      background: #0d0a00 !important;
+      color: #ffb000 !important;
+    }
+    .theme-amber .ep-status-bar, .theme-amber .ep-footer {
+      border-color: #332400 !important;
+      color: #996a00 !important;
+    }
+    .theme-amber .ep-content em { color: #ffb000 !important; }
+    .theme-amber .ep-context {
+      background: #1a1400 !important;
+      border-left-color: #ffb000 !important;
+      color: #cc8d00 !important;
+    }
+
+    .theme-matrix {
+      background: #020f04 !important;
+      color: #00ff66 !important;
+    }
+    .theme-matrix .ep-status-bar, .theme-matrix .ep-footer {
+      border-color: #07380f !important;
+      color: #00993d !important;
+    }
+    .theme-matrix .ep-content em { color: #00ff66 !important; }
+    .theme-matrix .ep-context {
+      background: #041f09 !important;
+      border-left-color: #00ff66 !important;
+      color: #00b347 !important;
+    }
+
+    /* Fixed Header Bar (Pinned) */
+    .ep-status-bar {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px 5px;
+      font-size: 9.5px;
+      font-weight: 500;
+      border-bottom: 1px solid #1e1e1e;
+      color: #666666;
+      letter-spacing: 0.02em;
+      user-select: none;
+      z-index: 5;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .ep-status-bar .ep-header-left {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      flex: 1 1 auto;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .ep-status-bar .ep-idx-num { color: #888888; font-weight: 700; flex-shrink: 0; }
+    .ep-status-bar .ep-sep { color: #444444; flex-shrink: 0; }
+    .ep-status-bar .ep-specific-title {
+      color: #777777;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: inline-block;
+      min-width: 0;
+    }
+    .ep-status-bar .ep-header-right {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .ep-status-bar .ep-date-val { color: #888888; font-weight: 600; }
+
+    /* Fixed Footer Bar (Pinned) */
+    .ep-footer {
+      flex-shrink: 0;
+      padding: 5px 12px 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #1e1e1e;
+      font-size: 9.5px;
+      font-weight: 700;
+      user-select: none;
+      z-index: 5;
+    }
+    .ep-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      align-items: center;
+    }
+    .ep-tag-block {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 8.5px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.25;
+      border: 1px solid transparent;
+    }
+    .ep-attribution {
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      text-align: right;
+    }
+
+    /* 4-LINE DISCRETE FRAMEBUFFER VIEWPORT (ZERO SCROLLBAR // 4 LINES MAX) */
+    .ep-viewport {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden; /* Strict zero overflow */
+      padding: 6px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      user-select: text;
+    }
+
+    /* 4-Line Content Box */
+    .ep-content {
+      font-family: var(--screen-font, "JetBrains Mono", monospace);
+      font-size: var(--screen-font-size, 13px);
+      line-height: 1.52;
+      font-style: italic;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .ep-content.content-justify {
+      text-align: justify !important;
+      text-justify: inter-word !important;
+      hyphens: auto;
+    }
+    .ep-content:not(.animating).content-justify .ep-text-line.line-justify {
+      text-align: justify !important;
+      text-align-last: justify !important;
+      white-space: pre-wrap !important;
+    }
+    .ep-content:not(.animating).content-justify .ep-text-line.line-left,
+    .ep-content.content-left .ep-text-line {
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    /* Fixed 2D Glyph Matrix during animation (Absolute Zero Jitter) */
+    .ep-content.animating .ep-text-line {
+      white-space: pre !important;
+      text-align: left !important;
+      text-align-last: left !important;
+      word-spacing: normal !important;
+      letter-spacing: normal !important;
+    }
+
+    .ep-text-line {
+      min-height: 1.5em;
+      line-height: 1.5;
+      white-space: pre !important;
+      overflow: hidden;
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      align-items: baseline;
+    }
+
+    /* Fixed-Width Monospace Character Cell Matrix */
+    .ep-c {
+      display: inline-block;
+      width: 1ch;
+      text-align: center;
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      white-space: pre;
+      user-select: text;
+      flex-shrink: 0;
+      transition: color 0.1s ease;
+    }
+
+    .ep-c.ep-scramble {
+      color: #444444 !important;
+      opacity: 0.8;
+    }
+    .theme-eink .ep-c.ep-scramble {
+      color: #b0afab !important;
+    }
+    .theme-amber .ep-c.ep-scramble {
+      color: #664400 !important;
+    }
+    .theme-matrix .ep-c.ep-scramble {
+      color: #00551a !important;
+    }
+
+    .ep-c.ep-qmark {
+      font-style: normal !important;
+      font-weight: 700;
+    }
+    .ep-c.ep-ellipsis-cue {
+      font-style: normal !important;
+      font-weight: 700;
+    }
+    .ep-c.ep-space {
+      color: transparent !important;
+    }
+
+    /* Teleprinter Prescript Cursor */
+    .ep-cursor {
+      display: inline-block;
+      width: 7.5px;
+      height: 1.15em;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 6px var(--accent-cyan);
+      vertical-align: -0.16em;
+      margin-left: 2px;
+      animation: blink-cursor 0.5s infinite;
+    }
+    @keyframes blink-cursor {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    .ep-transmitting-badge {
+      color: #888888;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      animation: subtle-breathe 2.4s infinite ease-in-out;
+    }
+    @keyframes subtle-breathe {
+      0%, 100% { opacity: 0.55; }
+      50% { opacity: 0.95; }
+    }
+
+    /* Quotation Marks & Ellipsis (Natural Outcome Characters in Monospace Grid) */
+    .ep-qmark {
+      font-style: normal !important;
+      font-weight: 700;
+      display: inline;
+    }
+    .ep-ellipsis-cue {
+      font-style: normal !important;
+      font-weight: 700;
+      letter-spacing: normal;
+      display: inline;
+    }
+
+    /* Personal Context Box (Callout) */
+    .ep-context-box {
+      font-size: 11px;
+      padding: 5px 8px;
+      line-height: 1.45;
+      background: rgba(255, 255, 255, 0.04);
+      border-left: 2px solid #555555;
+      color: #888888;
+      border-radius: 0 4px 4px 0;
+      font-style: normal;
+    }
+
+    /* Tactile Hardware Beeper Button Bar (Physical Chassis Controls) */
+    .beeper-hw-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px dashed #262626;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .hw-btn {
+      padding: 0.35rem 0.65rem;
+      border-radius: 4px;
+      background: #181818;
+      border: 1px solid #333333;
+      color: #d4d4d4;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-family: "JetBrains Mono", monospace;
+      transition: all 0.1s ease;
+      user-select: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+    .hw-btn:hover { background: #222222; border-color: #555555; color: #ffffff; }
+    .hw-btn:active { transform: translateY(1px); box-shadow: 0 0 1px rgba(0, 0, 0, 0.5); }
+    .hw-btn.active { background: #38bdf8; color: #000000; border-color: #38bdf8; }
+
+    .scroll-indicator-pill {
+      font-size: 0.7rem;
+      color: #666;
+      font-family: monospace;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    /* Live Telemetry Drawer */
+    details.raw-drawer {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+    }
+    details.raw-drawer summary {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Top Control Bar -->
+    <header class="top-bar">
+      <div class="title-group">
+        <h1><span>📟</span> Rien-Prescript-Beeper Studio</h1>
+        <p>Personal Prescripts &amp; Wisdom Beeper // ESP32 Hardware Screen &amp; Ratio Explorer</p>
+      </div>
+
+      <div class="controls-row">
+        <select class="select-picker" id="quote-select" onchange="loadSelectedQuote(this.value, true)">
+          <option value="">Loading personal prescripts...</option>
+        </select>
+        <button class="btn" onclick="drawNewPrescript()">📜 Draw Prescript</button>
+        <button class="btn" onclick="navQuote(-1)">◀ Prev</button>
+        <button class="btn" onclick="navQuote(1)">Next ▶</button>
+        <button class="btn" onclick="pickRandomQuote()">🎲 Random</button>
+        <button class="btn" id="btn-sound" onclick="toggleSound()">🔔 Sound: ON</button>
+      </div>
+    </header>
+
+    <!-- Ratio & Screen Selection Studio -->
+    <section class="control-panel">
+      <!-- Row 1: Hardware Screen Presets -->
+      <div class="control-section">
+        <div class="section-label">
+          <span>ESP32 Hardware Display Presets</span>
+          <span id="active-screen-spec" style="color:var(--accent-cyan); font-weight:700;">1.9" IPS Bar · 320×170 px · Ratio 1.88:1</span>
+        </div>
+        <div class="ratio-grid">
+          <button class="ratio-btn active" id="rb-19" onclick="applyPreset('19')">1.9" IPS Bar (320×170, 1.88:1)</button>
+          <button class="ratio-btn" id="rb-24" onclick="applyPreset('24')">2.4" Cyberdeck Pager (320×240, 4:3)</button>
+          <button class="ratio-btn" id="rb-28" onclick="applyPreset('28')">2.8" / 3.2" Console (480×320, 3:2)</button>
+          <button class="ratio-btn" id="rb-35" onclick="applyPreset('35')">3.5" Desk Terminal (480×320, 3:2)</button>
+          <button class="ratio-btn" id="rb-213" onclick="applyPreset('213')">2.13" E-Paper (250×122, 2.05:1)</button>
+          <button class="ratio-btn" id="rb-29" onclick="applyPreset('29')">2.9" Panoramic E-Ink (296×128, 2.31:1)</button>
+          <button class="ratio-btn" id="rb-42" onclick="applyPreset('42')">4.2" Desktop E-Ink (400×300, 4:3)</button>
+          <button class="ratio-btn" id="rb-169" onclick="applyPreset('169')">1.69" Wrist Beeper (280×240, 1.17:1)</button>
+          <button class="ratio-btn" id="rb-154" onclick="applyPreset('154')">1.54" Square Matrix (240×240, 1:1)</button>
+          <button class="ratio-btn" id="rb-096" onclick="applyPreset('096')">0.96" Micro OLED (128×64, 2:1)</button>
+        </div>
+      </div>
+
+      <!-- Clarification Note on 1.9" vs Aspect Ratio -->
+      <div class="clarification-box">
+        💡 <strong>Note on 1.9" Display Ratio:</strong> "1.9 inches" is the physical diagonal glass size. The native resolution on ST7789 is <strong>320 × 170 pixels</strong>, which produces an aspect ratio of <strong>1.882 : 1</strong> (~16:8.5 horizontal bar). You can toggle between widescreen, classic 4:3 pager, or square 1:1 above!
+      </div>
+
+      <!-- Row 2: Custom Ratio, Orientation & Theme Controls -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem; border-top:1px solid var(--border-dim); padding-top:0.6rem;">
+        <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+          <span style="color:var(--text-muted); font-weight:700;">DISPLAY THEME:</span>
+          <button class="btn active" id="btn-theme-obsidian" onclick="setTheme('obsidian')">Obsidian OLED</button>
+          <button class="btn" id="btn-theme-eink" onclick="setTheme('eink')">E-Ink Paper</button>
+          <button class="btn" id="btn-theme-amber" onclick="setTheme('amber')">Amber CRT</button>
+          <button class="btn" id="btn-theme-matrix" onclick="setTheme('matrix')">Matrix Green</button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+          <button class="btn active" id="btn-anim" onclick="toggleAnimation()">📜 Anim: ON</button>
+          <div class="speed-slider-wrap">
+            <span style="color:var(--text-muted); font-size:0.7rem; font-weight:700;">ENTROPY SPEED:</span>
+            <input type="range" id="entropy-speed-slider" min="15" max="95" step="2" value="40" oninput="updateEntropySpeed(this.value)">
+            <span id="speed-label" style="color:var(--accent-cyan); font-weight:700; font-size:0.72rem; min-width:38px;">40ms</span>
+          </div>
+          <button class="btn" id="btn-toggle-context" onclick="toggleContext()">Context: ON</button>
+          <button class="btn" id="btn-autoscroll" onclick="toggleAutoScroll()">Auto-Page: OFF</button>
+          <button class="btn" id="btn-scale" onclick="toggleNativeScale()">Scale: Studio 2x</button>
+          <button class="btn" onclick="reRollColors()">🎨 Re-roll Accents</button>
+        </div>
+      </div>
+
+      <!-- Row 2.5: Prescript Dual Acoustic Delay Sliders -->
+      <div style="display:flex; justify-content:flex-start; align-items:center; flex-wrap:wrap; gap:0.6rem; border-top:1px solid var(--border-dim); padding-top:0.6rem;">
+        <div class="speed-slider-wrap">
+          <span style="color:var(--text-muted); font-size:0.7rem; font-weight:700;">DRAW ➔ CHIME DELAY:</span>
+          <input type="range" id="draw-delay-slider" min="150" max="1800" step="25" value="650" oninput="updateDrawDelay(this.value)">
+          <span id="draw-delay-label" style="color:var(--accent-gold); font-weight:700; font-size:0.72rem; min-width:44px;">650ms</span>
+        </div>
+        <div class="speed-slider-wrap">
+          <span style="color:var(--text-muted); font-size:0.7rem; font-weight:700;">CHIME INTERVAL:</span>
+          <input type="range" id="interval-delay-slider" min="150" max="1200" step="25" value="450" oninput="updateChimeInterval(this.value)">
+          <span id="interval-delay-label" style="color:var(--accent-gold); font-weight:700; font-size:0.72rem; min-width:44px;">450ms</span>
+        </div>
+        <span style="font-size:0.7rem; color:var(--text-muted); font-style:italic;">Chimes repeat to fill the gap until text resolves</span>
+      </div>
+
+      <!-- Row 3: Hardware Typography & Font Family Picker -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem; border-top:1px solid var(--border-dim); padding-top:0.6rem;">
+        <div style="display:flex; align-items:center; gap:0.35rem; flex-wrap:wrap;">
+          <span style="color:var(--text-muted); font-weight:700;">TEXT FONT:</span>
+          <button class="btn active" id="btn-font-jetbrains" onclick="setFontFamily('jetbrains')">JetBrains Mono</button>
+          <button class="btn" id="btn-font-ibmplex" onclick="setFontFamily('ibmplex')">IBM Plex Mono</button>
+          <button class="btn" id="btn-font-spacemono" onclick="setFontFamily('spacemono')">Space Mono</button>
+          <button class="btn" id="btn-font-firacode" onclick="setFontFamily('firacode')">Fira Code</button>
+          <button class="btn" id="btn-font-vt323" onclick="setFontFamily('vt323')">VT323 (Matrix Pager)</button>
+          <button class="btn" id="btn-font-crimson" onclick="setFontFamily('crimson')">Crimson Pro (E-Ink Serif)</button>
+          <button class="btn" id="btn-font-sharetech" onclick="setFontFamily('sharetech')">Share Tech</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN HARDWARE CANVAS: RIEN-PRESCRIPT-BEEPER -->
+    <main class="beeper-housing">
+      <!-- Beeper Silkscreen Header -->
+      <div class="beeper-badge-bar">
+        <div style="display:flex; align-items:center; gap:0.45rem;">
+          <span class="beeper-led"></span>
+          <span>RIEN-PRESCRIPT-BEEPER // MODEL 01-ORACLE</span>
+        </div>
+        <span id="connection-status" style="color:#22c55e;">● SYSTEM SYNCED</span>
+      </div>
+
+      <!-- Tactile Industrial Bezel Case -->
+      <div class="beeper-outer-case" id="beeper-chassis">
+        <span class="screw top-left"></span>
+        <span class="screw top-right"></span>
+        <span class="screw bottom-left"></span>
+        <span class="screw bottom-right"></span>
+
+        <div class="bezel-silkscreen-top">PRESCRIPT ORACLE FRAMEBUFFER // 4-LINE DISCRETE ENGINE</div>
+
+        <!-- THE SCREEN (Strict Resolution & 4-Line Framebuffer) -->
+        <div class="epaper-screen theme-obsidian" id="epaper-screen">
+          <!-- Rendered dynamically by renderActivePrescript() -->
+        </div>
+
+        <div class="bezel-silkscreen-bottom">
+          <span>TX: 20.137 MHZ // LOVYANGFX</span>
+          <span id="bezel-dim-label">320 × 170 NATIVE (4-LINE MATRIX)</span>
+          <span>AUTONOMOUS ORACLE</span>
+        </div>
+
+        <!-- Tactile Hardware Page & Navigation Bar -->
+        <div class="beeper-hw-controls">
+          <div style="display:flex; gap:0.35rem;">
+            <button class="hw-btn" id="btn-page-prev" onclick="changePage(-1)">▲ UP</button>
+            <button class="hw-btn" id="btn-page-next" onclick="changePage(1)">▼ DOWN</button>
+            <button class="hw-btn" onclick="goToPage(1)">⤒ FIRST</button>
+            <button class="hw-btn" onclick="goToPage(999)">⤓ LAST</button>
+          </div>
+
+          <div class="scroll-indicator-pill">
+            <span>Tactile Prescript Engine</span>
+          </div>
+
+          <div style="display:flex; gap:0.35rem;">
+            <button class="hw-btn" onclick="drawNewPrescript()">[📜 DRAW PRESCRIPT]</button>
+            <button class="hw-btn" onclick="navQuote(-1)">[◀ PREV QUOTE]</button>
+            <button class="hw-btn" onclick="navQuote(1)">[NEXT QUOTE ❯]</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Raw 5-Point Firmware Payload Inspector -->
+    <details class="raw-drawer">
+      <summary>
+        🔍 Inspect Raw 5-Point Payload (Sent to ESP32 Firmware over Wi-Fi)
+      </summary>
+      <pre id="raw-payload-json" style="font-family:'JetBrains Mono'; font-size:0.75rem; color:#38bdf8; margin-top:0.75rem; overflow-x:auto; line-height:1.45;"></pre>
+    </details>
+  </div>
+
+  <script>
+    // ==============================================================================
+    // 1. EMBEDDED RESILIENT DATA (OFFLINE FALLBACK CACHE FOR PERSONAL QUOTES)
+    // ==============================================================================
+    const FALLBACK_QUOTES = [
+      {
+        "id": "000101A1002AF5E9",
+        "idx": 6,
+        "main_content": "Nỗi sợ lớn nhất của một người đàn ông chính là nước mắt đàn bà. Bản năng của phái mạnh là bao bọc, che chở chứ không phải giẫm đạp, hủy hoại. Bởi thế, đàn ông luôn tránh nói lời chia tay vì không dám đối diện với nước mắt, sợ làm tổn thương người phụ nữ của anh ta. Cũng vì lẽ đó mà trong Series Friends, anh chàng Chandler đã phải năm lần bảy lượt tìm không gian, thời điểm thích hợp nhưng vẫn không thể nói lời tạm biệt với người tình Janice. Vậy tại sao người phụ nữ - vốn được coi là phái yếu lại có thể mạnh mẽ cắt đứt một cuộc tình vốn đã chết trong trái tim đối phương? Vì họ sợ cảm giác bị thương hại. Vì trong tình thế này, nếu cứ cố chấp tiếp tục, tất cả những thương yêu mà đàn bà trao đi chỉ có thể đổi lấy lòng thương hại của người bạn tình hảo tâm, nhân đạo, ưa làm việc thiện nguyện. Nhưng đằng sau quyết định chia ly tưởng chừng dứt khoát luôn là lời cầu khẩn thầm thì ‘Anh ơi anh ở lại’.",
+        "context": "Backdrop: Suy ngẫm về sự yếu lòng, bản năng che chở của đàn ông và nỗi sợ bị thương hại của đàn bà trong tình yêu. Trích đoạn phân tích tâm lý nhân vật Chandler trong Friends.",
+        "date": "2021~2023",
+        "specific_id": "000301A10025228C",
+        "specificName": "Đàn ông thích mèo, đàn bà yêu chó",
+        "containerName": "Spiderum - Linh Vũ",
+        "category": "writing",
+        "effectiveDate": "2021~2023",
+        "hashtagThemes": ["#Heartbroken", "#Love", "#Wisdom", "#Psychology"]
+      },
+      {
+        "id": "M-00010001A1088D80",
+        "idx": 1,
+        "main_content": "Static, hum, tum, needle drops,\nSpinning, echo, time just stops.",
+        "context": "Vinyl Angel acoustic fiction. A tactile couplet evoking ambient tape hiss and the stillness of analog sound.",
+        "date": "2025-07",
+        "specific_id": "000301A111611DBD",
+        "specificName": "Vinyl Angel",
+        "containerName": "Koi no Koe",
+        "category": "music",
+        "effectiveDate": "2025-07",
+        "hashtagThemes": ["#Music", "#Acoustic", "#VinylAngel"]
+      },
+      {
+        "id": "000101A1114D3D09",
+        "idx": 2,
+        "main_content": "Familiar chords fill up the room,\nWrapped inside this faded tomb.",
+        "context": "Second couplet of Vinyl Angel narrative suite. Memory reverberations inside solitude.",
+        "date": "2025-07",
+        "specific_id": "000301A111611DBD",
+        "specificName": "Vinyl Angel",
+        "containerName": "Koi no Koe",
+        "category": "music",
+        "effectiveDate": "2025-07",
+        "hashtagThemes": ["#Music", "#Memory", "#Nostalgia"]
+      }
+    ];
+
+    const HARDWARE_PRESETS = {
+      "19":  { name: '1.9" IPS Bar (ST7789)', w: 320, h: 170, scale: 2.1, ratio: "1.88:1", desc: 'LilyGO T-Display-S3 standard ultra-wide bar' },
+      "24":  { name: '2.4" Cyberdeck Pager',  w: 320, h: 240, scale: 2.0, ratio: "4:3 (1.33:1)", desc: 'Classic 90s pager / cyberdeck, ample vertical prose space' },
+      "28":  { name: '2.8" Handheld Console', w: 480, h: 320, scale: 1.45, ratio: "3:2 (1.50:1)", desc: 'Handheld terminal landscape format' },
+      "35":  { name: '3.5" Desk Terminal',    w: 480, h: 320, scale: 1.5, ratio: "3:2 (1.50:1)", desc: 'Spacious high-res morning journal monitor' },
+      "213": { name: '2.13" Pocket E-Paper',  w: 250, h: 122, scale: 2.5, ratio: "2.05:1", desc: 'Waveshare reflective e-ink pocket talisman' },
+      "29":  { name: '2.9" Panoramic E-Ink',  w: 296, h: 128, scale: 2.3, ratio: "2.31:1", desc: 'Ultra-wide panoramic letterbox book-quote spread' },
+      "42":  { name: '4.2" Desktop E-Ink',    w: 400, h: 300, scale: 1.6, ratio: "4:3 (1.33:1)", desc: 'Waveshare 4.2" classic book page' },
+      "169": { name: '1.69" Wrist Beeper',    w: 280, h: 240, scale: 2.0, ratio: "7:6 (1.17:1)", desc: 'Ultra-compact smart-beeper format' },
+      "154": { name: '1.54" Square Matrix',   w: 240, h: 240, scale: 2.2, ratio: "1:1", desc: 'Perfect square talisman display' },
+      "096": { name: '0.96" Micro OLED',      w: 128, h: 64,  scale: 4.0, ratio: "2:1", desc: 'SSD1306 hacker terminal display' }
+    };
+
+    // Shared Accent Pool for Quote Marks & Container
+    const ACCENT_POOL = [
+      { name: "Sapphire Blue", hex: "#38bdf8" },
+      { name: "Imperial Gold", hex: "#f59e0b" },
+      { name: "Emerald Mint",  hex: "#10b981" },
+      { name: "Crimson Rose",  hex: "#f43f5e" }
+    ];
+
+    // ==============================================================================
+    // 2. STATE REPOSITORY
+    // ==============================================================================
+    const API_BASE = window.location.origin.startsWith('http') ? window.location.origin : 'http://127.0.0.1:20137';
+    let quotesList = [];
+    let activeQuote = null;
+    let availableSpecifics = [];
+    let availableThemes = [];
+
+    let currentPresetKey = '19';
+    let currentTheme = 'obsidian';
+    let currentFontKey = 'jetbrains';
+    let showContext = true;
+    let isNative1x = false;
+    let reRollSeed = 0;
+    let autoScrollInterval = null;
+    let soundEnabled = true;
+    let activeAccentColor = '#38bdf8';
+
+    const FONT_PRESETS = {
+      "jetbrains": { name: "JetBrains Mono", css: '"JetBrains Mono", monospace', charRatio: 7.9, size: "13px" },
+      "ibmplex":   { name: "IBM Plex Mono", css: '"IBM Plex Mono", monospace', charRatio: 7.9, size: "13px" },
+      "spacemono": { name: "Space Mono", css: '"Space Mono", monospace', charRatio: 8.2, size: "12.5px" },
+      "firacode":  { name: "Fira Code", css: '"Fira Code", monospace', charRatio: 7.9, size: "13px" },
+      "vt323":     { name: "VT323 Matrix", css: '"VT323", monospace', charRatio: 6.8, size: "16px" },
+      "crimson":   { name: "Crimson Pro", css: '"Crimson Pro", Georgia, serif', charRatio: 7.3, size: "14.5px" },
+      "sharetech": { name: "Share Tech Mono", css: '"Share Tech Mono", monospace', charRatio: 7.8, size: "13.5px" }
+    };
+
+    // ==============================================================================
+    // AUDIO ENGINE (PRESCRIPTGAME WAV AUDIO + WEBAUDIO SYNTHESIZER FALLBACK)
+    // ==============================================================================
+    const soundDraw = new Audio('audio/draw_sound.wav');
+    const soundComplete = new Audio('audio/complete_sound.wav');
+
+    let audioCtx = null;
+    let userHasInteracted = false;
+
+    // Unlock audio context on first legitimate user interaction
+    ['click', 'keydown', 'touchstart'].forEach(evt => {
+      window.addEventListener(evt, () => {
+        userHasInteracted = true;
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+      }, { once: true, passive: true });
+    });
+
+    function playBeeperChirp(type = 'chirp') {
+      if (!soundEnabled || !userHasInteracted) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+          return;
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        if (type === 'chirp') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(1760, now);
+          osc.frequency.setValueAtTime(2637, now + 0.04);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc.start(now);
+          osc.stop(now + 0.1);
+        } else if (type === 'click') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(987, now);
+          gain.gain.setValueAtTime(0.03, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+          osc.start(now);
+          osc.stop(now + 0.03);
+        }
+      } catch (e) {
+        // AudioContext silent fallback
+      }
+    }
+
+    function playSoundEffect(type) {
+      if (!soundEnabled || !userHasInteracted) return;
+      try {
+        if (type === 'draw') {
+          soundDraw.currentTime = 0;
+          const p = soundDraw.play();
+          if (p && p.catch) p.catch(() => playBeeperChirp('chirp'));
+        } else if (type === 'complete') {
+          soundComplete.currentTime = 0;
+          const p = soundComplete.play();
+          if (p && p.catch) p.catch(() => playBeeperChirp('click'));
+        }
+      } catch (e) {
+        playBeeperChirp(type === 'draw' ? 'chirp' : 'click');
+      }
+    }
+
+    // Prescript Dual Audio Delays (Configurable via Sliders)
+    let delayDrawToCompleteMs = 650;
+    let delayBetweenCompletesMs = 450;
+    let gapChimeTimer = null;
+
+    function updateDrawDelay(val) {
+      delayDrawToCompleteMs = parseInt(val, 10) || 650;
+      const label = document.getElementById('draw-delay-label');
+      if (label) label.textContent = `${delayDrawToCompleteMs}ms`;
+    }
+
+    function updateChimeInterval(val) {
+      delayBetweenCompletesMs = parseInt(val, 10) || 450;
+      const label = document.getElementById('interval-delay-label');
+      if (label) label.textContent = `${delayBetweenCompletesMs}ms`;
+    }
+
+    function stopGapChimeScheduler() {
+      if (gapChimeTimer) {
+        clearTimeout(gapChimeTimer);
+        gapChimeTimer = null;
+      }
+    }
+
+    // Schedule complete_sound.wav chimes to fill the gap until text resolves
+    function startGapChimeScheduler() {
+      stopGapChimeScheduler();
+      if (!soundEnabled || !userHasInteracted) return;
+
+      // 1. Initial delay between draw_sound.wav and the first complete_sound chime
+      gapChimeTimer = setTimeout(function chimeLoop() {
+        if (!isDrawing) return;
+        playSoundEffect('complete');
+
+        // 2. Subsequent delay between complete_sound chimes to fill the gap
+        gapChimeTimer = setTimeout(chimeLoop, delayBetweenCompletesMs);
+      }, delayDrawToCompleteMs);
+    }
+
+    // ==============================================================================
+    // PRESCRIPT CHAOS ➔ ENTROPY ➔ CONTENT TRANSFORMATION ENGINE
+    // ==============================================================================
+    const SCRAMBLE_CHARS = "ABCDEF@HIJ_LM%OPQR^WX#YZa#b+cdefgh*iqrxyz0123456789!$*+=-~?/";
+    const NUM_SCRAMBLE_CHARS = SCRAMBLE_CHARS.length;
+
+    function getRandomCipherChar() {
+      return SCRAMBLE_CHARS[Math.floor(Math.random() * NUM_SCRAMBLE_CHARS)];
+    }
+
+    let animationEnabled = true;
+    let isDrawing = false;
+    let typingTimer = null;
+    let lastRenderedPageData = null;
+    let lastRenderedAlignClass = 'content-left';
+    let lastFinalHeaderTitleHTML = '';
+
+    // Speed slider controls average entropy step duration in milliseconds
+    let entropySpeedMs = 40;
+
+    function updateEntropySpeed(val) {
+      entropySpeedMs = parseInt(val, 10) || 40;
+      const label = document.getElementById('speed-label');
+      if (label) label.textContent = `${entropySpeedMs}ms`;
+    }
+
+    function toggleAnimation() {
+      animationEnabled = !animationEnabled;
+      const btn = document.getElementById('btn-anim');
+      if (btn) {
+        btn.textContent = animationEnabled ? '📜 Anim: ON' : '⚡ Anim: OFF';
+        btn.classList.toggle('active', animationEnabled);
+      }
+      playSoundEffect('complete');
+    }
+
+    function stopDrawingAnimation() {
+      if (typingTimer) {
+        cancelAnimationFrame(typingTimer);
+        clearTimeout(typingTimer);
+        typingTimer = null;
+      }
+      isDrawing = false;
+      const led = document.querySelector('.beeper-led');
+      if (led) led.classList.remove('drawing');
+    }
+
+    function mapLinesToFourRows(lines) {
+      const blank = { html: '', text: '', align: 'line-left', isBlank: true };
+      const rawList = lines || [];
+      const n = rawList.length;
+
+      // Fixed 4-row destination placement:
+      // 1 line => row 2 (index 1)
+      // 2 lines => row 2 & 3 (indices 1 & 2)
+      // 3 lines => row 1, 2 & 3 (indices 0, 1 & 2)
+      // 4+ lines => row 1, 2, 3 & 4 (indices 0, 1, 2 & 3)
+      if (n === 1) {
+        return [blank, rawList[0], blank, blank];
+      } else if (n === 2) {
+        return [blank, rawList[0], rawList[1], blank];
+      } else if (n === 3) {
+        return [rawList[0], rawList[1], rawList[2], blank];
+      } else {
+        return [
+          rawList[0] || blank,
+          rawList[1] || blank,
+          rawList[2] || blank,
+          rawList[3] || blank
+        ];
+      }
+    }
+
+    function parseDecoratedLine(lineItem) {
+      const isBlank = (lineItem && lineItem.isBlank) || false;
+      const rawHtml = (typeof lineItem === 'object' && lineItem !== null) ? lineItem.html : lineItem;
+      const align = (typeof lineItem === 'object' && lineItem !== null) ? (lineItem.align || 'line-left') : 'line-left';
+      let prefix = '';
+      let suffix = '';
+      let text = rawHtml || '';
+
+      if (isBlank) {
+        return { prefix: '', text: '', suffix: '', align: 'line-left', isBlank: true };
+      }
+
+      const openTag = text.match(/^(<span class="ep-qmark ep-qmark-open"[^>]*>“<\/span>)/);
+      if (openTag) {
+        prefix = openTag[1];
+        text = text.substring(openTag[0].length);
+      }
+
+      const closeTag = text.match(/(<span class="ep-qmark ep-qmark-close"[^>]*>”<\/span>|<span class="ep-ellipsis-cue"[^>]*>\.\.\.<\/span>)$/);
+      if (closeTag) {
+        suffix = closeTag[1];
+        text = text.substring(0, text.length - closeTag[0].length);
+      }
+
+      return { prefix, text, suffix, align, isBlank: false };
+    }
+
+    function runPrescriptTypewriter(activePage, alignClass) {
+      stopDrawingAnimation();
+      stopGapChimeScheduler();
+      const container = document.getElementById('ep-viewport');
+      if (!container) return;
+
+      const headerTitleEl = document.getElementById('ep-header-left-title');
+      if (headerTitleEl) {
+        headerTitleEl.innerHTML = `<span class="ep-transmitting-badge">// Receiving prescript...</span>`;
+      }
+
+      // 1. Kick off Prescript audio cadence: draw_sound immediately, then recurring complete_sound chimes to fill the gap
+      playSoundEffect('draw');
+      startGapChimeScheduler();
+
+      // Map lines to fixed 4 physical rows:
+      // 1 line => row 2; 2 lines => row 2 & 3; 3 lines => row 1, 2, 3; 4+ => row 1, 2, 3, 4
+      const fourRows = mapLinesToFourRows(activePage.lines);
+      const maxChars = getCharsPerLine(currentPresetKey);
+      const MAX_LINES = 4;
+      const accentColor = (typeof activeAccentColor !== 'undefined' && activeAccentColor) ? activeAccentColor : '#38bdf8';
+
+      // 2. Initialize 4-Line Grid of Pure Chaos:
+      // Every single spot in the content box is populated with random garbage text (including spaces!)
+      // Each character position has an independent random lifespan (like fixing random pixels on a chaotic canvas)
+      const totalDurationMs = Math.max(900, entropySpeedMs * 35);
+      const startTime = performance.now();
+      const grid = [];
+
+      for (let r = 0; r < MAX_LINES; r++) {
+        const rowCells = [];
+        const pl = fourRows[r];
+        // Target line padded with spaces up to maxChars: <space> is also a real character
+        const rawText = pl.isBlank ? '' : (pl.text || '');
+        const paddedTarget = rawText.padEnd(maxChars, ' ');
+
+        for (let c = 0; c < maxChars; c++) {
+          const targetChar = paddedTarget[c];
+          // Purely independent random lifespan across the canvas duration (independent from position!)
+          const lifespanMs = Math.random() * totalDurationMs;
+
+          rowCells.push({
+            r: r,
+            c: c,
+            targetChar: targetChar,
+            currentChar: getRandomCipherChar(),
+            lifespanMs: lifespanMs,
+            nextScramble: Math.random() * 40,
+            isLocked: false
+          });
+        }
+        grid.push(rowCells);
+      }
+
+      container.innerHTML = `
+        <div class="ep-content animating ${alignClass}">
+          ${[0, 1, 2, 3].map(i => `<div class="ep-text-line ${fourRows[i].align || 'line-left'}" id="ptl-${i}"></div>`).join('')}
+        </div>
+      `;
+
+      isDrawing = true;
+      const led = document.querySelector('.beeper-led');
+      if (led) led.classList.add('drawing');
+
+      let lastClickTick = 0;
+
+      function entropyStep() {
+        if (!isDrawing) return;
+
+        const now = performance.now();
+        const elapsed = now - startTime;
+        let allLocked = true;
+
+        for (let r = 0; r < MAX_LINES; r++) {
+          let lineHtml = '';
+
+          for (let c = 0; c < maxChars; c++) {
+            const cell = grid[r][c];
+
+            if (!cell.isLocked) {
+              if (elapsed >= cell.lifespanMs) {
+                // Lifespan expired: locks into its final character!
+                cell.isLocked = true;
+                cell.currentChar = cell.targetChar;
+              } else {
+                allLocked = false;
+                if (elapsed >= cell.nextScramble) {
+                  cell.currentChar = getRandomCipherChar();
+                  cell.nextScramble = elapsed + 35 + Math.random() * 25;
+                }
+              }
+            }
+
+            if (cell.isLocked) {
+              if (cell.targetChar === ' ') {
+                lineHtml += `<span class="ep-c ep-space"> </span>`;
+              } else if (cell.targetChar === '“' || cell.targetChar === '”') {
+                lineHtml += `<span class="ep-c ep-qmark" style="color:${accentColor};">${cell.targetChar}</span>`;
+              } else if (cell.targetChar === '.') {
+                lineHtml += `<span class="ep-c ep-ellipsis-cue" style="color:${accentColor};">.</span>`;
+              } else {
+                lineHtml += `<span class="ep-c">${cell.targetChar}</span>`;
+              }
+            } else {
+              lineHtml += `<span class="ep-c ep-scramble">${cell.currentChar}</span>`;
+            }
+          }
+
+          const el = document.getElementById(`ptl-${r}`);
+          if (el) {
+            el.innerHTML = lineHtml;
+          }
+        }
+
+        if (now - lastClickTick > 75) {
+          playBeeperChirp('click');
+          lastClickTick = now;
+        }
+
+        if (allLocked) {
+          // Chaos completely resolved into Content!
+          isDrawing = false;
+          stopGapChimeScheduler();
+          if (led) led.classList.remove('drawing');
+
+          // Render clean final HTML
+          container.innerHTML = `
+            <div class="ep-content ${alignClass}">
+              ${fourRows.map((pl, rIdx) => {
+                if (pl.isBlank) {
+                  return `<div class="ep-text-line line-left">&nbsp;</div>`;
+                }
+                const formattedHtml = pl.text.split('').map(ch => {
+                  if (ch === '“' || ch === '”') return `<span class="ep-c ep-qmark" style="color:${accentColor};">${ch}</span>`;
+                  if (ch === '.') return `<span class="ep-c ep-ellipsis-cue" style="color:${accentColor};">.</span>`;
+                  if (ch === ' ') return `<span class="ep-c ep-space"> </span>`;
+                  return `<span class="ep-c">${ch}</span>`;
+                }).join('');
+                return `<div class="ep-text-line ${pl.align}">${formattedHtml}</div>`;
+              }).join('')}
+            </div>
+          `;
+
+          const hTitle = document.getElementById('ep-header-left-title');
+          if (hTitle && lastFinalHeaderTitleHTML) {
+            hTitle.innerHTML = lastFinalHeaderTitleHTML;
+          }
+
+          // Final decree seal: play complete_sound.wav once when text is fully displayed!
+          playSoundEffect('complete');
+          return;
+        }
+
+        typingTimer = requestAnimationFrame(entropyStep);
+      }
+
+      entropyStep();
+    }
+
+    function skipAnimation() {
+      if (!isDrawing) return;
+      stopDrawingAnimation();
+      stopGapChimeScheduler();
+
+      const headerTitleEl = document.getElementById('ep-header-left-title');
+      if (headerTitleEl && lastFinalHeaderTitleHTML) {
+        headerTitleEl.innerHTML = lastFinalHeaderTitleHTML;
+      }
+
+      const container = document.getElementById('ep-viewport');
+      if (container && lastRenderedPageData) {
+        const fourRows = mapLinesToFourRows(lastRenderedPageData.lines);
+        const accentColor = (typeof activeAccentColor !== 'undefined' && activeAccentColor) ? activeAccentColor : '#38bdf8';
+        container.innerHTML = `
+          <div class="ep-content ${lastRenderedAlignClass}">
+            ${fourRows.map(line => {
+              if (line.isBlank) return `<div class="ep-text-line line-left">&nbsp;</div>`;
+              const formattedHtml = (line.text || '').split('').map(ch => {
+                if (ch === '“' || ch === '”') return `<span class="ep-c ep-qmark" style="color:${accentColor};">${ch}</span>`;
+                if (ch === '.') return `<span class="ep-c ep-ellipsis-cue" style="color:${accentColor};">.</span>`;
+                if (ch === ' ') return `<span class="ep-c ep-space"> </span>`;
+                return `<span class="ep-c">${ch}</span>`;
+              }).join('');
+              return `<div class="ep-text-line ${line.align || 'line-left'}">${formattedHtml}</div>`;
+            }).join('')}
+          </div>
+        `;
+      }
+      playSoundEffect('complete');
+    }
+
+    // ==============================================================================
+    // 3. INITIALIZATION & DATA FETCHING
+    // ==============================================================================
+    async function init() {
+      applyPreset('19', false);
+
+      try {
+        const [taxRes, qRes] = await Promise.all([
+          fetch(`${API_BASE}/api/taxonomy`).then(r => r.json()).catch(() => null),
+          fetch(`${API_BASE}/api/quotes/list`).then(r => r.json()).catch(() => null)
+        ]);
+
+        if (taxRes && qRes && qRes.length > 0) {
+          availableSpecifics = taxRes.specifics || [];
+          availableThemes = taxRes.themes || [];
+          quotesList = qRes;
+          document.getElementById('connection-status').innerHTML = '● LIVE API SYNCED';
+          document.getElementById('connection-status').style.color = '#38bdf8';
+        } else {
+          useFallbackData();
+        }
+      } catch (err) {
+        console.warn("Using offline fallback data:", err);
+        useFallbackData();
+      }
+
+      populateSelect();
+
+      // Default to Quote #6 (or first) with static silent load on startup
+      const target = quotesList.find(q => (q.idx === 6 || q.index === 6)) || quotesList[0];
+      if (target) {
+        loadSelectedQuote(target.id, false);
+      }
+    }
+
+    function useFallbackData() {
+      quotesList = FALLBACK_QUOTES;
+      document.getElementById('connection-status').innerHTML = '● STANDALONE CACHE';
+      document.getElementById('connection-status').style.color = '#f59e0b';
+    }
+
+    function populateSelect() {
+      const select = document.getElementById('quote-select');
+      select.innerHTML = quotesList.map(q => {
+        const snippet = (q.main_content || "").split('\n')[0].substring(0, 32);
+        const idx = q.idx ?? q.index ?? '?';
+        return `<option value="${q.id}">#${idx} — "${snippet}..."</option>`;
+      }).join('');
+    }
+
+    function loadSelectedQuote(qid, shouldAnimate = true) {
+      activeQuote = quotesList.find(q => q.id === qid) || quotesList[0];
+      if (!activeQuote) return;
+
+      currentPage = 1;
+      document.getElementById('quote-select').value = activeQuote.id;
+      renderActivePrescript(shouldAnimate);
+    }
+
+    function drawNewPrescript() {
+      if (quotesList.length === 0) return;
+      const rnd = quotesList[Math.floor(Math.random() * quotesList.length)];
+      loadSelectedQuote(rnd.id, true);
+    }
+
+    function navQuote(step) {
+      if (quotesList.length === 0) return;
+      const curIdx = quotesList.findIndex(q => q.id === (activeQuote ? activeQuote.id : ''));
+      let nextIdx = (curIdx + step + quotesList.length) % quotesList.length;
+      loadSelectedQuote(quotesList[nextIdx].id, true);
+    }
+
+    function pickRandomQuote() {
+      drawNewPrescript();
+    }
+
+    function reRollColors() {
+      reRollSeed = Math.floor(Math.random() * 1000);
+      if (userHasInteracted) playBeeperChirp('click');
+      renderActivePrescript(false);
+    }
+
+    function toggleContext() {
+      showContext = !showContext;
+      currentPage = 1;
+      const btn = document.getElementById('btn-toggle-context');
+      btn.textContent = `Context: ${showContext ? 'ON' : 'OFF'}`;
+      btn.classList.toggle('active', showContext);
+      if (userHasInteracted) playBeeperChirp('click');
+      renderActivePrescript(false);
+    }
+
+    function setTheme(tName) {
+      currentTheme = tName;
+      ['obsidian', 'eink', 'amber', 'matrix'].forEach(t => {
+        const b = document.getElementById(`btn-theme-` + t);
+        if (b) b.classList.toggle('active', t === tName);
+      });
+      const sc = document.getElementById('epaper-screen');
+      if (sc) sc.className = `epaper-screen theme-${tName}`;
+      if (userHasInteracted) playBeeperChirp('click');
+    }
+
+    // ==============================================================================
+    // 4. SCREEN PRESET & RATIO APPLICATION
+    // ==============================================================================
+    function applyPreset(key, playSound = true) {
+      currentPresetKey = key;
+      const p = HARDWARE_PRESETS[key] || HARDWARE_PRESETS['19'];
+
+      document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`rb-${key}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      document.getElementById('active-screen-spec').textContent = `${p.name} · ${p.w}×${p.h} px · Ratio ${p.ratio}`;
+      document.getElementById('bezel-dim-label').textContent = `${p.w} × ${p.h} NATIVE (4-LINE MATRIX)`;
+
+      const screen = document.getElementById('epaper-screen');
+      const scaleMultiplier = isNative1x ? 1.0 : p.scale;
+
+      const targetW = Math.round(p.w * scaleMultiplier);
+      const targetH = Math.round(p.h * scaleMultiplier);
+
+      screen.style.width = `${targetW}px`;
+      screen.style.height = `${targetH}px`;
+      screen.style.aspectRatio = `${p.w} / ${p.h}`;
+
+      currentPage = 1;
+      renderActivePrescript(false);
+      if (playSound && userHasInteracted) playBeeperChirp('click');
+    }
+
+    function toggleNativeScale() {
+      isNative1x = !isNative1x;
+      const btn = document.getElementById('btn-scale');
+      btn.textContent = isNative1x ? 'Scale: 1:1 Native' : 'Scale: Studio 2x';
+      btn.classList.toggle('active', isNative1x);
+      applyPreset(currentPresetKey, true);
+    }
+
+    function setFontFamily(key) {
+      if (!FONT_PRESETS[key]) return;
+      currentFontKey = key;
+      const f = FONT_PRESETS[key];
+      document.querySelectorAll('[id^="btn-font-"]').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`btn-font-${key}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      document.documentElement.style.setProperty('--screen-font', f.css);
+      document.documentElement.style.setProperty('--screen-font-size', f.size);
+
+      currentPage = 1;
+      if (userHasInteracted) playBeeperChirp('click');
+      renderActivePrescript(false);
+    }
+
+    // ==============================================================================
+    // 5. VIEWPORT 4-LINE DISCRETE PAGINATION ENGINE (ZERO SCROLLBAR // 4 LINES MAX)
+    // ==============================================================================
+    let currentPage = 1;
+    let totalPages = 1;
+    let wheelDebounceTimer = null;
+
+    function getCharsPerLine(key) {
+      const p = HARDWARE_PRESETS[key] || HARDWARE_PRESETS['19'];
+      const f = FONT_PRESETS[currentFontKey] || FONT_PRESETS['jetbrains'];
+      // Target width minus 28px padding divided by font character ratio
+      return Math.max(16, Math.floor((p.w - 28) / (f.charRatio || 7.9)));
+    }
+
+    function wrapTextToLines(text, maxChars) {
+      const paragraphs = (text || "").split('\n');
+      const lines = [];
+
+      for (const para of paragraphs) {
+        if (!para.trim()) {
+          lines.push('');
+          continue;
+        }
+        const words = para.trim().split(/\s+/);
+        let curLine = '';
+        for (const w of words) {
+          if (!curLine) {
+            curLine = w;
+          } else if ((curLine + ' ' + w).length <= maxChars) {
+            curLine += ' ' + w;
+          } else {
+            lines.push(curLine);
+            curLine = w;
+          }
+        }
+        if (curLine) {
+          lines.push(curLine);
+        }
+      }
+      return lines;
+    }
+
+    // Splits quote & context into discrete pages of AT MOST 4 LINES each with strict line budgeting
+    function buildPrescriptPages(bundle, maxChars, accentColor) {
+      const content = (bundle.content || "").trim();
+      const pages = [];
+      const MAX_LINES = 4;
+
+      if (!content) return [{ type: 'quote', lines: [''], hasNext: false }];
+
+      // Tokenize by paragraphs first to honor explicit line breaks (\n)
+      const paragraphs = content.split('\n');
+      const tokens = [];
+      for (let i = 0; i < paragraphs.length; i++) {
+        const pText = paragraphs[i].trim();
+        if (pText) {
+          const words = pText.split(/\s+/);
+          for (const w of words) tokens.push(w);
+        }
+        if (i < paragraphs.length - 1) {
+          tokens.push('\n');
+        }
+      }
+
+      let tokenIdx = 0;
+      let pageNum = 0;
+
+      while (tokenIdx < tokens.length) {
+        pageNum++;
+        const isFirstPage = (pageNum === 1);
+        const pageLines = [];
+
+        for (let lineNum = 1; lineNum <= MAX_LINES && tokenIdx < tokens.length; lineNum++) {
+          const isLine4 = (lineNum === MAX_LINES);
+
+          // Budget characters for this line so "..." never overflows
+          let lineBudget = maxChars;
+          if (isFirstPage && lineNum === 1) {
+            lineBudget = maxChars - 1; // reserve space for “
+          }
+          if (isLine4) {
+            lineBudget = maxChars - 4; // reserve space for ... so it stays on line 4
+          }
+
+          let curLine = '';
+          while (tokenIdx < tokens.length) {
+            const nextTok = tokens[tokenIdx];
+            if (nextTok === '\n') {
+              tokenIdx++;
+              break;
+            }
+            if (!curLine) {
+              curLine = nextTok;
+              tokenIdx++;
+            } else if ((curLine + ' ' + nextTok).length <= lineBudget) {
+              curLine += ' ' + nextTok;
+              tokenIdx++;
+            } else {
+              break;
+            }
+          }
+
+          pageLines.push(curLine);
+        }
+
+        // Lookahead to check if real words remain
+        let lookAheadIdx = tokenIdx;
+        while (lookAheadIdx < tokens.length && tokens[lookAheadIdx] === '\n') {
+          lookAheadIdx++;
+        }
+        const hasMoreQuote = (lookAheadIdx < tokens.length);
+
+        // Format plain text characters for each line (Quotation marks & ellipsis are treated as normal characters)
+        let lineStrings = pageLines.slice();
+        if (isFirstPage && lineStrings.length > 0) {
+          lineStrings[0] = `“${lineStrings[0]}`;
+        }
+        const lastLineIdx = lineStrings.length - 1;
+        if (hasMoreQuote) {
+          lineStrings[lastLineIdx] = `${lineStrings[lastLineIdx]}...`;
+        } else {
+          lineStrings[lastLineIdx] = `${lineStrings[lastLineIdx]}”`;
+        }
+
+        // Format line objects with category-driven alignment (writing => justified, music/poem => left)
+        const catNorm = (bundle.category || '').toLowerCase().trim();
+        const isWriting = catNorm === 'writing' || catNorm === 'bài viết' || catNorm === 'baiviet';
+
+        const lineObjs = lineStrings.map((contentStr, lIdx) => {
+          const isQuoteTerminalLine = (!hasMoreQuote && lIdx === lineStrings.length - 1);
+          // If category is writing, all full lines are justified!
+          // The final line of the quote (if ragged) is left-aligned.
+          const align = (isWriting && !isQuoteTerminalLine && contentStr.includes(' ')) ? 'line-justify' : 'line-left';
+          return {
+            text: contentStr,
+            align: align
+          };
+        });
+
+        pages.push({
+          type: 'quote',
+          lines: lineObjs,
+          hasNext: hasMoreQuote
+        });
+      }
+
+      // Handle optional context if enabled (also capped at 4 lines max)
+      if (showContext && bundle.context && bundle.context.trim()) {
+        const ctxWords = bundle.context.trim().split(/\s+/);
+        let cIdx = 0;
+        let isFirstCtx = true;
+
+        while (cIdx < ctxWords.length) {
+          const cLines = [];
+          for (let l = 1; l <= MAX_LINES && cIdx < ctxWords.length; l++) {
+            const isL4 = (l === MAX_LINES);
+            const lBudget = isL4 ? maxChars - 4 : maxChars;
+            let cLine = (isFirstCtx && l === 1) ? '[Note] ' : '';
+            if (isFirstCtx && l === 1) isFirstCtx = false;
+
+            while (cIdx < ctxWords.length) {
+              const cw = ctxWords[cIdx];
+              if (!cLine) {
+                cLine = cw;
+                cIdx++;
+              } else if ((cLine + ' ' + cw).length <= lBudget) {
+                cLine += ' ' + cw;
+                cIdx++;
+              } else {
+                break;
+              }
+            }
+            cLines.push(cLine);
+          }
+
+          const hasMoreCtx = (cIdx < ctxWords.length);
+          if (hasMoreCtx && cLines.length > 0) {
+            cLines[cLines.length - 1] = `${cLines[cLines.length - 1]}...`;
+          }
+
+          const ctxLineObjs = cLines.map(cStr => ({ text: cStr, align: 'line-left' }));
+
+          pages.push({
+            type: 'context',
+            lines: ctxLineObjs,
+            hasNext: hasMoreCtx
+          });
+        }
+      }
+
+      return pages.length > 0 ? pages : [{ type: 'quote', lines: [''], hasNext: false }];
+    }
+
+    function updateTelemetryControls() {
+      const prevBtn = document.getElementById('btn-page-prev');
+      const nextBtn = document.getElementById('btn-page-next');
+
+      if (prevBtn) prevBtn.style.opacity = (currentPage <= 1) ? '0.4' : '1';
+      if (nextBtn) nextBtn.style.opacity = (currentPage >= totalPages) ? '0.4' : '1';
+    }
+
+    function changePage(direction) {
+      const target = currentPage + direction;
+      if (target >= 1 && target <= totalPages) {
+        currentPage = target;
+        playSoundEffect('complete');
+        renderActivePrescript(false);
+      }
+    }
+
+    function goToPage(pageNum) {
+      if (pageNum === 999) pageNum = totalPages;
+      if (pageNum >= 1 && pageNum <= totalPages) {
+        currentPage = pageNum;
+        playSoundEffect('complete');
+        renderActivePrescript(false);
+      }
+    }
+
+    function toggleAutoScroll() {
+      const btn = document.getElementById('btn-autoscroll');
+      if (autoScrollInterval) {
+        clearInterval(autoScrollInterval);
+        autoScrollInterval = null;
+        btn.textContent = 'Auto-Page: OFF';
+        btn.classList.remove('active');
+      } else {
+        btn.textContent = 'Auto-Page: ON';
+        btn.classList.add('active');
+        autoScrollInterval = setInterval(() => {
+          if (currentPage < totalPages) {
+            changePage(1);
+          } else {
+            currentPage = 1;
+            playBeeperChirp('click');
+            renderActivePrescript();
+          }
+        }, 4200);
+      }
+    }
+
+    // ==============================================================================
+    // 6. METADATA NORMALIZATION & COLOR GENERATOR
+    // ==============================================================================
+    function generateTagColorStyle(tagName, tagIndex) {
+      let hash = 0;
+      for (let i = 0; i < tagName.length; i++) {
+        hash = ((hash << 5) - hash) + tagName.charCodeAt(i);
+        hash |= 0;
+      }
+      const goldenAngle = 137.508;
+      const hue = Math.abs(Math.floor((hash * goldenAngle + tagIndex * 89 + reRollSeed) % 360));
+
+      const textColor   = `hsl(${hue}, 85%, 72%)`;
+      const borderColor = `hsla(${hue}, 70%, 40%, 0.45)`;
+      const bgColor     = `hsla(${hue}, 65%, 8%, 0.9)`;
+      return `background: ${bgColor} !important; border-color: ${borderColor} !important; color: ${textColor} !important;`;
+    }
+
+    function resolveBundle(q) {
+      if (!q) return null;
+
+      const content = q.main_content || "";
+      const context = q.context || "";
+      const specific = availableSpecifics.find(s => s.id === q.specific_id);
+      const specificName = q.specificName || (specific ? specific.name : "—");
+      const containerName = q.containerName || (specific && specific.container ? specific.container.name : (specific ? (specific.container_name || "—") : "—"));
+
+      let effectiveDate = (q.date || q.effectiveDate || "").trim();
+      if (!effectiveDate && specific && specific.date) {
+        effectiveDate = specific.date.trim();
+      }
+
+      let hashtagThemes = q.hashtagThemes || [];
+      if (hashtagThemes.length === 0 && q.theme_ids) {
+        hashtagThemes = (q.theme_ids || []).map(tid => {
+          const th = availableThemes.find(t => t.id === tid);
+          return th ? `#${th.name}` : `#${tid}`;
+        });
+      }
+      if (hashtagThemes.length === 0) hashtagThemes = ["#Wisdom"];
+
+      const rawCategory = q.category || (specific ? specific.category : "") || "";
+
+      return {
+        idx: q.idx ?? q.index ?? 1,
+        content,
+        context,
+        category: rawCategory,
+        specificName,
+        containerName,
+        effectiveDate: effectiveDate || "—",
+        hashtagThemes
+      };
+    }
+
+    // ==============================================================================
+    // 7. RENDER COMPONENT
+    // ==============================================================================
+    function renderActivePrescript(shouldAnimate = false) {
+      const b = resolveBundle(activeQuote);
+      if (!b) return;
+
+      document.getElementById('raw-payload-json').textContent = JSON.stringify(b, null, 2);
+      const screen = document.getElementById('epaper-screen');
+
+      // Alignment: writing => justified; music/poem => left
+      const catLower = (b.category || "").toLowerCase().trim();
+      const isWriting = catLower === "writing" || catLower === "bài viết" || catLower === "baiviet";
+      const alignClass = isWriting ? "content-justify" : "content-left";
+
+      // Quotation Mark & Container Accent (Synchronized)
+      const quoteSeed = (typeof b.idx === 'number' ? b.idx : (parseInt(String(b.idx).replace(/\D/g, ''), 10) || 1)) + reRollSeed;
+      const accentIndex = Math.abs(quoteSeed % ACCENT_POOL.length);
+      const activeAccent = ACCENT_POOL[accentIndex];
+      const sharedAccentColor = activeAccent.hex;
+
+      // Calculate dynamic character width & compile 4-line pages
+      const maxChars = getCharsPerLine(currentPresetKey);
+      const prescriptPages = buildPrescriptPages(b, maxChars, sharedAccentColor);
+      totalPages = prescriptPages.length;
+
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const activePage = prescriptPages[currentPage - 1];
+
+      // Format Content Lines (Strictly at most 4 lines with fixed destination row mapping)
+      const fourRows = mapLinesToFourRows(activePage.lines);
+      let contentHTML = '';
+      if (activePage.type === 'context') {
+        contentHTML = `
+          <div class="ep-context-box">
+            ${fourRows.map(line => {
+              if (line.isBlank) return `<div class="ep-text-line line-left">&nbsp;</div>`;
+              const formattedHtml = (line.text || '').split('').map(ch => {
+                if (ch === ' ') return `<span class="ep-c ep-space"> </span>`;
+                return `<span class="ep-c">${ch}</span>`;
+              }).join('');
+              return `<div class="ep-text-line ${line.align || 'line-left'}">${formattedHtml}</div>`;
+            }).join('')}
+          </div>
+        `;
+      } else {
+        contentHTML = `
+          <div class="ep-content ${alignClass}">
+            ${fourRows.map(line => {
+              if (line.isBlank) return `<div class="ep-text-line line-left">&nbsp;</div>`;
+              const formattedHtml = (line.text || '').split('').map(ch => {
+                if (ch === '“' || ch === '”') return `<span class="ep-c ep-qmark" style="color:${sharedAccentColor};">${ch}</span>`;
+                if (ch === '.') return `<span class="ep-c ep-ellipsis-cue" style="color:${sharedAccentColor};">.</span>`;
+                if (ch === ' ') return `<span class="ep-c ep-space"> </span>`;
+                return `<span class="ep-c">${ch}</span>`;
+              }).join('');
+              return `<div class="ep-text-line ${line.align || 'line-left'}">${formattedHtml}</div>`;
+            }).join('')}
+          </div>
+        `;
+      }
+
+      // Header Components (Clean single-line with ellipsis on long titles)
+      const headerTitleHTML = `<span class="ep-header-left" id="ep-header-left-title"><strong class="ep-idx-num">#${b.idx}</strong><span class="ep-sep">~</span><span class="ep-specific-title">${b.specificName}</span></span>`;
+      lastFinalHeaderTitleHTML = `<strong class="ep-idx-num">#${b.idx}</strong><span class="ep-sep">~</span><span class="ep-specific-title">${b.specificName}</span>`;
+      const headerDateHTML = `<span class="ep-header-right"><span style="color:#555;">Date:</span><span class="ep-date-val">${b.effectiveDate}</span></span>`;
+
+      // Tags Blocks
+      const tagsBlocks = b.hashtagThemes.map((t, idx) => {
+        const tagStyle = generateTagColorStyle(t, idx);
+        return `<span class="ep-tag-block" style="${tagStyle}">${t}</span>`;
+      }).join('');
+
+      // Container Name (Clean origin without page counters)
+      const containerHTML = `<span class="ep-container-name" style="color:${sharedAccentColor};">${b.containerName}</span>`;
+
+      lastRenderedPageData = activePage;
+      lastRenderedAlignClass = alignClass;
+
+      // Render Screen with EXACT 4-LINE BODY (ZERO EXTRA BANNERS // ZERO SCROLLBAR)
+      screen.innerHTML = `
+        <!-- ZONE 1: FIXED HARDWARE HEADER (Truncates specific with ellipsis) -->
+        <div class="ep-status-bar">
+          ${headerTitleHTML}
+          ${headerDateHTML}
+        </div>
+
+        <!-- ZONE 2 & 3: 4-LINE HARDWARE FRAMEBUFFER -->
+        <div class="ep-viewport" id="ep-viewport" onclick="skipAnimation()" title="Click to skip animation">
+          ${contentHTML}
+        </div>
+
+        <!-- ZONE 4: FIXED HARDWARE FOOTER -->
+        <div class="ep-footer">
+          <div class="ep-tags">${tagsBlocks}</div>
+          <div class="ep-attribution">${containerHTML}</div>
+        </div>
+      `;
+
+      if (shouldAnimate && animationEnabled && activePage.type === 'quote') {
+        runPrescriptTypewriter(activePage, alignClass);
+      } else {
+        stopDrawingAnimation();
+      }
+
+      // Attach debounced wheel listener for discrete page flipping
+      const vp = document.getElementById('ep-viewport');
+      if (vp) {
+        vp.onwheel = (e) => {
+          e.preventDefault();
+          if (wheelDebounceTimer) return;
+          wheelDebounceTimer = setTimeout(() => { wheelDebounceTimer = null; }, 180);
+          if (e.deltaY > 15) changePage(1);
+          else if (e.deltaY < -15) changePage(-1);
+        };
+      }
+      updateTelemetryControls();
+    }
+
+    // Keyboard Shortcuts (Arrow keys & Space for tactile discrete page turns)
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      if (isDrawing) {
+        skipAnimation();
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          return;
+        }
+      }
+      if (e.key === 'ArrowUp' || e.key === 'PageUp') { changePage(-1); e.preventDefault(); }
+      if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { changePage(1); e.preventDefault(); }
+      if (e.key === 'ArrowLeft') { navQuote(-1); e.preventDefault(); }
+      if (e.key === 'ArrowRight') { navQuote(1); e.preventDefault(); }
+      if (e.key === 'Home') { goToPage(1); e.preventDefault(); }
+      if (e.key === 'End') { goToPage(999); e.preventDefault(); }
+    });
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

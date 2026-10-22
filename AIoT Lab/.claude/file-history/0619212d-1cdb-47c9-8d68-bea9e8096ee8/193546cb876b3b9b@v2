@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Project Entry</title>
+    <style>
+        /* Design Plan: Clean, data-focused UI for table schema design
+           Layout: Left sidebar (tables list) | Main (column editor) | Right (field type picker)
+           Type: Inter for UI, monospace for config
+           Color: Neutral grays with blue accent, semantic reds for errors */
+
+        :root {
+            --bg: #ffffff;
+            --surface: #f8f9fa;
+            --border: #e0e1e6;
+            --text-primary: #1a1d29;
+            --text-secondary: #6b7280;
+            --accent: #2563eb;
+            --accent-light: #dbeafe;
+            --error: #dc2626;
+            --success: #16a34a;
+            --warning: #ea580c;
+
+            --font-system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace;
+
+            color-scheme: light;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #0f1419;
+                --surface: #1a1f2e;
+                --border: #2d3748;
+                --text-primary: #f0f4f8;
+                --text-secondary: #a0aec0;
+                --accent: #3b82f6;
+                --accent-light: #1e3a8a;
+                --error: #ef4444;
+                --success: #22c55e;
+                --warning: #f97316;
+                color-scheme: dark;
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg: #0f1419;
+            --surface: #1a1f2e;
+            --border: #2d3748;
+            --text-primary: #f0f4f8;
+            --text-secondary: #a0aec0;
+            --accent: #3b82f6;
+            --accent-light: #1e3a8a;
+            --error: #ef4444;
+            --success: #22c55e;
+            --warning: #f97316;
+            color-scheme: dark;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-system);
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-primary);
+            background: var(--bg);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 0;
+        }
+
+        .sidebar {
+            width: 240px;
+            border-right: 1px solid var(--border);
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header button {
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-header button:hover {
+            opacity: 0.8;
+        }
+
+        .tables-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .table-item {
+            padding: 12px 12px;
+            margin: 4px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+            color: var(--text-secondary);
+            background: transparent;
+            font-size: 13px;
+            text-align: left;
+            font-family: var(--font-system);
+        }
+
+        .table-item:hover {
+            background: var(--bg);
+            color: var(--text-primary);
+        }
+
+        .table-item.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            overflow-y: auto;
+        }
+
+        .main-header {
+            padding: 20px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .main-header h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .main-header input {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 13px;
+            background: var(--bg);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            flex: 0 1 200px;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .columns-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .column-row {
+            display: grid;
+            grid-template-columns: 150px 140px 1fr auto auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+        }
+
+        .column-row input {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 13px;
+            background: var(--bg);
+            color: var(--text-primary);
+        }
+
+        .column-row select {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 13px;
+            background: var(--bg);
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .column-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            background: var(--bg);
+            color: var(--text-primary);
+            font-family: var(--font-system);
+        }
+
+        .btn:hover {
+            background: var(--surface);
+            border-color: var(--text-secondary);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-danger {
+            color: var(--error);
+            border-color: var(--error);
+        }
+
+        .btn-danger:hover {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .right-panel {
+            width: 280px;
+            border-left: 1px solid var(--border);
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-section h3 {
+            margin: 0 0 12px 0;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+
+        .field-type-button {
+            display: block;
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            text-align: left;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+
+        .field-type-button:hover {
+            border-color: var(--accent);
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .field-type-button small {
+            display: block;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-state p {
+            margin: 0;
+        }
+
+        .config-display {
+            padding: 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-secondary);
+            overflow-x: auto;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        @media (max-width: 1200px) {
+            .right-panel {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: 120px;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                flex-direction: row;
+                overflow-x: auto;
+                overflow-y: hidden;
+            }
+
+            .sidebar-header {
+                display: none;
+            }
+
+            .tables-list {
+                display: flex;
+                gap: 8px;
+                padding: 8px;
+                overflow-x: auto;
+                flex-direction: row;
+            }
+
+            .table-item {
+                flex-shrink: 0;
+                min-width: 120px;
+            }
+
+            .column-row {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .main-header {
+                flex-direction: column;
+            }
+
+            .main-header input {
+                width: 100%;
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Project Entry</h1>
+        <div style="font-size: 12px; color: var(--text-secondary);">Table Template Designer</div>
+    </div>
+
+    <div class="container">
+        <!-- Sidebar: Tables List -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                Tables
+                <button onclick="addTable()" title="New table">+</button>
+            </div>
+            <div class="tables-list" id="tablesList"></div>
+        </div>
+
+        <!-- Main: Column Editor -->
+        <div class="main">
+            <div class="main-header">
+                <h2 id="currentTableName">Select a table</h2>
+                <input type="text" id="tableNameInput" placeholder="Table name" style="display: none;">
+            </div>
+            <div class="main-content" id="mainContent">
+                <div class="empty-state">
+                    <p>Create or select a table to design columns</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Field Type Picker -->
+        <div class="right-panel">
+            <div class="panel-section">
+                <h3>Field Types</h3>
+                <button class="field-type-button" onclick="addColumn('hex_id')">
+                    hex_id
+                    <small>4-char prefix + 12-char hex</small>
+                </button>
+                <button class="field-type-button" onclick="addColumn('text_single')">
+                    text_single
+                    <small>Single-line string</small>
+                </button>
+                <button class="field-type-button" onclick="addColumn('text_multi')">
+                    text_multi
+                    <small>Multi-line text block</small>
+                </button>
+                <button class="field-type-button" onclick="addColumn('int_scalar')">
+                    int_scalar
+                    <small>Integer with ghost-holder</small>
+                </button>
+                <button class="field-type-button" onclick="addColumn('float_scalar')">
+                    float_scalar
+                    <small>Float with ghost-holder</small>
+                </button>
+                <button class="field-type-button" onclick="addColumn('boolean')">
+                    boolean
+                    <small>Toggle 0 or 1</small>
+                </button>
+                <button class="field-type-button" onclick="addColumn('enum_single')">
+                    enum_single
+                    <small>Single select + create</small>
+                </button>
+                <button class="field-type-button" onclick="addColumn('enum_multi')">
+                    enum_multi
+                    <small>Multi-select tags</small>
+                </button>
+                <button class="field-type-button" onclick="addColumn('relation_single')">
+                    relation_single
+                    <small>Foreign key (1)</small>
+                </button>
+                <button class="field-type-button" onclick="addColumn('relation_multi')">
+                    relation_multi
+                    <small>Foreign key array</small>
+                </button>
+            </div>
+
+            <div class="panel-section">
+                <h3>Current Config</h3>
+                <div class="config-display" id="configDisplay">No table selected</div>
+            </div>
+
+            <div class="panel-section">
+                <h3>Export</h3>
+                <button class="btn btn-primary" onclick="exportConfig()" style="width: 100%;">Export JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // In-memory data structure
+        let tables = JSON.parse(localStorage.getItem('tables') || '{}');
+        let currentTable = null;
+
+        // Initialize UI
+        function init() {
+            renderTablesList();
+            if (Object.keys(tables).length === 0) {
+                addTable();
+            }
+        }
+
+        function addTable() {
+            const name = `table_${Date.now()}`;
+            tables[name] = {
+                name: name,
+                columns: []
+            };
+            currentTable = name;
+            save();
+            renderTablesList();
+            selectTable(name);
+        }
+
+        function deleteTable(name) {
+            if (confirm(`Delete table "${name}"?`)) {
+                delete tables[name];
+                currentTable = Object.keys(tables)[0] || null;
+                save();
+                renderTablesList();
+                if (currentTable) selectTable(currentTable);
+                else renderMain();
+            }
+        }
+
+        function selectTable(name) {
+            currentTable = name;
+            renderTablesList();
+            renderMain();
+        }
+
+        function renameTable() {
+            const input = document.getElementById('tableNameInput');
+            const header = document.getElementById('currentTableName');
+
+            if (input.style.display === 'none') {
+                input.style.display = 'block';
+                input.value = currentTable;
+                input.focus();
+                header.style.display = 'none';
+            } else {
+                const newName = input.value.trim();
+                if (newName && newName !== currentTable) {
+                    tables[newName] = tables[currentTable];
+                    tables[newName].name = newName;
+                    delete tables[currentTable];
+                    currentTable = newName;
+                    save();
+                    renderTablesList();
+                    renderMain();
+                }
+                input.style.display = 'none';
+                header.style.display = 'block';
+            }
+        }
+
+        function addColumn(fieldType) {
+            if (!currentTable) return;
+            const column = {
+                id: `col_${Date.now()}`,
+                name: `field_${tables[currentTable].columns.length + 1}`,
+                type: fieldType,
+                metadata: fieldType.startsWith('relation_') ? { target: 'self' } : {}
+            };
+            tables[currentTable].columns.push(column);
+            save();
+            renderMain();
+        }
+
+        function deleteColumn(colId) {
+            if (!currentTable) return;
+            tables[currentTable].columns = tables[currentTable].columns.filter(c => c.id !== colId);
+            save();
+            renderMain();
+        }
+
+        function updateColumn(colId, field, value) {
+            if (!currentTable) return;
+            const col = tables[currentTable].columns.find(c => c.id === colId);
+            if (col) {
+                col[field] = value;
+                save();
+                renderMain();
+            }
+        }
+
+        function renderTablesList() {
+            const list = document.getElementById('tablesList');
+            list.innerHTML = '';
+            Object.keys(tables).forEach(name => {
+                const item = document.createElement('button');
+                item.className = `table-item ${currentTable === name ? 'active' : ''}`;
+                item.textContent = tables[name].name;
+                item.onclick = () => selectTable(name);
+                list.appendChild(item);
+            });
+        }
+
+        function renderMain() {
+            const content = document.getElementById('mainContent');
+
+            if (!currentTable) {
+                content.innerHTML = '<div class="empty-state"><p>Create a table to start</p></div>';
+                document.getElementById('configDisplay').textContent = 'No table selected';
+                return;
+            }
+
+            const table = tables[currentTable];
+            document.getElementById('currentTableName').textContent = table.name;
+            document.getElementById('currentTableName').style.display = 'block';
+            document.getElementById('tableNameInput').style.display = 'none';
+
+            if (table.columns.length === 0) {
+                content.innerHTML = '<div class="empty-state"><p>Add columns from the right panel</p></div>';
+            } else {
+                content.innerHTML = `
+                    <div class="columns-list">
+                        ${table.columns.map(col => `
+                            <div class="column-row">
+                                <input type="text" value="${col.name}" onchange="updateColumn('${col.id}', 'name', this.value)" placeholder="Column name">
+                                <select onchange="updateColumn('${col.id}', 'type', this.value)">
+                                    ${['hex_id', 'text_single', 'text_multi', 'int_scalar', 'float_scalar', 'boolean', 'enum_single', 'enum_multi', 'relation_single', 'relation_multi'].map(t => `<option value="${t}" ${t === col.type ? 'selected' : ''}>${t}</option>`).join('')}
+                                </select>
+                                <div style="color: var(--text-secondary); font-size: 12px;">
+                                    ${col.type.includes('enum_') ? '<input type="text" placeholder="Options (comma-separated)" style="width: 100%; padding: 4px;" onchange="updateColumn(\'' + col.id + '\', \'metadata\', {options: this.value.split(\',\').map(o => o.trim()).filter(o => o)})">' : col.type.includes('relation_') ? '<input type="text" placeholder="Target table" value="' + (col.metadata.target || '') + '" style="width: 100%; padding: 4px;" onchange="updateColumn(\'' + col.id + '\', \'metadata\', {target: this.value})">' : '<span style="color: var(--text-secondary);">' + col.type + '</span>'}
+                                </div>
+                                <div class="column-actions">
+                                    <button class="btn btn-small btn-danger" onclick="deleteColumn('${col.id}')">Delete</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            updateConfigDisplay();
+        }
+
+        function updateConfigDisplay() {
+            if (!currentTable) return;
+            const table = tables[currentTable];
+            const config = {
+                table_name: table.name,
+                columns: table.columns.map(col => ({
+                    name: col.name,
+                    type: col.type,
+                    metadata: col.metadata
+                }))
+            };
+            document.getElementById('configDisplay').textContent = JSON.stringify(config, null, 2);
+        }
+
+        function exportConfig() {
+            if (!currentTable) {
+                alert('Select a table first');
+                return;
+            }
+            const table = tables[currentTable];
+            const config = {
+                table_name: table.name,
+                columns: table.columns.map(col => ({
+                    name: col.name,
+                    type: col.type,
+                    metadata: col.metadata
+                }))
+            };
+            const json = JSON.stringify(config, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${table.name}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function save() {
+            try {
+                localStorage.setItem('tables', JSON.stringify(tables));
+            } catch (e) {
+                console.warn('localStorage save failed:', e);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

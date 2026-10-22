@@ -1,0 +1,772 @@
+<title>Prescripts Data Entry</title>
+
+<style>
+/* Design Plan: Prescripts quote management with flexible date ranges, multi-select speakers, and semantic tagging */
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --text: #1f2937;
+  --text-secondary: #6b7280;
+  --accent: #7c3aed;
+  --accent-soft: #ede9fe;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --radius: 8px;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --border: #334155;
+    --text: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --accent: #8b5cf6;
+    --accent-soft: #312e81;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --error: #f87171;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --border: #334155;
+  --text: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --accent: #8b5cf6;
+  --accent-soft: #312e81;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --error: #f87171;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 32px;
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.form-section h2 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.field-group {
+  margin-bottom: 20px;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.field-hint {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  line-height: 1.5;
+}
+
+.date-input {
+  font-family: var(--font-mono);
+}
+
+/* Multi-select components */
+.multi-select {
+  position: relative;
+}
+
+.multi-select-trigger {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.multi-select-trigger:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tag-remove {
+  cursor: pointer;
+  padding: 0 2px;
+  opacity: 0.7;
+}
+
+.tag-remove:hover {
+  opacity: 1;
+}
+
+.tag-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  flex: 1;
+  min-width: 120px;
+  padding: 4px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 4px;
+  display: none;
+}
+
+.dropdown-menu.open {
+  display: block;
+}
+
+.dropdown-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.dropdown-option:last-child {
+  border-bottom: none;
+}
+
+.dropdown-option:hover {
+  background: var(--accent-soft);
+}
+
+.dropdown-option.selected {
+  background: var(--accent);
+  color: white;
+}
+
+.create-option {
+  color: var(--accent);
+  font-style: italic;
+}
+
+/* Preview panel */
+.preview-panel {
+  position: sticky;
+  top: 24px;
+  height: fit-content;
+}
+
+.preview-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.preview-content h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.json-preview {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.button:hover {
+  opacity: 0.9;
+}
+
+.button-secondary {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+  z-index: 1001;
+}
+</style>
+
+<button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
+
+<div class="container">
+  <div class="header">
+    <h1>Prescripts Data Entry</h1>
+    <p>Phase 1: Flexible metadata schema for morning wisdom quotes</p>
+  </div>
+
+  <div class="form-grid">
+    <div class="form-content">
+
+      <!-- Quote Content -->
+      <div class="form-section">
+        <h2>Quote Content</h2>
+
+        <div class="field-group">
+          <label class="field-label" for="main-content">Main Content</label>
+          <textarea id="main-content" class="input textarea" placeholder="Enter the quote text..."></textarea>
+          <div class="field-hint">Multi-line string containing the primary quote or core text</div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="context">Context</label>
+          <textarea id="context" class="input textarea" placeholder="Situational backdrop, interpretation, or genesis context..."></textarea>
+          <div class="field-hint">Multi-line string detailing the context, situational backdrop, or interpretive background</div>
+        </div>
+      </div>
+
+      <!-- Flexible Dating -->
+      <div class="form-section">
+        <h2>Flexible Date Range</h2>
+
+        <div class="field-group">
+          <label class="field-label" for="date-range">Date</label>
+          <input type="text" id="date-range" class="input date-input" placeholder="2020~2023-05 or 2020 or 2023-12-15" value="">
+          <div class="field-hint">
+            Flexible format: <code>2020</code> (year), <code>2020~2023-05</code> (range), or <code>2023-12-15</code> (exact)
+          </div>
+        </div>
+      </div>
+
+      <!-- Speaker Multi-Select -->
+      <div class="form-section">
+        <h2>Speaker(s)</h2>
+
+        <div class="field-group">
+          <label class="field-label">Speaker Names</label>
+          <div class="multi-select" id="speakers-select">
+            <div class="multi-select-trigger" onclick="toggleDropdown('speakers')">
+              <div id="speakers-tags"></div>
+              <input type="text" class="tag-input" id="speakers-input" placeholder="Search or add speakers..."
+                     oninput="filterOptions('speakers', this.value)"
+                     onkeydown="handleKeyDown('speakers', event)">
+            </div>
+            <div class="dropdown-menu" id="speakers-dropdown">
+              <div id="speakers-options"></div>
+            </div>
+          </div>
+          <div class="field-hint">Multi-select with search and create functionality. No need for speaker role.</div>
+        </div>
+      </div>
+
+      <!-- Response Quote IDs -->
+      <div class="form-section">
+        <h2>Response Quote IDs</h2>
+
+        <div class="field-group">
+          <label class="field-label">Preference (Response Quote IDs)</label>
+          <div class="multi-select" id="responses-select">
+            <div class="multi-select-trigger" onclick="toggleDropdown('responses')">
+              <div id="responses-tags"></div>
+              <input type="text" class="tag-input" id="responses-input" placeholder="Enter hex IDs or search..."
+                     oninput="filterOptions('responses', this.value)"
+                     onkeydown="handleKeyDown('responses', event)">
+            </div>
+            <div class="dropdown-menu" id="responses-dropdown">
+              <div id="responses-options"></div>
+            </div>
+          </div>
+          <div class="field-hint">Multi-select for response quote hex IDs with search functionality</div>
+        </div>
+      </div>
+
+      <!-- Open-Ended Tags -->
+      <div class="form-section">
+        <h2>Tags</h2>
+
+        <div class="field-group">
+          <label class="field-label">Domains</label>
+          <div class="multi-select" id="domains-select">
+            <div class="multi-select-trigger" onclick="toggleDropdown('domains')">
+              <div id="domains-tags"></div>
+              <input type="text" class="tag-input" id="domains-input" placeholder="Add domains..."
+                     oninput="filterOptions('domains', this.value)"
+                     onkeydown="handleKeyDown('domains', event)">
+            </div>
+            <div class="dropdown-menu" id="domains-dropdown">
+              <div id="domains-options"></div>
+            </div>
+          </div>
+          <div class="field-hint">Your own domain taxonomy - completely open-ended</div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Themes</label>
+          <div class="multi-select" id="themes-select">
+            <div class="multi-select-trigger" onclick="toggleDropdown('themes')">
+              <div id="themes-tags"></div>
+              <input type="text" class="tag-input" id="themes-input" placeholder="Add themes..."
+                     oninput="filterOptions('themes', this.value)"
+                     onkeydown="handleKeyDown('themes', event)">
+            </div>
+            <div class="dropdown-menu" id="themes-dropdown">
+              <div id="themes-options"></div>
+            </div>
+          </div>
+          <div class="field-hint">Thematic concepts - your own classification</div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="sentiment">Sentiment</label>
+          <input type="text" id="sentiment" class="input" placeholder="analytical, stoic, triumphant, etc.">
+          <div class="field-hint">Emotional/philosophical resonance - free text</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="button" onclick="saveQuote()">Save Quote</button>
+        <button class="button button-secondary" onclick="clearForm()">Clear Form</button>
+        <button class="button button-secondary" onclick="exportJson()">Export JSON</button>
+      </div>
+    </div>
+
+    <!-- Live Preview Panel -->
+    <div class="preview-panel">
+      <div class="preview-content">
+        <h3>Live JSON Preview</h3>
+        <div class="json-preview" id="json-preview">{}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// State management
+let quoteData = {
+  id: "",
+  index: 0,
+  main_content: "",
+  context: "",
+  date: "",
+  source_speaker: [],
+  backlink: [],
+  preference: [],
+  tags: {
+    domains: [],
+    themes: [],
+    sentiment: "",
+    custom: {}
+  }
+};
+
+// Available options for multi-selects (will persist and grow)
+let availableOptions = {
+  speakers: ["Faust", "The Manager", "Marcus Aurelius", "Miyamoto Musashi", "Sun Tzu"],
+  responses: ["0047FB3567D735A1", "A1B2C3D4E5F6G7H8", "1234567890ABCDEF"],
+  domains: [],
+  themes: []
+};
+
+// Generate hex ID
+function generateHexId() {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 0xFFFF);
+  return (timestamp.toString(16) + random.toString(16)).toUpperCase().padStart(16, '0').slice(0, 16);
+}
+
+// Update quote data and preview
+function updateQuoteData() {
+  quoteData.main_content = document.getElementById('main-content').value;
+  quoteData.context = document.getElementById('context').value;
+  quoteData.date = document.getElementById('date-range').value;
+  quoteData.tags.sentiment = document.getElementById('sentiment').value;
+
+  // Generate new ID if content exists but no ID
+  if (quoteData.main_content && !quoteData.id) {
+    quoteData.id = generateHexId();
+    quoteData.index = Date.now(); // Simple incrementing index
+  }
+
+  updateJsonPreview();
+}
+
+function updateJsonPreview() {
+  const preview = document.getElementById('json-preview');
+  preview.textContent = JSON.stringify(quoteData, null, 2);
+}
+
+// Multi-select functionality
+function toggleDropdown(type) {
+  const dropdown = document.getElementById(`${type}-dropdown`);
+  const isOpen = dropdown.classList.contains('open');
+
+  // Close all dropdowns
+  document.querySelectorAll('.dropdown-menu').forEach(dd => dd.classList.remove('open'));
+
+  if (!isOpen) {
+    dropdown.classList.add('open');
+    updateDropdownOptions(type);
+  }
+}
+
+function updateDropdownOptions(type) {
+  const optionsContainer = document.getElementById(`${type}-options`);
+  const input = document.getElementById(`${type}-input`);
+  const query = input.value.toLowerCase();
+
+  optionsContainer.innerHTML = '';
+
+  // Filter existing options
+  const options = availableOptions[type] || [];
+  const filteredOptions = options.filter(opt =>
+    opt.toLowerCase().includes(query) &&
+    !quoteData[getDataKey(type)].includes(opt)
+  );
+
+  // Add filtered options
+  filteredOptions.forEach(option => {
+    const div = document.createElement('div');
+    div.className = 'dropdown-option';
+    div.textContent = option;
+    div.onclick = () => addTag(type, option);
+    optionsContainer.appendChild(div);
+  });
+
+  // Add "create new" option if query doesn't match existing
+  if (query && !options.map(o => o.toLowerCase()).includes(query)) {
+    const div = document.createElement('div');
+    div.className = 'dropdown-option create-option';
+    div.textContent = `+ Create "${input.value}"`;
+    div.onclick = () => createAndAddTag(type, input.value);
+    optionsContainer.appendChild(div);
+  }
+}
+
+function getDataKey(type) {
+  switch(type) {
+    case 'speakers': return 'source_speaker';
+    case 'responses': return 'preference';
+    case 'domains': return ['tags', 'domains'];
+    case 'themes': return ['tags', 'themes'];
+    default: return type;
+  }
+}
+
+function addTag(type, value) {
+  const key = getDataKey(type);
+
+  if (Array.isArray(key)) {
+    quoteData[key[0]][key[1]].push(value);
+  } else {
+    quoteData[key].push(value);
+  }
+
+  updateTagsDisplay(type);
+  updateQuoteData();
+
+  // Clear input and close dropdown
+  document.getElementById(`${type}-input`).value = '';
+  document.getElementById(`${type}-dropdown`).classList.remove('open');
+}
+
+function createAndAddTag(type, value) {
+  // Add to available options
+  if (!availableOptions[type]) availableOptions[type] = [];
+  if (!availableOptions[type].includes(value)) {
+    availableOptions[type].push(value);
+  }
+
+  addTag(type, value);
+}
+
+function removeTag(type, value) {
+  const key = getDataKey(type);
+
+  if (Array.isArray(key)) {
+    const index = quoteData[key[0]][key[1]].indexOf(value);
+    if (index > -1) quoteData[key[0]][key[1]].splice(index, 1);
+  } else {
+    const index = quoteData[key].indexOf(value);
+    if (index > -1) quoteData[key].splice(index, 1);
+  }
+
+  updateTagsDisplay(type);
+  updateQuoteData();
+}
+
+function updateTagsDisplay(type) {
+  const container = document.getElementById(`${type}-tags`);
+  const key = getDataKey(type);
+
+  let values = [];
+  if (Array.isArray(key)) {
+    values = quoteData[key[0]][key[1]] || [];
+  } else {
+    values = quoteData[key] || [];
+  }
+
+  container.innerHTML = '';
+  values.forEach(value => {
+    const chip = document.createElement('div');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `
+      ${value}
+      <span class="tag-remove" onclick="removeTag('${type}', '${value}')">×</span>
+    `;
+    container.appendChild(chip);
+  });
+}
+
+function filterOptions(type, query) {
+  updateDropdownOptions(type);
+}
+
+function handleKeyDown(type, event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const value = event.target.value.trim();
+    if (value) {
+      createAndAddTag(type, value);
+    }
+  } else if (event.key === 'Escape') {
+    document.getElementById(`${type}-dropdown`).classList.remove('open');
+  }
+}
+
+// Form actions
+function saveQuote() {
+  updateQuoteData();
+
+  if (!quoteData.main_content) {
+    alert('Please enter main content for the quote');
+    return;
+  }
+
+  // In a real implementation, this would save to the database
+  console.log('Saving quote:', quoteData);
+  alert('Quote saved! (In real implementation, this would save to Entropy Rose database)');
+}
+
+function clearForm() {
+  quoteData = {
+    id: "",
+    index: 0,
+    main_content: "",
+    context: "",
+    date: "",
+    source_speaker: [],
+    backlink: [],
+    preference: [],
+    tags: {
+      domains: [],
+      themes: [],
+      sentiment: "",
+      custom: {}
+    }
+  };
+
+  // Clear form fields
+  document.getElementById('main-content').value = '';
+  document.getElementById('context').value = '';
+  document.getElementById('date-range').value = '';
+  document.getElementById('sentiment').value = '';
+
+  // Clear tag displays
+  ['speakers', 'responses', 'domains', 'themes'].forEach(type => {
+    updateTagsDisplay(type);
+  });
+
+  updateJsonPreview();
+}
+
+function exportJson() {
+  updateQuoteData();
+  const dataStr = JSON.stringify(quoteData, null, 2);
+  const blob = new Blob([dataStr], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `quote-${quoteData.id || 'draft'}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Theme toggle
+function toggleTheme() {
+  const root = document.documentElement;
+  const currentTheme = root.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', newTheme);
+  localStorage.setItem('prescripts-theme', newTheme);
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Load saved theme
+  const savedTheme = localStorage.getItem('prescripts-theme');
+  if (savedTheme) {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  }
+
+  // Add input listeners
+  ['main-content', 'context', 'date-range', 'sentiment'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateQuoteData);
+  });
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', function(event) {
+    if (!event.target.closest('.multi-select')) {
+      document.querySelectorAll('.dropdown-menu').forEach(dd => dd.classList.remove('open'));
+    }
+  });
+
+  // Initialize displays
+  ['speakers', 'responses', 'domains', 'themes'].forEach(type => {
+    updateTagsDisplay(type);
+  });
+
+  updateJsonPreview();
+});
+</script>

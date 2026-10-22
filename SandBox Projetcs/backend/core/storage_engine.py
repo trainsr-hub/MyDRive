@@ -1,0 +1,1079 @@
+import json
+import shutil
+import sqlite3
+from pathlib import Path
+from datetime import datetime
+from typing import Optional, Any, Dict, List
+from fastapi import HTTPException
+from pydantic import BaseModel
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = BACKEND_DIR / "data" / "projects"
+SPEC_PATH = BACKEND_DIR / "api_spec.json"
+
+PROJECT_ALIASES: Dict[str, str] = {
+    "vinyl_angel": "music_app",
+    "universe-25": "universe_25",
+    "golden_hour": "universe_25",
+    "golden-hour": "universe_25",
+    "modern_day": "universe_25",
+    "modern-day": "universe_25",
+}
+
+def resolve_project_id(project_id: str) -> str:
+    direct_path = BASE_DIR / project_id / "index.json"
+    if direct_path.exists():
+        return project_id
+    if project_id in PROJECT_ALIASES:
+        aliased_id = PROJECT_ALIASES[project_id]
+        if (BASE_DIR / aliased_id / "index.json").exists():
+            return aliased_id
+    return project_id
+
+def load_global_spec() -> Dict[str, Any]:
+    if not SPEC_PATH.exists():
+        raise HTTPException(status_code=500, detail=f"Missing configuration file api_spec.json at: {SPEC_PATH}")
+    with open(SPEC_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def load_project_index(project_id: str) -> Dict[str, Any]:
+    resolved_id = resolve_project_id(project_id)
+    index_path = BASE_DIR / resolved_id / "index.json"
+    if not index_path.exists():
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found at: {index_path}")
+    with open(index_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def write_error_log(project_id: str, message: str):
+    try:
+        resolved_id = resolve_project_id(project_id)
+        log_dir = BASE_DIR / resolved_id / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        with open(log_dir / "error.log", "a", encoding="utf-8") as f:
+            f.write(f"[{datetime.now().isoformat()}] {message}\n")
+    except Exception:
+        pass
+
+def infer_sqlite_column_type(val: Any) -> str:
+    if isinstance(val, bool):
+        return "INTEGER"
+    if isinstance(val, int):
+        return "INTEGER"
+    if isinstance(val, float):
+        return "REAL"
+    return "TEXT"
+
+def _parse_exclude_list(exclude_val: Any) -> List[str]:
+    if not exclude_val:
+        return []
+    if isinstance(exclude_val, (list, set, tuple)):
+        return [str(c).strip() for c in exclude_val if str(c).strip() and str(c).strip() not in ["NONE", "ALL"]]
+    if isinstance(exclude_val, str):
+        val = exclude_val.strip()
+        if not val or val in ["NONE", "ALL"]:
+            return []
+        if (val.startswith("[") and val.endswith("]")) or (val.startswith("(") and val.endswith(")")):
+            try:
+                parsed = json.loads(val)
+                if isinstance(parsed, list):
+                    return [str(c).strip() for c in parsed if str(c).strip() and str(c).strip() not in ["NONE", "ALL"]]
+            except Exception:
+                pass
+        if "," in val:
+            parts = [p.strip() for p in val.split(",") if p.strip() and p.strip() not in ["NONE", "ALL"]]
+            if parts:
+                return parts
+        return [val]
+    return []
+
+def _build_hazard_filter_clause(conn: sqlite3.Connection, app_data_dir: Path, hazard_cap: Any) -> Optional[str]:
+    """
+    Constructs an ultra-fast SQLite filter clause against _4_display.db (t4_db).
+    _4_display.db is the single source of truth for hazard levels.
+    All track IDs not present in _4_display.db are unrated tracks (baseline 3.0).
+    """
+    if hazard_cap is None:
+        return None
+    h_str = str(hazard_cap).strip().lower()
+    if h_str in ["none", "all", "inf", "", "all tracks"]:
+        return None
+
+    t4_file = app_data_dir / "_4_display.db"
+    if not t4_file.exists():
+        return None
+
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA database_list")
+    attached = {row[1] for row in cursor.fetchall()}
+    if "t4_db" not in attached:
+        cursor.execute("ATTACH DATABASE ? AS t4_db", (str(t4_file),))
+
+    # 1. Option "7+" (Hazard >= 7.0 in _4_display.db)
+    if h_str in ["7+", "7_plus", "7", ">=7", "7.0+"]:
+        return "id IN (SELECT id FROM t4_db.tier_4_data WHERE hazard_level >= 7.0)"
+
+    # 2. Option "6+" (Hazard >= 6.0 in _4_display.db)
+    if h_str in ["6+", "6_plus", "6", ">=6", "6.0+"]:
+        return "id IN (SELECT id FROM t4_db.tier_4_data WHERE hazard_level >= 6.0)"
+
+    # 3. Option "3.2 to under 6" (3.2 <= Hazard < 6.0 in _4_display.db)
+    if h_str in ["3.2 to under 6", "3.2_to_under_6", "3.2-6.0", "3.2_6.0", "mid"]:
+        return "id IN (SELECT id FROM t4_db.tier_4_data WHERE hazard_level >= 3.2 AND hazard_level < 6.0)"
+
+    # 4. Option "under 4.0" (Hazard < 4.0, includes unrated 3.0 tracks not in _4_display.db)
+    if h_str in ["under 4.0", "under_4.0", "<4.0", "4.0"]:
+        return "id NOT IN (SELECT id FROM t4_db.tier_4_data WHERE hazard_level >= 4.0)"
+
+    # 5. Option "under 3.2" (Hazard < 3.2 or unrated 3.0 tracks not in _4_display.db)
+    if h_str in ["under 3.2", "under_3.2", "<3.2", "3.2", "calm"]:
+        return "id NOT IN (SELECT id FROM t4_db.tier_4_data WHERE hazard_level >= 3.2)"
+
+    # 5. Generic float threshold fallback: under <cap_val>
+    try:
+        cap_val = float(h_str)
+        return f"id NOT IN (SELECT id FROM t4_db.tier_4_data WHERE hazard_level > {cap_val})"
+    except ValueError:
+        return None
+
+def _build_unassigned_albums_clause(conn: sqlite3.Connection, app_data_dir: Path) -> Optional[str]:
+    """
+    Constructs an ultra-fast filter clause against playlists.db (pl_db) to only select
+    tracks that do NOT yet belong to any Album (type = 'album').
+    """
+    pl_file = app_data_dir / "playlists.db"
+    if not pl_file.exists():
+        return None
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA database_list")
+        attached = {row[1] for row in cursor.fetchall()}
+        if "pl_db" not in attached:
+            cursor.execute("ATTACH DATABASE ? AS pl_db", (str(pl_file),))
+
+        cursor.execute("SELECT name FROM pl_db.sqlite_master WHERE type='table' AND name='playlists'")
+        if cursor.fetchone():
+            return """id NOT IN (
+                SELECT TRIM(CAST(value AS TEXT)) FROM pl_db.playlists, json_each(pl_db.playlists.include_songs)
+                WHERE LOWER(TRIM(pl_db.playlists.type)) = 'album'
+                  AND pl_db.playlists.include_songs IS NOT NULL
+                  AND TRIM(pl_db.playlists.include_songs) != ''
+                  AND json_valid(pl_db.playlists.include_songs) = 1
+            )"""
+    except Exception as e:
+        print(f"[storage_engine] Error attaching pl_db for unassigned albums clause: {e}")
+    return None
+
+
+def sync_channel_approval_status(app_data_dir: Path):
+    """
+    Auto-detect channels whose tracks are 100% curated into Albums.
+    If all songs of a channel are included in at least one Album (type = 'album'),
+    set the channel status to 'approved' in channel_meta (playlists.db).
+    If a channel was auto-approved but no longer satisfies 100% coverage,
+    revert its status to 'cleaning'.
+    """
+    pl_file = app_data_dir / "playlists.db"
+    s1_file = app_data_dir / "_1_static.db"
+    if not pl_file.exists() or not s1_file.exists():
+        return
+
+    try:
+        with sqlite3.connect(pl_file) as conn_pl:
+            cur_pl = conn_pl.cursor()
+            cur_pl.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='playlists'")
+            if not cur_pl.fetchone():
+                return
+
+            cur_pl.execute("SELECT include_songs FROM playlists WHERE type = 'album'")
+            album_song_ids = set()
+            for (inc_songs,) in cur_pl.fetchall():
+                if inc_songs:
+                    try:
+                        parsed = json.loads(inc_songs) if isinstance(inc_songs, str) else inc_songs
+                        if isinstance(parsed, list):
+                            album_song_ids.update(str(x) for x in parsed)
+                    except Exception:
+                        pass
+
+            approved_rows = []
+            if album_song_ids:
+                with sqlite3.connect(s1_file) as conn_s1:
+                    cur_s1 = conn_s1.cursor()
+                    cur_s1.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='layer1_static'")
+                    if not cur_s1.fetchone():
+                        return
+
+                    cur_s1.execute("CREATE TEMP TABLE IF NOT EXISTS temp_album_songs (id TEXT PRIMARY KEY)")
+                    cur_s1.execute("DELETE FROM temp_album_songs")
+                    cur_s1.executemany("INSERT OR IGNORE INTO temp_album_songs (id) VALUES (?)", [(sid,) for sid in album_song_ids])
+
+                    cur_s1.execute("""
+                        SELECT 
+                            s.channel_name,
+                            s.channel_id,
+                            COUNT(*) as total_count,
+                            COUNT(t.id) as album_count
+                        FROM layer1_static s
+                        LEFT JOIN temp_album_songs t ON s.id = t.id
+                        WHERE s.channel_name IS NOT NULL AND s.channel_name != ''
+                        GROUP BY s.channel_name
+                        HAVING total_count = album_count AND total_count > 0
+                    """)
+                    approved_rows = cur_s1.fetchall()
+
+            # Ensure channel_meta table exists
+            cur_pl.execute("""
+                CREATE TABLE IF NOT EXISTS channel_meta (
+                    id TEXT PRIMARY KEY,
+                    channel_name TEXT,
+                    status TEXT DEFAULT 'raw',
+                    notes TEXT,
+                    updated_at TEXT
+                )
+            """)
+
+            approved_names = {r[0] for r in approved_rows}
+            now_iso = datetime.now().isoformat()
+
+            # Revert any approved channel that is no longer 100% in albums
+            cur_pl.execute("SELECT id, channel_name, status, notes FROM channel_meta WHERE status = 'approved'")
+            for mid, mname, mstatus, mnotes in cur_pl.fetchall():
+                key_name = mname or mid
+                if key_name not in approved_names:
+                    cur_pl.execute("UPDATE channel_meta SET status = 'cleaning', notes = '', updated_at = ? WHERE id = ?", (now_iso, mid))
+
+            # Mark all newly fully-covered channels as approved
+            for ch_name, ch_id, total_count, _ in approved_rows:
+                key = ch_id or ch_name
+                cur_pl.execute("SELECT status, notes FROM channel_meta WHERE id = ? OR channel_name = ?", (key, ch_name))
+                row = cur_pl.fetchone()
+                if row:
+                    curr_status = row[0]
+                    if curr_status != 'approved':
+                        cur_pl.execute(
+                            "UPDATE channel_meta SET status = 'approved', notes = 'auto_approved', updated_at = ? WHERE id = ? OR channel_name = ?",
+                            (now_iso, key, ch_name)
+                        )
+                else:
+                    cur_pl.execute(
+                        "INSERT INTO channel_meta (id, channel_name, status, notes, updated_at) VALUES (?, ?, 'approved', 'auto_approved', ?)",
+                        (key, ch_name, now_iso)
+                    )
+            conn_pl.commit()
+    except Exception as e:
+        print(f"[sync_channel_approval_status] Error: {e}")
+
+class OrderSpec(BaseModel):
+    action: str
+    key: Optional[str] = None
+    data: Optional[Any] = None
+    table: Optional[str] = None
+
+class OrderRequest(BaseModel):
+    project_id: str
+    tier: str
+    order: OrderSpec
+
+def process_storage_order(req: OrderRequest) -> Any:
+    project_id = resolve_project_id(req.project_id)
+    tier = str(req.tier)
+    act = req.order.action.lower()
+    payload = req.order.data
+    key = req.order.key
+
+    proj_config = load_project_index(project_id)
+    global_spec = load_global_spec()
+    log_enabled = proj_config.get("log_enabled", True)
+    tiers_map = proj_config.get("tiers", {})
+
+    if tier not in tiers_map:
+        err = f"Tier '{tier}' not configured in index.json for project '{project_id}'"
+        if log_enabled:
+            write_error_log(project_id, err)
+        raise HTTPException(status_code=400, detail=err)
+
+    tier_info = tiers_map[tier]
+    filename = tier_info["filename"]
+    fmt = tier_info["format"].lower()
+
+    allowed_actions = global_spec.get("formats", {}).get(fmt, {}).get("actions", [])
+    extended_actions = [
+        "delete", "batch_delete", "batch_upsert", "batch_read", "read_keys",
+        "overwrite_all", "overwrite", "seed_if_missing", "sample", "random_sample",
+        "count", "paginate", "read_page", "curl_playlists", "ingest_playlists",
+        "get_playlists", "save_playlists", "get_channels", "list_channels",
+        "get_channel_tracks", "channel_tracks", "batch_append", "append_many",
+        "purge_channel"
+    ]
+    if act not in allowed_actions and act not in extended_actions:
+        err = f"Format '{fmt}' of Tier {tier} does not support action '{act}'."
+        if log_enabled:
+            write_error_log(project_id, err)
+        raise HTTPException(status_code=400, detail=err)
+
+    app_data_dir = BASE_DIR / project_id / "app_data"
+    app_data_dir.mkdir(parents=True, exist_ok=True)
+    file_path = app_data_dir / filename
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if act == "backup":
+        if not file_path.exists():
+            return {"status": "skipped", "message": "File not found"}
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_dir = BASE_DIR / project_id / "backups" / timestamp
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        target_backup = backup_dir / filename
+        target_backup.parent.mkdir(parents=True, exist_ok=True)
+
+        if fmt == "sqlite":
+            with sqlite3.connect(file_path) as conn:
+                conn.execute(f"VACUUM INTO '{target_backup.as_posix()}'")
+        else:
+            shutil.copy2(file_path, target_backup)
+        return {"status": "success", "backup_file": str(target_backup)}
+
+    if fmt == "json":
+        if act == "read_all":
+            if not file_path.exists():
+                return {"data": {}}
+            with open(file_path, "r", encoding="utf-8") as f:
+                return {"data": json.load(f)}
+        elif act == "read_key":
+            if not file_path.exists():
+                return {"data": None}
+            if not key:
+                raise ValueError("Action 'read_key' requires 'key'")
+            with open(file_path, "r", encoding="utf-8") as f:
+                return {"data": json.load(f).get(key)}
+        elif act in ["overwrite", "overwrite_all"]:
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+            return {"status": "success"}
+
+    elif fmt == "jsonl":
+        if act in ["append", "batch_append", "append_many"]:
+            items = payload if isinstance(payload, list) else [payload]
+            with open(file_path, "a", encoding="utf-8") as f:
+                for item in items:
+                    if item is not None:
+                        f.write(json.dumps(item, ensure_ascii=False) + "\n")
+            return {"status": "success", "appended_count": len(items)}
+        elif act == "read_all":
+            if not file_path.exists():
+                return {"data": []}
+            with open(file_path, "r", encoding="utf-8") as f:
+                return {"data": [json.loads(line) for line in f if line.strip()]}
+        elif act == "clear":
+            open(file_path, "w").close()
+            return {"status": "success", "message": "JSONL buffer cleared"}
+        elif act in ["delete", "batch_delete"]:
+            targets = [key] if key else []
+            if isinstance(payload, list):
+                targets.extend([str(k) for k in payload])
+            elif isinstance(payload, dict) and "id" in payload:
+                targets.append(str(payload["id"]))
+            elif isinstance(payload, str) and payload:
+                targets.append(payload)
+            targets_set = {str(t).strip() for t in targets if str(t).strip()}
+            if not file_path.exists() or not targets_set:
+                return {"status": "skipped", "deleted_count": 0}
+            with open(file_path, "r", encoding="utf-8") as f:
+                lines = [json.loads(line) for line in f if line.strip()]
+            new_lines = [l for l in lines if str(l.get("id", "")).strip() not in targets_set]
+            with open(file_path, "w", encoding="utf-8") as f:
+                for item in new_lines:
+                    f.write(json.dumps(item, ensure_ascii=False) + "\n")
+            return {"status": "success", "deleted_count": len(lines) - len(new_lines)}
+        elif act in ["overwrite", "overwrite_all"]:
+            items = payload if isinstance(payload, list) else ([payload] if payload else [])
+            with open(file_path, "w", encoding="utf-8") as f:
+                for item in items:
+                    if item is not None:
+                        f.write(json.dumps(item, ensure_ascii=False) + "\n")
+            return {"status": "success", "count": len(items)}
+
+    elif fmt == "sqlite":
+        if tier in ["channel_meta", "1"] and act in ["read_all", "get_channels", "list_channels"]:
+            sync_channel_approval_status(app_data_dir)
+        with sqlite3.connect(file_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
+            tables = [r[0] for r in cursor.fetchall()]
+            specified_table = req.order.table or (payload.get("table") if isinstance(payload, dict) else None) or tier_info.get("table")
+            target_table = specified_table or (tables[0] if tables else f"tier_{tier}_data")
+
+            cursor.execute(f"PRAGMA table_info({target_table})")
+            table_info_rows = cursor.fetchall()
+            pk_cols = [r["name"] for r in table_info_rows if r["pk"] > 0]
+            pk_col = pk_cols[0] if pk_cols else ("channel_id" if "channel_id" in [r["name"] for r in table_info_rows] else "id")
+
+            if act == "seed_if_missing":
+                if not tables or not file_path.exists() or file_path.stat().st_size == 0:
+                    source_tier = str(payload.get("source_tier", "1"))
+                    source_info = tiers_map.get(source_tier)
+                    if source_info:
+                        source_path = app_data_dir / source_info["filename"]
+                        if source_path.exists() and source_path.stat().st_size > 0:
+                            shutil.copy2(source_path, file_path)
+                            return {"status": "seeded", "message": f"Copied from tier {source_tier}"}
+                return {"status": "exists"}
+
+            if act == "read_all":
+                if target_table not in tables:
+                    return {"data": {}}
+                cursor.execute(f"SELECT * FROM {target_table}")
+                rows = cursor.fetchall()
+                result = {}
+                for row in rows:
+                    row_dict = dict(row)
+                    row_id = str(row_dict.pop(pk_col, row_dict.pop("id", list(row_dict.values())[0] if row_dict else len(result))))
+                    result[row_id] = row_dict
+                return {"data": result}
+
+            elif act == "read_key":
+                if target_table not in tables:
+                    return {"data": None}
+                if not key:
+                    raise ValueError("Action 'read_key' requires 'key'")
+                cursor.execute(f"SELECT * FROM {target_table} WHERE {pk_col} = ?", (key,))
+                row = cursor.fetchone()
+                if not row:
+                    return {"data": None}
+                row_dict = dict(row)
+                row_dict.pop(pk_col, None)
+                row_dict.pop("id", None)
+                return {"data": row_dict}
+
+            elif act == "count":
+                if target_table not in tables:
+                    return {"data": {"count": 0}}
+                channel_name = payload.get("channel_name") or payload.get("channel") if isinstance(payload, dict) else (payload if isinstance(payload, str) and payload != "ALL" else None)
+                channels = payload.get("channels") or payload.get("channel_names") if isinstance(payload, dict) else None
+                exclude_channel = payload.get("exclude_channel") or payload.get("exclude_channel_name") or payload.get("exclude_playlist") or payload.get("exclude_channels") if isinstance(payload, dict) else None
+                hazard_cap = payload.get("hazard_cap") or payload.get("max_hazard") if isinstance(payload, dict) else None
+                exclude_ids = payload.get("exclude_ids") if isinstance(payload, dict) else None
+                only_unassigned = False
+                if isinstance(payload, dict):
+                    only_unassigned = bool(
+                        payload.get("only_unassigned_albums")
+                        or payload.get("unassigned_only")
+                        or payload.get("discovery_mode")
+                    )
+
+                if channel_name in ["DISCOVERY:unassigned", "MODE:unassigned_album", "UNASSIGNED_ALBUM"]:
+                    only_unassigned = True
+                    channel_name = None
+
+                conditions = []
+                params = []
+
+                # Exclude blocked song IDs immediately
+                ex_ids = _parse_exclude_list(exclude_ids)
+                if ex_ids:
+                    placeholders = ", ".join(["?"] * len(ex_ids))
+                    conditions.append(f"id NOT IN ({placeholders})")
+                    params.extend(ex_ids)
+
+                inc_chs = _parse_exclude_list(channels)
+                inc_ids = _parse_exclude_list(payload.get("include_ids")) if isinstance(payload, dict) else []
+                if inc_chs or inc_ids:
+                    or_parts = []
+                    if inc_chs:
+                        or_parts.append("channel_name IN (" + ", ".join(["?"] * len(inc_chs)) + ")")
+                        params.extend(inc_chs)
+                    if inc_ids:
+                        or_parts.append("id IN (" + ", ".join(["?"] * len(inc_ids)) + ")")
+                        params.extend(inc_ids)
+                    conditions.append("(" + " OR ".join(or_parts) + ")")
+                elif channel_name and channel_name != "ALL":
+                    conditions.append("channel_name = ?")
+                    params.append(channel_name)
+
+                ex_list = _parse_exclude_list(exclude_channel)
+                if ex_list:
+                    placeholders = ", ".join(["?"] * len(ex_list))
+                    conditions.append(f"channel_name NOT IN ({placeholders})")
+                    params.extend(ex_list)
+                hazard_clause = _build_hazard_filter_clause(conn, app_data_dir, hazard_cap)
+                if hazard_clause:
+                    conditions.append(hazard_clause)
+                if only_unassigned:
+                    unassigned_clause = _build_unassigned_albums_clause(conn, app_data_dir)
+                    if unassigned_clause:
+                        conditions.append(unassigned_clause)
+
+                where_clause = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+                cursor.execute(f"SELECT count(*) FROM {target_table}{where_clause}", params)
+                cnt = cursor.fetchone()[0]
+                return {"data": {"count": cnt}}
+
+            elif act in ["get_channels", "list_channels"]:
+                if target_table not in tables:
+                    return {"data": {"channels": []}}
+
+                sync_channel_approval_status(app_data_dir)
+
+                hazard_cap = payload.get("hazard_cap") or payload.get("max_hazard") if isinstance(payload, dict) else None
+                only_unassigned = False
+                if isinstance(payload, dict):
+                    only_unassigned = bool(
+                        payload.get("only_unassigned_albums")
+                        or payload.get("unassigned_only")
+                        or payload.get("discovery_mode")
+                    )
+                exclude_ids = payload.get("exclude_ids") if isinstance(payload, dict) else None
+                exclude_channel = payload.get("exclude_channel") or payload.get("exclude_channels") if isinstance(payload, dict) else None
+                hide_empty = bool(payload.get("hide_empty", True)) if isinstance(payload, dict) else True
+
+                where_conditions = ["s.channel_name IS NOT NULL AND TRIM(s.channel_name) != ''"]
+                best_where_conditions = ["s2.channel_name IS NOT NULL AND TRIM(s2.channel_name) != ''"]
+                where_params = []
+
+                ex_ids = _parse_exclude_list(exclude_ids)
+                if ex_ids:
+                    placeholders = ", ".join(["?"] * len(ex_ids))
+                    where_conditions.append(f"s.id NOT IN ({placeholders})")
+                    best_where_conditions.append(f"s2.id NOT IN ({placeholders})")
+                    where_params.extend(ex_ids)
+
+                ex_list = _parse_exclude_list(exclude_channel)
+                if ex_list:
+                    placeholders = ", ".join(["?"] * len(ex_list))
+                    where_conditions.append(f"s.channel_name NOT IN ({placeholders})")
+                    best_where_conditions.append(f"s2.channel_name NOT IN ({placeholders})")
+                    where_params.extend(ex_list)
+
+                hazard_clause = _build_hazard_filter_clause(conn, app_data_dir, hazard_cap)
+                if hazard_clause:
+                    where_conditions.append(hazard_clause.replace("id IN", "s.id IN").replace("id NOT IN", "s.id NOT IN"))
+                    best_where_conditions.append(hazard_clause.replace("id IN", "s2.id IN").replace("id NOT IN", "s2.id NOT IN"))
+
+                if only_unassigned:
+                    unassigned_clause = _build_unassigned_albums_clause(conn, app_data_dir)
+                    if unassigned_clause:
+                        where_conditions.append(unassigned_clause.replace("id NOT IN", "s.id NOT IN"))
+                        best_where_conditions.append(unassigned_clause.replace("id NOT IN", "s2.id NOT IN"))
+
+                where_sql = f" WHERE {' AND '.join(where_conditions)}"
+                best_where_sql = f" WHERE {' AND '.join(best_where_conditions)}"
+                having_sql = " HAVING cnt > 0" if hide_empty else ""
+
+                t4_file = app_data_dir / "_4_display.db"
+                if t4_file.exists():
+                    cursor.execute("PRAGMA database_list")
+                    attached = {row[1] for row in cursor.fetchall()}
+                    if "t4_db" not in attached:
+                        cursor.execute("ATTACH DATABASE ? AS t4_db", (str(t4_file),))
+                    cursor.execute(f"""
+                        SELECT
+                            s.channel_name,
+                            s.channel_id,
+                            COUNT(*) as cnt,
+                            AVG(COALESCE(t4.hazard_level, 3.0)) as avg_h,
+                            best.best_id,
+                            best.best_thumb,
+                            best.best_title
+                        FROM {target_table} s
+                        LEFT JOIN t4_db.tier_4_data t4 ON s.id = t4.id
+                        LEFT JOIN (
+                            SELECT s2.channel_name as bcn, s2.id as best_id, s2.thumbnail as best_thumb, s2.title as best_title,
+                                   ROW_NUMBER() OVER (
+                                       PARTITION BY s2.channel_name
+                                       ORDER BY COALESCE(t42.hazard_level, 3.0) DESC, s2.published_at DESC
+                                   ) as rn
+                            FROM {target_table} s2
+                            LEFT JOIN t4_db.tier_4_data t42 ON s2.id = t42.id
+                            {best_where_sql}
+                        ) best ON best.bcn = s.channel_name AND best.rn = 1
+                        {where_sql}
+                        GROUP BY s.channel_name
+                        {having_sql}
+                        ORDER BY cnt DESC, s.channel_name ASC
+                        LIMIT 500
+                    """, where_params * 2 if where_params else ())
+                    channels = [
+                        {
+                            "name": r[0],
+                            "channel_id": r[1] or "",
+                            "count": r[2],
+                            "avg_hazard": round(float(r[3]), 2) if r[3] is not None else 3.0,
+                            "best_id": r[4] or "",
+                            "best_thumbnail": r[5] or "",
+                            "best_title": r[6] or "",
+                        }
+                        for r in cursor.fetchall()
+                    ]
+                else:
+                    cursor.execute(f"""
+                        SELECT channel_name, channel_id, count(*) as cnt
+                        FROM {target_table} s
+                        {where_sql}
+                        GROUP BY s.channel_name
+                        {having_sql}
+                        ORDER BY cnt DESC, s.channel_name ASC
+                        LIMIT 500
+                    """, where_params)
+                    channels = [{"name": r[0], "channel_id": r[1] or "", "count": r[2], "avg_hazard": 3.0, "best_id": "", "best_thumbnail": "", "best_title": ""} for r in cursor.fetchall()]
+                return {"data": {"channels": channels}}
+
+            elif act == "purge_channel":
+                if target_table not in tables:
+                    return {"status": "skipped", "purged_count": 0}
+                ch_name = None
+                ch_id = None
+                if isinstance(payload, dict):
+                    ch_name = payload.get("channel_name")
+                    ch_id = payload.get("channel_id")
+                elif isinstance(payload, str):
+                    ch_name = payload
+
+                if not ch_name and not ch_id:
+                    return {"status": "error", "message": "channel_name or channel_id required"}
+
+                if ch_name:
+                    cursor.execute(f"SELECT id FROM {target_table} WHERE channel_name = ?", (ch_name,))
+                else:
+                    cursor.execute(f"SELECT id FROM {target_table} WHERE channel_id = ?", (ch_id,))
+                track_ids = [r[0] for r in cursor.fetchall()]
+
+                chunk_size = 500
+                if track_ids:
+                    for i in range(0, len(track_ids), chunk_size):
+                        chunk = track_ids[i:i + chunk_size]
+                        placeholders = ", ".join(["?"] * len(chunk))
+                        cursor.execute(f"DELETE FROM {target_table} WHERE id IN ({placeholders})", chunk)
+                    conn.commit()
+
+                    t3_file = app_data_dir / "_3_state.db"
+                    t4_purge = app_data_dir / "_4_display.db"
+
+                    for db_file, tbl in [(t3_file, "tier_3_data"), (t4_purge, "tier_4_data")]:
+                        if db_file.exists():
+                            try:
+                                with sqlite3.connect(db_file) as cx:
+                                    cx.row_factory = sqlite3.Row
+                                    cxc = cx.cursor()
+                                    cxc.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (tbl,))
+                                    if cxc.fetchone():
+                                        for i in range(0, len(track_ids), chunk_size):
+                                            chunk = track_ids[i:i + chunk_size]
+                                            placeholders = ", ".join(["?"] * len(chunk))
+                                            cxc.execute(f"DELETE FROM {tbl} WHERE id IN ({placeholders})", chunk)
+                                        cx.commit()
+                            except Exception as e:
+                                print(f"[purge_channel] Error cleaning {db_file.name}/{tbl}: {e}")
+
+                t3_file = app_data_dir / "_3_state.db"
+                if t3_file.exists():
+                    try:
+                        with sqlite3.connect(t3_file) as cx:
+                            cx.row_factory = sqlite3.Row
+                            cxc = cx.cursor()
+                            cxc.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='channel_state'")
+                            if cxc.fetchone():
+                                if ch_id:
+                                    cxc.execute("DELETE FROM channel_state WHERE channel_id = ?", (ch_id,))
+                                if ch_name:
+                                    cxc.execute("DELETE FROM channel_state WHERE channel_name = ?", (ch_name,))
+                                cx.commit()
+                    except Exception as e:
+                        print(f"[purge_channel] Error cleaning channel_state: {e}")
+
+                pl_file = app_data_dir / "playlists.db"
+                if pl_file.exists():
+                    try:
+                        with sqlite3.connect(pl_file) as cx:
+                            cxc = cx.cursor()
+                            cxc.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='channel_meta'")
+                            if cxc.fetchone():
+                                if ch_id:
+                                    cxc.execute("DELETE FROM channel_meta WHERE id = ?", (ch_id,))
+                                if ch_name:
+                                    cxc.execute("DELETE FROM channel_meta WHERE channel_name = ? OR id = ?", (ch_name, ch_name))
+                                cx.commit()
+                    except Exception as e:
+                        print(f"[purge_channel] Error cleaning channel_meta: {e}")
+
+                return {"status": "success", "purged_count": len(track_ids), "channel_name": ch_name or ch_id}
+
+            elif act in ["get_channel_tracks", "channel_tracks"]:
+                if not tables:
+                    return {"data": {}}
+                channel_ids = None
+                channel_names = None
+                if isinstance(payload, dict):
+                    channel_ids = payload.get("channel_ids") or payload.get("channel_id")
+                    channel_names = payload.get("channel_names") or payload.get("channel_name")
+                elif isinstance(payload, (list, set)):
+                    channel_ids = list(payload)
+                    channel_names = list(payload)
+                elif isinstance(payload, str):
+                    channel_ids = [payload]
+                    channel_names = [payload]
+
+                conditions = []
+                params = []
+                if channel_ids:
+                    if isinstance(channel_ids, str):
+                        channel_ids = [channel_ids]
+                    placeholders = ", ".join(["?"] * len(channel_ids))
+                    conditions.append(f"channel_id IN ({placeholders})")
+                    params.extend(channel_ids)
+                if channel_names:
+                    if isinstance(channel_names, str):
+                        channel_names = [channel_names]
+                    placeholders = ", ".join(["?"] * len(channel_names))
+                    conditions.append(f"channel_name IN ({placeholders})")
+                    params.extend(channel_names)
+
+                if conditions:
+                    cursor.execute(f"SELECT id, channel_id, channel_name FROM {target_table} WHERE {' OR '.join(conditions)}", params)
+                else:
+                    cursor.execute(f"SELECT id, channel_id, channel_name FROM {target_table} WHERE (channel_id IS NOT NULL AND channel_id != '') OR (channel_name IS NOT NULL AND channel_name != '')")
+
+                mapping: Dict[str, List[str]] = {}
+                for row in cursor.fetchall():
+                    tid = str(row[0])
+                    ch_id = str(row[1]) if row[1] else ""
+                    ch_name = str(row[2]) if len(row) > 2 and row[2] else ""
+                    if ch_id:
+                        if ch_id not in mapping:
+                            mapping[ch_id] = []
+                        mapping[ch_id].append(tid)
+                    if ch_name:
+                        if ch_name not in mapping:
+                            mapping[ch_name] = []
+                        mapping[ch_name].append(tid)
+                return {"data": mapping}
+
+            elif act in ["sample", "random_sample"]:
+                if target_table not in tables:
+                    return {"data": {}}
+                limit = 50
+                channel_name = None
+                channels = None
+                exclude_channel = None
+                hazard_cap = None
+                search_query = None
+                exclude_ids = None  # NEW: blocked song IDs to exclude immediately
+                only_unassigned = False
+                if isinstance(payload, dict):
+                    limit = int(payload.get("limit", 50))
+                    channel_name = payload.get("channel_name") or payload.get("channel")
+                    channels = payload.get("channels") or payload.get("channel_names")
+                    exclude_channel = payload.get("exclude_channel") or payload.get("exclude_channel_name") or payload.get("exclude_playlist") or payload.get("exclude_channels")
+                    hazard_cap = payload.get("hazard_cap") or payload.get("max_hazard")
+                    search_query = payload.get("search") or payload.get("query") or payload.get("q")
+                    exclude_ids = payload.get("exclude_ids")  # NEW: blocked song IDs from frontend
+                    only_unassigned = bool(
+                        payload.get("only_unassigned_albums")
+                        or payload.get("unassigned_only")
+                        or payload.get("discovery_mode")
+                    )
+                elif isinstance(payload, (int, str)) and str(payload).isdigit():
+                    limit = int(payload)
+                limit = max(1, min(limit, 500))
+
+                if channel_name in ["DISCOVERY:unassigned", "MODE:unassigned_album", "UNASSIGNED_ALBUM"]:
+                    only_unassigned = True
+                    channel_name = None
+
+                conditions = []
+                params = []
+
+                # NEW: Exclude blocked song IDs immediately (no blacklist DB needed)
+                ex_ids = _parse_exclude_list(exclude_ids)
+                if ex_ids:
+                    placeholders = ", ".join(["?"] * len(ex_ids))
+                    conditions.append(f"id NOT IN ({placeholders})")
+                    params.extend(ex_ids)
+
+                inc_chs = _parse_exclude_list(channels)
+                inc_ids = _parse_exclude_list(payload.get("include_ids")) if isinstance(payload, dict) else []
+                if inc_chs or inc_ids:
+                    or_parts = []
+                    if inc_chs:
+                        or_parts.append("channel_name IN (" + ", ".join(["?"] * len(inc_chs)) + ")")
+                        params.extend(inc_chs)
+                    if inc_ids:
+                        or_parts.append("id IN (" + ", ".join(["?"] * len(inc_ids)) + ")")
+                        params.extend(inc_ids)
+                    conditions.append("(" + " OR ".join(or_parts) + ")")
+                elif channel_name and channel_name != "ALL":
+                    conditions.append("channel_name = ?")
+                    params.append(channel_name)
+
+                ex_list = _parse_exclude_list(exclude_channel)
+                if ex_list:
+                    placeholders = ", ".join(["?"] * len(ex_list))
+                    conditions.append(f"channel_name NOT IN ({placeholders})")
+                    params.extend(ex_list)
+                hazard_clause = _build_hazard_filter_clause(conn, app_data_dir, hazard_cap)
+                if hazard_clause:
+                    conditions.append(hazard_clause)
+                if only_unassigned:
+                    unassigned_clause = _build_unassigned_albums_clause(conn, app_data_dir)
+                    if unassigned_clause:
+                        conditions.append(unassigned_clause)
+                if search_query and str(search_query).strip():
+                    q = str(search_query).strip()
+                    conditions.append("(title LIKE ? OR channel_name LIKE ? OR id LIKE ?)")
+                    params.extend([f"%{q}%", f"%{q}%", f"%{q}%"])
+
+                where_clause = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+                order = "ORDER BY RANDOM()" if not search_query else "ORDER BY title ASC"
+                cursor.execute(f"SELECT * FROM {target_table}{where_clause} {order} LIMIT ?", (*params, limit))
+                rows = cursor.fetchall()
+                result = {}
+                for row in rows:
+                    row_dict = dict(row)
+                    row_id = str(row_dict.pop("id", ""))
+                    result[row_id] = row_dict
+                return {"data": result}
+
+            elif act in ["paginate", "read_page"]:
+                if not tables:
+                    return {"data": {"items": {}, "total": 0, "page": 1, "limit": 50}}
+                page = 1
+                limit = 50
+                if isinstance(payload, dict):
+                    page = max(1, int(payload.get("page", 1)))
+                    limit = max(1, min(int(payload.get("limit", 50)), 500))
+                offset = (page - 1) * limit
+                cursor.execute(f"SELECT count(*) FROM {target_table}")
+                total = cursor.fetchone()[0]
+                cursor.execute(f"SELECT * FROM {target_table} LIMIT ? OFFSET ?", (limit, offset))
+                rows = cursor.fetchall()
+                result = {}
+                for row in rows:
+                    row_dict = dict(row)
+                    row_id = str(row_dict.pop("id", ""))
+                    result[row_id] = row_dict
+                return {"data": {"items": result, "total": total, "page": page, "limit": limit}}
+
+            elif act in ["batch_read", "read_keys"]:
+                keys_to_read = payload if isinstance(payload, list) else ([key] if key else [])
+                if target_table not in tables or not keys_to_read:
+                    return {"data": {}}
+
+                chunk_size = 500
+                result = {}
+                for i in range(0, len(keys_to_read), chunk_size):
+                    chunk = keys_to_read[i:i + chunk_size]
+                    placeholders = ", ".join(["?"] * len(chunk))
+                    cursor.execute(f"SELECT * FROM {target_table} WHERE {pk_col} IN ({placeholders})", chunk)
+                    for row in cursor.fetchall():
+                        row_dict = dict(row)
+                        row_id = str(row_dict.pop(pk_col, row_dict.pop("id", "")))
+                        result[row_id] = row_dict
+                return {"data": result}
+
+            elif act in ["batch_delete", "delete"]:
+                if act == "delete":
+                    keys_to_delete = [key] if key else []
+                else:
+                    keys_to_delete = payload if isinstance(payload, list) else ([key] if key else [])
+
+                if not keys_to_delete:
+                    return {"status": "skipped", "deleted_count": 0}
+
+                if target_table in tables:
+                    chunk_size = 500
+                    total_deleted = 0
+                    for i in range(0, len(keys_to_delete), chunk_size):
+                        chunk = keys_to_delete[i:i + chunk_size]
+                        placeholders = ", ".join(["?"] * len(chunk))
+                        cursor.execute(f"DELETE FROM {target_table} WHERE {pk_col} IN ({placeholders})", chunk)
+                        total_deleted += cursor.rowcount
+                    conn.commit()
+
+                    # When deleting from Tier 1, cascade deletion to Tier 3 and Tier 4, and record in blocked.db
+                    if tier == "1":
+                        cascade_files = [
+                            app_data_dir / "_3_state.db",
+                            app_data_dir / "_4_display.db",
+                        ]
+                        for db_file in cascade_files:
+                            if db_file.exists():
+                                try:
+                                    with sqlite3.connect(db_file) as cx:
+                                        cxc = cx.cursor()
+                                        cxc.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
+                                        sub_tables = [r[0] for r in cxc.fetchall()]
+                                        for st in sub_tables:
+                                            for i in range(0, len(keys_to_delete), chunk_size):
+                                                chunk = keys_to_delete[i:i + chunk_size]
+                                                placeholders = ", ".join(["?"] * len(chunk))
+                                                cxc.execute(f"DELETE FROM {st} WHERE id IN ({placeholders})", chunk)
+                                        cx.commit()
+                                except Exception:
+                                    pass
+
+                        # Record deleted tracks in blocked.db so they won't be re-ingested by curler
+                        blocked_db = app_data_dir / "blocked.db"
+                        try:
+                            with sqlite3.connect(blocked_db) as bc:
+                                bc.execute("""
+                                    CREATE TABLE IF NOT EXISTS blocked_tracks (
+                                        id TEXT PRIMARY KEY,
+                                        blocked_at TEXT,
+                                        reason TEXT DEFAULT 'user_block'
+                                    )
+                                """)
+                                now_iso = datetime.now().isoformat()
+                                bc.executemany(
+                                    "INSERT OR IGNORE INTO blocked_tracks (id, blocked_at, reason) VALUES (?, ?, 'user_block')",
+                                    [(str(k), now_iso) for k in keys_to_delete]
+                                )
+                                bc.commit()
+                        except Exception as be:
+                            print(f"[cascade delete] Error recording to blocked.db: {be}")
+
+                    return {"status": "success", "deleted_count": total_deleted}
+                return {"status": "skipped", "deleted_count": 0}
+
+            elif act == "batch_upsert":
+                if not isinstance(payload, dict) or not payload:
+                    return {"status": "skipped", "upserted_count": 0}
+
+                all_fields: Dict[str, str] = {}
+                for row_id, row_data in payload.items():
+                    if isinstance(row_data, dict):
+                        for col_k, col_v in row_data.items():
+                            if col_k != pk_col and col_k != "id" and col_k not in all_fields:
+                                all_fields[col_k] = infer_sqlite_column_type(col_v)
+
+                if target_table not in tables:
+                    columns_def = [f"{pk_col} TEXT PRIMARY KEY"]
+                    for col_k, col_type in all_fields.items():
+                        columns_def.append(f"{col_k} {col_type}")
+                    cursor.execute(f"CREATE TABLE IF NOT EXISTS {target_table} ({', '.join(columns_def)})")
+                    conn.commit()
+                    tables.append(target_table)
+
+                cursor.execute(f"PRAGMA table_info({target_table})")
+                existing_cols = {col_info["name"] for col_info in cursor.fetchall()}
+                for col_k, col_type in all_fields.items():
+                    if col_k not in existing_cols:
+                        cursor.execute(f"ALTER TABLE {target_table} ADD COLUMN {col_k} {col_type}")
+                        existing_cols.add(col_k)
+                conn.commit()
+
+                sorted_cols = [pk_col] + list(all_fields.keys())
+                placeholders = ", ".join(["?"] * len(sorted_cols))
+                insert_sql = f"INSERT OR REPLACE INTO {target_table} ({', '.join(sorted_cols)}) VALUES ({placeholders})"
+
+                batch_params = []
+                for row_id, row_data in payload.items():
+                    row = [str(row_id)]
+                    for col in sorted_cols[1:]:
+                        val = row_data.get(col) if isinstance(row_data, dict) else None
+                        if isinstance(val, (dict, list)):
+                            val = json.dumps(val, ensure_ascii=False)
+                        row.append(val)
+                    batch_params.append(row)
+
+                cursor.executemany(insert_sql, batch_params)
+                conn.commit()
+                return {"status": "success", "upserted_count": len(batch_params)}
+
+            elif act in ["overwrite_all", "overwrite"]:
+                if not isinstance(payload, dict):
+                    raise ValueError("Action 'overwrite_all' requires payload as Dictionary")
+
+                if not payload:
+                    return {"status": "skipped", "message": "Payload empty, cancelling table deletion safely."}
+
+                if tables:
+                    cursor.execute(f"DELETE FROM {target_table}")
+                else:
+                    first_item = next(iter(payload.values()))
+                    columns_def = [f"{pk_col} TEXT PRIMARY KEY"]
+                    if isinstance(first_item, dict):
+                        for col_name, col_val in first_item.items():
+                            if col_name in [pk_col, "id"]:
+                                continue
+                            columns_def.append(f"{col_name} {infer_sqlite_column_type(col_val)}")
+                    cursor.execute(f"CREATE TABLE IF NOT EXISTS {target_table} ({', '.join(columns_def)})")
+                    tables = [target_table]
+
+                first_item = next(iter(payload.values()))
+                if isinstance(first_item, dict):
+                    cursor.execute(f"PRAGMA table_info({target_table})")
+                    existing_cols = {col_info["name"] for col_info in cursor.fetchall()}
+                    for col_name, col_val in first_item.items():
+                        if col_name not in existing_cols and col_name not in [pk_col, "id"]:
+                            cursor.execute(f"ALTER TABLE {target_table} ADD COLUMN {col_name} {infer_sqlite_column_type(col_val)}")
+                            existing_cols.add(col_name)
+
+                    sample_cols = [pk_col] + [c for c in first_item.keys() if c not in [pk_col, "id"]]
+                    placeholders = ", ".join(["?"] * len(sample_cols))
+                    insert_sql = f"INSERT OR REPLACE INTO {target_table} ({', '.join(sample_cols)}) VALUES ({placeholders})"
+
+                    batch_rows = []
+                    for row_id, row_data in payload.items():
+                        row = [row_id]
+                        for col in sample_cols[1:]:
+                            val = row_data.get(col) if isinstance(row_data, dict) else None
+                            if isinstance(val, (dict, list)):
+                                val = json.dumps(val, ensure_ascii=False)
+                            row.append(val)
+                        batch_rows.append(row)
+
+                    cursor.executemany(insert_sql, batch_rows)
+                conn.commit()
+                return {"status": "success", "rows_written": len(payload)}
+
+            elif act == "upsert":
+                if not key:
+                    raise ValueError("Action 'upsert' requires 'key'")
+                if payload is None:
+                    payload = {}
+                if not isinstance(payload, dict):
+                    raise ValueError("Payload must be an Object")
+
+                if target_table not in tables:
+                    columns_def = [f"{pk_col} TEXT PRIMARY KEY"]
+                    for col_name, col_val in payload.items():
+                        if col_name in [pk_col, "id"]:
+                            continue
+                        columns_def.append(f"{col_name} {infer_sqlite_column_type(col_val)}")
+                    cursor.execute(f"CREATE TABLE IF NOT EXISTS {target_table} ({', '.join(columns_def)})")
+                    conn.commit()
+                    tables.append(target_table)
+
+                cursor.execute(f"PRAGMA table_info({target_table})")
+                existing_cols = {col_info["name"] for col_info in cursor.fetchall()}
+                for col_name, col_val in payload.items():
+                    if col_name not in existing_cols:
+                        cursor.execute(f"ALTER TABLE {target_table} ADD COLUMN {col_name} {infer_sqlite_column_type(col_val)}")
+                        existing_cols.add(col_name)
+                conn.commit()
+
+                cols = [pk_col]
+                placeholders = ["?"]
+                values = [key]
+                update_clauses = []
+
+                for col_name, col_val in payload.items():
+                    if col_name in [pk_col, "id"]:
+                        continue
+                    cols.append(col_name)
+                    placeholders.append("?")
+                    serialized_val = json.dumps(col_val, ensure_ascii=False) if isinstance(col_val, (dict, list)) else col_val
+                    values.append(serialized_val)
+                    update_clauses.append(f"{col_name} = excluded.{col_name}")
+
+                upsert_sql = f"""
+                    INSERT INTO {target_table} ({', '.join(cols)})
+                    VALUES ({', '.join(placeholders)})
+                    ON CONFLICT({pk_col}) DO UPDATE SET {', '.join(update_clauses) if update_clauses else f'{pk_col}=excluded.{pk_col}'}
+                """
+                cursor.execute(upsert_sql, values)
+                conn.commit()
+                if tier == "playlists":
+                    sync_channel_approval_status(app_data_dir)
+                return {"status": "success"}

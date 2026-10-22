@@ -1,0 +1,113 @@
+"""
+Update Google Colab notebook with C2 Remote GPU Worker cell and sync to Google Drive.
+"""
+
+import json
+import sys
+import urllib.request
+from pathlib import Path
+from google.oauth2 import service_account
+from google.auth.transport.requests import Request
+
+PROJECT_ROOT = Path(__file__).parent.parent
+NOTEBOOK_FILE = PROJECT_ROOT / "notebook.ipynb"
+CREDS_FILE = PROJECT_ROOT / ".secrets" / "colab-service-account.json"
+NOTEBOOK_ID = "1iYIe9pNcGO3nFYX2BOVtrLCJoF37PzP6"
+
+def update_notebook():
+    if not NOTEBOOK_FILE.exists():
+        print("[!] Notebook file not found locally")
+        return False
+
+    with open(NOTEBOOK_FILE, "r", encoding="utf-8") as f:
+        nb = json.load(f)
+
+    # Worker Cell definition
+    worker_cell = {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {
+            "id": "faust-c2-worker-cell"
+        },
+        "outputs": [],
+        "source": [
+            "# =====================================================================\n",
+            "# FAUST C2 REMOTE GPU SERVER FOR LOCAL UI\n",
+            "# Chạy cell này để cấp toàn bộ sức mạnh GPU Colab cho UI trên máy tính của bạn\n",
+            "# =====================================================================\n",
+            "\n",
+            "# 1. Đảm bảo cài đủ FastAPI, Uvicorn và công cụ mạng\n",
+            "!./colab_venv/bin/pip install fastapi uvicorn pydantic python-multipart -q\n",
+            "\n",
+            "# 2. Cài đặt Cloudflare Tunnel nếu chưa có\n",
+            "!wget -q -nc https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb > /dev/null 2>&1\n",
+            "!dpkg -i cloudflared-linux-amd64.deb > /dev/null 2>&1\n",
+            "\n",
+            "# 3. Lấy file worker mới nhất từ Google Drive\n",
+            "!cp '/content/drive/MyDrive/Blue AI/Test Projects/Google Collab/colab_worker.py' /content/colab_worker.py\n",
+            "\n",
+            "# 4. Khởi động GPU Compute Server (Tự động cấp phát URL cho Local UI)\n",
+            "!PYTHONPATH=\"\" ./colab_venv/bin/python /content/colab_worker.py\n"
+        ]
+    }
+
+    # Insert worker cell after cell-0 (the environment preparation cell)
+    cells = nb.get("cells", [])
+    # Check if already exists
+    existing_idx = None
+    for i, c in enumerate(cells):
+        if c.get("metadata", {}).get("id") == "faust-c2-worker-cell":
+            existing_idx = i
+            break
+
+    if existing_idx is not None:
+        cells[existing_idx] = worker_cell
+        print("[*] Updated existing Faust C2 worker cell")
+    else:
+        # Insert after cell 0
+        insert_pos = 1 if len(cells) > 0 else 0
+        cells.insert(insert_pos, worker_cell)
+        print(f"[*] Inserted Faust C2 worker cell at position {insert_pos}")
+
+    nb["cells"] = cells
+
+    with open(NOTEBOOK_FILE, "w", encoding="utf-8") as f:
+        json.dump(nb, f, indent=1, ensure_ascii=False)
+
+    print(f"[OK] Local notebook updated: {NOTEBOOK_FILE}")
+
+    # Push to Google Drive via Service Account
+    if CREDS_FILE.exists():
+        print("[*] Syncing updated notebook directly to Google Drive...")
+        creds = service_account.Credentials.from_service_account_file(
+            str(CREDS_FILE),
+            scopes=["https://www.googleapis.com/auth/drive"]
+        )
+        creds.refresh(Request())
+        token = creds.token
+
+        content = json.dumps(nb, ensure_ascii=False).encode('utf-8')
+        upload_url = f"https://www.googleapis.com/upload/drive/v3/files/{NOTEBOOK_ID}?uploadType=media"
+
+        req = urllib.request.Request(
+            upload_url,
+            data=content,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            },
+            method="PATCH"
+        )
+        try:
+            with urllib.request.urlopen(req) as resp:
+                print(f"[OK] Notebook successfully pushed to Google Drive (HTTP {resp.status})!")
+                return True
+        except Exception as e:
+            print(f"[!] Warning: Could not push to Drive API: {e}")
+            return False
+
+    return True
+
+if __name__ == "__main__":
+    success = update_notebook()
+    sys.exit(0 if success else 1)

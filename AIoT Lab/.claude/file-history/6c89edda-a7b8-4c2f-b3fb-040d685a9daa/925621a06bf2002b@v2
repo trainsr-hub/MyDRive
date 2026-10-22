@@ -1,0 +1,66 @@
+:: D:\My Drive\Blue AI\Test Projects\Drive Folder Template\run_app.bat
+@echo off
+setlocal EnableDelayedExpansion
+title Drive Folder Template Launcher
+
+echo ==========================================
+echo   Drive Folder Template Launcher (Background)
+echo ==========================================
+
+REM --- Hardcoded project root (can be executed from anywhere without path distortion) ---
+set "ROOT=D:\My Drive\Blue AI\Test Projects\Drive Folder Template"
+
+REM --- Strip trailing backslash for clean path construction ---
+if "!ROOT:~-1!" == "\" set "ROOT=!ROOT:~0,-1!"
+
+REM --- Centralized Executable Configuration ---
+set "PYTHON_EXE=D:\Program Files\Python\python.exe"
+
+set "PID_DIR=%TEMP%\FaustDriveReconciler"
+if not exist "%PID_DIR%" mkdir "%PID_DIR%"
+
+REM ==========================================================
+REM 1. Terminate previous Backend process tree
+REM ==========================================================
+if exist "%PID_DIR%\api.pid" (
+    for /f "usebackq delims=" %%i in ("%PID_DIR%\api.pid") do taskkill /PID %%i /T /F >nul 2>&1
+    del "%PID_DIR%\api.pid" >nul 2>&1
+)
+taskkill /FI "WINDOWTITLE eq Drive Template API*" /T /F >nul 2>&1
+
+REM ==========================================================
+REM 2. Terminate previous Vite process tree
+REM ==========================================================
+if exist "%PID_DIR%\vite.pid" (
+    for /f "usebackq delims=" %%i in ("%PID_DIR%\vite.pid") do taskkill /PID %%i /T /F >nul 2>&1
+    del "%PID_DIR%\vite.pid" >nul 2>&1
+)
+taskkill /FI "WINDOWTITLE eq Drive Template Vite*" /T /F >nul 2>&1
+
+REM ==========================================================
+REM 3. Port Clear Sweep (10190 & 10191)
+REM ==========================================================
+powershell -NoProfile -Command "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 10190, 10191 } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+
+ping 127.0.0.1 -n 2 >nul
+
+REM ==========================================================
+REM 4. Launch FastAPI Backend (HEADLESS BACKGROUND WITH HOT-RELOAD)
+REM ==========================================================
+powershell -NoProfile -Command "$p = Start-Process -FilePath 'cmd.exe' -WorkingDirectory '!ROOT!' -ArgumentList '/c \"\"!PYTHON_EXE!\" -m uvicorn server:app --host 0.0.0.0 --port 10191 --reload\"' -WindowStyle Hidden -PassThru -RedirectStandardOutput '%PID_DIR%\api.log' -RedirectStandardError '%PID_DIR%\api_err.log'; if ($p) { [System.IO.File]::WriteAllText('%PID_DIR%\api.pid', $p.Id.ToString()) }"
+
+REM ==========================================================
+REM 5. Launch Vite Frontend (HEADLESS BACKGROUND)
+REM ==========================================================
+powershell -NoProfile -Command "$p = Start-Process -FilePath 'cmd.exe' -WorkingDirectory '!ROOT!\frontend' -ArgumentList '/c npx.cmd vite --host 0.0.0.0 --port 10190' -WindowStyle Hidden -PassThru -RedirectStandardOutput '%PID_DIR%\vite.log' -RedirectStandardError '%PID_DIR%\vite_err.log'; if ($p) { [System.IO.File]::WriteAllText('%PID_DIR%\vite.pid', $p.Id.ToString()) }"
+
+echo.
+echo Initializing headless services (waiting for port binding)...
+ping 127.0.0.1 -n 3 >nul
+
+echo ==========================================
+echo   Status: Active Headless Services
+echo ==========================================
+echo Backend API : http://localhost:10191   (Log: %PID_DIR%\api.log)
+echo Frontend UI : http://localhost:10190   (Log: %PID_DIR%\vite.log)
+echo ==========================================

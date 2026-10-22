@@ -1,0 +1,258 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { Play, Pause, RotateCcw, Battery, Clock } from 'lucide-react';
+import { useClean2HPomodoroStore } from '../../../store/useClean2HPomodoroStore';
+
+// Helper to format hours:minutes:seconds
+function formatTime(seconds: number): string {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Helper to get remaining time until end of day (10:30 PM)
+function getTimeUntilEndOfDay(): string {
+  const now = new Date();
+  const endOfDay = new Date(now);
+  endOfDay.setHours(22, 30, 0, 0);
+
+  // If 10:30 PM has passed, it's tomorrow
+  if (endOfDay < now) {
+    endOfDay.setDate(endOfDay.getDate() + 1);
+  }
+
+  const diffMs = endOfDay.getTime() - now.getTime();
+  const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  return `${diffHrs}h ${diffMins}m`;
+}
+
+export const Clean2HTab: React.FC = () => {
+  const {
+    currentSession,
+    timersLeftToday,
+    initSession,
+    startSession,
+    pauseSession,
+    resumeSession,
+    completeSession,
+    tick,
+    fetchFromBackend,
+  } = useClean2HPomodoroStore();
+
+  const [timeUntilEndOfDay, setTimeUntilEndOfDay] = useState(getTimeUntilEndOfDay());
+
+  // Initialize and fetch on mount
+  useEffect(() => {
+    fetchFromBackend();
+    if (!currentSession) {
+      initSession();
+    }
+  }, []);
+
+  // Update end of day countdown every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeUntilEndOfDay(getTimeUntilEndOfDay());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Main ticker every second
+  useEffect(() => {
+    let interval: any = null;
+    if (currentSession?.isRunning) {
+      interval = setInterval(() => {
+        tick();
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [currentSession?.isRunning, tick]);
+
+  // Handle session completion
+  const handleComplete = async () => {
+    await completeSession();
+    // Start new session after completion
+    initSession();
+  };
+
+  const hoursRemaining = currentSession?.hoursRemaining ?? 2;
+  const isRunning = currentSession?.isRunning ?? false;
+  const completedToday = currentSession?.pomodorosCompleted ?? 0;
+
+  // Progress percentage
+  const totalSeconds = 2 * 60 * 60;
+  const remainingSeconds = Math.floor(hoursRemaining * 3600);
+  const elapsedSeconds = totalSeconds - remainingSeconds;
+  const progressPercent = Math.min(100, Math.max(0, (elapsedSeconds / totalSeconds) * 100));
+
+  const handleToggle = () => {
+    if (!currentSession) return;
+
+    if (isRunning) {
+      pauseSession();
+    } else if (currentSession.pausedAt) {
+      resumeSession();
+    } else {
+      startSession();
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      {/* ── TOP STATUS BAR ── */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        {/* Timers Left Badge */}
+        <div className="flex items-center gap-2 bg-[#120d1c]/90 backdrop-blur-md border border-[#2e233d] rounded-xl px-4 py-2">
+          <Battery className={`w-5 h-5 ${timersLeftToday > 0 ? 'text-emerald-400' : 'text-red-400'}`} />
+          <span className="text-sm font-mono text-zinc-200">
+            <span className={`font-bold ${timersLeftToday > 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+              {timersLeftToday}
+            </span>
+            <span className="text-zinc-400"> / 5 timers left</span>
+          </span>
+        </div>
+
+        {/* End of Day Countdown */}
+        <div className="flex items-center gap-2 bg-[#120d1c]/90 backdrop-blur-md border border-[#2e233d] rounded-xl px-4 py-2">
+          <Clock className="w-5 h-5 text-amber-400" />
+          <span className="text-sm font-mono text-zinc-200">
+            <span className="text-amber-300 font-bold">{timeUntilEndOfDay}</span>
+            <span className="text-zinc-400"> until 10:30 PM</span>
+          </span>
+        </div>
+      </div>
+
+      {/* ── MAIN TIMER CARD ── */}
+      <div
+        className={`relative w-full rounded-3xl p-8 border-2 transition-all duration-300 cursor-pointer select-none overflow-hidden ${
+          isRunning
+            ? 'bg-gradient-to-b from-[#1c152a] via-[#120d1e] to-[#0b0813] border-emerald-500/80 shadow-[0_0_35px_rgba(16,185,129,0.25)]'
+            : 'bg-gradient-to-b from-[#161022] via-[#0e0a16] to-[#08060d] border-[#37274e] hover:border-emerald-500/50'
+        }`}
+        onClick={handleToggle}
+      >
+        {/* Status Badge */}
+        <div className="absolute top-4 right-4">
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full font-cinzel text-xs font-bold tracking-wider uppercase ${
+              isRunning
+                ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-400'
+                : 'bg-[#221733] text-[#a493bc] border border-[#3d2a55]'
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isRunning ? 'bg-emerald-400 animate-ping' : 'bg-zinc-500'
+              }`}
+            />
+            <span>{isRunning ? 'RUNNING' : 'READY'}</span>
+          </div>
+        </div>
+
+        {/* Completed Count */}
+        <div className="absolute top-4 left-4">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold">
+            <span>✨</span>
+            <span>{completedToday} completed today</span>
+          </div>
+        </div>
+
+        {/* Timer Display */}
+        <div className="flex flex-col items-center justify-center py-12">
+          {/* Large Countdown */}
+          <div
+            className={`font-mono text-6xl sm:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-[#fff1cc] to-emerald-400 tracking-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)] ${
+              isRunning ? 'timer-digits-pulse' : ''
+            }`}
+          >
+            {formatTime(remainingSeconds)}
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full max-w-md mt-8">
+            <div className="relative w-full h-4 bg-[#0e0a16] border border-[#3b2a52] rounded-full p-0.5 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ease-linear ${
+                  isRunning
+                    ? 'bg-gradient-to-r from-emerald-500 via-emerald-400 to-green-400'
+                    : 'bg-emerald-600/50'
+                }`}
+                style={{ width: `${progressPercent}%` }}
+              >
+                {progressPercent > 2 && progressPercent < 99 && isRunning && (
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow-lg" />
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between mt-2 text-xs font-mono text-[#8c7a9e]">
+              <span className="text-emerald-400">
+                {progressPercent.toFixed(1)}% complete
+              </span>
+              <span>
+                {formatTime(elapsedSeconds)} elapsed
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Control Buttons */}
+        <div className="flex items-center justify-center gap-4 pt-4 border-t border-white/10">
+          {/* Play/Pause Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggle();
+            }}
+            className={`p-4 rounded-full transition-all duration-200 active:scale-95 ${
+              isRunning
+                ? 'bg-amber-500/20 border-2 border-amber-400 text-amber-300 hover:bg-amber-500/30'
+                : 'bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 hover:bg-emerald-500/30'
+            }`}
+          >
+            {isRunning ? (
+              <Pause className="w-8 h-8" />
+            ) : (
+              <Play className="w-8 h-8 ml-1" />
+            )}
+          </button>
+
+          {/* Reset Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              initSession();
+            }}
+            className="p-3 rounded-full bg-[#201730] border border-[#483761] text-zinc-400 hover:text-zinc-200 hover:border-[#5a4875] transition-all duration-200 active:scale-95"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Hint */}
+        <div className="text-center mt-4 text-[11px] font-mono text-[#78698a]">
+          {isRunning ? 'Click to pause • Timer auto-completes at 0:00:00' : 'Click to start • Focus for 2 hours without distraction'}
+        </div>
+      </div>
+
+      {/* ── COMPLETION HANDLER (when timer reaches 0) ── */}
+      {remainingSeconds <= 0 && (
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={handleComplete}
+            className="px-8 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-400 to-green-400 hover:brightness-110 text-black font-cinzel font-black text-sm tracking-widest uppercase transition active:scale-95 shadow-[0_0_30px_rgba(16,185,129,0.6)] flex items-center justify-center gap-2 mx-auto"
+          >
+            <span>✨ Complete & Save</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};

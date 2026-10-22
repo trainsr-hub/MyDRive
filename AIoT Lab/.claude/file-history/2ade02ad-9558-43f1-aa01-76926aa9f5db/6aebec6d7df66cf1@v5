@@ -1,0 +1,183 @@
+# Character, Variant, and World Tree Schema Refactor Plan
+
+## Context & Objectives
+The Manager provided a specific architectural vision to align the Character Identity system with the **Entropy Rose** data model:
+1. **Characters Table**: Canonical character definitions with default builds, introducing `short_names` (list of strings), replacing hardcoded series names with `series_ids` (list of IDs), `taxonomy_ids`, `stand_ids`, `dna_ids`, and integer `hazard_rank`. Purging legacy fields: `associate_json`, `names_json`, `hazard_class`, `taxonomy_json`, `dna_phase1_json`, `updated_at`.
+2. **Character Variants Table**: Symmetrical to `characters`, removing `char_code`, `canonical_name`, `variant_key` (unnecessary since unique hex ID exists), and `is_default` (meaningless). Using `character_id` (single foreign key), `variant_names` (list of strings), and mirroring the rest of character fields (`short_names`, `series_ids`, `taxonomy_ids`, `stand_ids`, `dna_ids`, `hazard_rank`, `base_prompt`, `outfit`, `avatar_url`).
+3. **World Table (Tree Build)**: Hierarchical tree model identical to Rose's `themes` tree: `id` (hex), `name`, `child_of` (single hex ID linking to parent world), `description`, `rules` (list of strings). Rooted at `All` -> `Internet` -> `Vtuber` -> `Hololive` -> `HoloEN` -> `HoloMyth`.
+
+---
+
+## 1. Relational Database Schema (`backend/data/rebased.db`)
+
+### Hex ID Prefix Standards (16-char monotonic hex: `<4-prefix><12-hex-ms>`)
+- `1004` — Characters
+- `1005` — Character Variants
+- `1006` — Worlds / Series Tree
+
+### SQL DDL Specification
+
+```sql
+-- ============================================================================
+-- 1. WORLDS TABLE (1006...) - Hierarchical Tree (Rose Theme Pattern)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS worlds (
+    id TEXT PRIMARY KEY,                 -- 1006... monotonic hex
+    name TEXT NOT NULL,                  -- 'All', 'Internet', 'Vtuber', 'Hololive', 'HoloEN', 'HoloMyth'
+    child_of TEXT,                       -- Parent world ID (NULL for root 'All')
+    description TEXT DEFAULT '',         -- World description & lore
+    rules TEXT NOT NULL DEFAULT '[]',    -- JSON array of rule strings
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (child_of) REFERENCES worlds(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_worlds_child_of ON worlds(child_of);
+CREATE INDEX IF NOT EXISTS idx_worlds_name ON worlds(name);
+
+-- ============================================================================
+-- 2. CHARACTERS TABLE (1004...) - Original Characters (Default Build)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS characters (
+    id TEXT PRIMARY KEY,                       -- 1004... monotonic hex
+    char_code TEXT NOT NULL UNIQUE,            -- e.g. 'A01'
+    canonical_name TEXT NOT NULL,              -- e.g. 'Amelia Watson'
+    short_names TEXT NOT NULL DEFAULT '[]',    -- JSON array of strings e.g. '["Ame", "Watson"]'
+    series_ids TEXT NOT NULL DEFAULT '[]',     -- JSON array of world hex IDs e.g. '["1006..."]'
+    taxonomy_ids TEXT NOT NULL DEFAULT '[]',   -- JSON array of taxonomy IDs
+    stand_ids TEXT NOT NULL DEFAULT '[]',      -- JSON array of stand IDs
+    dna_ids TEXT NOT NULL DEFAULT '[]',        -- JSON array of DNA IDs
+    hazard_rank INTEGER NOT NULL DEFAULT 0,    -- Integer hazard rank (e.g. 3)
+    base_prompt TEXT DEFAULT '',               -- _prpt_ visual tokens
+    outfit TEXT DEFAULT '',                    -- default outfit tokens
+    avatar_url TEXT DEFAULT '',                -- image URL
+    created_at TEXT NOT NULL                   -- creation timestamp
+);
+CREATE INDEX IF NOT EXISTS idx_characters_char_code ON characters(char_code);
+CREATE INDEX IF NOT EXISTS idx_characters_name ON characters(canonical_name);
+CREATE INDEX IF NOT EXISTS idx_characters_hazard_rank ON characters(hazard_rank);
+
+-- ============================================================================
+-- 3. CHARACTER VARIANTS TABLE (1005...) - Symmetrical Variant Builds
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS character_variants (
+    id TEXT PRIMARY KEY,                       -- 1005... monotonic hex
+    character_id TEXT NOT NULL,                -- Parent character FK (single ID)
+    variant_names TEXT NOT NULL DEFAULT '[]',  -- JSON array of strings e.g. '["The Casual Ame"]'
+    short_names TEXT NOT NULL DEFAULT '[]',    -- JSON array of strings
+    series_ids TEXT NOT NULL DEFAULT '[]',     -- JSON array of world hex IDs
+    taxonomy_ids TEXT NOT NULL DEFAULT '[]',   -- JSON array of taxonomy IDs
+    stand_ids TEXT NOT NULL DEFAULT '[]',      -- JSON array of stand IDs
+    dna_ids TEXT NOT NULL DEFAULT '[]',        -- JSON array of DNA IDs
+    hazard_rank INTEGER NOT NULL DEFAULT 0,    -- Integer hazard rank
+    base_prompt TEXT DEFAULT '',               -- variant prompt tokens
+    outfit TEXT DEFAULT '',                    -- variant outfit tokens
+    avatar_url TEXT DEFAULT '',                -- variant avatar image
+    created_at TEXT NOT NULL,                  -- creation timestamp
+    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_cv_char ON character_variants(character_id);
+```
+
+---
+
+## 2. Ingestion & Pre-Seeding Tree Structure
+
+### World Hierarchy Tree Seed:
+```
+All (Root)
+ └── Internet (Branch of Vtubers and stuffs)
+      └── Vtuber
+           └── Hololive
+                ├── HoloEN
+                │    └── HoloMyth (ID linked to Amelia Watson)
+                └── HoloJP
+                     └── Gen 3 (Usada Pekora)
+ └── Gaming
+      ├── Honkai: Star Rail (Topaz, Silver Wolf)
+      └── NieR (Yonah)
+ └── Anime & Manga
+      ├── One Piece (Nico Robin)
+      └── THE IDOLM@STER (Hino Akane)
+```
+
+### Character Seed Mapping (Example `A01.json`):
+- `char_code`: `"A01"`
+- `canonical_name`: `"Amelia Watson"`
+- `short_names`: `["Ame", "Watson"]`
+- `series_ids`: `[ID("HoloMyth")]`
+- `hazard_rank`: `3`
+- `base_prompt`: `"watson amelia, medium hair, blonde hair, bangs, hair ornament, blue eyes"`
+- `outfit`: `"deerstalker, plaid capelet, brown vest, white shirt, brown pleated skirt, single thighhigh, brown boots"`
+- Variant (`ego_01`):
+  - `character_id`: `ID("A01")`
+  - `variant_names`: `["The Casual Ame"]`
+  - `short_names`: `["Casual Ame"]`
+  - `series_ids`: `[ID("HoloMyth")]`
+  - `hazard_rank`: `3`
+  - `base_prompt`: `"amelia watson, blonde hair, blue eyes, short hair, bob cut, bangs, ahoge, tareme, medium breasts"`
+  - `outfit`: `"white shirt, brown vest, rolled sleeves, brown pleated skirt, single thighhigh, brown boots"`
+
+---
+
+## 3. Backend Refactor (`backend/`)
+
+1. **`series_db.py`**:
+   - Update schema to `id`, `name`, `child_of`, `description`, `rules`, `created_at`.
+   - Implement `get_all_worlds()` (joined with `child_of` to return `parent_name`).
+   - Implement `get_world_tree()` (returns recursive/nested tree structure).
+   - Implement `upsert_world()`, `delete_world()`.
+   - Implement tree seed function establishing the `All -> Internet -> Vtuber -> Hololive -> HoloEN -> HoloMyth` branch.
+
+2. **`character_db.py`**:
+   - Update `characters` and `character_variants` schema to the exact Vision specification.
+   - Update `upsert_character()`, `get_character_by_code()`, `get_all_characters_full()`, `delete_character()`.
+   - Update variant CRUD: `get_all_variants_full()`, `upsert_single_variant()`, `delete_variant()`.
+   - Enhance `search_characters(query)`: searches `char_code`, `canonical_name`, and inside `short_names` JSON array!
+
+3. **`main.py`**:
+   - Expose updated REST API payload models reflecting new schemas:
+     - `/api/characters`, `/api/characters/all`, `/api/characters/{char_code}`
+     - `/api/variants`, `/api/variants/{id}`
+     - `/api/worlds`, `/api/worlds/tree`, `/api/worlds/{id}`
+   - Ensure tournament assignment endpoint `/api/tournaments/{id}/slot/{slot}/select-character` continues working seamlessly.
+
+---
+
+## 4. Frontend Separated UI Refactor (`frontend/src/app/`)
+
+1. **`types/identity.ts`**:
+   - Update TypeScript interfaces:
+     - `CharacterEntity`: `short_names: string[]`, `series_ids: string[]`, `hazard_rank: number`, etc.
+     - `VariantEntity`: `variant_names: string[]`, `character_id: string`, `hazard_rank: number`, etc. (remove `variant_key`, `is_default`).
+     - `WorldEntity`: `child_of?: string | null`, `parent_name?: string`, `rules: string[]`, `description?: string`.
+
+2. **`CharactersTableView.tsx`**:
+   - Display columns: Avatar, Code (`A01`), Canonical Name, Shortened Names (`short_names`), Series tree breadcrumb (`series_ids`), Hazard Rank (`Rank 3` badge), Prompt, Outfit, Variants count, Edit/Delete.
+   - Modal Form: Fields for Code, Name, Short Names (comma-separated/tag input), Series selection (tree picker or dropdown linking to World IDs), Hazard Rank (integer), Prompt, Outfit, Avatar URL.
+
+3. **`VariantsTableView.tsx`**:
+   - Display columns: Parent Character, Variant Names list, Short Names, Linked Series, Hazard Rank, Prompt, Outfit, Edit/Delete.
+   - Modal Form: Parent Character selector, Variant Names input, Short Names, Series IDs, Hazard Rank, Prompt, Outfit, Avatar URL. (Zero `variant_key`, zero `is_default`).
+
+4. **`WorldsTableView.tsx`**:
+   - Tree View / Indented Hierarchy: Displays tree levels (`All` -> `Internet` -> `Vtuber` -> `Hololive` -> `HoloEN` -> `HoloMyth`), parent name, rule chips, description, and direct "+ Add Child Node" button.
+   - Modal Form: Name, Parent World selector (`child_of`), Description, Rules list.
+
+5. **`CharacterIdSelector.tsx`**:
+   - Search autocomplete highlights matches in `canonical_name`, `char_code`, or `short_names` (e.g. searching "Ame" immediately suggests `A01 - Amelia Watson`).
+
+---
+
+## 5. Verification Plan
+
+1. **Unit Verification (`backend/test_identity_tree.py`)**:
+   - Reset test database.
+   - Seed World Tree (`All -> Internet -> Vtuber -> Hololive -> HoloEN -> HoloMyth`).
+   - Ingest character `A01` with `short_names = ["Ame", "Watson"]` and `series_ids = [HoloMyth]`.
+   - Ingest variant `ego_01` with `variant_names = ["The Casual Ame"]`.
+   - Verify foreign keys, cascading deletions, and ancestry resolution.
+   - Search by short name `"Ame"` -> asserts `A01` found.
+2. **API & End-to-End Verification**:
+   - `GET http://localhost:8081/api/worlds` returns hierarchy with `parent_name`.
+   - `GET http://localhost:8081/api/characters?q=Ame` returns `A01`.
+   - `GET http://localhost:8081/api/variants` returns variant linked to `A01`.
+   - Verify `http://localhost:5174/identity.html` renders all 3 refactored tables cleanly.

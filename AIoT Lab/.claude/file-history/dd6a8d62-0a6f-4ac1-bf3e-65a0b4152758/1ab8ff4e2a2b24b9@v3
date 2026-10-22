@@ -1,0 +1,14 @@
+{
+  "esp32_speaker": {
+    "enabled": true,
+    "port": "COM5",
+    "baud": 2000000,
+    "sample_rate": 24000,
+    "gain": 1.2,
+    "daemon_url": "http://127.0.0.1:20129",
+    "chunk_size": 1024,
+    "default_voice": "af_bella",
+    "voice_blend": true,
+    "prosody_jitter": true
+  }
+}

@@ -1,0 +1,26 @@
+esp32_19_display_mock.html:1419 Uncaught (in promise) ReferenceError: reRollSeed is not defined
+    at generateTagColorStyle (esp32_19_display_mock.html:1419:77)
+    at esp32_19_display_mock.html:1540:26
+    at Array.map (<anonymous>)
+    at renderActivePrescript (esp32_19_display_mock.html:1539:42)
+    at loadSelectedQuote (esp32_19_display_mock.html:1178:7)
+    at init (esp32_19_display_mock.html:1153:9)
+generateTagColorStyle @ esp32_19_display_mock.html:1419
+(anonymous) @ esp32_19_display_mock.html:1540
+renderActivePrescript @ esp32_19_display_mock.html:1539
+loadSelectedQuote @ esp32_19_display_mock.html:1178
+init @ esp32_19_display_mock.html:1153
+esp32_19_display_mock.html:1419 Uncaught ReferenceError: reRollSeed is not defined
+    at generateTagColorStyle (esp32_19_display_mock.html:1419:77)
+    at esp32_19_display_mock.html:1540:26
+    at Array.map (<anonymous>)
+    at renderActivePrescript (esp32_19_display_mock.html:1539:42)
+    at loadSelectedQuote (esp32_19_display_mock.html:1178:7)
+    at navQuote (esp32_19_display_mock.html:1191:7)
+    at HTMLButtonElement.onclick (esp32_19_display_mock.html:605:58)
+generateTagColorStyle @ esp32_19_display_mock.html:1419
+(anonymous) @ esp32_19_display_mock.html:1540
+renderActivePrescript @ esp32_19_display_mock.html:1539
+loadSelectedQuote @ esp32_19_display_mock.html:1178
+navQuote @ esp32_19_display_mock.html:1191
+onclick @ esp32_19_display_mock.html:605

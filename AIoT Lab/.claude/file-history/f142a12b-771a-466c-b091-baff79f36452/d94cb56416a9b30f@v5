@@ -1,0 +1,244 @@
+#!/usr/bin/env python3
+"""
+Tier 4: Faust Remote Daemon Supervisor
+Manages process lifecycle, PID locks, signal handling, and desktop batch execution.
+"""
+
+import atexit
+import json
+import logging
+import os
+import signal
+import subprocess
+import sys
+import threading
+import time
+from pathlib import Path
+
+from domain import TelegramDirective, ExecutionResult
+from agent_service import FaustAgentService, MANAGER_USER_ID
+from telegram_egress import TelegramEgress
+from poller import TelegramPoller
+from jobs import JobManager
+from tools import SovereignTools
+
+
+DAEMON_DIR = Path(r"D:\Program Data\faust_daemon")
+PID_FILE = DAEMON_DIR / "faust_remote.pid"
+LOG_DIR = DAEMON_DIR / "logs"
+LOG_FILE = LOG_DIR / "faust_remote.log"
+CONFIG_FILE = Path(r"D:\My Drive\Blue AI\.agents\config\telegram_config.json")
+
+
+def setup_logging():
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        handlers=[
+            logging.FileHandler(str(LOG_FILE), encoding="utf-8"),
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
+
+
+class FaustRemoteDaemon:
+    """Manages the lifecycle of the Faust sovereign remote daemon."""
+
+    def __init__(self) -> None:
+        self.stop_event = threading.Event()
+        self.service = FaustAgentService()
+        self.egress = TelegramEgress()
+        self.bot_token = self.egress.bot_token
+        self.manager_id = MANAGER_USER_ID
+
+    def _acquire_pid(self) -> bool:
+        """Acquires PID lock file, failing if another instance is currently running."""
+        DAEMON_DIR.mkdir(parents=True, exist_ok=True)
+        if PID_FILE.exists():
+            try:
+                with open(PID_FILE, "r") as f:
+                    old_pid = int(f.read().strip())
+                if self._is_pid_alive(old_pid):
+                    print(f"[!] Faust Remote Daemon is already active (PID {old_pid}).")
+                    return False
+            except Exception:
+                pass
+
+        with open(PID_FILE, "w") as f:
+            f.write(str(os.getpid()))
+        return True
+
+    def _release_pid(self) -> None:
+        """Removes PID file upon clean termination."""
+        try:
+            if PID_FILE.exists():
+                PID_FILE.unlink()
+        except Exception:
+            pass
+
+    @staticmethod
+    def _is_pid_alive(pid: int) -> bool:
+        if os.name == "nt":
+            res = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}"],
+                capture_output=True, text=True
+            )
+            return str(pid) in res.stdout
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+
+    def _handle_directive(self, directive: TelegramDirective, progress_cb=None) -> None:
+        """Executes directive and posts result to originating thread."""
+        text_clean = directive.clean_text
+        lower = text_clean.lower()
+        logging.info(f"Received directive [Topic #{directive.thread_id} | Msg #{directive.message_id}]: {text_clean}")
+
+        # Send instant acknowledgment & trigger biological acoustic reflex for non-instant tasks
+        is_fast_path = lower in ("/status", "/ping", "status", "ping", "/git", "/diff", "/workspaces", "/help", "/ps", "/clear", "/new")
+        if not is_fast_path:
+            self.egress.send_briefing(
+                text="🔄 Directive acknowledged, Manager. Faust is processing...",
+                thread_id=directive.thread_id,
+                reply_to_id=directive.message_id
+            )
+            SovereignTools.trigger_acoustic_reflex("Directive received, Manager. Processing task.")
+
+        result = self.service.process_directive(directive, progress_cb)
+        logging.info(f"Directive completed [Success: {result.success} | Latency: {result.latency_ms:.1f}ms]")
+        emoji = "✅" if result.success else "❌"
+        self.egress.send_briefing(
+            text=result.output if result.success else f"Error: {result.error}",
+            thread_id=directive.thread_id,
+            reply_to_id=directive.message_id,
+            emoji=emoji
+        )
+
+    def _create_progress_callback(self, thread_id: str, message_id: str):
+        """Factory for streaming progress updates into Telegram thread."""
+        def progress(msg: str):
+            self.egress.send_briefing(text=msg, thread_id=thread_id, reply_to_id=message_id)
+        return progress
+
+    def run_foreground(self) -> None:
+        """Runs the daemon in the foreground."""
+        setup_logging()
+        if not self._acquire_pid():
+            sys.exit(1)
+
+        atexit.register(self._release_pid)
+
+        def signal_handler(signum, frame):
+            logging.info(f"Signal {signum} received. Stopping daemon...")
+            self.stop_event.set()
+
+        signal.signal(signal.SIGINT, signal_handler)
+        if hasattr(signal, "SIGTERM"):
+            signal.signal(signal.SIGTERM, signal_handler)
+
+        logging.info("Faust Remote Sovereign Daemon initializing...")
+        self.egress.send_briefing(
+            text="<b>Faust Remote Sovereign Daemon: ONLINE</b>\n\nCommand & Control link established. Zero-IDE Mode active.",
+            thread_id="4526",
+            emoji="✅"
+        )
+
+        poller = TelegramPoller(
+            bot_token=self.bot_token,
+            manager_id=self.manager_id,
+            on_directive=self._handle_directive
+        )
+
+        try:
+            poller.start(self.stop_event, progress_cb_factory=None)
+        finally:
+            logging.info("Cleaning up background jobs and releasing PID...")
+            JobManager.stop_all_jobs()
+            self._release_pid()
+            self.egress.send_briefing(
+                text="<b>Faust Remote Sovereign Daemon: OFFLINE</b>\n\nAll child jobs terminated cleanly.",
+                thread_id="4526",
+                emoji="🛑"
+            )
+
+    @classmethod
+    def start_detached(cls) -> None:
+        """Launches daemon detached without holding the console."""
+        script_path = Path(__file__).resolve()
+        python_exe = sys.executable
+
+        flags = (
+            subprocess.CREATE_NEW_PROCESS_GROUP
+            | subprocess.DETACHED_PROCESS
+            | subprocess.CREATE_NO_WINDOW
+            if os.name == "nt" else 0
+        )
+
+        subprocess.Popen(
+            [python_exe, str(script_path), "run-foreground"],
+            cwd=str(script_path.parent),
+            creationflags=flags
+        )
+        time.sleep(1.5)
+        if PID_FILE.exists():
+            print("[+] Faust Remote Sovereign Daemon started successfully.")
+        else:
+            print("[!] Daemon start verification timed out. Check logs at D:\\Program Data\\faust_daemon\\logs\\.")
+
+    @classmethod
+    def stop_daemon(cls) -> None:
+        """Stops the running daemon and its children."""
+        if not PID_FILE.exists():
+            print("[-] No active daemon PID file found.")
+            return
+
+        try:
+            with open(PID_FILE, "r") as f:
+                pid = int(f.read().strip())
+        except Exception:
+            print("[!] Could not read PID file.")
+            return
+
+        if cls._is_pid_alive(pid):
+            print(f"[*] Terminating Faust Remote Daemon (PID {pid})...")
+            if os.name == "nt":
+                subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
+            else:
+                os.kill(pid, 9)
+            print("[+] Daemon terminated.")
+        else:
+            print("[-] Daemon process was not running.")
+
+        JobManager.stop_all_jobs()
+        if PID_FILE.exists():
+            PID_FILE.unlink()
+
+
+def main():
+    action = sys.argv[1].lower() if len(sys.argv) > 1 else "status"
+
+    if action == "start":
+        FaustRemoteDaemon.start_detached()
+    elif action == "stop":
+        FaustRemoteDaemon.stop_daemon()
+    elif action == "run-foreground":
+        daemon = FaustRemoteDaemon()
+        daemon.run_foreground()
+    elif action == "status":
+        if PID_FILE.exists():
+            with open(PID_FILE, "r") as f:
+                pid = f.read().strip()
+            alive = FaustRemoteDaemon._is_pid_alive(int(pid))
+            status_str = f"ACTIVE (PID {pid})" if alive else "STALE PID FILE"
+            print(f"Faust Remote Daemon: {status_str}")
+        else:
+            print("Faust Remote Daemon: OFFLINE")
+    else:
+        print("Usage: python faust_remote.py {start|stop|status|run-foreground}")
+
+
+if __name__ == "__main__":
+    main()

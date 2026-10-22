@@ -1,0 +1,1428 @@
+============================================================================================================================================
+OMNIRoute DATABASE DEEP DIVE - 78 NEW TABLES IN ACTIVE DB
+Total Database Size: 57875.39 MB
+============================================================================================================================================
+
+============================================================================================================================================
+TABLE: _omniroute_migrations
+============================================================================================================================================
+Rows: 160 | Columns: 3 | Est. Size: 759800.00 KB
+
+Schema:
+  - version: TEXT
+  - name: TEXT
+  - applied_at: TEXT
+
+Sample Data (first 2 rows):
+  Row 1: {"version": "001", "name": "initial_schema", "applied_at": "2026-09-09 06:41:33"}
+  Row 2: {"version": "002", "name": "mcp_a2a_tables", "applied_at": "2026-09-09 06:41:33"}
+
+============================================================================================================================================
+TABLE: a2a_task_events
+============================================================================================================================================
+Rows: 0 | Columns: 5 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - task_id: TEXT
+  - event_type: TEXT
+  - data_json: TEXT
+  - created_at: TEXT
+
+============================================================================================================================================
+TABLE: a2a_tasks
+============================================================================================================================================
+Rows: 0 | Columns: 15 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - state: TEXT
+  - skill_id: TEXT
+  - input_json: TEXT
+  - output_json: TEXT
+  - cost_estimated: REAL
+  - cost_actual: REAL
+  - routing_explanation: TEXT
+  - resilience_trace: TEXT
+  - policy_verdict: TEXT
+  - api_key_id: TEXT
+  - created_at: TEXT
+  - updated_at: TEXT
+  - completed_at: TEXT
+  - expires_at: TEXT
+
+============================================================================================================================================
+TABLE: agent_bridge_state
+============================================================================================================================================
+Rows: 0 | Columns: 6 | Est. Size: 759800.00 KB
+
+Schema:
+  - agent_id: TEXT
+  - dns_enabled: INTEGER
+  - cert_trusted: INTEGER
+  - setup_completed: INTEGER
+  - last_started_at: TEXT
+  - last_error: TEXT
+
+============================================================================================================================================
+TABLE: agentic_conversations
+============================================================================================================================================
+Rows: 27,400 | Columns: 8 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - api_key_id: TEXT
+  - fingerprint_hash: TEXT
+  - last_message_count: INTEGER
+  - last_messages_hash: TEXT
+  - turn_count: INTEGER
+  - first_seen_at: TEXT
+  - last_seen_at: TEXT
+
+Key Stats:
+  - id_distinct: 27400
+  - api_key_id_distinct: 1
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "conv_ce66a4c9-8962-4bde-9690-002e546c65d6", "fingerprint_hash": "950b8eb300bf97c2268ae4908030d9ea799c01bce0e393fe017193ba166b78b9", "turn_count": "1", "first_seen_at": "2026-09-09T06:43:06.571Z", "last_seen_at": "2026-09-09T06:43:06.571Z"}
+  Row 2: {"id": "conv_7f25ccca-36ef-4376-9bee-03057ad8b9f1", "fingerprint_hash": "582a8ed7b02154a4c6d32e81513d167a2124a7849ce4e5992595d4ae26ed60a7", "turn_count": "1", "first_seen_at": "2026-09-09T06:43:06.586Z", "last_seen_at": "2026-09-09T06:43:06.586Z"}
+
+============================================================================================================================================
+TABLE: api_key_token_counters
+============================================================================================================================================
+Rows: 0 | Columns: 4 | Est. Size: 759800.00 KB
+
+Schema:
+  - limit_id: TEXT
+  - window_start: TEXT
+  - tokens_used: INTEGER
+  - updated_at: TEXT
+
+============================================================================================================================================
+TABLE: api_key_token_limit_reset_logs
+============================================================================================================================================
+Rows: 0 | Columns: 5 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - limit_id: TEXT
+  - reset_at: TEXT
+  - prev_tokens: INTEGER
+  - window_start: TEXT
+
+============================================================================================================================================
+TABLE: audit_log
+============================================================================================================================================
+Rows: 26 | Columns: 11 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - timestamp: TEXT
+  - action: TEXT
+  - actor: TEXT
+  - target: TEXT
+  - details: TEXT
+  - ip_address: TEXT
+  - resource_type: TEXT
+  - status: TEXT
+  - request_id: TEXT
+  - metadata: TEXT
+
+Key Stats:
+  - id_distinct: 26
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "543", "timestamp": "2026-10-16T00:28:41.662Z", "action": "compliance.cleanup", "actor": "system", "target": "log-retention", "details": "{\"deletedUsage\":0,\"deletedCallLogs\":0,\"deletedProxyLogs\":0,\"deletedRequestDet...", "resource_type": "maintenance", "status": "success", "metadata": 
+  Row 2: {"id": "544", "timestamp": "2026-10-16T08:08:09.697Z", "action": "compliance.cleanup", "actor": "system", "target": "log-retention", "details": "{\"deletedUsage\":0,\"deletedCallLogs\":0,\"deletedProxyLogs\":0,\"deletedRequestDet...", "resource_type": "maintenance", "status": "success", "metadata": 
+
+============================================================================================================================================
+TABLE: badge_definitions
+============================================================================================================================================
+Rows: 0 | Columns: 9 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - name: TEXT
+  - description: TEXT
+  - icon: TEXT
+  - category: TEXT
+  - rarity: TEXT
+  - criteria: TEXT
+  - hidden: INTEGER
+  - created_at: TEXT
+
+============================================================================================================================================
+TABLE: batch_item_checkpoints
+============================================================================================================================================
+Rows: 0 | Columns: 8 | Est. Size: 759800.00 KB
+
+Schema:
+  - batch_id: TEXT
+  - line_number: INTEGER
+  - custom_id: TEXT
+  - status: TEXT
+  - result_json: TEXT
+  - error_json: TEXT
+  - created_at: INTEGER
+  - updated_at: INTEGER
+
+============================================================================================================================================
+TABLE: batches
+============================================================================================================================================
+Rows: 0 | Columns: 26 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - endpoint: TEXT
+  - completion_window: TEXT
+  - status: TEXT
+  - input_file_id: TEXT
+  - output_file_id: TEXT
+  - error_file_id: TEXT
+  - created_at: INTEGER
+  - in_progress_at: INTEGER
+  - expires_at: INTEGER
+  - finalizing_at: INTEGER
+  - completed_at: INTEGER
+  - failed_at: INTEGER
+  - expired_at: INTEGER
+  - cancelling_at: INTEGER
+  - cancelled_at: INTEGER
+  - request_counts_total: INTEGER
+  - request_counts_completed: INTEGER
+  - request_counts_failed: INTEGER
+  - metadata: TEXT
+  - api_key_id: TEXT
+  - errors: TEXT
+  - model: TEXT
+  - usage: TEXT
+  - output_expires_after_seconds: INTEGER
+  - output_expires_after_anchor: TEXT
+
+============================================================================================================================================
+TABLE: call_logs
+============================================================================================================================================
+Rows: 62,022 | Columns: 42 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - timestamp: TEXT
+  - method: TEXT
+  - path: TEXT
+  - status: INTEGER
+  - model: TEXT
+  - requested_model: TEXT
+  - provider: TEXT
+  - account: TEXT
+  - connection_id: TEXT
+  - duration: INTEGER
+  - tokens_in: INTEGER
+  - tokens_out: INTEGER
+  - tokens_cache_read: INTEGER
+  - tokens_cache_creation: INTEGER
+  - tokens_reasoning: INTEGER
+  - tokens_compressed: INTEGER
+  - cache_source: TEXT
+  - request_type: TEXT
+  - source_format: TEXT
+  - target_format: TEXT
+  - api_key_id: TEXT
+  - api_key_name: TEXT
+  - combo_name: TEXT
+  - combo_step_id: TEXT
+  - combo_execution_key: TEXT
+  - error_summary: TEXT
+  - detail_state: TEXT
+  - artifact_relpath: TEXT
+  - artifact_size_bytes: INTEGER
+  - artifact_sha256: TEXT
+  - has_request_body: INTEGER
+  - has_response_body: INTEGER
+  - has_pipeline_details: INTEGER
+  - request_summary: TEXT
+  - correlation_id: TEXT
+  - model_pinned: INTEGER
+  - session_tag: TEXT
+  - reasoning_source: TEXT
+  - reasoning_chars: INTEGER
+  - response_id: TEXT
+  - error_type: TEXT
+
+Key Stats:
+  - id_distinct: 62022
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "1792027847636-836", "timestamp": "2026-10-15T01:30:47.636Z", "method": "POST", "path": "/api/providers/test", "status": "200", "model": "connection-test", "provider": "openrouter", "account": "gaming lk", "connection_id": "76a676c9-7706-4143-8a23-af8e42049769", "duration": "426", "cache_sour
+  Row 2: {"id": "1792027847663-837", "timestamp": "2026-10-15T01:30:47.663Z", "method": "POST", "path": "/api/providers/test", "status": "200", "model": "connection-test", "provider": "nvidia", "account": "main-2", "connection_id": "fdbe20e6-2bdd-4bd6-a60e-76e91b8a0719", "duration": "455", "cache_source": "u
+
+============================================================================================================================================
+TABLE: ccr_blocks
+============================================================================================================================================
+Rows: 0 | Columns: 11 | Est. Size: 759800.00 KB
+
+Schema:
+  - principal_id: TEXT
+  - hash: TEXT
+  - content: TEXT
+  - bytes: INTEGER
+  - chars: INTEGER
+  - lines: INTEGER
+  - content_type: TEXT
+  - source: TEXT
+  - created_at: INTEGER
+  - last_accessed_at: INTEGER
+  - expires_at: INTEGER
+
+============================================================================================================================================
+TABLE: cli_access_tokens
+============================================================================================================================================
+Rows: 0 | Columns: 9 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - token_hash: TEXT
+  - token_prefix: TEXT
+  - name: TEXT
+  - scope: TEXT
+  - created_at: TEXT
+  - last_used_at: TEXT
+  - expires_at: TEXT
+  - revoked_at: TEXT
+
+============================================================================================================================================
+TABLE: cloud_agent_credentials
+============================================================================================================================================
+Rows: 0 | Columns: 4 | Est. Size: 759800.00 KB
+
+Schema:
+  - provider_id: TEXT
+  - api_key_encrypted: TEXT
+  - base_url: TEXT
+  - updated_at: TEXT
+
+============================================================================================================================================
+TABLE: command_code_auth_sessions
+============================================================================================================================================
+Rows: 0 | Columns: 10 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - state_hash: TEXT
+  - status: TEXT
+  - encrypted_api_key: TEXT
+  - metadata_json: TEXT
+  - created_at: TEXT
+  - expires_at: TEXT
+  - received_at: TEXT
+  - applied_at: TEXT
+  - updated_at: TEXT
+
+============================================================================================================================================
+TABLE: compression_analytics
+============================================================================================================================================
+Rows: 0 | Columns: 28 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - timestamp: TEXT
+  - combo_id: TEXT
+  - provider: TEXT
+  - mode: TEXT
+  - original_tokens: INTEGER
+  - compressed_tokens: INTEGER
+  - tokens_saved: INTEGER
+  - duration_ms: INTEGER
+  - request_id: TEXT
+  - actual_prompt_tokens: INTEGER
+  - actual_completion_tokens: INTEGER
+  - actual_total_tokens: INTEGER
+  - actual_cache_read_tokens: INTEGER
+  - actual_cache_write_tokens: INTEGER
+  - estimated_usd_saved: REAL
+  - mcp_description_tokens_saved: INTEGER
+  - multimodal_skip_count: INTEGER
+  - receipt_source: TEXT
+  - validation_fallback: INTEGER
+  - output_mode: TEXT
+  - compression_combo_id: TEXT
+  - engine: TEXT
+  - rtk_raw_output_pointer: TEXT
+  - rtk_raw_output_bytes: INTEGER
+  - rtk_raw_output_pointers: TEXT
+  - rtk_raw_output_total_bytes: INTEGER
+  - skip_reason: TEXT
+
+============================================================================================================================================
+TABLE: compression_cache_stats
+============================================================================================================================================
+Rows: 0 | Columns: 10 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - provider: TEXT
+  - model: TEXT
+  - compression_mode: TEXT
+  - cache_control_present: INTEGER
+  - estimated_cache_hit: INTEGER
+  - tokens_saved_compression: INTEGER
+  - tokens_saved_caching: INTEGER
+  - net_savings: INTEGER
+  - created_at: DATETIME
+
+============================================================================================================================================
+TABLE: compression_engine_breakdown
+============================================================================================================================================
+Rows: 0 | Columns: 8 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - timestamp: TEXT
+  - request_id: TEXT
+  - engine: TEXT
+  - original_tokens: INTEGER
+  - compressed_tokens: INTEGER
+  - tokens_saved: INTEGER
+  - duration_ms: INTEGER
+
+============================================================================================================================================
+TABLE: compression_run_telemetry
+============================================================================================================================================
+Rows: 0 | Columns: 13 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - timestamp: INTEGER
+  - request_id: TEXT
+  - model: TEXT
+  - provider: TEXT
+  - source: TEXT
+  - tokens_before: INTEGER
+  - tokens_after: INTEGER
+  - ratio: REAL
+  - cost_delta: REAL
+  - output_styles: TEXT
+  - output_style_bypass: TEXT
+  - output_tokens: INTEGER
+
+============================================================================================================================================
+TABLE: config_audit_log
+============================================================================================================================================
+Rows: 0 | Columns: 11 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - timestamp: TEXT
+  - action: TEXT
+  - target: TEXT
+  - target_id: TEXT
+  - target_name: TEXT
+  - before_json: TEXT
+  - after_json: TEXT
+  - diff_json: TEXT
+  - source: TEXT
+  - note: TEXT
+
+============================================================================================================================================
+TABLE: connection_runtime_state
+============================================================================================================================================
+Rows: 0 | Columns: 11 | Est. Size: 759800.00 KB
+
+Schema:
+  - connection_id: TEXT
+  - refresh_circuit_streak: INTEGER
+  - refresh_circuit_until: TEXT
+  - refresh_last_fail_at: TEXT
+  - warmup_circuit_streak: INTEGER
+  - warmup_circuit_until: TEXT
+  - warmup_last_fail_at: TEXT
+  - last_warmup_at: TEXT
+  - last_warmup_result: TEXT
+  - warmup_tokens_used: INTEGER
+  - updated_at: TEXT
+
+============================================================================================================================================
+TABLE: context_handoffs
+============================================================================================================================================
+Rows: 99 | Columns: 15 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - session_id: TEXT
+  - combo_name: TEXT
+  - from_account: TEXT
+  - summary: TEXT
+  - key_decisions: TEXT
+  - task_progress: TEXT
+  - active_entities: TEXT
+  - message_count: INTEGER
+  - model: TEXT
+  - warning_threshold_pct: REAL
+  - generated_at: TEXT
+  - expires_at: TEXT
+  - created_at: TEXT
+  - last_model: TEXT
+
+Key Stats:
+  - id_distinct: 99
+  - session_id_distinct: 99
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "186b574464a62e97", "session_id": "84afbd777fb96a1c", "combo_name": "Faust-ST", "from_account": "universal:agy/gemini-3.7-flash-tiered", "summary": "The Manager initiated a session with Faust to configure multiple multi-agent ...", "key_decisions": "[\"Faust-ST combo is designated for Tier 1 
+  Row 2: {"id": "9dcd15c304a6034a", "session_id": "465d29936aa758f2", "combo_name": "Faust-ST", "from_account": "universal:agy/gemini-3.7-flash-tiered", "summary": "The Manager has reorganized the workspace by moving the sandbox project (Univ...", "key_decisions": "[\"Universe 25 moved out of the main Faust 
+
+============================================================================================================================================
+TABLE: conversation_turn_nodes
+============================================================================================================================================
+Rows: 818,570 | Columns: 8 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - conversation_id: TEXT
+  - parent_id: TEXT
+  - role: TEXT
+  - content_hash: TEXT
+  - last_correlation_id: TEXT
+  - first_seen_at: TEXT
+  - last_seen_at: TEXT
+
+Key Stats:
+  - id_distinct: 818570
+  - conversation_id_distinct: 27400
+  - parent_id_distinct: 791170
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "722080acabf154f6b358f0e04c18e1bd501d78143f42f3e9b293a1a1190539e1", "conversation_id": "conv_ce66a4c9-8962-4bde-9690-002e546c65d6", "role": "user", "content_hash": "bf1fe41240cd1321afa6546580071093e61b9b8be3038507fca4274b0c244074", "last_correlation_id": "968c320a-d9a6-45e1-9878-2e567aa5ab74"
+  Row 2: {"id": "1870dec9fe6c0e1201313cc8d1fdf96fdace616e91a3438ef92d99cbd43d79da", "conversation_id": "conv_7f25ccca-36ef-4376-9bee-03057ad8b9f1", "role": "user", "content_hash": "b0eddbebeba6a01a2c397c86fd046ea2dbf5af52e451cb73fa77ce2fc2e8085d", "last_correlation_id": "6abfd814-cc12-48ba-b642-aee3e531ba7a"
+
+============================================================================================================================================
+TABLE: daily_usage_summary
+============================================================================================================================================
+Rows: 0 | Columns: 9 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - provider: TEXT
+  - model: TEXT
+  - date: TEXT
+  - total_requests: INTEGER
+  - total_input_tokens: INTEGER
+  - total_output_tokens: INTEGER
+  - total_cost: REAL
+  - created_at: TEXT
+
+============================================================================================================================================
+TABLE: discovery_results
+============================================================================================================================================
+Rows: 0 | Columns: 13 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - provider_id: TEXT
+  - method: TEXT
+  - endpoint: TEXT
+  - auth_type: TEXT
+  - models: TEXT
+  - rate_limit: TEXT
+  - feasibility: INTEGER
+  - risk_level: TEXT
+  - status: TEXT
+  - notes: TEXT
+  - discovered_at: TEXT
+  - verified_at: TEXT
+
+============================================================================================================================================
+TABLE: domain_budget_reset_logs
+============================================================================================================================================
+Rows: 0 | Columns: 8 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - api_key_id: TEXT
+  - reset_interval: TEXT
+  - previous_spend: REAL
+  - reset_at: INTEGER
+  - next_reset_at: INTEGER
+  - period_start: INTEGER
+  - period_end: INTEGER
+
+============================================================================================================================================
+TABLE: domain_cost_history
+============================================================================================================================================
+Rows: 4,246 | Columns: 4 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - api_key_id: TEXT
+  - cost: REAL
+  - timestamp: INTEGER
+
+Key Stats:
+  - id_distinct: 4246
+  - api_key_id_distinct: 1
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "5463", "api_key_id": "b536aeb7-02d8-49e0-89b5-83b8478f4fd8", "cost": "0.8186625000000001", "timestamp": "1790069178471"}
+  Row 2: {"id": "5464", "api_key_id": "b536aeb7-02d8-49e0-89b5-83b8478f4fd8", "cost": "0.8191575000000001", "timestamp": "1790069196047"}
+
+============================================================================================================================================
+TABLE: domain_lockout_state
+============================================================================================================================================
+Rows: 0 | Columns: 3 | Est. Size: 759800.00 KB
+
+Schema:
+  - identifier: TEXT
+  - attempts: TEXT
+  - locked_until: INTEGER
+
+============================================================================================================================================
+TABLE: eval_runs
+============================================================================================================================================
+Rows: 0 | Columns: 17 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - run_group_id: TEXT
+  - suite_id: TEXT
+  - suite_name: TEXT
+  - target_type: TEXT
+  - target_id: TEXT
+  - target_label: TEXT
+  - api_key_id: TEXT
+  - pass_rate: INTEGER
+  - total: INTEGER
+  - passed: INTEGER
+  - failed: INTEGER
+  - avg_latency_ms: INTEGER
+  - summary_json: TEXT
+  - results_json: TEXT
+  - outputs_json: TEXT
+  - created_at: TEXT
+
+============================================================================================================================================
+TABLE: exclusive_connection_leases
+============================================================================================================================================
+Rows: 0 | Columns: 12 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - lease_owner_hash: TEXT
+  - api_key_id: TEXT
+  - provider: TEXT
+  - connection_id: TEXT
+  - generation: INTEGER
+  - state: TEXT
+  - acquired_at: TEXT
+  - renewed_at: TEXT
+  - expires_at: TEXT
+  - ended_at: TEXT
+  - end_reason: TEXT
+
+============================================================================================================================================
+TABLE: files
+============================================================================================================================================
+Rows: 0 | Columns: 10 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - bytes: INTEGER
+  - created_at: INTEGER
+  - filename: TEXT
+  - purpose: TEXT
+  - content: BLOB
+  - mime_type: TEXT
+  - api_key_id: TEXT
+  - deleted_at: INTEGER
+  - expires_at: INTEGER
+
+============================================================================================================================================
+TABLE: free_proxies
+============================================================================================================================================
+Rows: 0 | Columns: 14 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - source: TEXT
+  - host: TEXT
+  - port: INTEGER
+  - type: TEXT
+  - country_code: TEXT
+  - quality_score: INTEGER
+  - latency_ms: INTEGER
+  - anonymity: TEXT
+  - last_validated: TEXT
+  - in_pool: INTEGER
+  - pool_proxy_id: TEXT
+  - created_at: TEXT
+  - updated_at: TEXT
+
+============================================================================================================================================
+TABLE: free_proxy_sync_errors
+============================================================================================================================================
+Rows: 0 | Columns: 3 | Est. Size: 759800.00 KB
+
+Schema:
+  - source: TEXT
+  - errors: TEXT
+  - updated_at: TEXT
+
+============================================================================================================================================
+TABLE: hourly_usage_summary
+============================================================================================================================================
+Rows: 0 | Columns: 9 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - provider: TEXT
+  - model: TEXT
+  - date_hour: TEXT
+  - total_requests: INTEGER
+  - total_input_tokens: INTEGER
+  - total_output_tokens: INTEGER
+  - total_cost: REAL
+  - created_at: TEXT
+
+============================================================================================================================================
+TABLE: inspector_session_requests
+============================================================================================================================================
+Rows: 0 | Columns: 3 | Est. Size: 759800.00 KB
+
+Schema:
+  - session_id: TEXT
+  - seq: INTEGER
+  - payload: TEXT
+
+============================================================================================================================================
+TABLE: inspector_sessions
+============================================================================================================================================
+Rows: 0 | Columns: 6 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - name: TEXT
+  - started_at: TEXT
+  - ended_at: TEXT
+  - request_count: INTEGER
+  - profile: TEXT
+
+============================================================================================================================================
+TABLE: invite_tokens
+============================================================================================================================================
+Rows: 0 | Columns: 11 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - code: TEXT
+  - token_hash: TEXT
+  - created_by: TEXT
+  - used_by: TEXT
+  - server_url: TEXT
+  - max_uses: INTEGER
+  - use_count: INTEGER
+  - expires_at: TEXT
+  - revoked_at: TEXT
+  - created_at: TEXT
+
+============================================================================================================================================
+TABLE: job_runs
+============================================================================================================================================
+Rows: 20,375 | Columns: 9 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - job_id: TEXT
+  - started_at: TEXT
+  - finished_at: TEXT
+  - status: TEXT
+  - error_message: TEXT
+  - records_affected: INTEGER
+  - duration_ms: INTEGER
+  - created_at: TEXT
+
+Key Stats:
+  - id_distinct: 20375
+  - job_id_distinct: 2
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "8431", "job_id": "budget_reset", "started_at": "2026-09-22T01:27:27.706Z", "finished_at": "2026-09-22T01:27:27.707Z", "status": "success", "duration_ms": "1", "created_at": "2026-09-22 01:27:27"}
+  Row 2: {"id": "8435", "job_id": "token_health_check", "started_at": "2026-09-22T01:30:28.203Z", "finished_at": "2026-09-22T01:30:34.477Z", "status": "success", "records_affected": "37", "duration_ms": "6274", "created_at": "2026-09-22 01:30:34"}
+
+============================================================================================================================================
+TABLE: leaderboard
+============================================================================================================================================
+Rows: 3 | Columns: 4 | Est. Size: 759800.00 KB
+
+Schema:
+  - api_key_id: TEXT
+  - scope: TEXT
+  - score: INTEGER
+  - updated_at: TEXT
+
+Key Stats:
+  - api_key_id_distinct: 1
+
+Sample Data (first 2 rows):
+  Row 1: {"api_key_id": "b536aeb7-02d8-49e0-89b5-83b8478f4fd8", "scope": "global", "score": "44750", "updated_at": "2026-10-22 01:30:40"}
+  Row 2: {"api_key_id": "b536aeb7-02d8-49e0-89b5-83b8478f4fd8", "scope": "monthly", "score": "44750", "updated_at": "2026-10-22 01:30:40"}
+
+============================================================================================================================================
+TABLE: mcp_tool_audit
+============================================================================================================================================
+Rows: 0 | Columns: 9 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - tool_name: TEXT
+  - input_hash: TEXT
+  - output_summary: TEXT
+  - duration_ms: INTEGER
+  - api_key_id: TEXT
+  - success: INTEGER
+  - error_code: TEXT
+  - created_at: TEXT
+
+============================================================================================================================================
+TABLE: memories
+============================================================================================================================================
+Rows: 0 | Columns: 14 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - api_key_id: TEXT
+  - session_id: TEXT
+  - type: TEXT
+  - key: TEXT
+  - content: TEXT
+  - metadata: TEXT
+  - created_at: TEXT
+  - updated_at: TEXT
+  - expires_at: TEXT
+  - memory_id: INTEGER
+  - needs_reindex: INTEGER
+  - access_count: INTEGER
+  - last_accessed_at: TEXT
+
+============================================================================================================================================
+TABLE: memory_fts
+============================================================================================================================================
+Rows: 0 | Columns: 2 | Est. Size: 759800.00 KB
+
+Schema:
+  - content: 
+  - key: 
+
+============================================================================================================================================
+TABLE: memory_fts_config
+============================================================================================================================================
+Rows: 1 | Columns: 2 | Est. Size: 759800.00 KB
+
+Schema:
+  - k: 
+  - v: 
+
+Sample Data (first 2 rows):
+  Row 1: {"k": "version", "v": "4"}
+
+============================================================================================================================================
+TABLE: memory_fts_data
+============================================================================================================================================
+Rows: 2 | Columns: 2 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - block: BLOB
+
+Key Stats:
+  - id_distinct: 2
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "1", "block": "b''"}
+  Row 2: {"id": "10", "block": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00'"}
+
+============================================================================================================================================
+TABLE: memory_fts_docsize
+============================================================================================================================================
+Rows: 0 | Columns: 2 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - sz: BLOB
+
+============================================================================================================================================
+TABLE: memory_fts_idx
+============================================================================================================================================
+Rows: 0 | Columns: 3 | Est. Size: 759800.00 KB
+
+Schema:
+  - segid: 
+  - term: 
+  - pgno: 
+
+============================================================================================================================================
+TABLE: memory_vec_meta
+============================================================================================================================================
+Rows: 1 | Columns: 5 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - active_dim: INTEGER
+  - embedding_signature: TEXT
+  - last_reset_at: TEXT
+  - vec_loaded: INTEGER
+
+Key Stats:
+  - id_distinct: 1
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "1"}
+
+============================================================================================================================================
+TABLE: middleware_logs
+============================================================================================================================================
+Rows: 0 | Columns: 8 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - hook_name: TEXT
+  - request_id: TEXT
+  - duration_ms: INTEGER
+  - mutated: INTEGER
+  - skipped: INTEGER
+  - error: TEXT
+  - timestamp: TEXT
+
+============================================================================================================================================
+TABLE: plugin_analytics
+============================================================================================================================================
+Rows: 0 | Columns: 7 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - plugin_name: TEXT
+  - hook: TEXT
+  - duration_ms: INTEGER
+  - success: INTEGER
+  - error_message: TEXT
+  - created_at: TEXT
+
+============================================================================================================================================
+TABLE: plugin_metrics
+============================================================================================================================================
+Rows: 0 | Columns: 6 | Est. Size: 759800.00 KB
+
+Schema:
+  - plugin_name: TEXT
+  - event: TEXT
+  - calls: INTEGER
+  - errors: INTEGER
+  - total_duration_ms: REAL
+  - last_called_at: TEXT
+
+============================================================================================================================================
+TABLE: provider_quota_reset_events
+============================================================================================================================================
+Rows: 712 | Columns: 13 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - provider: TEXT
+  - connection_id: TEXT
+  - window_key: TEXT
+  - window_started_at: TEXT
+  - window_resets_at: TEXT
+  - observed_at: TEXT
+  - previous_remaining_percentage: REAL
+  - new_remaining_percentage: REAL
+  - previous_used_percentage: REAL
+  - new_used_percentage: REAL
+  - raw_data: TEXT
+  - created_at: TEXT
+
+Key Stats:
+  - id_distinct: 712
+  - provider_distinct: 1
+  - connection_id_distinct: 28
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "1", "provider": "agy", "connection_id": "20923519-7a83-4c8f-a5fd-2e4ddda177cb", "window_key": "gemini_weekly", "window_started_at": "2026-09-16T15:56:04.000Z", "window_resets_at": "2026-09-17T00:02:03.000Z", "observed_at": "2026-09-10T00:02:33.794Z", "previous_remaining_percentage": "100.0",
+  Row 2: {"id": "2", "provider": "agy", "connection_id": "20923519-7a83-4c8f-a5fd-2e4ddda177cb", "window_key": "claude_gpt_weekly", "window_started_at": "2026-09-16T15:56:04.000Z", "window_resets_at": "2026-09-17T00:02:06.000Z", "observed_at": "2026-09-10T00:02:33.795Z", "previous_remaining_percentage": "100
+
+============================================================================================================================================
+TABLE: proxy_logs
+============================================================================================================================================
+Rows: 100,162 | Columns: 18 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - timestamp: TEXT
+  - status: TEXT
+  - proxy_type: TEXT
+  - proxy_host: TEXT
+  - proxy_port: INTEGER
+  - level: TEXT
+  - level_id: TEXT
+  - provider: TEXT
+  - target_url: TEXT
+  - public_ip: TEXT
+  - latency_ms: INTEGER
+  - error: TEXT
+  - connection_id: TEXT
+  - combo_id: TEXT
+  - account: TEXT
+  - tls_fingerprint: INTEGER
+  - egress_ip: TEXT
+
+Key Stats:
+  - id_distinct: 100162
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "92bc8e94-a3f4-4393-baa6-85c8220b2e70", "timestamp": "2026-10-08T03:08:37.224Z", "status": "success", "level": "direct", "provider": "openrouter", "target_url": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free", "public_ip": "127.0.0.1", "latency_ms": "3036", "connection_id": "76a676c9-7706
+  Row 2: {"id": "c6c3e4ed-e5fc-4551-a30c-1a81fe39d4f8", "timestamp": "2026-10-08T03:09:34.605Z", "status": "success", "level": "direct", "provider": "openrouter", "target_url": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free", "public_ip": "127.0.0.1", "latency_ms": "57299", "connection_id": "76a676c9-770
+
+============================================================================================================================================
+TABLE: proxy_scope_rotation
+============================================================================================================================================
+Rows: 0 | Columns: 7 | Est. Size: 759800.00 KB
+
+Schema:
+  - scope: TEXT
+  - scope_id: TEXT
+  - strategy: TEXT
+  - cursor: INTEGER
+  - sticky_window_minutes: INTEGER
+  - rotated_at: TEXT
+  - updated_at: TEXT
+
+============================================================================================================================================
+TABLE: quota_consumption
+============================================================================================================================================
+Rows: 0 | Columns: 5 | Est. Size: 759800.00 KB
+
+Schema:
+  - api_key_id: TEXT
+  - dimension_key: TEXT
+  - bucket_index: INTEGER
+  - consumed: REAL
+  - updated_at: INTEGER
+
+============================================================================================================================================
+TABLE: quota_snapshots
+============================================================================================================================================
+Rows: 275,563 | Columns: 10 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - provider: TEXT
+  - connection_id: TEXT
+  - window_key: TEXT
+  - remaining_percentage: REAL
+  - is_exhausted: INTEGER
+  - next_reset_at: TEXT
+  - window_duration_ms: INTEGER
+  - raw_data: TEXT
+  - created_at: TEXT
+
+Key Stats:
+  - id_distinct: 275563
+  - provider_distinct: 5
+  - connection_id_distinct: 66
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "1", "provider": "agy", "connection_id": "e99f5a7a-a256-4073-9412-70cb18b15e8c", "window_key": "gpt-oss-120b-medium", "is_exhausted": "1", "next_reset_at": "2026-09-10T02:45:57.000Z", "created_at": "2026-09-09T07:51:42.640Z"}
+  Row 2: {"id": "2", "provider": "agy", "connection_id": "e99f5a7a-a256-4073-9412-70cb18b15e8c", "window_key": "claude-opus-4-6-thinking", "is_exhausted": "1", "next_reset_at": "2026-09-10T02:45:57.000Z", "created_at": "2026-09-09T07:51:42.640Z"}
+
+============================================================================================================================================
+TABLE: radar_feed_cache
+============================================================================================================================================
+Rows: 0 | Columns: 6 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - version: TEXT
+  - tier: TEXT
+  - payload: TEXT
+  - signature: TEXT
+  - fetched_at: TEXT
+
+============================================================================================================================================
+TABLE: radar_intel_cache
+============================================================================================================================================
+Rows: 0 | Columns: 7 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - version: TEXT
+  - tier: TEXT
+  - payload: TEXT
+  - signature: TEXT
+  - supporter_identity: TEXT
+  - fetched_at: TEXT
+
+============================================================================================================================================
+TABLE: radar_local_model_state
+============================================================================================================================================
+Rows: 0 | Columns: 6 | Est. Size: 759800.00 KB
+
+Schema:
+  - provider: TEXT
+  - model_id: TEXT
+  - display_name: TEXT
+  - enabled: INTEGER
+  - tombstoned: INTEGER
+  - updated_at: TEXT
+
+============================================================================================================================================
+TABLE: radar_offers_cache
+============================================================================================================================================
+Rows: 0 | Columns: 6 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - version: TEXT
+  - tier: TEXT
+  - payload: TEXT
+  - signature: TEXT
+  - fetched_at: TEXT
+
+============================================================================================================================================
+TABLE: radar_referrals_cache
+============================================================================================================================================
+Rows: 0 | Columns: 6 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - generated_at: TEXT
+  - tier: TEXT
+  - payload: TEXT
+  - signature: TEXT
+  - fetched_at: TEXT
+
+============================================================================================================================================
+TABLE: reasoning_cache
+============================================================================================================================================
+Rows: 0 | Columns: 7 | Est. Size: 759800.00 KB
+
+Schema:
+  - tool_call_id: TEXT
+  - provider: TEXT
+  - model: TEXT
+  - reasoning: TEXT
+  - char_count: INTEGER
+  - created_at: TEXT
+  - expires_at: INTEGER
+
+============================================================================================================================================
+TABLE: relay_logs
+============================================================================================================================================
+Rows: 0 | Columns: 13 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - token_id: TEXT
+  - request_id: TEXT
+  - model: TEXT
+  - prompt_tokens: INTEGER
+  - completion_tokens: INTEGER
+  - cost: REAL
+  - status: TEXT
+  - status_code: INTEGER
+  - latency_ms: INTEGER
+  - client_ip: TEXT
+  - user_agent: TEXT
+  - created_at: INTEGER
+
+============================================================================================================================================
+TABLE: relay_rate_limits
+============================================================================================================================================
+Rows: 0 | Columns: 4 | Est. Size: 759800.00 KB
+
+Schema:
+  - token_id: TEXT
+  - window_start: INTEGER
+  - request_count: INTEGER
+  - cost: REAL
+
+============================================================================================================================================
+TABLE: request_detail_logs
+============================================================================================================================================
+Rows: 0 | Columns: 12 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - call_log_id: TEXT
+  - timestamp: TEXT
+  - client_request: TEXT
+  - translated_request: TEXT
+  - provider_response: TEXT
+  - client_response: TEXT
+  - provider: TEXT
+  - model: TEXT
+  - source_format: TEXT
+  - target_format: TEXT
+  - duration_ms: INTEGER
+
+============================================================================================================================================
+TABLE: routing_decisions
+============================================================================================================================================
+Rows: 0 | Columns: 14 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - request_id: TEXT
+  - task_type: TEXT
+  - combo_id: TEXT
+  - provider_selected: TEXT
+  - model_selected: TEXT
+  - score: REAL
+  - factors_json: TEXT
+  - fallbacks_triggered: INTEGER
+  - success: INTEGER
+  - latency_ms: INTEGER
+  - cost: REAL
+  - source: TEXT
+  - created_at: TEXT
+
+============================================================================================================================================
+TABLE: semantic_cache
+============================================================================================================================================
+Rows: 0 | Columns: 9 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - signature: TEXT
+  - model: TEXT
+  - prompt_hash: TEXT
+  - response: TEXT
+  - tokens_saved: INTEGER
+  - hit_count: INTEGER
+  - created_at: TEXT
+  - expires_at: TEXT
+
+============================================================================================================================================
+TABLE: session_account_affinity
+============================================================================================================================================
+Rows: 0 | Columns: 5 | Est. Size: 759800.00 KB
+
+Schema:
+  - session_key: TEXT
+  - provider: TEXT
+  - connection_id: TEXT
+  - created_at: INTEGER
+  - last_seen_at: INTEGER
+
+============================================================================================================================================
+TABLE: session_model_history
+============================================================================================================================================
+Rows: 2 | Columns: 7 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - session_id: TEXT
+  - combo_name: TEXT
+  - model_str: TEXT
+  - provider: TEXT
+  - connection_id: TEXT
+  - used_at: TEXT
+
+Key Stats:
+  - id_distinct: 2
+  - session_id_distinct: 1
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "25279", "session_id": "b60d13f2da4498a4", "combo_name": "Faust-TH", "model_str": "agy/gpt-oss-120b-medium", "provider": "agy", "connection_id": "d382e042-5e4a-46d4-84a6-4ad40afaecf1", "used_at": "2026-10-07 18:10:05"}
+  Row 2: {"id": "25280", "session_id": "b60d13f2da4498a4", "combo_name": "Faust-TH", "model_str": "agy/gpt-oss-120b-medium", "provider": "agy", "connection_id": "d382e042-5e4a-46d4-84a6-4ad40afaecf1", "used_at": "2026-10-07 18:10:05"}
+
+============================================================================================================================================
+TABLE: skill_executions
+============================================================================================================================================
+Rows: 0 | Columns: 10 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - skill_id: TEXT
+  - api_key_id: TEXT
+  - session_id: TEXT
+  - input: TEXT
+  - output: TEXT
+  - status: TEXT
+  - error_message: TEXT
+  - duration_ms: INTEGER
+  - created_at: TEXT
+
+============================================================================================================================================
+TABLE: sync_tokens
+============================================================================================================================================
+Rows: 0 | Columns: 8 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: TEXT
+  - name: TEXT
+  - token_hash: TEXT
+  - sync_api_key_id: TEXT
+  - revoked_at: TEXT
+  - last_used_at: TEXT
+  - created_at: TEXT
+  - updated_at: TEXT
+
+============================================================================================================================================
+TABLE: tier_assignments
+============================================================================================================================================
+Rows: 0 | Columns: 9 | Est. Size: 759800.00 KB
+
+Schema:
+  - provider: TEXT
+  - model: TEXT
+  - tier: TEXT
+  - cost_per_1m_input: REAL
+  - cost_per_1m_output: REAL
+  - has_free_tier: INTEGER
+  - free_quota_limit: INTEGER
+  - reason: TEXT
+  - updated_at: TEXT
+
+============================================================================================================================================
+TABLE: token_ledger
+============================================================================================================================================
+Rows: 0 | Columns: 7 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - from_api_key_id: TEXT
+  - to_api_key_id: TEXT
+  - amount: INTEGER
+  - reason: TEXT
+  - idempotency_key: TEXT
+  - created_at: TEXT
+
+============================================================================================================================================
+TABLE: usage_history
+============================================================================================================================================
+Rows: 60,421 | Columns: 23 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - provider: TEXT
+  - model: TEXT
+  - connection_id: TEXT
+  - account_key: TEXT
+  - account_label: TEXT
+  - account_label_priority: INTEGER
+  - api_key_id: TEXT
+  - api_key_name: TEXT
+  - tokens_input: INTEGER
+  - tokens_output: INTEGER
+  - tokens_cache_read: INTEGER
+  - tokens_cache_creation: INTEGER
+  - tokens_reasoning: INTEGER
+  - service_tier: TEXT
+  - status: TEXT
+  - success: INTEGER
+  - latency_ms: INTEGER
+  - ttft_ms: INTEGER
+  - error_code: TEXT
+  - timestamp: TEXT
+  - combo_strategy: TEXT
+  - endpoint: TEXT
+
+Key Stats:
+  - id_distinct: 60421
+  - provider_distinct: 24
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "1", "provider": "opencode", "model": "muse-spark-1.2", "connection_id": "a998023a-3591-4cc3-ac66-0fdc3d046b81", "account_key": "[\"connection\",\"opencode\",\"a998023a-3591-4cc3-ac66-0fdc3d046b81\"]", "account_label": "main", "account_label_priority": "2", "service_tier": "standard", "status
+  Row 2: {"id": "2", "provider": "opencode", "model": "muse-spark-1.2", "connection_id": "noauth", "account_key": "[\"connection\",\"opencode\",\"noauth\"]", "account_label": "noauth", "account_label_priority": "1", "service_tier": "standard", "status": "402", "latency_ms": "7", "error_code": "upstream_402",
+
+============================================================================================================================================
+TABLE: user_badges
+============================================================================================================================================
+Rows: 6 | Columns: 3 | Est. Size: 759800.00 KB
+
+Schema:
+  - api_key_id: TEXT
+  - badge_id: TEXT
+  - unlocked_at: TEXT
+
+Key Stats:
+  - api_key_id_distinct: 1
+  - badge_id_distinct: 6
+
+Sample Data (first 2 rows):
+  Row 1: {"api_key_id": "b536aeb7-02d8-49e0-89b5-83b8478f4fd8", "badge_id": "daily-user", "unlocked_at": "2026-09-11 00:57:51"}
+  Row 2: {"api_key_id": "b536aeb7-02d8-49e0-89b5-83b8478f4fd8", "badge_id": "first-token", "unlocked_at": "2026-09-09 09:11:39"}
+
+============================================================================================================================================
+TABLE: user_levels
+============================================================================================================================================
+Rows: 1 | Columns: 4 | Est. Size: 759800.00 KB
+
+Schema:
+  - api_key_id: TEXT
+  - total_xp: INTEGER
+  - current_level: INTEGER
+  - updated_at: TEXT
+
+Key Stats:
+  - api_key_id_distinct: 1
+
+Sample Data (first 2 rows):
+  Row 1: {"api_key_id": "b536aeb7-02d8-49e0-89b5-83b8478f4fd8", "total_xp": "44750", "current_level": "16", "updated_at": "2026-10-22 01:30:40"}
+
+============================================================================================================================================
+TABLE: webhook_deliveries
+============================================================================================================================================
+Rows: 0 | Columns: 9 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - webhook_id: TEXT
+  - event_type: TEXT
+  - status: TEXT
+  - http_status: INTEGER
+  - latency_ms: INTEGER
+  - error: TEXT
+  - payload_snapshot: TEXT
+  - created_at: TEXT
+
+============================================================================================================================================
+TABLE: xp_audit_log
+============================================================================================================================================
+Rows: 31,513 | Columns: 6 | Est. Size: 759800.00 KB
+
+Schema:
+  - id: INTEGER
+  - api_key_id: TEXT
+  - action: TEXT
+  - xp_earned: INTEGER
+  - metadata: TEXT
+  - created_at: TEXT
+
+Key Stats:
+  - id_distinct: 31513
+  - api_key_id_distinct: 1
+
+Sample Data (first 2 rows):
+  Row 1: {"id": "13238", "api_key_id": "b536aeb7-02d8-49e0-89b5-83b8478f4fd8", "action": "request", "xp_earned": "1", "metadata": "{\"model\":\"nvidia/nemotron-3-ultra-550b-a55b:free\",\"provider\":\"openrouter\"}", "created_at": "2026-09-23 03:11:57"}
+  Row 2: {"id": "13239", "api_key_id": "b536aeb7-02d8-49e0-89b5-83b8478f4fd8", "action": "request", "xp_earned": "1", "metadata": "{\"model\":\"nvidia/nemotron-3-ultra-550b-a55b:free\",\"provider\":\"openrouter\"}", "created_at": "2026-09-23 03:12:16"}
+
+============================================================================================================================================
+STORAGE BREAKDOWN (Top 20 by size)
+============================================================================================================================================
+_omniroute_migrations                                     160 rows  759,800.00 KB
+a2a_task_events                                             0 rows  759,800.00 KB
+a2a_tasks                                                   0 rows  759,800.00 KB
+agent_bridge_state                                          0 rows  759,800.00 KB
+agentic_conversations                                  27,400 rows  759,800.00 KB
+api_key_token_counters                                      0 rows  759,800.00 KB
+api_key_token_limit_reset_logs                              0 rows  759,800.00 KB
+audit_log                                                  26 rows  759,800.00 KB
+badge_definitions                                           0 rows  759,800.00 KB
+batch_item_checkpoints                                      0 rows  759,800.00 KB
+batches                                                     0 rows  759,800.00 KB
+call_logs                                              62,022 rows  759,800.00 KB
+ccr_blocks                                                  0 rows  759,800.00 KB
+cli_access_tokens                                           0 rows  759,800.00 KB
+cloud_agent_credentials                                     0 rows  759,800.00 KB
+command_code_auth_sessions                                  0 rows  759,800.00 KB
+compression_analytics                                       0 rows  759,800.00 KB
+compression_cache_stats                                     0 rows  759,800.00 KB
+compression_engine_breakdown                                0 rows  759,800.00 KB
+compression_run_telemetry                                   0 rows  759,800.00 KB

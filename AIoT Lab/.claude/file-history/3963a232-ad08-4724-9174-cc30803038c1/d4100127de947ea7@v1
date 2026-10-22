@@ -1,0 +1,278 @@
+# core/db.py
+"""
+Sovereign Relational Storage Layer for Drive Architect.
+Strictly adheres to the Two-Table Golden Standard:
+1. 'folders': Universal Adjacency Hierarchy (drive_id, name, child_of, description, src_id, files_count)
+2. 'config': System Configuration Key-Values (root_id, template_id, mock_mode)
+"""
+
+import sqlite3
+from typing import Dict, List, Optional, Tuple, Any
+from pathlib import Path
+from .config import config
+
+
+def get_connection() -> sqlite3.Connection:
+    """Returns a thread-safe connection to the local SQLite database."""
+    db_path = config.db_path
+    conn = sqlite3.connect(str(db_path), timeout=10.0, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA foreign_keys=ON;")
+    return conn
+
+
+def init_db():
+    """Initializes the pure two-table schema and purges any legacy tables."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = [r[0] for r in cursor.fetchall()]
+        keep = {"folders", "config"}
+        for t in tables:
+            if t not in keep and not t.startswith("sqlite_"):
+                conn.execute(f"DROP TABLE IF EXISTS {t};")
+
+        conn.executescript("""
+            -- =================================================================
+            -- TABLE 1: FOLDERS (UNIVERSAL ADJACENCY TREE)
+            -- =================================================================
+            CREATE TABLE IF NOT EXISTS folders (
+                drive_id         TEXT PRIMARY KEY,
+                name             TEXT NOT NULL,
+                child_of         TEXT DEFAULT NULL,
+                description      TEXT DEFAULT '',
+                src_id           TEXT DEFAULT NULL,
+                files_count      INTEGER DEFAULT 0,
+                updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_folders_child_of ON folders(child_of);
+            CREATE INDEX IF NOT EXISTS idx_folders_src_id   ON folders(src_id);
+
+            -- =================================================================
+            -- TABLE 2: CONFIG (SOVEREIGN SYSTEM ANCHORS)
+            -- =================================================================
+            CREATE TABLE IF NOT EXISTS config (
+                key        TEXT PRIMARY KEY,
+                value      TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            -- Default Anchors
+            INSERT OR IGNORE INTO config (key, value) VALUES ('root_id', '14J8QBCqdSQOPerLBIaR2jLyYhZ4WbJUA');
+            INSERT OR IGNORE INTO config (key, value) VALUES ('template_id', '1qPYOlZ3-LlnfiBRorXUnNa_0yVZcILvM');
+            INSERT OR IGNORE INTO config (key, value) VALUES ('mock_mode', 'false');
+        """)
+
+
+# =====================================================================
+# TABLE 1: FOLDERS REPOSITORY
+# =====================================================================
+
+def save_folder(
+    drive_id: str,
+    name: str,
+    child_of: Optional[str] = None,
+    description: str = "",
+    src_id: Optional[str] = None,
+    files_count: int = 0,
+) -> Dict[str, Any]:
+    """Inserts or updates a folder row in the folders table."""
+    init_db()
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO folders (drive_id, name, child_of, description, src_id, files_count, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(drive_id) DO UPDATE SET
+                name = excluded.name,
+                child_of = excluded.child_of,
+                description = excluded.description,
+                src_id = excluded.src_id,
+                files_count = excluded.files_count,
+                updated_at = CURRENT_TIMESTAMP;
+            """,
+            (drive_id, name, child_of, description or "", src_id, files_count),
+        )
+        conn.commit()
+    return {
+        "drive_id": drive_id,
+        "name": name,
+        "child_of": child_of,
+        "description": description,
+        "src_id": src_id,
+        "files_count": files_count,
+    }
+
+
+def get_folder(drive_id: str) -> Optional[Dict[str, Any]]:
+    """Retrieves a folder row by its Google Drive ID."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM folders WHERE drive_id = ?;", (drive_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def list_children(parent_id: Optional[str]) -> List[Dict[str, Any]]:
+    """Returns immediate child folders of parent_id (or root folders if parent_id is None)."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        if parent_id is None:
+            cursor.execute("SELECT * FROM folders WHERE child_of IS NULL ORDER BY name ASC;")
+        else:
+            cursor.execute("SELECT * FROM folders WHERE child_of = ? ORDER BY name ASC;", (parent_id,))
+        return [dict(r) for r in cursor.fetchall()]
+
+
+def bulk_save_folders(folders_list: List[Dict[str, Any]]):
+    """Inserts or updates multiple folder records in a single atomic transaction."""
+    init_db()
+    with get_connection() as conn:
+        conn.executemany(
+            """
+            INSERT INTO folders (drive_id, name, child_of, description, src_id, files_count, updated_at)
+            VALUES (:drive_id, :name, :child_of, :description, :src_id, :files_count, CURRENT_TIMESTAMP)
+            ON CONFLICT(drive_id) DO UPDATE SET
+                name = excluded.name,
+                child_of = excluded.child_of,
+                description = excluded.description,
+                src_id = excluded.src_id,
+                files_count = excluded.files_count,
+                updated_at = CURRENT_TIMESTAMP;
+            """,
+            folders_list,
+        )
+        conn.commit()
+
+
+def update_folder_fields(drive_id: str, **kwargs) -> bool:
+    """Updates specific fields (name, child_of, description, src_id, files_count) of a folder."""
+    init_db()
+    allowed = {"name", "child_of", "description", "src_id", "files_count"}
+    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    if not fields:
+        return False
+
+    set_clause = ", ".join(f"{k} = ?" for k in fields.keys()) + ", updated_at = CURRENT_TIMESTAMP"
+    values = list(fields.values()) + [drive_id]
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"UPDATE folders SET {set_clause} WHERE drive_id = ?;", values)
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def delete_folder_record(drive_id: str) -> bool:
+    """Deletes a folder record from the folders table."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM folders WHERE drive_id = ?;", (drive_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def rekey_folder_id(old_id: str, new_id: str):
+    """
+    Updates a folder's drive_id (and references in child_of) from a temporary local ID
+    to the permanent Google Drive ID.
+    """
+    if old_id == new_id:
+        return
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT drive_id FROM folders WHERE drive_id = ?;", (new_id,))
+        if cursor.fetchone():
+            conn.execute("UPDATE folders SET child_of = ? WHERE child_of = ?;", (new_id, old_id))
+            conn.execute("DELETE FROM folders WHERE drive_id = ?;", (old_id,))
+        else:
+            conn.execute("UPDATE folders SET child_of = ? WHERE child_of = ?;", (new_id, old_id))
+            conn.execute("UPDATE folders SET drive_id = ? WHERE drive_id = ?;", (new_id, old_id))
+        conn.commit()
+
+
+# =====================================================================
+# TABLE 2: CONFIG REPOSITORY
+# =====================================================================
+
+def get_config(key: str, default: Optional[str] = None) -> Optional[str]:
+    """Retrieves a configuration value by key."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM config WHERE key = ?;", (key,))
+        row = cursor.fetchone()
+        return row["value"] if row else default
+
+
+def set_config(key: str, value: str):
+    """Sets a configuration value."""
+    init_db()
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO config (key, value, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(key) DO UPDATE SET
+                value = excluded.value,
+                updated_at = CURRENT_TIMESTAMP;
+            """,
+            (key, str(value)),
+        )
+        conn.commit()
+
+
+def get_all_configs() -> Dict[str, str]:
+    """Returns all configuration key-values as a dictionary."""
+    init_db()
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT key, value FROM config;")
+        return {r["key"]: r["value"] for r in cursor.fetchall()}
+
+
+# Compatibility shims for legacy callers during clean transition
+def clear_folder_tree_cache(root_id: Optional[str] = None):
+    pass
+
+def load_vault_data() -> Dict[str, List[str]]:
+    return {}
+
+def merge_harvested_tags(harvested: Dict[str, List[str]], source_folder_id: Optional[str] = None) -> int:
+    return 0
+
+def add_single_tag(tag_key: str, tag_value: str, source_folder_id: Optional[str] = None) -> bool:
+    return True
+
+def delete_tag(tag_key: str, tag_value: Optional[str] = None) -> bool:
+    return True
+
+def delete_key(tag_key: str) -> int:
+    return 0
+
+def log_reconciliation_run(*args, **kwargs):
+    pass
+
+def get_recent_reconciliations(limit: int = 15) -> List[Dict[str, Any]]:
+    return []
+
+def save_template_schema(*args, **kwargs):
+    pass
+
+def get_template_schema(*args, **kwargs):
+    return None
+
+def get_cached_folder_tree(*args, **kwargs):
+    return None
+
+def log_sync_action(*args, **kwargs):
+    pass
+
+def get_sync_logs(*args, **kwargs):
+    return []

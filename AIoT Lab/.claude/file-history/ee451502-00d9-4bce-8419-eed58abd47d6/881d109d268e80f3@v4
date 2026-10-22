@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quote Presentation Studio — E-Paper Testbed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap">
+  <style>
+    :root {
+      --bg-canvas:        #060606;
+      --bg-card:          #111111;
+      --bg-card-hover:    #181818;
+      --bg-input:         #1c1c1c;
+      --text-vivid:       #ffffff;
+      --text-main:        #e0e0e0;
+      --text-muted:       #888888;
+      --text-dim:         #555555;
+      --border-dim:       #222222;
+      --border-mid:       #333333;
+      --border-bright:    #555555;
+      --accent:           #ff9e1b;
+      --accent-bg:        rgba(255, 158, 27, 0.12);
+      --accent-border:    rgba(255, 158, 27, 0.4);
+      --radius-sm:        6px;
+      --radius-md:        10px;
+      --radius-lg:        14px;
+      font-family: "IBM Plex Sans", -apple-system, sans-serif;
+      color-scheme: dark;
+    }
+
+    :root[data-theme="light"] {
+      --bg-canvas:        #f4f3ef;
+      --bg-card:          #ffffff;
+      --bg-card-hover:    #faf8f5;
+      --bg-input:         #eae7e1;
+      --text-vivid:       #111111;
+      --text-main:        #2a2a2a;
+      --text-muted:       #666666;
+      --text-dim:         #999999;
+      --border-dim:       #dedcd6;
+      --border-mid:       #c8c5bc;
+      --border-bright:    #8e8a7f;
+      --accent:           #d97706;
+      --accent-bg:        rgba(217, 119, 6, 0.1);
+      --accent-border:    rgba(217, 119, 6, 0.4);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      padding: 2rem 1.5rem 5rem;
+      display: flex;
+      justify-content: center;
+      line-height: 1.6;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 980px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+
+    /* Top Control Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-dim);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .title-group h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .title-group p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .btn:hover { background: var(--bg-card-hover); border-color: var(--border-bright); }
+    .btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+
+    select.select-picker {
+      padding: 0.45rem 0.8rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      color: var(--text-vivid);
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Live Adjustments & Tweaker Toolbar */
+    .tweaker-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .tweak-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+    }
+    .tweak-label {
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+    }
+
+    .segmented-control {
+      display: inline-flex;
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+      gap: 2px;
+    }
+    .seg-btn {
+      padding: 0.28rem 0.65rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .seg-btn:hover { color: var(--text-vivid); }
+    .seg-btn.active {
+      background: #ffffff;
+      color: #000000;
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    /* ==========================================================================
+       E-PAPER HARDWARE CHASSIS
+       ========================================================================== */
+    .epaper-chassis {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      border-radius: 12px;
+      padding: 2.25rem 2.5rem;
+      position: relative;
+      transition: all 0.2s ease;
+      font-feature-settings: "liga" 0;
+    }
+
+    /* --- INVERTED B/W MODE (Pristine High-Contrast White Ink on Deep Black) --- */
+    .epaper-chassis.inverted {
+      background: #000000 !important;
+      color: #ffffff !important;
+      border: 8px solid #222222;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 0 1px #333333;
+    }
+    .epaper-chassis.inverted .ep-status-bar {
+      border-bottom: 2px solid #ffffff;
+      color: #ffffff;
+    }
+    .epaper-chassis.inverted .ep-footer {
+      border-top: 2px solid #ffffff;
+      color: #ffffff;
+    }
+    .epaper-chassis.inverted .ep-content {
+      color: #ffffff;
+    }
+    .epaper-chassis.inverted .ep-context {
+      background: #111111;
+      border-left: 3px solid #ffffff;
+      color: #cccccc;
+    }
+    .epaper-chassis.inverted .ep-tags {
+      color: #ffffff;
+      opacity: 0.9;
+    }
+    .epaper-chassis.inverted .ep-attribution {
+      color: #ffffff;
+    }
+
+    /* --- STANDARD PAPER MODE (Crisp Black Ink on Authentic E-Paper White) --- */
+    .epaper-chassis:not(.inverted) {
+      background: #f2efe9 !important;
+      color: #050505 !important;
+      border: 8px solid #333333;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    }
+    .epaper-chassis:not(.inverted) .ep-status-bar {
+      border-bottom: 2px solid #050505;
+      color: #050505;
+    }
+    .epaper-chassis:not(.inverted) .ep-footer {
+      border-top: 2px solid #050505;
+      color: #050505;
+    }
+    .epaper-chassis:not(.inverted) .ep-content {
+      color: #050505;
+    }
+    .epaper-chassis:not(.inverted) .ep-context {
+      background: rgba(0, 0, 0, 0.05);
+      border-left: 3px solid #050505;
+      color: #333333;
+    }
+    .epaper-chassis:not(.inverted) .ep-tags {
+      color: #050505;
+      opacity: 0.85;
+    }
+    .epaper-chassis:not(.inverted) .ep-attribution {
+      color: #050505;
+    }
+
+    /* Compact 2.9" aspect ratio simulation */
+    .epaper-chassis.compact {
+      max-width: 540px;
+      padding: 1.5rem 1.75rem;
+    }
+
+    /* Typography Scales */
+    .font-scale-sm .ep-content { font-size: 1.05rem; line-height: 1.55; }
+    .font-scale-md .ep-content { font-size: 1.25rem; line-height: 1.65; }
+    .font-scale-lg .ep-content { font-size: 1.45rem; line-height: 1.75; }
+    .font-scale-xl .ep-content { font-size: 1.75rem; line-height: 1.75; }
+
+    /* Typefaces */
+    .ep-font-mono  .ep-content { font-family: "JetBrains Mono", monospace; }
+    .ep-font-serif .ep-content { font-family: "Lora", "IBM Plex Serif", Georgia, serif; }
+    .ep-font-sans  .ep-content { font-family: "IBM Plex Sans", -apple-system, sans-serif; }
+
+    /* ==========================================================================
+       ARCHITECTURAL QUOTATION MARKS (FRAMING ELEMENTS)
+       ========================================================================== */
+    .ep-qmark {
+      font-family: "IBM Plex Serif", Georgia, serif !important;
+      font-style: normal !important;
+      font-weight: 400;
+      font-size: 1.6em;
+      line-height: 0;
+      display: inline-block;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+    .ep-qmark-open {
+      margin-right: 0.35rem;
+      vertical-align: -0.1em;
+    }
+    .ep-qmark-close {
+      margin-left: 0.35rem;
+      vertical-align: -0.22em;
+    }
+
+    /* Inverted B/W Mode Quote Marks: Quiet architectural frame shifting focus onto pure white text */
+    .epaper-chassis.inverted .ep-qmark {
+      color: #555555;
+    }
+    .epaper-chassis.inverted.qmark-accent .ep-qmark {
+      color: var(--accent) !important;
+      opacity: 0.9;
+    }
+    .epaper-chassis.inverted.qmark-stark .ep-qmark {
+      color: #ffffff !important;
+      opacity: 1 !important;
+    }
+
+    /* Standard E-Paper Mode Quote Marks */
+    .epaper-chassis:not(.inverted) .ep-qmark {
+      color: #999999;
+    }
+    .epaper-chassis:not(.inverted).qmark-accent .ep-qmark {
+      color: var(--accent) !important;
+      opacity: 0.9;
+    }
+    .epaper-chassis:not(.inverted).qmark-stark .ep-qmark {
+      color: #000000 !important;
+      opacity: 1 !important;
+    }
+
+    /* ==========================================================================
+       SUBTLE LOW-CONTRAST TAG BLOCKS
+       ========================================================================== */
+    .ep-tag-block {
+      display: inline-block;
+      padding: 0.12rem 0.48rem;
+      border-radius: 3px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.74rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      line-height: 1.3;
+      user-select: none;
+      margin-right: 0.3rem;
+      margin-bottom: 0.2rem;
+      transition: all 0.15s ease;
+    }
+
+    /* Inverted B/W Mode: subtle muted dark block, non-distracting low-contrast text */
+    .epaper-chassis.inverted .ep-tag-block {
+      background: #141414;
+      border: 1px solid #282828;
+      color: #6a6a6a;
+    }
+
+    /* Standard E-Paper Mode: soft paper tone block */
+    .epaper-chassis:not(.inverted) .ep-tag-block {
+      background: #e4e1d9;
+      border: 1px solid #c9c5ba;
+      color: #666666;
+    }
+
+    /* ==========================================================================
+       SUB-LAYOUT 1: CLASSIC MINIMAL (THE MANAGER'S SPECIFICATION)
+       ========================================================================== */
+    .ep-type-minimal .ep-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.6rem;
+      margin-bottom: 1.6rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .ep-type-minimal .ep-content {
+      font-style: italic;
+      margin-bottom: 1.6rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+
+    .ep-type-minimal .ep-context {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      padding: 0.7rem 0.95rem;
+      margin-bottom: 1.6rem;
+      line-height: 1.55;
+    }
+
+    .ep-type-minimal .ep-footer {
+      padding-top: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .ep-type-minimal .ep-tags {
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .ep-type-minimal .ep-attribution {
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      text-align: right;
+    }
+
+    /* ==========================================================================
+       SUB-LAYOUT 2: BOOK PLATE (Framed Cardplate)
+       ========================================================================== */
+    .ep-type-cardplate {
+      border: 2px solid currentColor;
+      padding: 1.75rem 2rem;
+      position: relative;
+    }
+    .ep-type-cardplate .ep-card-header {
+      display: flex;
+      justify-content: space-between;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-bottom: 1px solid currentColor;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.35rem;
+    }
+    .ep-type-cardplate .ep-content {
+      font-style: italic;
+      margin-bottom: 1.5rem;
+    }
+    .ep-type-cardplate .ep-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-top: 1px dashed currentColor;
+      padding-top: 0.75rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    /* ==========================================================================
+       SUB-LAYOUT 3: TYPOGRAPHIC POSTER
+       ========================================================================== */
+    .ep-type-poster .ep-idx-huge {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1;
+      opacity: 0.25;
+      margin-bottom: -0.65rem;
+    }
+    .ep-type-poster .ep-status-bar {
+      display: flex;
+      justify-content: space-between;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-bottom: 2px solid currentColor;
+      padding-bottom: 0.4rem;
+      margin-bottom: 1.5rem;
+    }
+    .ep-type-poster .ep-content {
+      font-style: italic;
+      margin-bottom: 1.5rem;
+    }
+    .ep-type-poster .ep-poster-meta {
+      display: flex;
+      justify-content: space-between;
+      border-top: 2px solid currentColor;
+      padding-top: 0.75rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Top Control Bar -->
+    <header class="top-bar">
+      <div class="title-group">
+        <h1><span>📟</span> Quote Presentation Studio</h1>
+        <p>Tuned E-Paper Layout: <code>#IDX ~ Specific</code> · <code>Date: YYYY</code> · Italic <code>“Content”</code> · <code>#Tags</code> on left · <code>Container</code> on right</p>
+      </div>
+
+      <div class="controls-row">
+        <!-- Quote Picker -->
+        <select class="select-picker" id="quote-select" onchange="loadSelectedQuote(this.value)">
+          <option value="">Loading quotes...</option>
+        </select>
+        <button class="btn" onclick="pickRandomQuote()">🎲 Random</button>
+        <button class="btn" onclick="toggleTheme()">🌓 UI Theme</button>
+      </div>
+    </header>
+
+    <!-- LIVE TWEAKER & EXPERIMENTATION PANEL -->
+    <section class="tweaker-panel">
+      <!-- 1. Layout Type Variant -->
+      <div class="tweak-group">
+        <span class="tweak-label">Type:</span>
+        <div class="segmented-control">
+          <button class="seg-btn active" id="type-btn-minimal" onclick="setSubLayout('minimal')">1. Classic Minimal</button>
+          <button class="seg-btn" id="type-btn-cardplate" onclick="setSubLayout('cardplate')">2. Book Plate</button>
+          <button class="seg-btn" id="type-btn-poster" onclick="setSubLayout('poster')">3. Typographic</button>
+        </div>
+      </div>
+
+      <!-- 2. Typeface -->
+      <div class="tweak-group">
+        <span class="tweak-label">Font:</span>
+        <div class="segmented-control">
+          <button class="seg-btn active" id="font-btn-mono" onclick="setFontFamily('mono')">Mono</button>
+          <button class="seg-btn" id="font-btn-serif" onclick="setFontFamily('serif')">Serif</button>
+          <button class="seg-btn" id="font-btn-sans" onclick="setFontFamily('sans')">Sans</button>
+        </div>
+      </div>
+
+      <!-- 3. Size Scale -->
+      <div class="tweak-group">
+        <span class="tweak-label">Size:</span>
+        <div class="segmented-control">
+          <button class="seg-btn" id="scale-btn-sm" onclick="setFontScale('sm')">S</button>
+          <button class="seg-btn" id="scale-btn-md" onclick="setFontScale('md')">M</button>
+          <button class="seg-btn active" id="scale-btn-lg" onclick="setFontScale('lg')">L</button>
+          <button class="seg-btn" id="scale-btn-xl" onclick="setFontScale('xl')">XL</button>
+        </div>
+      </div>
+
+      <!-- 4. Quotation Marks Focus Styling -->
+      <div class="tweak-group">
+        <span class="tweak-label">Marks:</span>
+        <div class="segmented-control">
+          <button class="seg-btn active" id="mark-btn-ghost" onclick="setMarkStyle('ghost')" title="Subtle architectural frame">Ghost</button>
+          <button class="seg-btn" id="mark-btn-accent" onclick="setMarkStyle('accent')" title="Amber spotlight">Accent</button>
+          <button class="seg-btn" id="mark-btn-stark" onclick="setMarkStyle('stark')" title="Solid high-contrast">Stark</button>
+        </div>
+      </div>
+
+      <!-- 5. Mode Toggles -->
+      <div class="tweak-group">
+        <button class="btn active" id="toggle-invert-btn" onclick="toggleInvertMode()">Invert (B/W)</button>
+        <button class="btn active" id="toggle-context-btn" onclick="toggleContext()">Context</button>
+        <button class="btn" id="toggle-compact-btn" onclick="toggleCompactMode()">2.9" / 4.2"</button>
+      </div>
+    </section>
+
+    <!-- MAIN RENDER STAGE (CHASSIS) -->
+    <main>
+      <!-- Initialized directly with the Manager's preferred settings: Classic Minimal + Invert B/W + Mono Font + Size L -->
+      <div class="epaper-chassis ep-font-mono font-scale-lg inverted" id="epaper-stage">
+        <!-- Rendered dynamically via JavaScript -->
+      </div>
+    </main>
+
+    <!-- Raw Payload Drawer -->
+    <details style="background:var(--bg-card); border:1px solid var(--border-dim); border-radius:var(--radius-md); padding:1rem; cursor:pointer;">
+      <summary style="font-size:0.85rem; font-weight:600; color:var(--text-muted); outline:none;">
+        🔍 Inspect Active Quote Data Bundle
+      </summary>
+      <pre id="raw-payload-json" style="font-family:'JetBrains Mono'; font-size:0.8rem; color:var(--accent); margin-top:1rem; overflow-x:auto;"></pre>
+    </details>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin.startsWith('http') ? window.location.origin : 'http://127.0.0.1:20137';
+    let quotesList = [];
+    let activeQuote = null;
+    let availableSpecifics = [];
+    let availableThemes = [];
+
+    // State Variables for Live Tweaker — DEFAULTED TO MANAGER'S BEST SETTING:
+    let currentSubLayout = 'minimal'; // 'Classic Minimal'
+    let currentFontFamily = 'mono';   // 'Mono' (JetBrains Mono)
+    let currentFontScale = 'lg';       // 'Size L'
+    let showContext = true;           // Context visible
+    let isCompact = false;            // 4.2" standard
+    let isInverted = true;            // INVERT B/W ON by default!
+
+    async function init() {
+      try {
+        const [taxRes, qRes] = await Promise.all([
+          fetch(`${API_BASE}/api/taxonomy`).then(r => r.json()).catch(() => ({})),
+          fetch(`${API_BASE}/api/quotes/list`).then(r => r.json()).catch(() => [])
+        ]);
+
+        availableSpecifics = taxRes.specifics || [];
+        availableThemes = taxRes.themes || [];
+        quotesList = qRes || [];
+
+        populateSelect();
+
+        // Default to Quote #6 (or first available)
+        const target = quotesList.find(q => q.idx === 6) || quotesList[0];
+        if (target) loadSelectedQuote(target.id);
+      } catch (err) {
+        document.getElementById('epaper-stage').innerHTML = `<div style="padding:2rem; text-align:center;">Failed to connect to local server at ${API_BASE}.</div>`;
+      }
+    }
+
+    function populateSelect() {
+      const select = document.getElementById('quote-select');
+      if (quotesList.length === 0) {
+        select.innerHTML = `<option>No quotes in database</option>`;
+        return;
+      }
+      select.innerHTML = quotesList.map(q => {
+        const snippet = q.main_content.split('\n')[0].substring(0, 34);
+        return `<option value="${q.id}">#${q.idx ?? q.index} — "${snippet}..."</option>`;
+      }).join('');
+    }
+
+    function loadSelectedQuote(qid) {
+      activeQuote = quotesList.find(q => q.id === qid) || quotesList[0];
+      if (!activeQuote) return;
+
+      document.getElementById('quote-select').value = activeQuote.id;
+      renderActiveEpaper();
+    }
+
+    function pickRandomQuote() {
+      if (quotesList.length === 0) return;
+      const rnd = quotesList[Math.floor(Math.random() * quotesList.length)];
+      loadSelectedQuote(rnd.id);
+    }
+
+    // Tweaker Controls
+    function setSubLayout(layout) {
+      currentSubLayout = layout;
+      document.querySelectorAll('[id^="type-btn-"]').forEach(b => b.classList.remove('active'));
+      document.getElementById(`type-btn-${layout}`).classList.add('active');
+      renderActiveEpaper();
+    }
+
+    function setFontFamily(font) {
+      currentFontFamily = font;
+      document.querySelectorAll('[id^="font-btn-"]').forEach(b => b.classList.remove('active'));
+      document.getElementById(`font-btn-${font}`).classList.add('active');
+      updateChassisClasses();
+    }
+
+    function setFontScale(scale) {
+      currentFontScale = scale;
+      document.querySelectorAll('[id^="scale-btn-"]').forEach(b => b.classList.remove('active'));
+      document.getElementById(`scale-btn-${scale}`).classList.add('active');
+      updateChassisClasses();
+    }
+
+    function toggleContext() {
+      showContext = !showContext;
+      document.getElementById('toggle-context-btn').classList.toggle('active', showContext);
+      renderActiveEpaper();
+    }
+
+    function toggleCompactMode() {
+      isCompact = !isCompact;
+      document.getElementById('toggle-compact-btn').classList.toggle('active', isCompact);
+      updateChassisClasses();
+    }
+
+    function toggleInvertMode() {
+      isInverted = !isInverted;
+      document.getElementById('toggle-invert-btn').classList.toggle('active', isInverted);
+      updateChassisClasses();
+    }
+
+    function updateChassisClasses() {
+      const chassis = document.getElementById('epaper-stage');
+      chassis.className = `epaper-chassis ep-font-${currentFontFamily} font-scale-${currentFontScale}`;
+      if (isCompact) chassis.classList.add('compact');
+      if (isInverted) chassis.classList.add('inverted');
+    }
+
+    // Resolve 5-point minimal metadata bundle
+    function getBundle(q) {
+      if (!q) return null;
+
+      const content = q.main_content || "";
+      const context = q.context || "";
+
+      const specific = availableSpecifics.find(s => s.id === q.specific_id);
+      const specificName = specific ? specific.name : "—";
+      const containerName = specific && specific.container ? specific.container.name : (specific ? (specific.container_name || "—") : "—");
+
+      let effectiveDate = (q.date || "").trim();
+      let isFallback = false;
+      if (!effectiveDate && specific && specific.date && specific.date.trim()) {
+        effectiveDate = specific.date.trim();
+        isFallback = true;
+      }
+
+      // Prefixed with # for each theme tag
+      const rawThemes = (q.theme_ids || []).map(tid => {
+        const th = availableThemes.find(t => t.id === tid);
+        return th ? th.name : tid;
+      });
+      const hashtagThemes = rawThemes.map(t => `#${t}`);
+
+      return {
+        idx: q.idx ?? q.index,
+        content,
+        context,
+        specificName,
+        containerName,
+        effectiveDate: effectiveDate || "—",
+        isFallback,
+        hashtagThemes: hashtagThemes.length > 0 ? hashtagThemes : ["#Wisdom"]
+      };
+    }
+
+    function renderActiveEpaper() {
+      const b = getBundle(activeQuote);
+      if (!b) return;
+
+      updateChassisClasses();
+      document.getElementById('raw-payload-json').textContent = JSON.stringify(b, null, 2);
+
+      const stage = document.getElementById('epaper-stage');
+
+      // Content: Italic and wrapped by distinct framing quotation marks
+      const formattedContent = `<span class="ep-qmark ep-qmark-open">“</span><em>${b.content.replace(/\n/g, '<br>')}</em><span class="ep-qmark ep-qmark-close">”</span>`;
+
+      // Header components: #<idx> ~ <specific> on left, Date: <date> on right
+      const headerTitleStr = `#${b.idx} ~ ${b.specificName}`;
+      const headerDateStr = `Date: ${b.effectiveDate}`;
+
+      // Footer components: Tags on LEFT (subtle low-contrast blocks), Container on RIGHT
+      const tagsBlocks = b.hashtagThemes.map(t => `<span class="ep-tag-block">${t}</span>`).join('');
+      const containerStr = b.containerName;
+
+      if (currentSubLayout === 'minimal') {
+        stage.innerHTML = `
+          <div class="ep-type-minimal">
+            <!-- 1. Header: #<idx> ~ <specific> on left, Date: <date> on right -->
+            <div class="ep-status-bar">
+              <span>${headerTitleStr}</span>
+              <span>${headerDateStr}</span>
+            </div>
+
+            <!-- 2. Content: Italic, wrapped by distinct framing quotation marks -->
+            <div class="ep-content">
+              ${formattedContent}
+            </div>
+
+            <!-- 3. Optional Context -->
+            ${(showContext && b.context) ? `
+              <div class="ep-context">
+                ${b.context}
+              </div>
+            ` : ''}
+
+            <!-- 4. Footer: Tags on LEFT (blocks, less eye-catching) · Container on RIGHT -->
+            <div class="ep-footer">
+              <div class="ep-tags">${tagsBlocks}</div>
+              <span class="ep-attribution">${containerStr}</span>
+            </div>
+          </div>
+        `;
+      } else if (currentSubLayout === 'cardplate') {
+        stage.innerHTML = `
+          <div class="ep-type-cardplate">
+            <!-- Header: #<idx> ~ <specific> on left, Date: <date> on right -->
+            <div class="ep-card-header">
+              <span>${headerTitleStr}</span>
+              <span>${headerDateStr}</span>
+            </div>
+
+            <!-- Content: Italic, wrapped by distinct framing quotation marks -->
+            <div class="ep-content">
+              ${formattedContent}
+            </div>
+
+            ${(showContext && b.context) ? `
+              <div style="font-family:'JetBrains Mono'; font-size:0.8rem; background:rgba(255,255,255,0.06); padding:0.6rem 0.8rem; border-left:2px solid currentColor; margin-bottom:1.35rem; line-height:1.5;">
+                ${b.context}
+              </div>
+            ` : ''}
+
+            <!-- Footer: Tags on LEFT · Container on RIGHT -->
+            <div class="ep-card-footer">
+              <div class="ep-tags">${tagsBlocks}</div>
+              <span class="ep-attribution">${containerStr}</span>
+            </div>
+          </div>
+        `;
+      } else if (currentSubLayout === 'poster') {
+        stage.innerHTML = `
+          <div class="ep-type-poster">
+            <div class="ep-idx-huge">#${b.idx}</div>
+
+            <div class="ep-status-bar">
+              <span>${b.specificName}</span>
+              <span>${headerDateStr}</span>
+            </div>
+
+            <!-- Content: Italic, wrapped by distinct framing quotation marks -->
+            <div class="ep-content">
+              ${formattedContent}
+            </div>
+
+            ${(showContext && b.context) ? `
+              <div style="font-family:'JetBrains Mono'; font-size:0.8rem; background:rgba(255,255,255,0.06); padding:0.6rem 0.8rem; border-left:2px solid currentColor; margin-bottom:1.35rem; line-height:1.5;">
+                ${b.context}
+              </div>
+            ` : ''}
+
+            <!-- Footer: Tags on LEFT · Container on RIGHT -->
+            <div class="ep-poster-meta">
+              <div class="ep-tags">${tagsBlocks}</div>
+              <span class="ep-attribution">${containerStr}</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const cur = html.getAttribute('data-theme') || 'dark';
+      const nxt = cur === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', nxt);
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

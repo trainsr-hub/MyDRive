@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Monolith of Mastery · Geological Strata</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #060507; font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #fed7aa; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+.hud {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 24px; z-index: 10;
+}
+.header { text-align: center; }
+.sub-title { font-size: 11px; letter-spacing: .35em; text-transform: uppercase; color: #ea580c; font-weight: 700; margin-bottom: 2px; }
+.main-title { font-size: 20px; font-weight: 800; letter-spacing: .12em; color: #fff7ed; text-shadow: 0 0 16px rgba(234,88,12,0.5); }
+.monolith-stats {
+  position: absolute; right: 30px; top: 50%; transform: translateY(-50%);
+  background: rgba(18, 10, 6, 0.85); border: 1.5px solid rgba(234,88,12,0.35);
+  border-radius: 14px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;
+  pointer-events: auto; min-width: 220px; box-shadow: 0 0 24px rgba(0,0,0,0.6);
+}
+.stat-lbl { font-size: 10px; letter-spacing: .2em; color: #fdba74; text-transform: uppercase; }
+.stat-hrs { font-size: 32px; font-weight: 900; font-family: monospace; color: #ffedd5; text-shadow: 0 0 14px rgba(249,115,22,0.7); }
+.stat-tier { font-size: 11px; font-weight: 700; color: #f97316; letter-spacing: .08em; }
+.controls { pointer-events: auto; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+.btn {
+  min-height: 52px; padding: 0 22px; background: rgba(26, 12, 6, 0.85);
+  border: 1.5px solid rgba(234,88,12,0.35); border-radius: 12px; color: #fed7aa;
+  font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  cursor: pointer; transition: all .15s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:hover { background: #431407; border-color: #f97316; color: #fff; box-shadow: 0 0 24px rgba(249,115,22,0.5); transform: translateY(-2px); }
+.btn:active { transform: translateY(1px); }
+.btn.active { background: #c2410c; border-color: #ffedd5; color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="header">
+    <div class="sub-title">10,000-Hour Monumental Architecture</div>
+    <div class="main-title">The Obsidian Monolith of Mastery</div>
+  </div>
+  <div class="monolith-stats">
+    <span class="stat-lbl">Carved Permanence</span>
+    <span class="stat-hrs" id="hoursVal">0 h</span>
+    <span class="stat-tier" id="tierVal">Strata I: Basalt Genesis</span>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="bankHours(8)">🔨 Carve Workday (+8h)</button>
+    <button class="btn" onclick="bankHours(160)">📜 Carve Month (+160h)</button>
+    <button class="btn" onclick="bankHours(1000)">🗿 Carve Epoch (+1,000h)</button>
+    <button class="btn" id="chiselBtn" onclick="toggleChisel()">🔥 Continuous Inscription</button>
+    <button class="btn" onclick="resetHours()">🔄 Reset Strata</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const hoursValEl = document.getElementById('hoursVal'), tierValEl = document.getElementById('tierVal');
+let W, H, cx, cy, hours = 0, targetHours = 0, sparks = [], isChiseling = false, chiselTimer = null, audioCtx = null;
+const MAX_HOURS = 10000;
+const EPOCHS = [
+  'Basalt Genesis (0-1k)', 'Slate Fortitude (1-2k)', 'Obsidian Discipline (2-3k)',
+  'Granite Synthesis (3-4k)', 'Marble Precision (4-5k)', 'Quartz Resonance (5-6k)',
+  'Titanium Mastery (6-7k)', 'Adamantite Virtuosity (7-8k)', 'Aether Apex (8-9k)', 'Solar Transcendence (10k)'
+];
+
+function playChiselTone() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(320, t);
+    osc.frequency.exponentialRampToValueAtTime(80, t + 0.12);
+    gain.gain.setValueAtTime(0.06, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.12);
+  } catch(e) {}
+}
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; cx = W / 2; cy = H / 2; }
+window.addEventListener('resize', resize);
+resize();
+
+function bankHours(n) {
+  targetHours = Math.min(MAX_HOURS, targetHours + n);
+  spawnSparks(cx, cy + 180 - (targetHours / MAX_HOURS) * 360, 15);
+  playChiselTone();
+}
+
+function toggleChisel() {
+  isChiseling = !isChiseling;
+  document.getElementById('chiselBtn').classList.toggle('active', isChiseling);
+  if (isChiseling) chiselTimer = setInterval(() => bankHours(6), 140);
+  else clearInterval(chiselTimer);
+}
+function resetHours() { targetHours = 0; hours = 0; sparks = []; }
+
+function spawnSparks(x, y, count) {
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 6;
+    sparks.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 2, life: 1 });
+  }
+}
+
+function draw() {
+  ctx.fillStyle = 'rgba(6, 5, 7, 0.28)'; ctx.fillRect(0, 0, W, H);
+  hours += (targetHours - hours) * 0.08;
+  const rounded = Math.round(hours);
+  hoursValEl.textContent = `${rounded.toLocaleString()} h`;
+  const epochIdx = Math.min(9, Math.floor(hours / 1000));
+  tierValEl.textContent = `Epoch ${epochIdx + 1}: ${EPOCHS[epochIdx]}`;
+
+  const mw = 160, mh = 420;
+  const mx = cx - mw / 2, my = cy - mh / 2;
+
+  // Draw Monolith Base Structure
+  ctx.save();
+  ctx.fillStyle = '#141216';
+  ctx.strokeStyle = '#292524';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(mx - 15, my + mh); ctx.lineTo(mx + mw + 15, my + mh);
+  ctx.lineTo(mx + mw, my); ctx.lineTo(mx, my); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // Carved Laser Strata
+  const carvedH = (hours / MAX_HOURS) * mh;
+  const carveLineY = my + mh - carvedH;
+
+  // 10 Epoch Separators
+  for (let i = 1; i <= 10; i++) {
+    const sy = my + mh - (i / 10) * mh;
+    ctx.strokeStyle = hours >= i * 1000 ? '#f97316' : 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(mx - 5, sy); ctx.lineTo(mx + mw + 5, sy);
+    ctx.stroke();
+  }
+
+  // Active Molten Inscription Line
+  if (carvedH > 0) {
+    ctx.strokeStyle = '#f97316'; ctx.lineWidth = 4;
+    ctx.shadowColor = '#fb923c'; ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.moveTo(mx - 8, carveLineY); ctx.lineTo(mx + mw + 8, carveLineY);
+    ctx.stroke();
+
+    // Glowing core fill below inscription
+    const grad = ctx.createLinearGradient(0, carveLineY, 0, my + mh);
+    grad.addColorStop(0, 'rgba(249, 115, 22, 0.35)');
+    grad.addColorStop(1, 'rgba(67, 20, 7, 0.05)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(mx + 2, carveLineY, mw - 4, carvedH);
+  }
+  ctx.restore();
+
+  // Draw Sparks
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i]; s.x += s.vx; s.y += s.vy; s.vy += 0.2; s.life -= 0.04;
+    if (s.life <= 0) { sparks.splice(i, 1); continue; }
+    ctx.save(); ctx.globalAlpha = s.life;
+    ctx.beginPath(); ctx.arc(s.x, s.y, 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#fdba74'; ctx.shadowColor = '#f97316'; ctx.shadowBlur = 8; ctx.fill();
+    ctx.restore();
+  }
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+/**
+ * ============================================================================
+ * Faust Acoustic Field Speaker - ESP32 I2S Real-Time Audio Receiver
+ * ============================================================================
+ * Hardware: ESP32 + MAX98357A (or PCM5102 / standard I2S DAC)
+ *
+ * Pinout:
+ *   - I2S BCLK (SCK):  GPIO 16
+ *   - I2S LRC  (WS):   GPIO 17
+ *   - I2S DIN  (SD):   GPIO 15
+ *
+ * Protocol:
+ *   - High-Speed UART: 921,600 baud
+ *   - Format: 16-bit Mono PCM @ 16,000 Hz (Little-Endian)
+ *   - DMA Buffers: 8 x 512 samples with auto-clearing
+ * ============================================================================
+ */
+
+#include <Arduino.h>
+#include <driver/i2s.h>
+
+#define I2S_PORT        I2S_NUM_0
+#define I2S_SCK         16     // BCLK
+#define I2S_WS          17     // LRC / WS
+#define I2S_SD          15     // DOUT to Speaker Amp DIN
+
+#define SAMPLE_RATE     16000  // 16 kHz
+#define UART_BAUD       921600 // 921.6k baud for seamless real-time streaming
+#define RX_BUFFER_SIZE  1024   // 512 mono samples (1024 bytes) per batch
+
+int16_t mono_samples[RX_BUFFER_SIZE / 2];
+int16_t stereo_samples[RX_BUFFER_SIZE]; // Mono expanded to Left + Right
+
+void setup_i2s() {
+    const i2s_config_t i2s_config = {
+        .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
+        .sample_rate = SAMPLE_RATE,
+        .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
+        .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
+        .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_STAND_I2S),
+        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+        .dma_buf_count = 8,
+        .dma_buf_len = 512,
+        .use_apll = false,
+        .tx_desc_auto_clear = true,
+        .fixed_mclk = 0
+    };
+
+    const i2s_pin_config_t pin_config = {
+        .bck_io_num = I2S_SCK,
+        .ws_io_num = I2S_WS,
+        .data_out_num = I2S_SD,
+        .data_in_num = I2S_PIN_NO_CHANGE
+    };
+
+    esp_err_t err = i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
+    if (err != ESP_OK) {
+        while (true) { delay(100); }
+    }
+
+    err = i2s_set_pin(I2S_PORT, &pin_config);
+    if (err != ESP_OK) {
+        while (true) { delay(100); }
+    }
+
+    i2s_zero_dma_buffer(I2S_PORT);
+}
+
+void setup() {
+    Serial.begin(UART_BAUD);
+    // Increase internal RX hardware buffer to 4096 bytes to avoid UART drop
+    Serial.setRxBufferSize(4096);
+
+    setup_i2s();
+}
+
+void loop() {
+    int available = Serial.available();
+    if (available >= 2) {
+        // Read in chunks up to RX_BUFFER_SIZE (must be even bytes for 16-bit samples)
+        int to_read = min(available, (int)RX_BUFFER_SIZE);
+        to_read = to_read & (~1); // Align to 2-byte boundary
+
+        int bytes_read = Serial.readBytes((char*)mono_samples, to_read);
+        if (bytes_read > 0) {
+            int samples_count = bytes_read / 2;
+
+            // Expand mono samples to stereo frame (Left + Right) for universal DAC decoding
+            for (int i = 0; i < samples_count; i++) {
+                int16_t sample = mono_samples[i];
+                stereo_samples[i * 2]     = sample;
+                stereo_samples[i * 2 + 1] = sample;
+            }
+
+            size_t bytes_written = 0;
+            i2s_write(
+                I2S_PORT,
+                stereo_samples,
+                samples_count * 2 * sizeof(int16_t),
+                &bytes_written,
+                portMAX_DELAY
+            );
+        }
+    }
+}

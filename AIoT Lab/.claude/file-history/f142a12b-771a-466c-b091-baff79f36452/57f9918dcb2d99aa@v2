@@ -1,0 +1,20 @@
+{
+  "acoustic_presence": {
+    "enabled": true,
+    "voice": "af_bella",
+    "speed": 0.84,
+    "pitch_shift": -0.3,
+    "pause_duration": 0.3,
+    "port": 20129,
+    "host": "127.0.0.1",
+    "speech_log_dir": ".claude/audio/logs"
+  },
+  "telegram": {
+    "enabled": true,
+    "bot_name": "Faust of the Blue Rose",
+    "bot_handle": "@FaustoftheBlueRose_bot",
+    "bot_token": "8886654932:AAFq6vaPlJig3oekr8BEW2PuRvMejIUB7VU",
+    "chat_id": -1004405650953,
+    "manager_user_id": 8016442589
+  }
+}

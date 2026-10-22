@@ -1,0 +1,63 @@
+{
+  "table_name": "notes",
+  "columns": [
+    {
+      "name": "id",
+      "type": "hex_id",
+      "metadata": {}
+    },
+    {
+      "name": "title",
+      "type": "text_single",
+      "metadata": {}
+    },
+    {
+      "name": "content",
+      "type": "text_multi",
+      "metadata": {}
+    },
+    {
+      "name": "word_count",
+      "type": "int_scalar",
+      "metadata": {}
+    },
+    {
+      "name": "score",
+      "type": "float_scalar",
+      "metadata": {}
+    },
+    {
+      "name": "is_pinned",
+      "type": "boolean",
+      "metadata": {}
+    },
+    {
+      "name": "category",
+      "type": "enum_single",
+      "metadata": {
+        "options": ["personal", "work", "ideas", "archive"]
+      }
+    },
+    {
+      "name": "labels",
+      "type": "enum_multi",
+      "metadata": {
+        "options": ["important", "reference", "draft", "review"]
+      }
+    },
+    {
+      "name": "project_id",
+      "type": "relation_single",
+      "metadata": {
+        "target": "projects"
+      }
+    },
+    {
+      "name": "linked_note_ids",
+      "type": "relation_multi",
+      "metadata": {
+        "target": "notes"
+      }
+    }
+  ]
+}

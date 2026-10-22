@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aegis Paws — Smart Pet Feeder & Waterer IoT Station</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Top Navigation & System Status -->
+      <header class="top-bar">
+        <div class="brand-group">
+          <div class="brand-icon">🐾</div>
+          <div class="brand-text">
+            <h1>Aegis Paws IoT Station</h1>
+            <p class="subtitle">Autonomous Pet Nutrition & Hydration Telemetry</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div id="status-badge" class="status-badge status-online">Connecting...</div>
+
+          <div class="sim-toggle-wrapper" title="Simulate autonomous pet feeding, drinking, and sensor fluctuations">
+            <label class="toggle-pill">
+              <input type="checkbox" id="sim-toggle" />
+              <span class="toggle-track"></span>
+              <span class="toggle-text">IoT Sim Loop</span>
+            </label>
+          </div>
+
+          <button id="theme-btn" class="icon-btn" title="Toggle Light/Dark Theme">🌓</button>
+
+          <div class="auth-box">
+            <span id="user-display" class="muted user-pill">Guest</span>
+            <button id="auth-action-btn" class="btn-sm secondary">Sign In</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Critical Alert Banners Section -->
+      <section id="alerts-container" class="alerts-section" aria-live="polite">
+        <!-- Injected dynamically by ui-renderer.js -->
+      </section>
+
+      <!-- Main Operational Dashboard -->
+      <main class="dashboard-grid">
+        <!-- Section 1: Live Telemetry Gauges (Food & Water Tanks) -->
+        <div class="card tank-card">
+          <div class="card-header">
+            <div class="header-title">
+              <span class="card-icon">🌾</span>
+              <h2>Food Storage Tank</h2>
+            </div>
+            <button id="restock-food-btn" class="btn-sm secondary">Restock (2500g)</button>
+          </div>
+          <div class="metric-display">
+            <div id="food-tank-val" class="metric-val">-- g</div>
+            <div id="food-tank-sub" class="metric-sub">Calculating capacity...</div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div id="food-tank-bar" class="progress-bar bar-food" style="width: 0%"></div>
+          </div>
+          <div class="card-footer-info">
+            <span>Bulk Storage</span>
+            <span>Sealed Hopper</span>
+          </div>
+        </div>
+
+        <div class="card tank-card">
+          <div class="card-header">
+            <div class="header-title">
+              <span class="card-icon">💧</span>
+              <h2>Water Storage Tank</h2>
+            </div>
+            <button id="restock-water-btn" class="btn-sm secondary">Refill (3000ml)</button>
+          </div>
+          <div class="metric-display">
+            <div id="water-tank-val" class="metric-val">-- ml</div>
+            <div id="water-tank-sub" class="metric-sub">Calculating capacity...</div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div id="water-tank-bar" class="progress-bar bar-water" style="width: 0%"></div>
+          </div>
+          <div class="card-footer-info">
+            <span>Clean Reservoir</span>
+            <span>UV Filtered</span>
+          </div>
+        </div>
+
+        <!-- Section 2: Active Bowls (Food & Water) + Quick Controls -->
+        <div class="card bowl-card">
+          <div class="card-header">
+            <div class="header-title">
+              <span class="card-icon">🥣</span>
+              <h2>Food Bowl</h2>
+            </div>
+            <span id="bowl-food-status" class="metric-pill pill-ok">Optimal</span>
+          </div>
+          <div class="metric-display">
+            <div id="bowl-food-val" class="metric-val">-- g</div>
+            <div id="bowl-food-sub" class="metric-sub">Target Range</div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div id="bowl-food-bar" class="progress-bar bar-food-bowl" style="width: 0%"></div>
+          </div>
+
+          <div class="card-controls">
+            <button id="refill-food-manual-btn" class="btn primary btn-food btn-dispense">
+              <span>Refill Food Manually</span>
+              <span class="badge">+25g</span>
+            </button>
+            <div class="toggle-control-row">
+              <label class="switch-label" for="auto-food-toggle">
+                <span>Auto-Fill Food</span>
+                <span class="hint">Maintains food between min/max</span>
+              </label>
+              <label class="switch">
+                <input type="checkbox" id="auto-food-toggle" checked />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card bowl-card">
+          <div class="card-header">
+            <div class="header-title">
+              <span class="card-icon">🌊</span>
+              <h2>Water Bowl</h2>
+            </div>
+            <span id="bowl-water-status" class="metric-pill pill-ok">Optimal</span>
+          </div>
+          <div class="metric-display">
+            <div id="bowl-water-val" class="metric-val">-- ml</div>
+            <div id="bowl-water-sub" class="metric-sub">Target Range</div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div id="bowl-water-bar" class="progress-bar bar-water-bowl" style="width: 0%"></div>
+          </div>
+
+          <div class="card-controls">
+            <button id="refill-water-manual-btn" class="btn primary btn-water btn-dispense">
+              <span>Refill Water Manually</span>
+              <span class="badge">+50ml</span>
+            </button>
+            <div class="toggle-control-row">
+              <label class="switch-label" for="auto-water-toggle">
+                <span>Auto-Fill Water</span>
+                <span class="hint">Maintains water between min/max</span>
+              </label>
+              <label class="switch">
+                <input type="checkbox" id="auto-water-toggle" checked />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Food Tank Environmental Sensors -->
+        <div class="card climate-card">
+          <div class="card-header">
+            <div class="header-title">
+              <span class="card-icon">🌡️</span>
+              <h2>Food Tank Environment</h2>
+            </div>
+            <span id="climate-range" class="muted text-sm">Safe Bounds</span>
+          </div>
+
+          <div class="climate-grid">
+            <div class="climate-box">
+              <div class="climate-label">
+                <span>Temperature</span>
+                <span id="temp-status" class="metric-pill pill-ok">Nominal</span>
+              </div>
+              <div id="temp-val" class="climate-reading">-- °C</div>
+            </div>
+
+            <div class="climate-box">
+              <div class="climate-label">
+                <span>Moisture / RH</span>
+                <span id="moisture-status" class="metric-pill pill-ok">Dry</span>
+              </div>
+              <div id="moisture-val" class="climate-reading">-- %</div>
+            </div>
+          </div>
+
+          <div class="test-triggers">
+            <span class="text-sm muted">Simulate Radical Conditions:</span>
+            <div class="trigger-buttons">
+              <button id="test-heat-btn" class="btn-sm danger">Heat Spike (33°C)</button>
+              <button id="test-moist-btn" class="btn-sm danger">Moisture Spike (78%)</button>
+              <button id="test-norm-btn" class="btn-sm secondary">Reset Normal</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: System Configuration Settings -->
+        <div class="card config-card">
+          <div class="card-header">
+            <div class="header-title">
+              <span class="card-icon">⚙️</span>
+              <h2>Threshold Configuration</h2>
+            </div>
+            <span class="muted text-sm">Operational Setpoints</span>
+          </div>
+
+          <form id="config-form" class="config-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="tempMin">Min Allowed Temp (°C)</label>
+                <input type="number" id="tempMin" name="tempMin" step="0.5" required />
+              </div>
+              <div class="form-group">
+                <label for="tempMax">Max Allowed Temp (°C)</label>
+                <input type="number" id="tempMax" name="tempMax" step="0.5" required />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="moistureMax">Max Allowed Moisture (%RH)</label>
+                <input type="number" id="moistureMax" name="moistureMax" min="10" max="100" required />
+              </div>
+              <div class="form-group">
+                <label for="bowlWaterMin">Min Water in Bowl (ml)</label>
+                <input type="number" id="bowlWaterMin" name="bowlWaterMin" min="10" max="250" required />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bowlWaterMax">Max Water in Bowl (ml)</label>
+                <input type="number" id="bowlWaterMax" name="bowlWaterMax" min="50" max="250" required />
+              </div>
+              <div class="form-group">
+                <label for="bowlFoodMin">Min Food in Bowl (g)</label>
+                <input type="number" id="bowlFoodMin" name="bowlFoodMin" min="5" max="150" required />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bowlFoodMax">Max Food in Bowl (g)</label>
+                <input type="number" id="bowlFoodMax" name="bowlFoodMax" min="20" max="150" required />
+              </div>
+              <div class="form-group form-actions-align">
+                <button type="submit" id="save-config-btn" class="btn primary full-width">Save Setpoints</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Section 5: Telemetry Event Log -->
+        <div class="card log-card">
+          <div class="card-header">
+            <div class="header-title">
+              <span class="card-icon">📜</span>
+              <h2>Telemetry & Dispatch Feed</h2>
+            </div>
+            <span class="muted text-sm" id="last-updated-val">Live</span>
+          </div>
+          <ul id="log-list" class="log-list">
+            <!-- Populated dynamically -->
+          </ul>
+        </div>
+      </main>
+
+      <!-- Auth Modal -->
+      <div id="auth-modal" class="modal hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Station Credentials</h3>
+            <button id="modal-close-btn" class="icon-btn">✕</button>
+          </div>
+          <form id="modal-auth-form">
+            <label>
+              Station Operator Email
+              <input type="email" id="modal-email" placeholder="operator@feeder.io" required />
+            </label>
+            <label>
+              Security Password
+              <input type="password" id="modal-password" placeholder="••••••••" required />
+            </label>
+            <div class="modal-actions">
+              <button type="submit" class="btn primary">Sign In</button>
+              <button type="button" id="modal-signup-btn" class="btn secondary">Register</button>
+              <button type="button" id="modal-anon-btn" class="btn secondary">Instant Guest Link</button>
+            </div>
+            <p id="modal-auth-msg" class="message"></p>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

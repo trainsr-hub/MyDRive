@@ -1,0 +1,58 @@
+{
+  "table_name": "projects",
+  "columns": [
+    {
+      "name": "id",
+      "type": "hex_id",
+      "metadata": {}
+    },
+    {
+      "name": "title",
+      "type": "text_single",
+      "metadata": {}
+    },
+    {
+      "name": "description",
+      "type": "text_multi",
+      "metadata": {}
+    },
+    {
+      "name": "budget",
+      "type": "float_scalar",
+      "metadata": {}
+    },
+    {
+      "name": "status",
+      "type": "enum_single",
+      "metadata": {
+        "options": ["planning", "active", "paused", "completed", "cancelled"]
+      }
+    },
+    {
+      "name": "priority_tags",
+      "type": "enum_multi",
+      "metadata": {
+        "options": ["urgent", "high", "medium", "low", "backlog"]
+      }
+    },
+    {
+      "name": "is_public",
+      "type": "boolean",
+      "metadata": {}
+    },
+    {
+      "name": "owner_id",
+      "type": "relation_single",
+      "metadata": {
+        "target": "users"
+      }
+    },
+    {
+      "name": "member_ids",
+      "type": "relation_multi",
+      "metadata": {
+        "target": "users"
+      }
+    }
+  ]
+}

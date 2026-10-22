@@ -1,0 +1,383 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { rutGonTime } from '../core/rutGonTime';
+import { calcDinoCost } from '../core/calcDinoCost';
+import { calcGachaPool, selectWeightedRoll } from '../core/calcGachaPool';
+import { calcDinoMaxCapacity, calcDinoRank, calcDinosNeededForDinoNextEvo, calcDinosNeededForDinoMaxEvo } from '../core/evolutionEngine';
+import { Sparkles, Clock, TrendingUp, Zap } from 'lucide-react';
+
+interface AutoGachaRoll {
+  uuid: string;
+  dino: any;
+  cost: number;
+  rollNumber: number;
+  evo1Ferocity: number;
+  newlyUnlockedDinos: string[];
+  timeSpent: number;
+  wasFirstBuy: boolean;
+}
+
+interface AutoGachaOverlayProps {
+  isActive: boolean;
+  objects: any[];
+  userProgress: any;
+  excludedIds: string[];
+  myResources: any;
+  isFreeBuyCheat: boolean;
+  onRollComplete: (rollData: AutoGachaRoll) => void;
+  onUpdateResources: (newRes: any) => void;
+  onUpdateProgress: (newProg: any) => void;
+  onSequenceComplete: () => void;
+}
+
+interface PrecomputedRoll {
+  uuid: string;
+  dino: any;
+  cost: number;
+  evo1Ferocity: number;
+  multiplier: number;
+}
+
+export const AutoGachaOverlay: React.FC<AutoGachaOverlayProps> = ({
+  isActive,
+  objects,
+  userProgress,
+  excludedIds,
+  myResources,
+  isFreeBuyCheat,
+  onRollComplete,
+  onUpdateResources,
+  onUpdateProgress,
+  onSequenceComplete
+}) => {
+  const [currentRoll, setCurrentRoll] = useState(0);
+  const [precomputedRolls, setPrecomputedRolls] = useState<PrecomputedRoll[]>([]);
+  const [currentTimeLeft, setCurrentTimeLeft] = useState(0);
+  const [rollHistory, setRollHistory] = useState<AutoGachaRoll[]>([]);
+  const [showBlackHole, setShowBlackHole] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [phase, setPhase] = useState<'starting' | 'rolling' | 'complete'>('starting');
+
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Precompute all 10 rolls when starting, sorted by evo1_ferocity (strongest last)
+  useEffect(() => {
+    if (isActive && precomputedRolls.length === 0) {
+      setShowBlackHole(true);
+      setPhase('starting');
+
+      // Generate 10 rolls
+      const rolls: PrecomputedRoll[] = [];
+      let tempProgress = { ...userProgress };
+
+      for (let i = 0; i < 10; i++) {
+        const poolResult = calcGachaPool(objects, tempProgress, excludedIds);
+        const possibleOutcomes = poolResult.pool;
+
+        if (possibleOutcomes.length === 0) break;
+
+        const roll = selectWeightedRoll(possibleOutcomes);
+        if (!roll) break;
+
+        const dino = objects.find(o => (o.uuid || o.id || o.name) === roll.uuid);
+        if (!dino) continue;
+
+        // Get wager setting
+        let wagerOption: string | number = 1;
+        try {
+          const saved = localStorage.getItem('arc_jurassic_roll_wager_v1');
+          if (saved === 'next-evo' || saved === 'max-evo') {
+            wagerOption = saved;
+          } else {
+            const parsed = Number(saved);
+            wagerOption = [1, 2, 3, 4, 8, 16].includes(parsed) ? parsed : 1;
+          }
+        } catch {
+          wagerOption = 1;
+        }
+
+        let multiplier = 1;
+        if (wagerOption === 'next-evo') {
+          multiplier = calcDinosNeededForDinoNextEvo(dino, tempProgress);
+        } else if (wagerOption === 'max-evo') {
+          multiplier = calcDinosNeededForDinoMaxEvo(dino, tempProgress);
+        } else {
+          const num = typeof wagerOption === 'number' ? wagerOption : Number(wagerOption);
+          multiplier = isNaN(num) || num < 1 ? 1 : num;
+        }
+
+        const cost = calcDinoCost(dino);
+        const evo1Ferocity = dino.evolutions?.[0]?.ferocity || dino.max_ferocity || 1;
+
+        rolls.push({
+          uuid: roll.uuid,
+          dino,
+          cost: cost.totalTimeSeconds * multiplier,
+          evo1Ferocity,
+          multiplier
+        });
+
+        // Update temp progress for next roll calculation
+        const currentData = tempProgress?.owned_dinos?.[roll.uuid] || { number: 0, rank: 0 };
+        const currentCount = Number(currentData.number || 0);
+        const newCount = currentCount + multiplier;
+        const newRank = calcDinoRank(newCount, dino.evolutions?.length || 4);
+
+        tempProgress.owned_dinos = {
+          ...tempProgress.owned_dinos,
+          [roll.uuid]: {
+            number: newCount,
+            rank: newRank
+          }
+        };
+      }
+
+      // Sort by evo1_ferocity (weakest first, strongest last for dramatic effect)
+      rolls.sort((a, b) => a.evo1Ferocity - b.evo1Ferocity);
+      setPrecomputedRolls(rolls);
+
+      // Start rolling after Black Hole animation
+      setTimeout(() => {
+        setShowBlackHole(false);
+        setPhase('rolling');
+      }, 3000);
+    }
+  }, [isActive, objects, userProgress, excludedIds]);
+
+  // Execute rolls one by one
+  useEffect(() => {
+    if (phase === 'rolling' && precomputedRolls.length > 0 && currentRoll < precomputedRolls.length) {
+      const executeRoll = () => {
+        if (currentRoll >= precomputedRolls.length) return;
+
+        setIsProcessing(true);
+        const rollData = precomputedRolls[currentRoll];
+        const { uuid, dino, cost, evo1Ferocity, multiplier } = rollData;
+
+        // Check affordability
+        if (!isFreeBuyCheat) {
+          const currentJurassicTime = Number(myResources.jurassic_time?.amount ?? 0);
+          if (currentJurassicTime < cost) {
+            // Can't afford, end sequence
+            setPhase('complete');
+            onSequenceComplete();
+            return;
+          }
+
+          // Deduct resources
+          const newRes = { ...myResources };
+          newRes.jurassic_time = {
+            ...newRes.jurassic_time,
+            amount: Math.max(0, Number((currentJurassicTime - cost).toFixed(2)))
+          };
+          onUpdateResources(newRes);
+          setCurrentTimeLeft(newRes.jurassic_time.amount);
+        } else {
+          setCurrentTimeLeft(myResources.jurassic_time?.amount || 0);
+        }
+
+        // Calculate pool differential
+        const prevPoolResult = calcGachaPool(objects, userProgress, excludedIds);
+        const prevPoolSet = new Set(prevPoolResult.pool.map(p => p.uuid));
+
+        // Update progress
+        const currentData = userProgress?.owned_dinos?.[uuid] || { number: 0, rank: 0 };
+        const currentCount = Number(currentData.number || 0);
+        const newCount = currentCount + multiplier;
+        const newRank = calcDinoRank(newCount, dino.evolutions?.length || 4);
+        const wasFirstBuy = currentCount === 0;
+
+        const newProg = {
+          ...userProgress,
+          owned_dinos: {
+            ...(userProgress?.owned_dinos || {}),
+            [uuid]: {
+              number: newCount,
+              rank: newRank
+            }
+          }
+        };
+        onUpdateProgress(newProg);
+
+        // Calculate newly unlocked pool dinos
+        const postPoolResult = calcGachaPool(objects, newProg, excludedIds);
+        const newlyUnlockedDinos = postPoolResult.pool
+          .filter(p => !prevPoolSet.has(p.uuid))
+          .map(p => p.name);
+
+        const rollResult: AutoGachaRoll = {
+          uuid,
+          dino,
+          cost,
+          rollNumber: currentRoll + 1,
+          evo1Ferocity,
+          newlyUnlockedDinos,
+          timeSpent: cost,
+          wasFirstBuy
+        };
+
+        setRollHistory(prev => [...prev, rollResult]);
+        onRollComplete(rollResult);
+        setIsProcessing(false);
+        setCurrentRoll(prev => prev + 1);
+      };
+
+      // Execute with delay for visibility
+      const timeout = setTimeout(executeRoll, 1500);
+      return () => clearTimeout(timeout);
+    }
+
+    if (currentRoll >= precomputedRolls.length && phase === 'rolling') {
+      setPhase('complete');
+      setTimeout(() => {
+        onSequenceComplete();
+      }, 2000);
+    }
+  }, [phase, currentRoll, precomputedRolls]);
+
+  // Update time display
+  useEffect(() => {
+    if (isActive) {
+      intervalRef.current = setInterval(() => {
+        setCurrentTimeLeft(myResources.jurassic_time?.amount || 0);
+      }, 1000);
+
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+      };
+    }
+  }, [isActive, myResources]);
+
+  if (!isActive) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 max-w-4xl w-full mx-4 border border-slate-700 shadow-2xl">
+
+        {/* Black Hole Animation Phase */}
+        {showBlackHole && (
+          <div className="text-center py-12">
+            <div className="relative mx-auto w-32 h-32 mb-8">
+              <iframe
+                src="/animations/black-hole.html"
+                className="w-full h-full rounded-full border-0"
+                title="Black Hole Animation"
+              />
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-4">
+              <Sparkles className="inline w-8 h-8 mr-2 text-yellow-400" />
+              Initiating Gacha Sequence
+            </h2>
+            <p className="text-slate-300 text-lg">Precomputing 10 rolls sorted by evolutionary strength...</p>
+          </div>
+        )}
+
+        {/* Rolling Phase */}
+        {phase === 'rolling' && (
+          <div className="space-y-6">
+            {/* Header with Time and Roll Counter */}
+            <div className="flex justify-between items-center bg-slate-800/50 rounded-xl p-4 border border-slate-600">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-sky-400">
+                  <Clock className="w-5 h-5" />
+                  <span className="font-mono text-lg font-bold">
+                    {rutGonTime(currentTimeLeft, "seconds")} Remaining
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-amber-400">
+                  <Zap className="w-5 h-5" />
+                  <span className="font-mono text-lg font-bold">
+                    Roll {currentRoll + 1}/10
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Current Roll Display */}
+            {precomputedRolls[currentRoll] && (
+              <div className="bg-gradient-to-r from-amber-900/30 to-orange-900/30 rounded-xl p-6 border border-amber-600/50">
+                <div className="flex items-center gap-6">
+                  <img
+                    src={precomputedRolls[currentRoll].dino.image_url}
+                    className="w-20 h-20 rounded-lg object-cover border-2 border-amber-400"
+                    alt={precomputedRolls[currentRoll].dino.name}
+                  />
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-white mb-2">
+                      {precomputedRolls[currentRoll].dino.name}
+                    </h3>
+                    <div className="flex gap-4 text-sm">
+                      <span className="text-amber-400 font-mono">
+                        Cost: {rutGonTime(precomputedRolls[currentRoll].cost, "seconds")}
+                      </span>
+                      <span className="text-red-400 font-mono">
+                        Evo1 Ferocity: {precomputedRolls[currentRoll].evo1Ferocity.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Roll History */}
+            <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-600 max-h-64 overflow-y-auto">
+              <h4 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+                Completed Rolls
+              </h4>
+              <div className="space-y-2">
+                {rollHistory.map((roll) => (
+                  <div key={`${roll.uuid}-${roll.rollNumber}`}
+                       className="flex justify-between items-center bg-slate-700/50 rounded-lg p-3 text-sm">
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-400 font-mono">#{roll.rollNumber}</span>
+                      <span className="text-white font-medium">{roll.dino.name}</span>
+                      {roll.wasFirstBuy && (
+                        <span className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">
+                          FIRST!
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-amber-400 font-mono">
+                        -{rutGonTime(roll.timeSpent, "seconds")}
+                      </span>
+                      <span className="text-red-400 font-mono">
+                        F: {roll.evo1Ferocity.toLocaleString()}
+                      </span>
+                      {roll.newlyUnlockedDinos.length > 0 && (
+                        <span className="text-green-400 font-mono">
+                          +{roll.newlyUnlockedDinos.length} unlocked
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Complete Phase */}
+        {phase === 'complete' && (
+          <div className="text-center py-8">
+            <div className="text-6xl mb-6">🎉</div>
+            <h2 className="text-3xl font-bold text-white mb-4">Auto-Gacha Complete!</h2>
+            <p className="text-slate-300 text-lg mb-6">
+              Completed {rollHistory.length}/10 rolls
+            </p>
+            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-600">
+              <div className="text-sm text-slate-300">
+                Total Time Spent: {rutGonTime(rollHistory.reduce((sum, roll) => sum + roll.timeSpent, 0), "seconds")}
+              </div>
+              <div className="text-sm text-slate-300 mt-1">
+                New Dinosaurs: {rollHistory.filter(roll => roll.wasFirstBuy).length}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

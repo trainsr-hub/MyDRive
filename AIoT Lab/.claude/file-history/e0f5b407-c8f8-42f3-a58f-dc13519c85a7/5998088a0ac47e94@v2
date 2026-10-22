@@ -1,0 +1,284 @@
+/* ========================================================================
+   DATA ENTRY WORKSPACE & DIRECT CELL GRID TABLE
+   ======================================================================== */
+.data-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-canvas);
+}
+
+.data-toolbar {
+  flex-shrink: 0;
+  padding: 0.45rem 1.25rem;
+  background: var(--bg-canvas);
+  border-bottom: 1px solid var(--border-table);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.data-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.data-table-title {
+  font: 700 12.5px var(--font-mono);
+  color: var(--accent);
+  text-transform: lowercase;
+}
+
+.record-counter {
+  font: 500 11px var(--font-mono);
+  color: var(--text-dim);
+  background: var(--bg-input);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+}
+
+.data-search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 0 0.5rem;
+  height: 28px;
+}
+
+.data-search-box input {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font: 12px var(--font-body);
+  outline: none;
+  width: 150px;
+}
+
+.data-search-box input::placeholder {
+  color: var(--text-dim);
+}
+
+.data-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Data Grid Table */
+.data-grid-container {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.data-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  min-width: 100%;
+}
+
+.data-grid-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-card);
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  font: 600 11px var(--font-mono);
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border-mid);
+  border-right: 1px solid var(--border-table);
+  white-space: nowrap;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+.data-grid-table thead th .th-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.data-grid-table thead th .th-slug {
+  font: 400 10px var(--font-mono);
+  color: var(--text-dim);
+  text-transform: none;
+}
+
+.data-grid-table tbody tr {
+  border-bottom: 1px solid var(--border-table);
+  transition: background 0.08s ease;
+}
+
+.data-grid-table tbody tr:hover {
+  background: var(--bg-row-hover);
+}
+
+.data-grid-table tbody td {
+  padding: 0 0.5rem;
+  height: 40px;
+  vertical-align: middle;
+  border-right: 1px solid var(--border-table);
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.data-grid-table tbody td:last-child {
+  border-right: none;
+}
+
+.data-num-cell {
+  text-align: center;
+  font: 500 11px var(--font-mono);
+  color: var(--text-dim);
+  width: 44px;
+  user-select: none;
+}
+
+.data-del-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.data-grid-table tbody tr:hover .data-num-cell .row-idx { display: none; }
+.data-grid-table tbody tr:hover .data-num-cell .data-del-btn { display: inline-block; }
+
+/* Direct Cell Inputs */
+.grid-cell-input {
+  width: 100%;
+  height: 30px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 0 0.4rem;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  transition: all 0.12s ease;
+}
+
+.grid-cell-input:hover {
+  border-color: var(--border-light);
+  background: var(--bg-input);
+}
+
+.grid-cell-input:focus {
+  background: var(--bg-input-focus);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+  outline: none;
+}
+
+.grid-cell-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.grid-hex-id-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font: 600 11.5px var(--font-mono);
+  color: var(--c-pk);
+  background: rgba(56,189,248,0.08);
+  border: 1px solid rgba(56,189,248,0.25);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.grid-hex-id-badge:hover {
+  border-color: var(--c-pk);
+  background: rgba(56,189,248,0.18);
+}
+
+.grid-checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.grid-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.grid-cell-select {
+  height: 28px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 0 1.4rem 0 0.45rem;
+  color: var(--text-primary);
+  font: 500 11.5px var(--font-mono);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='8' height='6' viewBox='0 0 8 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23ff9e1b' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+}
+
+.grid-cell-select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.grid-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font: 500 11px var(--font-mono);
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  background: rgba(244,63,94,0.1);
+  color: #fb7185;
+  border: 1px solid rgba(244,63,94,0.3);
+  margin-right: 0.25rem;
+}
+
+.grid-rel-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font: 500 11px var(--font-mono);
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border: 1px solid rgba(255,158,27,0.3);
+  margin-right: 0.25rem;
+}
+
+.grid-row-add td {
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font: 500 12.5px var(--font-body);
+  border-bottom: none;
+  transition: all 0.12s ease;
+}
+
+.grid-row-add:hover td {
+  background: var(--bg-row-hover);
+  color: var(--accent);
+}

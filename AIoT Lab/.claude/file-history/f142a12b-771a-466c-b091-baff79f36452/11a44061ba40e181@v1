@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""
+Tier 3: Agent Service & Domain Orchestrator
+Pure business rules, security validation, deterministic intent routing,
+and task orchestration. Zero UI code.
+"""
+
+import time
+from datetime import datetime
+from typing import Optional
+
+from domain import TelegramDirective, ExecutionResult, SessionMessage
+from repository import SessionRepository, WorkspaceRepository
+from tools import SovereignTools
+
+
+MANAGER_USER_ID = 8016442589
+
+
+class FaustAgentService:
+    """Core domain orchestrator for Faust Sovereign operations."""
+
+    def __init__(self, session_repo: Optional[SessionRepository] = None) -> None:
+        self.session_repo = session_repo or SessionRepository()
+
+    def process_directive(self, directive: TelegramDirective) -> ExecutionResult:
+        """Main service entrypoint: validates, routes, persists, and returns result."""
+        start = time.perf_counter()
+
+        # Security Gate
+        if directive.user_id != 0 and directive.user_id != MANAGER_USER_ID:
+            return ExecutionResult(
+                success=False,
+                output="",
+                error=f"Unauthorized access: Sender ID {directive.user_id} is not the Manager."
+            )
+
+        if directive.is_empty:
+            return ExecutionResult(success=False, output="", error="Empty directive received.")
+
+        topic = WorkspaceRepository.resolve_topic(directive.thread_id)
+        cmd_text = directive.clean_text
+
+        # Record incoming turn
+        self.session_repo.save_message(SessionMessage(
+            role="manager",
+            content=cmd_text,
+            timestamp=datetime.now().isoformat(),
+            thread_id=directive.thread_id,
+            message_id=directive.message_id
+        ))
+
+        # Route deterministic command or agent task
+        result = self._dispatch_command(cmd_text, topic.workspace, topic.name)
+        elapsed = (time.perf_counter() - start) * 1000
+
+        # Record Faust response turn
+        self.session_repo.save_message(SessionMessage(
+            role="faust",
+            content=result.output if result.success else f"Error: {result.error}",
+            timestamp=datetime.now().isoformat(),
+            thread_id=directive.thread_id,
+            message_id=directive.message_id
+        ))
+
+
+        return ExecutionResult(
+            success=result.success,
+            output=result.output,
+            latency_ms=elapsed,
+            error=result.error
+        )
+
+    def _dispatch_command(self, text: str, cwd: str, workspace_name: str) -> ExecutionResult:
+        """Evaluates fast-path deterministic commands."""
+        lower = text.lower().strip()
+
+        if lower in ("/status", "/ping", "status", "ping"):
+            return self._handle_status(cwd, workspace_name)
+        if lower in ("/git", "/branch", "git"):
+            return SovereignTools.git_status(cwd)
+        if lower in ("/diff", "diff"):
+            return SovereignTools.git_diff(cwd, stat_only=True)
+        if lower in ("/workspaces", "/topics", "workspaces"):
+            return self._handle_workspaces()
+        if lower.startswith("/run "):
+            return SovereignTools.run_shell(text[5:].strip(), cwd=cwd)
+        if lower in ("/help", "help"):
+            return self._handle_help()
+
+        # Free-form directive execution
+        return self._handle_freeform_task(text, cwd, workspace_name)
+
+    def _handle_status(self, cwd: str, workspace_name: str) -> ExecutionResult:
+        git_res = SovereignTools.git_status(cwd)
+        history = self.session_repo.get_recent_history("4526", limit=3)
+        history_count = len(history)
+
+        output = (
+            f"<b>Faust Sovereign Intelligence Core: ONLINE</b>\n\n"
+            f"• <b>Workspace:</b> <code>{workspace_name}</code>\n"
+            f"• <b>Path:</b> <code>{cwd}</code>\n"
+            f"• <b>Runtime:</b> Local Disk D: Storage Invariant\n"
+            f"• <b>Session DB:</b> SQLite ACID Active ({history_count} turns indexed)\n\n"
+            f"<b>Git Telemetry:</b>\n<pre>{git_res.output}</pre>"
+        )
+        return ExecutionResult(success=True, output=output)
+
+    def _handle_workspaces(self) -> ExecutionResult:
+        topics = WorkspaceRepository.list_all_topics()
+        lines = [f"• <b>Topic #{t.thread_id} ({t.name}):</b> <code>{t.workspace}</code>" for t in topics]
+        output = "<b>Registered Sovereign Workspaces:</b>\n\n" + "\n".join(lines)
+        return ExecutionResult(success=True, output=output)
+
+    def _handle_help(self) -> ExecutionResult:
+        help_text = (
+            "<b>Faust Sovereign C2 Command Manual:</b>\n\n"
+            "• <code>/status</code> — System health, active topic workspace, Git telemetry.\n"
+            "• <code>/git</code> — Git branch status and latest commit.\n"
+            "• <code>/diff</code> — Git diff statistics for active workspace.\n"
+            "• <code>/workspaces</code> — List all registered topic-to-folder mappings.\n"
+            "• <code>/run &lt;cmd&gt;</code> — Execute terminal command within workspace.\n"
+            "• <i>&lt;Natural Language Directive&gt;</i> — Execute autonomous development task."
+        )
+        return ExecutionResult(success=True, output=help_text)
+
+    def _handle_freeform_task(self, text: str, cwd: str, workspace_name: str) -> ExecutionResult:
+        """Processes autonomous task directives against target workspace."""
+        git_res = SovereignTools.git_status(cwd)
+        output = (
+            f"<b>Faust Directive Received:</b>\n\n"
+            f"• <b>Target:</b> <code>{workspace_name}</code> (<code>{cwd}</code>)\n"
+            f"• <b>Directive:</b> <i>{text}</i>\n\n"
+            f"<b>Workspace State:</b>\n<pre>{git_res.output}</pre>\n\n"
+            f"Directive acknowledged and persisted to Sovereign memory."
+        )
+        return ExecutionResult(success=True, output=output)

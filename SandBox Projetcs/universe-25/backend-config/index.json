@@ -1,0 +1,9 @@
+{
+  "project_id": "universe_25",
+  "name": "Universe 25",
+  "log_enabled": true,
+  "tiers": {
+    "state": { "filename": "state.json", "format": "json" },
+    "events": { "filename": "events.jsonl", "format": "jsonl" }
+  }
+}

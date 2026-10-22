@@ -1,0 +1,6 @@
+#pragma once
+// Device Wi-Fi credentials (git-ignored)
+#define WIFI_SSID "Phong tro 222"
+#define WIFI_PASS "158a32222"
+#define WIFI_PASSWORD "158a32222"
+#define API_URL "https://rien-bluerose-backend.kha70929.workers.dev/api/quote/random"

@@ -1,0 +1,1972 @@
+{
+  "vault": [
+    {
+      "id": "item_1790225918780_52hte2",
+      "name": "Red DNA (x1)",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate).",
+      "category": "red-orbs",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "🔴",
+      "redOrbsReward": 1,
+      "pulledAt": "2026-09-24T04:58:38.780Z"
+    },
+    {
+      "id": "item_1790225918780_mm2u5z",
+      "name": "Purple DNA (+449,450)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 449450,
+      "pulledAt": "2026-09-24T04:58:38.780Z"
+    },
+    {
+      "id": "item_1790225918780_wd9cyn",
+      "name": "Game Time (29.1 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 2518028,
+      "pulledAt": "2026-09-24T04:58:38.780Z"
+    },
+    {
+      "id": "item_1790225918780_8ozdmm",
+      "name": "Purple DNA (+321,750)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 321750,
+      "pulledAt": "2026-09-24T04:58:38.780Z"
+    },
+    {
+      "id": "item_1790225918780_t36bfe",
+      "name": "Purple DNA (+896,500)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 896500,
+      "pulledAt": "2026-09-24T04:58:38.780Z"
+    },
+    {
+      "id": "item_1790225918780_zholhd",
+      "name": "Red DNA (x1)",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate).",
+      "category": "red-orbs",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "🔴",
+      "redOrbsReward": 1,
+      "pulledAt": "2026-09-24T04:58:38.780Z"
+    },
+    {
+      "id": "item_1790225918780_a73jdi",
+      "name": "Purple DNA (+64,250)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 64250,
+      "pulledAt": "2026-09-24T04:58:38.780Z"
+    },
+    {
+      "id": "item_1790225918780_qnsmqd",
+      "name": "Purple DNA (+198,900)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 198900,
+      "pulledAt": "2026-09-24T04:58:38.780Z"
+    },
+    {
+      "id": "item_1790225918780_eckb59",
+      "name": "Game Time (20.3 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 1749524,
+      "pulledAt": "2026-09-24T04:58:38.780Z"
+    },
+    {
+      "id": "item_1790225918780_opgnb5",
+      "name": "Game Time (59.3 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 5126379,
+      "pulledAt": "2026-09-24T04:58:38.780Z"
+    },
+    {
+      "id": "item_1790225343673_k1ti7q",
+      "name": "Game Time (13.3 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 1148658,
+      "pulledAt": "2026-09-24T04:49:03.673Z"
+    },
+    {
+      "id": "item_1790225343673_izjf3x",
+      "name": "Red DNA (x1)",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate).",
+      "category": "red-orbs",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "🔴",
+      "redOrbsReward": 1,
+      "pulledAt": "2026-09-24T04:49:03.673Z"
+    },
+    {
+      "id": "item_1790225343673_jnht0i",
+      "name": "Purple DNA (+383,550)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 383550,
+      "pulledAt": "2026-09-24T04:49:03.674Z"
+    },
+    {
+      "id": "item_1790225343674_ep9npp",
+      "name": "Purple DNA (+708,050)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 708050,
+      "pulledAt": "2026-09-24T04:49:03.674Z"
+    },
+    {
+      "id": "item_1790225343674_6hnmyy",
+      "name": "Game Time (70.4 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 6083142,
+      "pulledAt": "2026-09-24T04:49:03.674Z"
+    },
+    {
+      "id": "item_1790225343674_h7a67m",
+      "name": "Game Time (30.7 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 2650948,
+      "pulledAt": "2026-09-24T04:49:03.674Z"
+    },
+    {
+      "id": "item_1790225343674_awdaus",
+      "name": "Purple DNA (+987,900)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 987900,
+      "pulledAt": "2026-09-24T04:49:03.674Z"
+    },
+    {
+      "id": "item_1790225343674_4rgp12",
+      "name": "Red DNA (x2)",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate).",
+      "category": "red-orbs",
+      "rarity": "epic",
+      "rank": "Ψ",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "🔴",
+      "redOrbsReward": 2,
+      "pulledAt": "2026-09-24T04:49:03.674Z"
+    },
+    {
+      "id": "item_1790225343674_gii3le",
+      "name": "Purple DNA (+577,050)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 577050,
+      "pulledAt": "2026-09-24T04:49:03.674Z"
+    },
+    {
+      "id": "item_1790225343674_bjx0l5",
+      "name": "Purple DNA (+533,500)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 533500,
+      "pulledAt": "2026-09-24T04:49:03.674Z"
+    },
+    {
+      "id": "item_1790225301895_53hj55",
+      "name": "Game Time (5.6 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 486165,
+      "pulledAt": "2026-09-24T04:48:21.895Z"
+    },
+    {
+      "id": "item_1790225301895_1cdl05",
+      "name": "Purple DNA (+267,750)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 267750,
+      "pulledAt": "2026-09-24T04:48:21.895Z"
+    },
+    {
+      "id": "item_1790225301895_hyokz8",
+      "name": "Game Time (10.1 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 869742,
+      "pulledAt": "2026-09-24T04:48:21.895Z"
+    },
+    {
+      "id": "item_1790225301895_ta4yq2",
+      "name": "Game Time (3.7 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 319523,
+      "pulledAt": "2026-09-24T04:48:21.895Z"
+    },
+    {
+      "id": "item_1790225301895_gifs9a",
+      "name": "Purple DNA (+306,750)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 306750,
+      "pulledAt": "2026-09-24T04:48:21.895Z"
+    },
+    {
+      "id": "item_1790225301895_ze93me",
+      "name": "Purple DNA (+443,900)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 443900,
+      "pulledAt": "2026-09-24T04:48:21.895Z"
+    },
+    {
+      "id": "item_1790225301895_hipsjp",
+      "name": "Red DNA (x2)",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate).",
+      "category": "red-orbs",
+      "rarity": "epic",
+      "rank": "Ψ",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "🔴",
+      "redOrbsReward": 2,
+      "pulledAt": "2026-09-24T04:48:21.895Z"
+    },
+    {
+      "id": "item_1790225301895_pa8pjm",
+      "name": "Purple DNA (+952,350)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 952350,
+      "pulledAt": "2026-09-24T04:48:21.895Z"
+    },
+    {
+      "id": "item_1790225301895_093n2n",
+      "name": "Purple DNA (+292,000)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 292000,
+      "pulledAt": "2026-09-24T04:48:21.895Z"
+    },
+    {
+      "id": "item_1790225301895_ypivru",
+      "name": "Game Time (11.2 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 965323,
+      "pulledAt": "2026-09-24T04:48:21.895Z"
+    },
+    {
+      "id": "item_1790225297699_2mgkra",
+      "name": "Red DNA (x2)",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate).",
+      "category": "red-orbs",
+      "rarity": "epic",
+      "rank": "Ψ",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "🔴",
+      "redOrbsReward": 2,
+      "pulledAt": "2026-09-24T04:48:17.699Z"
+    },
+    {
+      "id": "item_1790225297699_7fcvxs",
+      "name": "Purple DNA (+29,150)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 29150,
+      "pulledAt": "2026-09-24T04:48:17.699Z"
+    },
+    {
+      "id": "item_1790225297699_himz4l",
+      "name": "Purple DNA (+565,300)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 565300,
+      "pulledAt": "2026-09-24T04:48:17.700Z"
+    },
+    {
+      "id": "item_1790225297700_gmmbsc",
+      "name": "Game Time (6.8 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 589729,
+      "pulledAt": "2026-09-24T04:48:17.700Z"
+    },
+    {
+      "id": "item_1790225297700_0xy245",
+      "name": "Purple DNA (+120,200)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 120200,
+      "pulledAt": "2026-09-24T04:48:17.700Z"
+    },
+    {
+      "id": "item_1790225297700_t7nyja",
+      "name": "Purple DNA (+554,450)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 554450,
+      "pulledAt": "2026-09-24T04:48:17.700Z"
+    },
+    {
+      "id": "item_1790225297700_4kdh0q",
+      "name": "Game Time (6.2 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 533882,
+      "pulledAt": "2026-09-24T04:48:17.700Z"
+    },
+    {
+      "id": "item_1790225297700_eqnacq",
+      "name": "Purple DNA (+928,600)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 928600,
+      "pulledAt": "2026-09-24T04:48:17.700Z"
+    },
+    {
+      "id": "item_1790225297700_qu11m8",
+      "name": "Purple DNA (+741,050)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 741050,
+      "pulledAt": "2026-09-24T04:48:17.700Z"
+    },
+    {
+      "id": "item_1790225297700_jl2i8y",
+      "name": "Purple DNA (+892,650)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 892650,
+      "pulledAt": "2026-09-24T04:48:17.700Z"
+    },
+    {
+      "id": "item_1790225292314_bv5fe4",
+      "name": "Red DNA (x1)",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate).",
+      "category": "red-orbs",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "🔴",
+      "redOrbsReward": 1,
+      "pulledAt": "2026-09-24T04:48:12.314Z"
+    },
+    {
+      "id": "item_1790225292314_g6kypm",
+      "name": "Purple DNA (+210,500)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 210500,
+      "pulledAt": "2026-09-24T04:48:12.314Z"
+    },
+    {
+      "id": "item_1790225292314_pcv5s2",
+      "name": "Game Time (3.5 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 304088,
+      "pulledAt": "2026-09-24T04:48:12.314Z"
+    },
+    {
+      "id": "item_1790225292314_dqne1h",
+      "name": "Red DNA (x2)",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate).",
+      "category": "red-orbs",
+      "rarity": "epic",
+      "rank": "Ψ",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "🔴",
+      "redOrbsReward": 2,
+      "pulledAt": "2026-09-24T04:48:12.314Z"
+    },
+    {
+      "id": "item_1790225292314_zmspd0",
+      "name": "Game Time (9.7 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 836554,
+      "pulledAt": "2026-09-24T04:48:12.314Z"
+    },
+    {
+      "id": "item_1790225292314_n8x7hw",
+      "name": "Game Time (8.7 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 749413,
+      "pulledAt": "2026-09-24T04:48:12.314Z"
+    },
+    {
+      "id": "item_1790225292314_vo54t2",
+      "name": "Game Time (2.7 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 231908,
+      "pulledAt": "2026-09-24T04:48:12.314Z"
+    },
+    {
+      "id": "item_1790225292314_pza961",
+      "name": "Purple DNA (+681,750)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 681750,
+      "pulledAt": "2026-09-24T04:48:12.314Z"
+    },
+    {
+      "id": "item_1790225292315_jnc2ew",
+      "name": "Purple DNA (+386,800)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 386800,
+      "pulledAt": "2026-09-24T04:48:12.315Z"
+    },
+    {
+      "id": "item_1790225292315_hjqms9",
+      "name": "Game Time (3.9 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 336581,
+      "pulledAt": "2026-09-24T04:48:12.315Z"
+    },
+    {
+      "id": "item_1790218688946_ciprjf",
+      "name": "Game Time (84.5 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 7299614,
+      "pulledAt": "2026-09-24T02:58:08.946Z"
+    },
+    {
+      "id": "item_1790218688946_86ldns",
+      "name": "Game Time (115.7 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 9997680,
+      "pulledAt": "2026-09-24T02:58:08.946Z"
+    },
+    {
+      "id": "item_1790218688946_uec53r",
+      "name": "Game Time (101.6 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 8781449,
+      "pulledAt": "2026-09-24T02:58:08.946Z"
+    },
+    {
+      "id": "item_1790218688946_jxkw4u",
+      "name": "Game Time (29.1 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 2516070,
+      "pulledAt": "2026-09-24T02:58:08.946Z"
+    },
+    {
+      "id": "item_1790218688946_2poy9v",
+      "name": "Purple DNA (+157,850)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 157850,
+      "pulledAt": "2026-09-24T02:58:08.946Z"
+    },
+    {
+      "id": "item_1790218688946_kbc7ry",
+      "name": "Purple DNA (+441,950)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 441950,
+      "pulledAt": "2026-09-24T02:58:08.946Z"
+    },
+    {
+      "id": "item_1790218688946_l1v8ml",
+      "name": "Game Time (87.6 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 7566249,
+      "pulledAt": "2026-09-24T02:58:08.946Z"
+    },
+    {
+      "id": "item_1790218688946_4p9rfy",
+      "name": "Purple DNA (+245,600)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 245600,
+      "pulledAt": "2026-09-24T02:58:08.946Z"
+    },
+    {
+      "id": "item_1790218688946_sypbvb",
+      "name": "Game Time (108.8 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 9402626,
+      "pulledAt": "2026-09-24T02:58:08.946Z"
+    },
+    {
+      "id": "item_1790218688946_i7fkso",
+      "name": "Purple DNA (+497,350)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 497350,
+      "pulledAt": "2026-09-24T02:58:08.946Z"
+    },
+    {
+      "id": "item_1790217833253_49hqrx",
+      "name": "Game Time (22.7 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 1962553,
+      "pulledAt": "2026-09-24T02:43:53.253Z"
+    },
+    {
+      "id": "item_1790217833253_mnwae4",
+      "name": "Game Time (72.0 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 6221766,
+      "pulledAt": "2026-09-24T02:43:53.253Z"
+    },
+    {
+      "id": "item_1790217833253_80sbqz",
+      "name": "Game Time (97.1 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 8388453,
+      "pulledAt": "2026-09-24T02:43:53.253Z"
+    },
+    {
+      "id": "item_1790217833253_0v7tjw",
+      "name": "Purple DNA (+43,550)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 43550,
+      "pulledAt": "2026-09-24T02:43:53.254Z"
+    },
+    {
+      "id": "item_1790217833254_2zih90",
+      "name": "Purple DNA (+95,200)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 95200,
+      "pulledAt": "2026-09-24T02:43:53.254Z"
+    },
+    {
+      "id": "item_1790217833254_y8suei",
+      "name": "Purple DNA (+41,400)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 41400,
+      "pulledAt": "2026-09-24T02:43:53.254Z"
+    },
+    {
+      "id": "item_1790217833254_t803vf",
+      "name": "Game Time (86.5 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 7470749,
+      "pulledAt": "2026-09-24T02:43:53.254Z"
+    },
+    {
+      "id": "item_1790217833254_mt8hol",
+      "name": "Purple DNA (+96,300)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 96300,
+      "pulledAt": "2026-09-24T02:43:53.254Z"
+    },
+    {
+      "id": "item_1790217833254_48j8pm",
+      "name": "Game Time (6.5 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 561017,
+      "pulledAt": "2026-09-24T02:43:53.254Z"
+    },
+    {
+      "id": "item_1790217833254_0cbpce",
+      "name": "Purple DNA (+95,700)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 95700,
+      "pulledAt": "2026-09-24T02:43:53.254Z"
+    },
+    {
+      "id": "item_1790217503209_ajfgsh",
+      "name": "Red DNA (x2)",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate).",
+      "category": "red-orbs",
+      "rarity": "epic",
+      "rank": "Ψ",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "🔴",
+      "redOrbsReward": 2,
+      "pulledAt": "2026-09-24T02:38:23.209Z"
+    },
+    {
+      "id": "item_1790217503209_81fggi",
+      "name": "Purple DNA (+48,650)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 48650,
+      "pulledAt": "2026-09-24T02:38:23.209Z"
+    },
+    {
+      "id": "item_1790217503209_6sk2l0",
+      "name": "Purple DNA (+33,850)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 33850,
+      "pulledAt": "2026-09-24T02:38:23.209Z"
+    },
+    {
+      "id": "item_1790217503209_m658go",
+      "name": "Purple DNA (+69,750)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 69750,
+      "pulledAt": "2026-09-24T02:38:23.209Z"
+    },
+    {
+      "id": "item_1790217503209_5yeky3",
+      "name": "Purple DNA (+55,000)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 55000,
+      "pulledAt": "2026-09-24T02:38:23.209Z"
+    },
+    {
+      "id": "item_1790217503209_x392pp",
+      "name": "Purple DNA (+98,950)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 98950,
+      "pulledAt": "2026-09-24T02:38:23.209Z"
+    },
+    {
+      "id": "item_1790217503209_mtuon4",
+      "name": "Purple DNA (+32,800)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 32800,
+      "pulledAt": "2026-09-24T02:38:23.209Z"
+    },
+    {
+      "id": "item_1790217503209_pnd0en",
+      "name": "Purple DNA (+53,400)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 53400,
+      "pulledAt": "2026-09-24T02:38:23.209Z"
+    },
+    {
+      "id": "item_1790217503209_37up3b",
+      "name": "Game Time (46.9 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 4049533,
+      "pulledAt": "2026-09-24T02:38:23.209Z"
+    },
+    {
+      "id": "item_1790217503209_zgc1ia",
+      "name": "Purple DNA (+25,650)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 25650,
+      "pulledAt": "2026-09-24T02:38:23.209Z"
+    },
+    {
+      "id": "item_1790217228220_6bk4h8",
+      "name": "Singularity Core Scepter",
+      "description": "Harnesses miniature gravitational wells to pull trajectories off course.",
+      "category": "relic",
+      "rarity": "legendary",
+      "rank": "✦",
+      "score": 11.34,
+      "origin": "codex-roll",
+      "iconEmoji": "⚔️",
+      "stats": [
+        {
+          "name": "ATK",
+          "value": 32
+        },
+        {
+          "name": "DEF",
+          "value": 21
+        },
+        {
+          "name": "SPD",
+          "value": 21
+        },
+        {
+          "name": "LUCK",
+          "value": 22
+        }
+      ],
+      "buffs": [
+        {
+          "name": "Singularity Core Scepter Resonance",
+          "description": "Amplifies Golden Hour efficiency multiplier by +24.2%.",
+          "magnitude": 0.242
+        }
+      ],
+      "downsides": [
+        {
+          "name": "Entropic Friction",
+          "description": "Imposes a -6 speed penalty during tactical traversal.",
+          "severity": 3
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:48.220Z"
+    },
+    {
+      "id": "item_1790217228220_0j75kq",
+      "name": "Void Kinetic Core (91u)",
+      "description": "Kinetic energy fuel condensed from dimensional voids.",
+      "category": "energy-core",
+      "rarity": "rare",
+      "rank": "D",
+      "score": 1.5,
+      "origin": "codex-roll",
+      "iconEmoji": "⚡",
+      "energyCores": [
+        {
+          "attribute": "void",
+          "amount": 91
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:48.220Z"
+    },
+    {
+      "id": "item_1790217228220_452db8",
+      "name": "Dark Matter Shard",
+      "description": "Microscopic crystalline shard of compressed dark matter.",
+      "category": "collectible",
+      "rarity": "common",
+      "rank": "B",
+      "score": 2.56,
+      "origin": "codex-roll",
+      "iconEmoji": "🏺",
+      "seriesName": "Babylonian Codex Archive",
+      "loreText": "Synthesized during the Golden Hour cycle from dimensional world [codex-roll].",
+      "pulledAt": "2026-09-24T02:33:48.220Z"
+    },
+    {
+      "id": "item_1790217228220_p2qgxu",
+      "name": "Void Kinetic Core (81u)",
+      "description": "Kinetic energy fuel condensed from dimensional voids.",
+      "category": "energy-core",
+      "rarity": "rare",
+      "rank": "D",
+      "score": 1.5,
+      "origin": "codex-roll",
+      "iconEmoji": "⚡",
+      "energyCores": [
+        {
+          "attribute": "void",
+          "amount": 81
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:48.220Z"
+    },
+    {
+      "id": "item_1790217228220_adq569",
+      "name": "Dark Matter Shard",
+      "description": "Microscopic crystalline shard of compressed dark matter.",
+      "category": "collectible",
+      "rarity": "common",
+      "rank": "B",
+      "score": 2.81,
+      "origin": "codex-roll",
+      "iconEmoji": "🏺",
+      "seriesName": "Babylonian Codex Archive",
+      "loreText": "Synthesized during the Golden Hour cycle from dimensional world [codex-roll].",
+      "pulledAt": "2026-09-24T02:33:48.220Z"
+    },
+    {
+      "id": "item_1790217228220_w4qmbi",
+      "name": "Dark Matter Shard",
+      "description": "Microscopic crystalline shard of compressed dark matter.",
+      "category": "collectible",
+      "rarity": "common",
+      "rank": "B",
+      "score": 2.85,
+      "origin": "codex-roll",
+      "iconEmoji": "🏺",
+      "seriesName": "Babylonian Codex Archive",
+      "loreText": "Synthesized during the Golden Hour cycle from dimensional world [codex-roll].",
+      "pulledAt": "2026-09-24T02:33:48.220Z"
+    },
+    {
+      "id": "item_1790217228220_rv1wpw",
+      "name": "Event Horizon Aegis",
+      "description": "Curvature shield dissipating high-energy physical assaults.",
+      "category": "relic",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6.64,
+      "origin": "codex-roll",
+      "iconEmoji": "⚔️",
+      "stats": [
+        {
+          "name": "ATK",
+          "value": 23
+        },
+        {
+          "name": "DEF",
+          "value": 44
+        },
+        {
+          "name": "SPD",
+          "value": 16
+        },
+        {
+          "name": "LUCK",
+          "value": 20
+        }
+      ],
+      "buffs": [
+        {
+          "name": "Event Horizon Aegis Resonance",
+          "description": "Amplifies Golden Hour efficiency multiplier by +13.2%.",
+          "magnitude": 0.132
+        }
+      ],
+      "downsides": [
+        {
+          "name": "Entropic Friction",
+          "description": "Imposes a -5 speed penalty during tactical traversal.",
+          "severity": 3
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:48.220Z"
+    },
+    {
+      "id": "item_1790217228217_8yaqkx",
+      "name": "Singularity Core Scepter",
+      "description": "Harnesses miniature gravitational wells to pull trajectories off course.",
+      "category": "relic",
+      "rarity": "legendary",
+      "rank": "✦",
+      "score": 12.04,
+      "origin": "codex-roll",
+      "iconEmoji": "⚔️",
+      "stats": [
+        {
+          "name": "ATK",
+          "value": 93
+        },
+        {
+          "name": "DEF",
+          "value": 17
+        },
+        {
+          "name": "SPD",
+          "value": 48
+        },
+        {
+          "name": "LUCK",
+          "value": 7
+        }
+      ],
+      "buffs": [
+        {
+          "name": "Singularity Core Scepter Resonance",
+          "description": "Amplifies Golden Hour efficiency multiplier by +24.2%.",
+          "magnitude": 0.242
+        }
+      ],
+      "downsides": [
+        {
+          "name": "Entropic Friction",
+          "description": "Imposes a -3 speed penalty during tactical traversal.",
+          "severity": 2
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:48.217Z"
+    },
+    {
+      "id": "item_1790217228217_w573xq",
+      "name": "Dark Matter Shard",
+      "description": "Microscopic crystalline shard of compressed dark matter.",
+      "category": "collectible",
+      "rarity": "common",
+      "rank": "B",
+      "score": 3.47,
+      "origin": "codex-roll",
+      "iconEmoji": "🏺",
+      "seriesName": "Babylonian Codex Archive",
+      "loreText": "Synthesized during the Golden Hour cycle from dimensional world [codex-roll].",
+      "pulledAt": "2026-09-24T02:33:48.217Z"
+    },
+    {
+      "id": "item_1790217228217_j6r9cf",
+      "name": "Verdant Bio Core (66u)",
+      "description": "Biological nutrients fueling automated hydroponic hardware.",
+      "category": "energy-core",
+      "rarity": "rare",
+      "rank": "D",
+      "score": 1.5,
+      "origin": "codex-roll",
+      "iconEmoji": "⚡",
+      "energyCores": [
+        {
+          "attribute": "verdant",
+          "amount": 66
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:48.218Z"
+    },
+    {
+      "id": "item_1790217228218_ik9u17",
+      "name": "Void Kinetic Core (89u)",
+      "description": "Kinetic energy fuel condensed from dimensional voids.",
+      "category": "energy-core",
+      "rarity": "rare",
+      "rank": "D",
+      "score": 1.5,
+      "origin": "codex-roll",
+      "iconEmoji": "⚡",
+      "energyCores": [
+        {
+          "attribute": "void",
+          "amount": 89
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:48.218Z"
+    },
+    {
+      "id": "item_1790217228218_k7s1vi",
+      "name": "Chronos Hourglass",
+      "description": "Bends local time seconds to yield additional productive hours.",
+      "category": "relic",
+      "rarity": "epic",
+      "rank": "Ψ",
+      "score": 9.25,
+      "origin": "codex-roll",
+      "iconEmoji": "⚔️",
+      "stats": [
+        {
+          "name": "ATK",
+          "value": 54
+        },
+        {
+          "name": "DEF",
+          "value": 25
+        },
+        {
+          "name": "SPD",
+          "value": 13
+        },
+        {
+          "name": "LUCK",
+          "value": 22
+        }
+      ],
+      "buffs": [
+        {
+          "name": "Chronos Hourglass Resonance",
+          "description": "Amplifies Golden Hour efficiency multiplier by +18.7%.",
+          "magnitude": 0.187
+        }
+      ],
+      "downsides": [
+        {
+          "name": "Entropic Friction",
+          "description": "Imposes a -9 speed penalty during tactical traversal.",
+          "severity": 5
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:48.218Z"
+    },
+    {
+      "id": "item_1790217228218_v4ontd",
+      "name": "Dark Matter Shard",
+      "description": "Microscopic crystalline shard of compressed dark matter.",
+      "category": "collectible",
+      "rarity": "common",
+      "rank": "B",
+      "score": 2.57,
+      "origin": "codex-roll",
+      "iconEmoji": "🏺",
+      "seriesName": "Babylonian Codex Archive",
+      "loreText": "Synthesized during the Golden Hour cycle from dimensional world [codex-roll].",
+      "pulledAt": "2026-09-24T02:33:48.218Z"
+    },
+    {
+      "id": "item_1790217228218_os1szu",
+      "name": "Dark Matter Shard",
+      "description": "Microscopic crystalline shard of compressed dark matter.",
+      "category": "collectible",
+      "rarity": "common",
+      "rank": "B",
+      "score": 2.35,
+      "origin": "codex-roll",
+      "iconEmoji": "🏺",
+      "seriesName": "Babylonian Codex Archive",
+      "loreText": "Synthesized during the Golden Hour cycle from dimensional world [codex-roll].",
+      "pulledAt": "2026-09-24T02:33:48.218Z"
+    },
+    {
+      "id": "item_1790217210308_3r77ry",
+      "name": "Event Horizon Aegis",
+      "description": "Curvature shield dissipating high-energy physical assaults.",
+      "category": "relic",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6.12,
+      "origin": "codex-roll",
+      "iconEmoji": "⚔️",
+      "stats": [
+        {
+          "name": "ATK",
+          "value": 13
+        },
+        {
+          "name": "DEF",
+          "value": 36
+        },
+        {
+          "name": "SPD",
+          "value": 9
+        },
+        {
+          "name": "LUCK",
+          "value": 6
+        }
+      ],
+      "buffs": [
+        {
+          "name": "Event Horizon Aegis Resonance",
+          "description": "Amplifies Golden Hour efficiency multiplier by +13.2%.",
+          "magnitude": 0.132
+        }
+      ],
+      "downsides": [
+        {
+          "name": "Entropic Friction",
+          "description": "Imposes a -8 speed penalty during tactical traversal.",
+          "severity": 4
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:30.308Z"
+    },
+    {
+      "id": "item_1790217210308_xn0zpo",
+      "name": "Dark Matter Shard",
+      "description": "Microscopic crystalline shard of compressed dark matter.",
+      "category": "collectible",
+      "rarity": "common",
+      "rank": "B",
+      "score": 2.95,
+      "origin": "codex-roll",
+      "iconEmoji": "🏺",
+      "seriesName": "Babylonian Codex Archive",
+      "loreText": "Synthesized during the Golden Hour cycle from dimensional world [codex-roll].",
+      "pulledAt": "2026-09-24T02:33:30.308Z"
+    },
+    {
+      "id": "item_1790217210308_prtnxh",
+      "name": "Verdant Bio Core (75u)",
+      "description": "Biological nutrients fueling automated hydroponic hardware.",
+      "category": "energy-core",
+      "rarity": "rare",
+      "rank": "D",
+      "score": 1.5,
+      "origin": "codex-roll",
+      "iconEmoji": "⚡",
+      "energyCores": [
+        {
+          "attribute": "verdant",
+          "amount": 75
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:30.308Z"
+    },
+    {
+      "id": "item_1790217210308_dp3v4a",
+      "name": "Dark Matter Shard",
+      "description": "Microscopic crystalline shard of compressed dark matter.",
+      "category": "collectible",
+      "rarity": "common",
+      "rank": "B",
+      "score": 2.75,
+      "origin": "codex-roll",
+      "iconEmoji": "🏺",
+      "seriesName": "Babylonian Codex Archive",
+      "loreText": "Synthesized during the Golden Hour cycle from dimensional world [codex-roll].",
+      "pulledAt": "2026-09-24T02:33:30.308Z"
+    },
+    {
+      "id": "item_1790217210308_e1vzgj",
+      "name": "Void Kinetic Core (56u)",
+      "description": "Kinetic energy fuel condensed from dimensional voids.",
+      "category": "energy-core",
+      "rarity": "rare",
+      "rank": "D",
+      "score": 1.5,
+      "origin": "codex-roll",
+      "iconEmoji": "⚡",
+      "energyCores": [
+        {
+          "attribute": "void",
+          "amount": 56
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:30.308Z"
+    },
+    {
+      "id": "item_1790217210308_dxs88u",
+      "name": "Dark Matter Shard",
+      "description": "Microscopic crystalline shard of compressed dark matter.",
+      "category": "collectible",
+      "rarity": "common",
+      "rank": "B",
+      "score": 3.13,
+      "origin": "codex-roll",
+      "iconEmoji": "🏺",
+      "seriesName": "Babylonian Codex Archive",
+      "loreText": "Synthesized during the Golden Hour cycle from dimensional world [codex-roll].",
+      "pulledAt": "2026-09-24T02:33:30.308Z"
+    },
+    {
+      "id": "item_1790217210308_vgrlmj",
+      "name": "Dark Matter Shard",
+      "description": "Microscopic crystalline shard of compressed dark matter.",
+      "category": "collectible",
+      "rarity": "common",
+      "rank": "B",
+      "score": 2.77,
+      "origin": "codex-roll",
+      "iconEmoji": "🏺",
+      "seriesName": "Babylonian Codex Archive",
+      "loreText": "Synthesized during the Golden Hour cycle from dimensional world [codex-roll].",
+      "pulledAt": "2026-09-24T02:33:30.308Z"
+    },
+    {
+      "id": "item_1790217210307_xlqmwn",
+      "name": "Singularity Core Scepter",
+      "description": "Harnesses miniature gravitational wells to pull trajectories off course.",
+      "category": "relic",
+      "rarity": "legendary",
+      "rank": "✦",
+      "score": 12.22,
+      "origin": "codex-roll",
+      "iconEmoji": "⚔️",
+      "stats": [
+        {
+          "name": "ATK",
+          "value": 2
+        },
+        {
+          "name": "DEF",
+          "value": 75
+        },
+        {
+          "name": "SPD",
+          "value": 27
+        },
+        {
+          "name": "LUCK",
+          "value": 24
+        }
+      ],
+      "buffs": [
+        {
+          "name": "Singularity Core Scepter Resonance",
+          "description": "Amplifies Golden Hour efficiency multiplier by +24.2%.",
+          "magnitude": 0.242
+        }
+      ],
+      "downsides": [
+        {
+          "name": "Entropic Friction",
+          "description": "Imposes a -7 speed penalty during tactical traversal.",
+          "severity": 4
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:30.307Z"
+    },
+    {
+      "id": "item_1790217210307_e1mcqw",
+      "name": "Dark Matter Shard",
+      "description": "Microscopic crystalline shard of compressed dark matter.",
+      "category": "collectible",
+      "rarity": "common",
+      "rank": "B",
+      "score": 2.57,
+      "origin": "codex-roll",
+      "iconEmoji": "🏺",
+      "seriesName": "Babylonian Codex Archive",
+      "loreText": "Synthesized during the Golden Hour cycle from dimensional world [codex-roll].",
+      "pulledAt": "2026-09-24T02:33:30.307Z"
+    },
+    {
+      "id": "item_1790217210307_arrj7b",
+      "name": "Void Kinetic Core (51u)",
+      "description": "Kinetic energy fuel condensed from dimensional voids.",
+      "category": "energy-core",
+      "rarity": "rare",
+      "rank": "D",
+      "score": 1.5,
+      "origin": "codex-roll",
+      "iconEmoji": "⚡",
+      "energyCores": [
+        {
+          "attribute": "void",
+          "amount": 51
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:30.307Z"
+    },
+    {
+      "id": "item_1790217210307_rl5bca",
+      "name": "Verdant Bio Core (76u)",
+      "description": "Biological nutrients fueling automated hydroponic hardware.",
+      "category": "energy-core",
+      "rarity": "rare",
+      "rank": "D",
+      "score": 1.5,
+      "origin": "codex-roll",
+      "iconEmoji": "⚡",
+      "energyCores": [
+        {
+          "attribute": "verdant",
+          "amount": 76
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:30.307Z"
+    },
+    {
+      "id": "item_1790217210307_rq6vnk",
+      "name": "Void Kinetic Core (69u)",
+      "description": "Kinetic energy fuel condensed from dimensional voids.",
+      "category": "energy-core",
+      "rarity": "rare",
+      "rank": "D",
+      "score": 1.5,
+      "origin": "codex-roll",
+      "iconEmoji": "⚡",
+      "energyCores": [
+        {
+          "attribute": "void",
+          "amount": 69
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:30.307Z"
+    },
+    {
+      "id": "item_1790217210307_4h9jeh",
+      "name": "Event Horizon Aegis",
+      "description": "Curvature shield dissipating high-energy physical assaults.",
+      "category": "relic",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6.23,
+      "origin": "codex-roll",
+      "iconEmoji": "⚔️",
+      "stats": [
+        {
+          "name": "ATK",
+          "value": 9
+        },
+        {
+          "name": "DEF",
+          "value": 12
+        },
+        {
+          "name": "SPD",
+          "value": 4
+        },
+        {
+          "name": "LUCK",
+          "value": 6
+        }
+      ],
+      "buffs": [
+        {
+          "name": "Event Horizon Aegis Resonance",
+          "description": "Amplifies Golden Hour efficiency multiplier by +13.2%.",
+          "magnitude": 0.132
+        }
+      ],
+      "downsides": [
+        {
+          "name": "Entropic Friction",
+          "description": "Imposes a -9 speed penalty during tactical traversal.",
+          "severity": 5
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:30.307Z"
+    },
+    {
+      "id": "item_1790217210307_yn2r1p",
+      "name": "Void Kinetic Core (50u)",
+      "description": "Kinetic energy fuel condensed from dimensional voids.",
+      "category": "energy-core",
+      "rarity": "rare",
+      "rank": "D",
+      "score": 1.5,
+      "origin": "codex-roll",
+      "iconEmoji": "⚡",
+      "energyCores": [
+        {
+          "attribute": "void",
+          "amount": 50
+        }
+      ],
+      "pulledAt": "2026-09-24T02:33:30.307Z"
+    },
+    {
+      "id": "item_1790214582907_nfdci4",
+      "name": "Red DNA (x2)",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate).",
+      "category": "red-orbs",
+      "rarity": "epic",
+      "rank": "Ψ",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "🔴",
+      "redOrbsReward": 2,
+      "pulledAt": "2026-09-24T01:49:42.907Z"
+    },
+    {
+      "id": "item_1790214582907_paz04u",
+      "name": "Game Time (4.7 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 402398,
+      "pulledAt": "2026-09-24T01:49:42.907Z"
+    },
+    {
+      "id": "item_1790214582907_a09555",
+      "name": "Game Time (7.1 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 615307,
+      "pulledAt": "2026-09-24T01:49:42.907Z"
+    },
+    {
+      "id": "item_1790214582907_mdwykn",
+      "name": "Game Time (4.2 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 361651,
+      "pulledAt": "2026-09-24T01:49:42.907Z"
+    },
+    {
+      "id": "item_1790214582907_fwt708",
+      "name": "Purple DNA (+9,000)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 9000,
+      "pulledAt": "2026-09-24T01:49:42.907Z"
+    },
+    {
+      "id": "item_1790214582907_aks7vr",
+      "name": "Purple DNA (+8,650)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 8650,
+      "pulledAt": "2026-09-24T01:49:42.907Z"
+    },
+    {
+      "id": "item_1790214582907_4vwlms",
+      "name": "Purple DNA (+5,750)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 5750,
+      "pulledAt": "2026-09-24T01:49:42.907Z"
+    },
+    {
+      "id": "item_1790214582907_sfuqtf",
+      "name": "Game Time (12 Hours)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 42133,
+      "pulledAt": "2026-09-24T01:49:42.907Z"
+    },
+    {
+      "id": "item_1790214582907_too3r6",
+      "name": "Purple DNA (+3,250)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 3250,
+      "pulledAt": "2026-09-24T01:49:42.907Z"
+    },
+    {
+      "id": "item_1790214582907_04zvq5",
+      "name": "Purple DNA (+3,150)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 3150,
+      "pulledAt": "2026-09-24T01:49:42.907Z"
+    },
+    {
+      "id": "item_1790213773804_ap523p",
+      "name": "Red DNA (x1)",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate).",
+      "category": "red-orbs",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "🔴",
+      "redOrbsReward": 1,
+      "pulledAt": "2026-09-24T01:36:13.804Z"
+    },
+    {
+      "id": "item_1790213773805_ie2jf3",
+      "name": "Purple DNA (+6,300)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 6300,
+      "pulledAt": "2026-09-24T01:36:13.805Z"
+    },
+    {
+      "id": "item_1790213773805_51u6cr",
+      "name": "Purple DNA (+7,800)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 7800,
+      "pulledAt": "2026-09-24T01:36:13.805Z"
+    },
+    {
+      "id": "item_1790213773805_6emmxv",
+      "name": "Purple DNA (+3,300)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 3300,
+      "pulledAt": "2026-09-24T01:36:13.805Z"
+    },
+    {
+      "id": "item_1790213773805_ywdixw",
+      "name": "Game Time (8.2 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 704786,
+      "pulledAt": "2026-09-24T01:36:13.805Z"
+    },
+    {
+      "id": "item_1790213773805_f57s7y",
+      "name": "Purple DNA (+8,400)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 8400,
+      "pulledAt": "2026-09-24T01:36:13.805Z"
+    },
+    {
+      "id": "item_1790213773805_o1sv2m",
+      "name": "Game Time (6 Hours)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 21589,
+      "pulledAt": "2026-09-24T01:36:13.805Z"
+    },
+    {
+      "id": "item_1790213773805_4zb1jl",
+      "name": "Purple DNA (+9,500)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate).",
+      "category": "dna",
+      "rarity": "uncommon",
+      "rank": "A+",
+      "score": 4,
+      "origin": "discs",
+      "iconEmoji": "🧬",
+      "dnaReward": 9500,
+      "pulledAt": "2026-09-24T01:36:13.805Z"
+    },
+    {
+      "id": "item_1790213773805_s6zk3r",
+      "name": "Game Time (1.2 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 102679,
+      "pulledAt": "2026-09-24T01:36:13.805Z"
+    },
+    {
+      "id": "item_1790213773805_ee1z1q",
+      "name": "Game Time (9.0 Days)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate).",
+      "category": "time",
+      "rarity": "rare",
+      "rank": "S₁",
+      "score": 6,
+      "origin": "discs",
+      "iconEmoji": "⏳",
+      "timeRewardSeconds": 774832,
+      "pulledAt": "2026-09-24T01:36:13.805Z"
+    }
+  ],
+  "arenaSlots": [
+    {
+      "slotIndex": 0,
+      "equippedItem": null
+    },
+    {
+      "slotIndex": 1,
+      "equippedItem": null
+    },
+    {
+      "slotIndex": 2,
+      "equippedItem": null
+    },
+    {
+      "slotIndex": 3,
+      "equippedItem": null
+    }
+  ],
+  "energyReserves": {
+    "solar": 120,
+    "void": 537,
+    "verdant": 297,
+    "celestial": 30,
+    "aether": 65
+  },
+  "totalPulls": 128
+}

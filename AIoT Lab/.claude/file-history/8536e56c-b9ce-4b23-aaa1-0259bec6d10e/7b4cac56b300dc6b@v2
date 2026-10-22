@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kinetic Resource Magnet · Accumulator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #161129 0%, #08060f 100%);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #fff; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+.hud-layer {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 24px; z-index: 10;
+}
+.header { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; }
+.title-group { display: flex; flex-direction: column; gap: 4px; }
+.sub-title { font-size: 11px; letter-spacing: .25em; text-transform: uppercase; color: #fbbf24; font-weight: 700; }
+.main-title { font-size: 20px; font-weight: 800; letter-spacing: .08em; color: #fff; text-shadow: 0 0 16px rgba(251,191,36,0.35); }
+.vault-counter {
+  pointer-events: auto; display: flex; align-items: center; gap: 14px;
+  background: rgba(18, 14, 30, 0.85); border: 1.5px solid rgba(251,191,36,0.4);
+  border-radius: 16px; padding: 10px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(251,191,36,0.2);
+  transition: transform .15s ease, border-color .15s ease;
+}
+.vault-counter.pulse { transform: scale(1.08); border-color: #fde047; box-shadow: 0 0 32px rgba(251,191,36,0.6); }
+.coin-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fef08a, #ca8a04);
+  box-shadow: inset 0 0 4px #fff, 0 0 14px rgba(250,204,21,0.8);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 900; color: #78350f;
+}
+.vault-meta { display: flex; flex-direction: column; }
+.vault-label { font-size: 10px; letter-spacing: .15em; color: #a1a1aa; text-transform: uppercase; }
+.vault-value { font-size: 24px; font-weight: 800; font-family: monospace; color: #fef08a; text-shadow: 0 0 10px rgba(254,240,138,0.5); }
+.feed-anchor { position: absolute; top: 80px; right: 30px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.feed-item {
+  font-size: 13px; font-weight: 800; font-family: monospace; color: #4ade80;
+  text-shadow: 0 0 10px rgba(74,222,128,0.6); opacity: 0;
+  animation: feedRise .7s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes feedRise {
+  0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+  30% { opacity: 1; transform: translateY(0) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-24px) scale(0.9); }
+}
+.ore-hub {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.ore-crystal {
+  width: 140px; height: 140px; cursor: pointer; pointer-events: auto; border-radius: 28px;
+  background: radial-gradient(circle at 30% 25%, #fef08a 0%, #eab308 40%, #713f12 90%);
+  box-shadow: 0 0 40px rgba(234,179,8,0.4), inset 0 0 20px rgba(255,255,255,0.6);
+  display: flex; align-items: center; justify-content: center; font-size: 56px;
+  transition: transform .08s ease, filter .08s ease; border: 2px solid rgba(254,240,138,0.6);
+}
+.ore-crystal:hover { filter: brightness(1.15); transform: scale(1.04); }
+.ore-crystal:active { transform: scale(0.94); filter: brightness(1.3); }
+.ore-tip { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: #d4d4d8; opacity: .7; }
+.controls {
+  pointer-events: auto; display: flex; justify-content: center;
+  align-items: center; gap: 12px; flex-wrap: wrap; width: 100%;
+}
+.btn {
+  min-height: 52px; padding: 0 24px; background: rgba(22, 17, 39, 0.9);
+  border: 1.5px solid rgba(251,191,36,0.3); border-radius: 12px; color: #fef08a;
+  font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  cursor: pointer; transition: all .15s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn:hover { background: #251c42; border-color: #fde047; box-shadow: 0 0 24px rgba(251,191,36,0.4); transform: translateY(-2px); }
+.btn:active { transform: translateY(1px); }
+.btn.active { background: #ca8a04; color: #000; border-color: #fef08a; box-shadow: 0 0 28px rgba(234,179,8,0.7); }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud-layer">
+  <div class="header">
+    <div class="title-group">
+      <div class="sub-title">Kinetic Resource Pipeline</div>
+      <div class="main-title">Coin & Gem Magnet</div>
+    </div>
+    <div class="vault-counter" id="vault">
+      <div class="coin-icon">★</div>
+      <div class="vault-meta">
+        <span class="vault-label">Accumulated</span>
+        <span class="vault-value" id="vaultValue">0</span>
+      </div>
+    </div>
+  </div>
+  <div class="feed-anchor" id="feedAnchor"></div>
+  <div class="ore-hub">
+    <div class="ore-crystal" id="oreCrystal" onclick="harvestAtCenter(5)">◆</div>
+    <div class="ore-tip">Tap Core to Mine</div>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="harvestAtCenter(10)">⛏ Strike (+10)</button>
+    <button class="btn" onclick="harvestAtCenter(40)">📦 Cache (+40)</button>
+    <button class="btn" onclick="harvestAtCenter(120)">👑 Vault Burst (+120)</button>
+    <button class="btn" id="autoBtn" onclick="toggleAuto()">⚙ Auto-Harvester</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const vaultEl = document.getElementById('vault'), vaultValEl = document.getElementById('vaultValue');
+const feedAnchor = document.getElementById('feedAnchor');
+let W, H, targetX = 0, targetY = 0, coins = [], sparks = [];
+let balance = 0, displayBalance = 0, autoMining = false, autoTimer = null, audioCtx = null;
+
+function playCoinSound(pitch = 1.0) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(880 * pitch, t);
+    osc.frequency.exponentialRampToValueAtTime(1320 * pitch, t + 0.08);
+    gain.gain.setValueAtTime(0.12, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.12);
+  } catch(e) {}
+}
+
+function resize() {
+  W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight;
+  const r = vaultEl.getBoundingClientRect();
+  targetX = r.left + r.width / 2; targetY = r.top + r.height / 2;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function spawnCoin(x, y, value = 1) {
+  const angle = Math.random() * Math.PI * 2, speed = 4 + Math.random() * 10;
+  coins.push({
+    x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 3,
+    val: value, age: 0, magnetWait: 15 + Math.random() * 18,
+    rot: Math.random() * Math.PI, vRot: (Math.random() - 0.5) * 0.4,
+    size: 9 + Math.random() * 5, color: Math.random() > 0.3 ? '#facc15' : '#60a5fa'
+  });
+}
+
+function spawnSpark(x, y, color) {
+  for (let i = 0; i < 6; i++) {
+    const a = Math.random() * Math.PI * 2, s = 1.5 + Math.random() * 4;
+    sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, decay: 0.05, color });
+  }
+}
+
+function harvestAtCenter(count = 10) {
+  const cx = W / 2, cy = H / 2;
+  for (let i = 0; i < count; i++) spawnCoin(cx + (Math.random() - 0.5) * 40, cy + (Math.random() - 0.5) * 40, 1);
+  const d = document.createElement('div');
+  d.className = 'feed-item'; d.textContent = `+${count * 10}`;
+  feedAnchor.appendChild(d); setTimeout(() => d.remove(), 700);
+}
+
+function toggleAuto() {
+  autoMining = !autoMining;
+  document.getElementById('autoBtn').classList.toggle('active', autoMining);
+  if (autoMining) autoTimer = setInterval(() => harvestAtCenter(3), 320);
+  else clearInterval(autoTimer);
+}
+
+function updateCoins() {
+  for (let i = coins.length - 1; i >= 0; i--) {
+    const p = coins[i];
+    p.age++; p.rot += p.vRot;
+    if (p.age < p.magnetWait) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.38; p.vx *= 0.95; p.vy *= 0.95;
+    } else {
+      const dx = targetX - p.x, dy = targetY - p.y, dist = Math.hypot(dx, dy);
+      if (dist < 26) {
+        balance += p.val * 10;
+        spawnSpark(targetX, targetY, p.color);
+        vaultEl.classList.add('pulse');
+        setTimeout(() => vaultEl.classList.remove('pulse'), 90);
+        playCoinSound(1.0 + (p.age % 8) * 0.07);
+        coins.splice(i, 1);
+        continue;
+      }
+      const pull = Math.min(22, 1.2 + (p.age - p.magnetWait) * 0.85);
+      p.vx = (dx / dist) * pull; p.vy = (dy / dist) * pull;
+      p.x += p.vx; p.y += p.vy;
+    }
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  for (const p of coins) {
+    ctx.save(); ctx.translate(p.x, p.y);
+    ctx.scale(1, Math.abs(Math.cos(p.rot)) * 0.7 + 0.3);
+    ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = p.color; ctx.shadowColor = p.color; ctx.shadowBlur = 10; ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, p.size * 0.7, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.restore();
+  }
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i]; s.x += s.vx; s.y += s.vy; s.life -= s.decay;
+    if (s.life <= 0) { sparks.splice(i, 1); continue; }
+    ctx.save(); ctx.globalAlpha = s.life; ctx.beginPath();
+    ctx.arc(s.x, s.y, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = s.color; ctx.shadowColor = s.color; ctx.shadowBlur = 8; ctx.fill();
+    ctx.restore();
+  }
+  if (displayBalance < balance) {
+    displayBalance += Math.ceil((balance - displayBalance) * 0.2);
+    vaultValEl.textContent = displayBalance.toLocaleString();
+  }
+  updateCoins();
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

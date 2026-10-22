@@ -1,0 +1,312 @@
+# Firebase Task Board - RTDB Structure Analysis
+
+**Project**: `firebase-task-board`  
+**Database URL**: `https://manhattan-cafe-9fe21-default-rtdb.asia-southeast1.firebasedatabase.app`  
+**Analysis Date**: 2026-10-11
+
+---
+
+## RTDB Root Paths
+
+The Firebase Realtime Database uses a single root path structure for this project:
+
+### Primary Root: `pet_feeder/{stationId}`
+
+```
+pet_feeder/
+├── station_01/                    # Primary station container
+│   ├── stationId                  # (string) Unique station identifier
+│   ├── stationName                # (string) Human-readable name (default: "Aegis Feeder Alpha")
+│   ├── status                     # (string) Current state: "online" | "dispensing_food" | "dispensing_water" | "offline"
+│   ├── isSimulated                # (boolean) IoT simulator active flag
+│   ├── lastUpdated                # (ISO 8601 timestamp) Last state mutation timestamp
+│   ├── updatedAt                  # (ISO 8601 timestamp) Last DB write timestamp
+│   │
+│   ├── 🐾 LIVE TELEMETRY
+│   ├── foodTank                   # (number, grams) Current food in main reservoir [0-2500g]
+│   ├── waterTank                  # (number, ml) Current water in main reservoir [0-3000ml]
+│   ├── bowlFood                   # (number, grams) Current food in pet bowl [0-150g soft limit]
+│   ├── bowlWater                  # (number, ml) Current water in pet bowl [0-250ml soft limit]
+│   ├── foodTankTemp               # (number, °C) Food tank temperature [16.0-28.0°C nominal]
+│   ├── foodTankMoisture           # (number, %RH) Food tank relative humidity [0-100%, max safe 65%]
+│   │
+│   ├── 🤖 AUTOMATION FLAGS
+│   ├── autoFillWater              # (boolean) Auto-refill water when bowl depletes
+│   ├── autoFillFood               # (boolean) Auto-refill food when bowl depletes
+│   │
+│   ├── ⏱️ OPERATION TIMESTAMPS
+│   ├── lastFoodRefill             # (ISO 8601 timestamp | null) Last time food was dispensed
+│   ├── lastWaterRefill            # (ISO 8601 timestamp | null) Last time water was dispensed
+│   │
+│   ├── ⚙️ THRESHOLD CONFIGURATION (Nested Object)
+│   └── config
+│       ├── tempMin                # (number, °C) Minimum safe temperature [default: 16.0]
+│       ├── tempMax                # (number, °C) Maximum safe temperature [default: 28.0]
+│       ├── moistureMax            # (number, %RH) Maximum safe humidity [default: 65.0]
+│       ├── bowlWaterMin           # (number, ml) Min water before auto-fill triggers [default: 50]
+│       ├── bowlWaterMax           # (number, ml) Max water capacity in bowl [default: 200]
+│       ├── bowlFoodMin            # (number, g) Min food before auto-fill triggers [default: 30]
+│       └── bowlFoodMax            # (number, g) Max food capacity in bowl [default: 100]
+│
+└── capacities (Nested Object)
+    ├── foodTank                   # (number, grams) Main tank capacity [default: 2500g]
+    ├── waterTank                  # (number, ml) Main tank capacity [default: 3000ml]
+    ├── bowlFoodMaxLimit           # (number, grams) Hard limit for bowl [default: 150g]
+    └── bowlWaterMaxLimit          # (number, ml) Hard limit for bowl [default: 250ml]
+```
+
+---
+
+## Data Path Reference Table
+
+| Path | Type | Example | Purpose | Notes |
+|------|------|---------|---------|-------|
+| `pet_feeder/station_01` | Object | Full state snapshot | Root container for single station | Subscribed via `onValue()` listener |
+| `pet_feeder/station_01/stationId` | String | `"station_01"` | Station unique identifier | Immutable after creation |
+| `pet_feeder/station_01/stationName` | String | `"Aegis Feeder Alpha"` | Display name in UI | User-configurable |
+| `pet_feeder/station_01/status` | String | `"online"` | Operational state | Enum: online, dispensing_food, dispensing_water, offline |
+| `pet_feeder/station_01/isSimulated` | Boolean | `false` | Simulator toggle | IoT hardware emulation flag |
+| `pet_feeder/station_01/lastUpdated` | Timestamp | `"2026-10-11T11:00:45.695Z"` | State change time | ISO 8601 format |
+| `pet_feeder/station_01/updatedAt` | Timestamp | `"2026-10-11T11:00:45.695Z"` | DB write time | Set on every update |
+| `pet_feeder/station_01/foodTank` | Number | `1850` | Main food reservoir level | Unit: grams, Range: [0, 2500] |
+| `pet_feeder/station_01/waterTank` | Number | `2200` | Main water reservoir level | Unit: ml, Range: [0, 3000] |
+| `pet_feeder/station_01/bowlFood` | Number | `45` | Food in pet bowl | Unit: grams, Range: [0, 150] |
+| `pet_feeder/station_01/bowlWater` | Number | `140` | Water in pet bowl | Unit: ml, Range: [0, 250] |
+| `pet_feeder/station_01/foodTankTemp` | Number | `23.5` | Food tank temperature | Unit: °C, Safe range: 16–28°C |
+| `pet_feeder/station_01/foodTankMoisture` | Number | `48` | Food tank humidity | Unit: %RH, Safe max: 65% |
+| `pet_feeder/station_01/autoFillWater` | Boolean | `true` | Auto-refill water enabled | Controls automatic bowl top-up |
+| `pet_feeder/station_01/autoFillFood` | Boolean | `true` | Auto-refill food enabled | Controls automatic bowl top-up |
+| `pet_feeder/station_01/lastFoodRefill` | Timestamp \| null | `"2026-10-11T10:55:00.000Z"` | Last food dispense time | null if never refilled |
+| `pet_feeder/station_01/lastWaterRefill` | Timestamp \| null | `"2026-10-11T11:00:30.000Z"` | Last water dispense time | null if never refilled |
+| `pet_feeder/station_01/config/tempMin` | Number | `16.0` | Minimum safe temperature | Unit: °C |
+| `pet_feeder/station_01/config/tempMax` | Number | `28.0` | Maximum safe temperature | Unit: °C |
+| `pet_feeder/station_01/config/moistureMax` | Number | `65.0` | Maximum safe humidity | Unit: %RH |
+| `pet_feeder/station_01/config/bowlWaterMin` | Number | `50` | Auto-fill trigger threshold | Unit: ml, Below this → auto-fill if enabled |
+| `pet_feeder/station_01/config/bowlWaterMax` | Number | `200` | Target bowl capacity | Unit: ml, Auto-fill tries to reach this |
+| `pet_feeder/station_01/config/bowlFoodMin` | Number | `30` | Auto-fill trigger threshold | Unit: g, Below this → auto-fill if enabled |
+| `pet_feeder/station_01/config/bowlFoodMax` | Number | `100` | Target bowl capacity | Unit: g, Auto-fill tries to reach this |
+| `pet_feeder/station_01/capacities/foodTank` | Number | `2500` | Main tank max capacity | Unit: grams |
+| `pet_feeder/station_01/capacities/waterTank` | Number | `3000` | Main tank max capacity | Unit: ml |
+| `pet_feeder/station_01/capacities/bowlFoodMaxLimit` | Number | `150` | Physical bowl limit (food) | Unit: grams, Hard cap |
+| `pet_feeder/station_01/capacities/bowlWaterMaxLimit` | Number | `250` | Physical bowl limit (water) | Unit: ml, Hard cap |
+
+---
+
+## Write Operations & Mutations
+
+### Paths Written During Operations
+
+| Operation | Paths Modified | Conditions |
+|-----------|---|---|
+| **Manual Food Refill** | `foodTank`, `bowlFood`, `status`, `lastFoodRefill`, `lastUpdated` | Tank ≥ amount requested; bowl not full |
+| **Manual Water Refill** | `waterTank`, `bowlWater`, `status`, `lastWaterRefill`, `lastUpdated` | Tank ≥ amount requested; bowl not full |
+| **Auto-Fill (Food)** | `foodTank`, `bowlFood`, `lastFoodRefill`, `lastUpdated` | autoFillFood=true AND bowlFood ≤ config.bowlFoodMin AND foodTank > 10g |
+| **Auto-Fill (Water)** | `waterTank`, `bowlWater`, `lastWaterRefill`, `lastUpdated` | autoFillWater=true AND bowlWater ≤ config.bowlWaterMin AND waterTank > 20ml |
+| **Toggle Auto-Fill** | `autoFillFood` or `autoFillWater`, `lastUpdated` | Direct user toggle |
+| **Config Update** | `config/*` (all 7 thresholds), `lastUpdated` | Form submission via UI |
+| **Bulk Restock** | `foodTank` or `waterTank` (set to capacity), `lastUpdated` | Restock button clicked |
+| **IoT Simulation Tick** | `bowlFood`, `bowlWater`, `foodTankTemp`, `foodTankMoisture`, `lastUpdated` | Every 6 seconds if simulator enabled |
+| **Radical Spike Test** | `foodTankTemp` or `foodTankMoisture`, `lastUpdated` | Test button (heat/moisture/normalize) |
+
+---
+
+## RTDB Read Patterns
+
+### Listener Setup (feeder-service.js:37-88)
+
+```javascript
+const dbRef = ref(rtdb, 'pet_feeder/station_01');
+this.unsubscribeRTDB = onValue(
+  dbRef,
+  async (snapshot) => {
+    // Full state hydration on every change
+    const data = snapshot.val();
+    this.state = { ...DEFAULT_STATE, ...data, ... };
+  }
+);
+```
+
+**Behavior:**
+- Single listener on entire `pet_feeder/station_01` path
+- Full state snapshot on every write
+- Merges incoming data with defaults
+- Errors trigger local fallback mode
+
+### Initialization Pattern
+
+If path does not exist:
+```javascript
+await set(dbRef, { ...DEFAULT_STATE, updatedAt: new Date().toISOString() });
+```
+Seed data written with all default values from `state.js`.
+
+---
+
+## Alert Evaluation & Rules Engine
+
+Alerts are **computed client-side** from state using `evaluateAlerts(state)` in `state.js`. No alerts are stored in RTDB.
+
+### Alert Types & Thresholds
+
+| Alert ID | Type | Trigger Condition |
+|----------|------|---|
+| `radical-temp-high` | critical | `foodTankTemp > config.tempMax` (default: >28°C) |
+| `radical-temp-low` | warning | `foodTankTemp < config.tempMin` (default: <16°C) |
+| `radical-moisture` | critical | `foodTankMoisture > config.moistureMax` (default: >65%RH) |
+| `manual-refill-water` | action_required | autoFillWater=false AND bowlWater ≤ config.bowlWaterMin |
+| `manual-refill-food` | action_required | autoFillFood=false AND bowlFood ≤ config.bowlFoodMin |
+| `tank-food-low` | warning | `foodTank < 350g` |
+| `tank-water-low` | warning | `waterTank < 450ml` |
+
+---
+
+## Scalability Considerations
+
+### Current Single-Station Design
+
+```
+pet_feeder/
+└── station_01/  ← Only one station, hardcoded in code
+```
+
+**Code Reference**: `feederService.connectStation(stationId = "station_01")` in feeder-service.js
+
+To support multiple stations, restructure as:
+```
+pet_feeder/
+├── station_01/
+├── station_02/
+├── station_03/
+...
+```
+
+Then update:
+1. `connectStation()` to accept dynamic `stationId`
+2. UI selector to choose active station
+3. Listener to re-subscribe on station change
+
+---
+
+## Fallback & Resilience Behavior
+
+### Local-Only Fallback Mode
+
+Triggered when:
+- Initial RTDB read fails (permission denied, offline, etc.)
+- Write operation fails
+
+**State Management:**
+- `isUsingLocalFallback = true` flag set
+- All mutations remain in-memory only
+- State changes still fire UI subscribers
+- No persistence to RTDB until connection restored
+
+**Recovery:**
+- Next successful read from RTDB rehydrates full state
+- `isUsingLocalFallback = false` flag cleared
+- Local changes **discarded** (not merged with DB state)
+
+---
+
+## Performance Profile
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Listener Payload | Full state snapshot | ~2–4 KB typical state |
+| Update Batch Size | 5–8 fields | Uses Firebase `update()` for atomicity |
+| Write Latency | ~100–500ms | Depends on network + Firebase backend |
+| Polling Interval (Sim) | 6 seconds | `runSimulationTick()` every 6000ms |
+| Log Buffer | Max 30 entries | In-memory only; not persisted |
+
+---
+
+## Security Rules Requirement
+
+Currently, the app logs warnings about RTDB security rules:
+
+```
+RTDB restricted. Set RTDB rules to {".read": true, ".write": true}
+```
+
+**Recommended Production Rules:**
+```json
+{
+  "rules": {
+    "pet_feeder": {
+      "$stationId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    }
+  }
+}
+```
+
+---
+
+## Schema Validation
+
+No server-side validation. Client enforces:
+- Tank ranges: [0, capacity]
+- Bowl ranges: [0, maxLimit]
+- Temperature: numeric (°C)
+- Humidity: numeric (%RH)
+- Timestamps: ISO 8601 strings
+
+Malformed writes bypass validation if written directly to RTDB console.
+
+---
+
+## Summary: 3-Tier Data Organization
+
+1. **Live Telemetry** (7 fields): Current tank/bowl levels, temperature, humidity
+2. **Automation State** (2 booleans): Auto-fill flags for water and food
+3. **Configuration** (nested object, 7 fields): Thresholds and limits
+4. **System Metadata** (3 fields): stationId, stationName, status, isSimulated, timestamps
+
+**Total:** ~24 primitive fields across 1 root container per station.
+
+---
+
+## Proposed Restructuring Options
+
+### Option A: Multi-Station Hub (Scale Horizontal)
+```
+pet_feeder/
+├── stations/
+│   ├── station_01/
+│   ├── station_02/
+│   └── ...
+└── metadata/
+    ├── lastSyncTime
+    ├── version
+    └── ...
+```
+
+### Option B: Station → Nested Subsystems (Scale Vertical)
+```
+pet_feeder/station_01/
+├── telemetry/
+│   ├── tanks/
+│   ├── bowls/
+│   └── climate/
+├── operations/
+│   ├── history/
+│   ├── commands/
+│   └── logs/
+└── config/
+    ├── thresholds/
+    └── capacities/
+```
+
+### Option C: Event-Sourced (Immutable Log)
+```
+pet_feeder/station_01/
+├── state/          ← Current state snapshot
+└── events/
+    ├── event_001/
+    ├── event_002/
+    └── ...
+```
+
+**Recommendation**: Use **Option A** for multi-station support without breaking existing single-station logic.

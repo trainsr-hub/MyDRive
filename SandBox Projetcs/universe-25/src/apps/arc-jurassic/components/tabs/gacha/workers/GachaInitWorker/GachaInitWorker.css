@@ -1,0 +1,273 @@
+/* =========================================================
+   GACHA INIT WORKER STYLES
+   Idle Black Hole Center + Multiplier Dropdown Selector + Summon Button
+========================================================= */
+
+.gacha-init-worker-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    position: relative;
+    padding-top: 6px;
+    animation: gachaInitWorkerFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes gachaInitWorkerFadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.bh-idle-stage {
+    position: relative;
+    width: 100%;
+    min-height: 440px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 1000px;
+    overflow: visible;
+}
+
+.bh-idle-hole {
+    position: absolute;
+    width: 360px;
+    height: 360px;
+    z-index: 40;
+    border-radius: 50%;
+    transform-style: preserve-3d;
+    transform-origin: center center;
+}
+
+/* SINGULARITY CORE */
+.bh-idle-hole .bh-core {
+    position: absolute;
+    inset: 25%;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        #000000 0 57%,
+        #020105 67%,
+        rgba(35, 6, 53, 0.82) 78%,
+        transparent 100%
+    );
+    box-shadow:
+        0 0 20px #000,
+        0 0 55px rgba(99, 38, 166, 0.46),
+        0 0 120px rgba(84, 26, 154, 0.28);
+}
+
+/* ACCRETION RINGS */
+.bh-idle-hole .bh-ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--diameter);
+    height: var(--diameter);
+    border-radius: 50%;
+    border: var(--thickness) solid transparent;
+    transform-origin: center center;
+    transform: translate(-50%, -50%) rotateX(var(--tilt)) rotateZ(0deg);
+    transform-style: preserve-3d;
+    mix-blend-mode: screen;
+    pointer-events: none;
+    opacity: var(--opacity);
+}
+
+.bh-idle-hole .bh-ring-1 {
+    --diameter: 350px;
+    --thickness: 4px;
+    --tilt: 69deg;
+    --opacity: .95;
+    border-top-color: rgba(208, 157, 255, 0.95);
+    border-right-color: rgba(131, 57, 231, 0.92);
+    border-bottom-color: rgba(94, 34, 184, 0.62);
+    filter: drop-shadow(0 0 8px rgba(168, 88, 255, 0.95));
+    animation: bhIdleRingRotate1 1900ms linear infinite;
+}
+
+.bh-idle-hole .bh-ring-2 {
+    --diameter: 305px;
+    --thickness: 3px;
+    --tilt: 64deg;
+    --opacity: .88;
+    border-left-color: rgba(255, 255, 255, 0.92);
+    border-top-color: rgba(174, 107, 255, 0.92);
+    border-bottom-color: rgba(86, 34, 174, 0.60);
+    filter: drop-shadow(0 0 12px rgba(198, 143, 255, 0.95));
+    animation: bhIdleRingRotate2 1250ms linear infinite reverse;
+}
+
+.bh-idle-hole .bh-ring-3 {
+    --diameter: 255px;
+    --thickness: 5px;
+    --tilt: 58deg;
+    --opacity: .82;
+    border-right-color: rgba(255, 255, 255, 0.78);
+    border-left-color: rgba(126, 54, 228, 0.95);
+    filter: blur(1px) drop-shadow(0 0 14px rgba(140, 74, 255, 0.94));
+    animation: bhIdleRingRotate3 820ms linear infinite;
+}
+
+.bh-idle-hole .bh-ring-4 {
+    --diameter: 212px;
+    --thickness: 3px;
+    --tilt: 52deg;
+    --opacity: .70;
+    border-top-color: rgba(255, 255, 255, 0.85);
+    border-bottom-color: rgba(131, 57, 239, 0.90);
+    filter: drop-shadow(0 0 10px rgba(172, 107, 255, 0.85));
+    animation: bhIdleRingRotate4 630ms linear infinite reverse;
+}
+
+@keyframes bhIdleRingRotate1 {
+    from { transform: translate(-50%, -50%) rotateX(69deg) rotateZ(0deg); }
+    to { transform: translate(-50%, -50%) rotateX(69deg) rotateZ(360deg); }
+}
+
+@keyframes bhIdleRingRotate2 {
+    from { transform: translate(-50%, -50%) rotateX(64deg) rotateZ(360deg); }
+    to { transform: translate(-50%, -50%) rotateX(64deg) rotateZ(0deg); }
+}
+
+@keyframes bhIdleRingRotate3 {
+    from { transform: translate(-50%, -50%) rotateX(58deg) rotateZ(0deg); }
+    to { transform: translate(-50%, -50%) rotateX(58deg) rotateZ(360deg); }
+}
+
+@keyframes bhIdleRingRotate4 {
+    from { transform: translate(-50%, -50%) rotateX(52deg) rotateZ(360deg); }
+    to { transform: translate(-50%, -50%) rotateX(52deg) rotateZ(0deg); }
+}
+
+/* MULTIPLIER DROPDOWN SELECTOR BAR (Pre-Roll Gamble) */
+.gacha-multiplier-bar {
+    width: min(440px, 92%);
+    padding: 8px 14px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(22, 17, 30, 0.95), rgba(10, 8, 14, 0.98));
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    user-select: none;
+}
+
+.gacha-multiplier-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #ffd86b;
+    font-family: monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+}
+
+.gacha-multiplier-select-wrapper {
+    position: relative;
+    flex: 1;
+    max-width: 260px;
+    display: flex;
+    align-items: center;
+}
+
+.gacha-multiplier-select {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding: 6px 30px 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    font-family: monospace;
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    background: rgba(14, 10, 22, 0.95);
+    color: #ffd86b;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.12s ease-out;
+}
+
+.gacha-multiplier-select:hover {
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.25);
+    color: #ffffff;
+}
+
+.gacha-multiplier-select:focus {
+    border-color: #ffd700;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+}
+
+.gacha-select-chevron {
+    position: absolute;
+    right: 8px;
+    width: 14px;
+    height: 14px;
+    color: #ffd86b;
+    pointer-events: none;
+}
+
+/* SUMMON BUTTON */
+.dino-summon-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: min(440px, 92%);
+    min-height: 58px;
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    border-radius: 14px;
+    padding: 12px 32px;
+    font-size: 17px;
+    font-weight: 800;
+    color: #ffffff;
+    background: linear-gradient(135deg, #1f1430 0%, #3b1d6e 50%, #7c4dff 100%);
+    box-shadow: 0 8px 24px rgba(81, 45, 168, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    margin-top: 4px;
+}
+
+.dino-summon-button.is-target-evo-mode {
+    background: linear-gradient(135deg, #1a0f2e 0%, #4a2174 40%, #c28800 100%);
+    border-color: #ffd700;
+    box-shadow: 0 8px 26px rgba(255, 215, 0, 0.28), 0 0 16px rgba(194, 136, 0, 0.4);
+}
+
+.dino-summon-button.is-target-evo-mode:hover:not(:disabled) {
+    box-shadow: 0 12px 32px rgba(255, 215, 0, 0.45), 0 0 24px rgba(255, 215, 0, 0.5);
+    border-color: #fff275;
+}
+
+.dino-summon-button.is-max-evo-mode {
+    background: linear-gradient(135deg, #2b0f0a 0%, #68260b 45%, #d97706 80%, #fbbf24 100%);
+    border-color: #fde047;
+    box-shadow: 0 8px 28px rgba(217, 119, 6, 0.45), 0 0 20px rgba(251, 191, 36, 0.5);
+}
+
+.dino-summon-button.is-max-evo-mode:hover:not(:disabled) {
+    box-shadow: 0 12px 36px rgba(245, 158, 11, 0.6), 0 0 28px rgba(253, 224, 71, 0.7);
+    border-color: #fef08a;
+}
+
+.dino-summon-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(124, 77, 255, 0.5), 0 0 16px rgba(255, 215, 0, 0.3);
+    border-color: #ffd700;
+}
+
+.dino-summon-button:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+}
+
+.dino-summon-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}

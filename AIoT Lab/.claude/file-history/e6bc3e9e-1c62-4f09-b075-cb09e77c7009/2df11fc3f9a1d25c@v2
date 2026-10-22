@@ -1,0 +1,222 @@
+// path: src/apps/heraclitus/components/ManualDepositPanel.tsx
+// Tier 4 Presentation Component: Monolithic Manual Deposit Panel (<150 lines)
+
+import React, { useState } from 'react'
+import { Flame, Clock, RotateCcw } from 'lucide-react'
+
+interface ManualDepositPanelProps {
+  isDepositing: boolean
+  onDeposit: (seconds: number, source: string, category: string, speed: number) => void
+}
+
+const CATEGORIES = [
+  { id: 'grind', label: 'Grind' },
+  { id: 'deep-work', label: 'Deep Work' },
+  { id: 'study', label: 'Study' },
+  { id: 'creative', label: 'Creative' },
+]
+
+const SPEEDS = [1.0, 1.25, 1.5, 1.75, 2.0]
+
+export const ManualDepositPanel: React.FC<ManualDepositPanelProps> = ({
+  isDepositing,
+  onDeposit,
+}) => {
+  const [hours, setHours] = useState<number>(1)
+  const [minutes, setMinutes] = useState<number>(0)
+  const [source, setSource] = useState<string>('Fusion 360 Modeling')
+  const [category, setCategory] = useState<string>('grind')
+  const [speed, setSpeed] = useState<number>(1.0)
+
+  const totalSeconds = hours * 3600 + minutes * 60
+
+  const addTime = (addH: number, addM: number) => {
+    let newM = minutes + addM
+    let newH = hours + addH + Math.floor(newM / 60)
+    newM = newM % 60
+    setHours(newH)
+    setMinutes(newM)
+  }
+
+  const handleReset = () => {
+    setHours(0)
+    setMinutes(0)
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (totalSeconds <= 0 || isDepositing) return
+    onDeposit(totalSeconds, source.trim() || 'Manual Session', category, speed)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="p-5 rounded-2xl bg-[#0f0b17]/95 border border-[#2d223c] shadow-2xl space-y-4">
+      {/* Top Header & Quick Chips */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#241a33] pb-3">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-[#ffd86b]" />
+          <span className="font-cinzel font-bold text-sm text-white uppercase tracking-wider">
+            Chrono Manual Input Nexus
+          </span>
+        </div>
+
+        {/* Quick Increment Additive Chips */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[10px] font-mono text-[#8a7c9d] mr-1">ADD:</span>
+          {[
+            { label: '+15m', h: 0, m: 15 },
+            { label: '+30m', h: 0, m: 30 },
+            { label: '+1h', h: 1, m: 0 },
+            { label: '+2h', h: 2, m: 0 },
+            { label: '+6h', h: 6, m: 0 },
+          ].map((chip) => (
+            <button
+              key={chip.label}
+              type="button"
+              disabled={isDepositing}
+              onClick={() => addTime(chip.h, chip.m)}
+              className="px-2.5 py-1 rounded-lg bg-[#181124] hover:bg-[#261b38] border border-[#37294d] hover:border-[#ffd86b] text-[#ffd86b] text-[11px] font-mono font-bold transition cursor-pointer active:scale-95 disabled:opacity-50"
+            >
+              {chip.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            disabled={isDepositing || totalSeconds === 0}
+            onClick={handleReset}
+            className="p-1.5 rounded-lg bg-[#181124] hover:bg-[#261b38] text-[#8a7c9d] hover:text-rose-400 border border-[#37294d] transition cursor-pointer"
+            title="Clear duration"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Main Grid: Duration, Source, Category, Speed */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
+        {/* 1. Hours & Minutes Inputs (min-h-[52px]) */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-cinzel font-bold text-[#8a7c9d] uppercase tracking-wider block">
+            Session Duration
+          </label>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                type="number"
+                min="0"
+                max="999"
+                value={hours}
+                onChange={(e) => setHours(Math.max(0, parseInt(e.target.value) || 0))}
+                disabled={isDepositing}
+                className="w-full min-h-[50px] px-3 pr-7 rounded-xl bg-[#161022] border border-[#36274a] focus:border-[#ffd86b] text-base font-mono font-bold text-white outline-none transition"
+              />
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#8a7c9d] pointer-events-none">
+                h
+              </span>
+            </div>
+            <div className="relative flex-1">
+              <input
+                type="number"
+                min="0"
+                max="59"
+                value={minutes}
+                onChange={(e) => setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                disabled={isDepositing}
+                className="w-full min-h-[50px] px-3 pr-7 rounded-xl bg-[#161022] border border-[#36274a] focus:border-[#ffd86b] text-base font-mono font-bold text-white outline-none transition"
+              />
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#8a7c9d] pointer-events-none">
+                m
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Source / Activity Label */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-cinzel font-bold text-[#8a7c9d] uppercase tracking-wider block">
+            Activity / Source
+          </label>
+          <input
+            type="text"
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            disabled={isDepositing}
+            placeholder="e.g. Fusion 360, LeetCode..."
+            className="w-full min-h-[50px] px-3.5 rounded-xl bg-[#161022] border border-[#36274a] focus:border-[#ffd86b] text-xs font-mono text-white placeholder-[#685b79] outline-none transition"
+          />
+        </div>
+
+        {/* 3. Category Selector */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-cinzel font-bold text-[#8a7c9d] uppercase tracking-wider block">
+            Category
+          </label>
+          <div className="grid grid-cols-2 gap-1.5 min-h-[50px]">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                disabled={isDepositing}
+                onClick={() => setCategory(cat.id)}
+                className={`px-2 py-1.5 rounded-lg text-[10px] font-mono font-bold border transition cursor-pointer ${
+                  category === cat.id
+                    ? 'bg-[#ffd86b]/20 border-[#ffd86b] text-[#ffd86b]'
+                    : 'bg-[#161022] border-[#36274a] text-[#8a7c9d] hover:text-white'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 4. Velocity Multiplier */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-cinzel font-bold text-[#8a7c9d] uppercase tracking-wider block">
+            Velocity Velocity
+          </label>
+          <div className="flex items-center gap-1 min-h-[50px]">
+            {SPEEDS.map((sp) => (
+              <button
+                key={sp}
+                type="button"
+                disabled={isDepositing}
+                onClick={() => setSpeed(sp)}
+                className={`flex-1 py-3 rounded-lg text-[11px] font-mono font-bold border transition cursor-pointer ${
+                  speed === sp
+                    ? 'bg-gradient-to-r from-[#ffd86b] to-[#d4af37] text-black border-[#ffd86b]'
+                    : 'bg-[#161022] border-[#36274a] text-[#8a7c9d] hover:text-white'
+                }`}
+              >
+                {sp}x
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Action Bar */}
+      <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="text-xs font-mono text-[#cbd5e1]">
+          Total Deposit Payload:{' '}
+          <span className="text-[#ffd86b] font-bold text-sm font-mono">
+            {hours}h {minutes}m ({totalSeconds.toLocaleString()}s)
+          </span>
+        </div>
+
+        <button
+          type="submit"
+          disabled={isDepositing || totalSeconds <= 0}
+          className="min-h-[52px] w-full sm:w-auto px-8 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#ffd86b] to-[#b38f22] text-black font-cinzel font-extrabold text-xs tracking-wider transition hover:brightness-110 active:scale-95 disabled:opacity-40 cursor-pointer shadow-gold-md flex items-center justify-center gap-2"
+        >
+          <Flame className={`w-4 h-4 fill-black ${isDepositing ? 'animate-bounce' : ''}`} />
+          <span>
+            {isDepositing
+              ? 'SPOOLING ACCUMULATOR...'
+              : `CHANNEL & DEPOSIT ${hours > 0 ? `${hours}h ` : ''}${minutes}m`}
+          </span>
+        </button>
+      </div>
+    </form>
+  )
+}

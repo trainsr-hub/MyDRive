@@ -1,0 +1,1108 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Folder,
+  FolderPlus,
+  Trash2,
+  RotateCcw,
+  ChevronRight,
+  ChevronDown,
+  Tag,
+  Plus,
+  X,
+  Edit3,
+  Undo2,
+  FolderTree,
+  Search,
+  Sparkles,
+  HardDrive,
+} from 'lucide-react';
+import { TemplateNode, TemplateResponse } from '../types';
+import {
+  parseDescription,
+  formatDescription,
+  TagEntry,
+} from '../utils/tagUtils';
+
+interface TemplateStudioProps {
+  templateLink: string;
+  onOpenConfig: () => void;
+  addToast: (type: 'success' | 'error' | 'info', title: string, message?: string) => void;
+}
+
+export const TemplateStudio: React.FC<TemplateStudioProps> = ({
+  templateLink,
+  onOpenConfig,
+  addToast,
+}) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [templateId, setTemplateId] = useState<string>('');
+  const [templateName, setTemplateName] = useState<string>('Template Archetype');
+  const [tree, setTree] = useState<TemplateNode | null>(null);
+  const [vaultTags, setVaultTags] = useState<Record<string, string[]>>({});
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Inspector mode: 'builder' vs 'raw'
+  const [inspectorMode, setInspectorMode] = useState<'builder' | 'raw'>('builder');
+
+  // Load template tree from local Disk D:
+  const fetchTemplate = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/template?template_link=${encodeURIComponent(templateLink)}`);
+      const data: TemplateResponse = await res.json();
+      if (!res.ok) {
+        throw new Error((data as any).detail || 'Failed to load template');
+      }
+
+      setTemplateId(data.template_id);
+      setTemplateName(data.template_name || 'Entropy 0');
+      setTree(JSON.parse(JSON.stringify(data.tree)));
+      setVaultTags(data.vault_tags || {});
+      setSelectedId(data.tree.id);
+
+      addToast(
+        'success',
+        'Template Loaded from Local Disk D:',
+        `${data.duration_ms} ms`
+      );
+    } catch (err: any) {
+      addToast('error', 'Template Error', err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTemplate();
+  }, [templateLink]);
+
+  // Recursively map/find nodes
+  const findNode = (node: TemplateNode | null, id: string): TemplateNode | null => {
+    if (!node) return null;
+    if (node.id === id) return node;
+    for (const child of node.children) {
+      const found = findNode(child, id);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  const selectedNode = useMemo(() => {
+    if (!tree || !selectedId) return null;
+    return findNode(tree, selectedId);
+  }, [tree, selectedId]);
+
+  // Live mutation API call
+  const applyMutation = async (action: string, relativePath: string, name = '', description = '', parentPath = '') => {
+    try {
+      const res = await fetch('/api/template/mutate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, relative_path: relativePath, name, description, parent_path: parentPath }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Mutation failed');
+      }
+
+      // Reload tree from server
+      setTree(data.tree);
+      return data;
+    } catch (err: any) {
+      addToast('error', 'Mutation Error', err.message);
+      throw err;
+    }
+  };
+
+  // Add subfolder under a parent
+  const handleAddFolder = async (parentId: string) => {
+    const parent = findNode(tree, parentId);
+    if (!parent) return;
+
+    const parentPath = parent.relativePath || '';
+    try {
+      await applyMutation('create', '', 'New Folder', '', parentPath);
+      addToast('success', 'Folder Created', 'New folder added to local template on Disk D:');
+      await fetchTemplate();
+    } catch (err) {
+      // Error already toasted
+    }
+  };
+
+  // Delete folder
+  const handleDeleteFolder = async (id: string) => {
+    if (id === templateId) {
+      addToast('error', 'Cannot Delete Root', 'The template root folder cannot be deleted.');
+      return;
+    }
+
+    const node = findNode(tree, id);
+    if (!node || !node.relativePath) return;
+
+    try {
+      await applyMutation('delete', node.relativePath);
+      addToast('success', 'Folder Deleted', 'Removed from local Disk D: template');
+
+      // If currently selected node was deleted, select root
+      if (selectedId === id) {
+        setSelectedId(templateId);
+      }
+
+      await fetchTemplate();
+    } catch (err) {
+      // Error already toasted
+    }
+  };
+
+  // Update folder name or description
+  const handleUpdateFolder = async (id: string, newName: string, newDesc: string) => {
+    const node = findNode(tree, id);
+    if (!node) return;
+
+    const relativePath = node.relativePath || '';
+    try {
+      await applyMutation('update', relativePath, newName, newDesc);
+      await fetchTemplate();
+    } catch (err) {
+      // Error already toasted
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* Top Action Bar */}
+      <div
+        className="card"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '1rem 1.5rem',
+          flexWrap: 'wrap',
+          gap: '1rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--accent-bg)',
+              border: '1px solid var(--accent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--accent)',
+            }}
+          >
+            <HardDrive size={24} />
+          </div>
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                Local Template Editor
+              </h2>
+              <span
+                className="badge"
+                style={{
+                  background: 'var(--success-bg)',
+                  border: '1px solid var(--success-border)',
+                  color: 'var(--success)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '11px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                }}
+              >
+                <HardDrive size={11} /> Live on Disk D:
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '3px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+                Path: <code style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>templates/Entropy 0/</code>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => handleAddFolder(templateId)}
+            disabled={isLoading || !tree}
+            style={{ fontSize: '12.5px', padding: '0.5rem 0.85rem' }}
+          >
+            <Plus size={15} /> Add Root Folder
+          </button>
+
+          <button
+            className="btn btn-secondary"
+            onClick={fetchTemplate}
+            disabled={isLoading}
+            style={{ fontSize: '12.5px', padding: '0.5rem 0.85rem' }}
+            title="Reload from Local Disk D:"
+          >
+            <RotateCcw size={15} className={isLoading ? 'spinner' : ''} />
+            {isLoading ? 'Loading...' : 'Reload'}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Studio 2-Column Split Workspace */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(340px, 1fr) minmax(440px, 1.4fr)',
+          gap: '1.25rem',
+          alignItems: 'start',
+        }}
+      >
+        {/* Left Column: Archetype Tree Outliner */}
+        <div
+          className="card"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+            padding: '1.25rem',
+            minHeight: '560px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              Folder Hierarchy
+            </h3>
+            <span style={{ fontSize: '11.5px', color: 'var(--text-dim)' }}>
+              Live editing on Disk D:
+            </span>
+          </div>
+
+          {/* Quick Filter */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border-light)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '0.35rem 0.65rem',
+            }}
+          >
+            <Search size={14} color="var(--text-dim)" />
+            <input
+              type="text"
+              placeholder="Filter folders..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-primary)',
+                fontSize: '12.5px',
+                width: '100%',
+                outline: 'none',
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-dim)',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          {/* Tree View */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.35rem',
+              overflowY: 'auto',
+              maxHeight: '620px',
+              paddingRight: '0.25rem',
+            }}
+          >
+            {tree ? (
+              <TreeNodeItem
+                node={tree}
+                selectedId={selectedId}
+                onSelect={(id) => setSelectedId(id)}
+                onAddSubfolder={handleAddFolder}
+                onDelete={handleDeleteFolder}
+                searchQuery={searchQuery}
+                level={0}
+                isRoot={true}
+              />
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-dim)' }}>
+                {isLoading ? 'Loading template from Disk D:...' : 'No template loaded.'}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Folder & Metadata Inspector */}
+        <div
+          className="card"
+          style={{
+            padding: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
+            minHeight: '560px',
+          }}
+        >
+          {selectedNode ? (
+            <FolderInspector
+              node={selectedNode}
+              vaultTags={vaultTags}
+              onUpdate={(name, desc) => handleUpdateFolder(selectedNode.id, name, desc)}
+              onAddSubfolder={() => handleAddFolder(selectedNode.id)}
+              onDelete={() => handleDeleteFolder(selectedNode.id)}
+              mode={inspectorMode}
+              setMode={setInspectorMode}
+              isRoot={selectedNode.id === templateId}
+            />
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '4rem 2rem',
+                gap: '0.75rem',
+                color: 'var(--text-dim)',
+              }}
+            >
+              <Folder size={38} />
+              <p style={{ fontSize: '13.5px' }}>Select a folder to edit properties and metadata.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// =====================================================================
+// TREE NODE COMPONENT (RECURSIVE)
+// =====================================================================
+
+interface TreeNodeItemProps {
+  node: TemplateNode;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  onAddSubfolder: (parentId: string) => void;
+  onDelete: (id: string) => void;
+  searchQuery: string;
+  level: number;
+  isRoot?: boolean;
+}
+
+const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
+  node,
+  selectedId,
+  onSelect,
+  onAddSubfolder,
+  onDelete,
+  searchQuery,
+  level,
+  isRoot = false,
+}) => {
+  const [isOpen, setIsOpen] = useState(true);
+
+  // Check if matches search
+  const isSelfMatch = node.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const hasMatchingDescendants = (n: TemplateNode): boolean => {
+    return n.children.some(
+      (c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()) || hasMatchingDescendants(c)
+    );
+  };
+  const isMatch = !searchQuery || isSelfMatch || hasMatchingDescendants(node);
+
+  if (!isMatch) return null;
+
+  const isSelected = selectedId === node.id;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <div
+        onClick={() => onSelect(node.id)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.45rem 0.65rem',
+          paddingLeft: `${level * 16 + 8}px`,
+          borderRadius: 'var(--radius-sm)',
+          cursor: 'pointer',
+          background: isSelected ? 'var(--accent-bg)' : 'transparent',
+          border: isSelected ? '1px solid var(--accent)' : '1px solid transparent',
+          transition: 'all 0.15s ease',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', overflow: 'hidden' }}>
+          {node.children.length > 0 ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(!isOpen);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-dim)',
+                cursor: 'pointer',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            </button>
+          ) : (
+            <span style={{ width: 14 }} />
+          )}
+
+          <Folder
+            size={16}
+            color={isSelected ? 'var(--accent)' : 'var(--text-secondary)'}
+          />
+
+          <span
+            style={{
+              fontSize: '13px',
+              fontWeight: isSelected ? 600 : 500,
+              color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {node.name}
+          </span>
+        </div>
+
+        {/* Inline Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddSubfolder(node.id);
+            }}
+            title="Add subfolder"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-dim)',
+              cursor: 'pointer',
+              padding: '2px 4px',
+              borderRadius: '4px',
+            }}
+          >
+            <Plus size={13} />
+          </button>
+
+          {!isRoot && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(node.id);
+              }}
+              title="Delete folder"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-dim)',
+                cursor: 'pointer',
+                padding: '2px 4px',
+              }}
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Children */}
+      {isOpen && node.children.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {node.children.map((child) => (
+            <TreeNodeItem
+              key={child.id}
+              node={child}
+              selectedId={selectedId}
+              onSelect={onSelect}
+              onAddSubfolder={onAddSubfolder}
+              onDelete={onDelete}
+              searchQuery={searchQuery}
+              level={level + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// =====================================================================
+// FOLDER & METADATA TAG INSPECTOR
+// =====================================================================
+
+interface FolderInspectorProps {
+  node: TemplateNode;
+  vaultTags: Record<string, string[]>;
+  onUpdate: (name: string, desc: string) => void;
+  onAddSubfolder: () => void;
+  onDelete: () => void;
+  mode: 'builder' | 'raw';
+  setMode: (mode: 'builder' | 'raw') => void;
+  isRoot: boolean;
+}
+
+const FolderInspector: React.FC<FolderInspectorProps> = ({
+  node,
+  vaultTags,
+  onUpdate,
+  onAddSubfolder,
+  onDelete,
+  mode,
+  setMode,
+  isRoot,
+}) => {
+  const [editName, setEditName] = useState(node.name);
+  const [editDesc, setEditDesc] = useState(node.description || '');
+  const [newTagKey, setNewTagKey] = useState('');
+  const [newTagValInputs, setNewTagValInputs] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setEditName(node.name);
+    setEditDesc(node.description || '');
+  }, [node.id, node.name, node.description]);
+
+  // Parse current description into structured tags
+  const { tags, otherLines } = useMemo(() => {
+    return parseDescription(editDesc);
+  }, [editDesc]);
+
+  const handleSave = () => {
+    if (editName.trim() !== node.name || editDesc !== (node.description || '')) {
+      onUpdate(editName.trim(), editDesc);
+    }
+  };
+
+  // Handle adding a new tag category
+  const handleAddCategory = (keyName: string) => {
+    const cleanKey = keyName.trim();
+    if (!cleanKey) return;
+
+    if (tags.some((t) => t.key.toLowerCase() === cleanKey.toLowerCase())) {
+      return;
+    }
+
+    const updatedTags: TagEntry[] = [...tags, { key: cleanKey, values: [] }];
+    const newDesc = formatDescription(updatedTags, otherLines);
+    setEditDesc(newDesc);
+    setNewTagKey('');
+  };
+
+  // Handle adding value pill to tag
+  const handleAddValueToTag = (key: string, val: string) => {
+    const cleanVal = val.trim();
+    if (!cleanVal) return;
+
+    const updatedTags = tags.map((t) => {
+      if (t.key.toLowerCase() === key.toLowerCase()) {
+        if (!t.values.includes(cleanVal)) {
+          return { ...t, values: [...t.values, cleanVal] };
+        }
+      }
+      return t;
+    });
+
+    setEditDesc(formatDescription(updatedTags, otherLines));
+    setNewTagValInputs((prev) => ({ ...prev, [key]: '' }));
+  };
+
+  // Handle removing value pill
+  const handleRemoveValue = (key: string, valToRemove: string) => {
+    const updatedTags = tags.map((t) => {
+      if (t.key.toLowerCase() === key.toLowerCase()) {
+        return { ...t, values: t.values.filter((v) => v !== valToRemove) };
+      }
+      return t;
+    });
+    setEditDesc(formatDescription(updatedTags, otherLines));
+  };
+
+  // Handle removing tag category
+  const handleRemoveCategory = (key: string) => {
+    const updatedTags = tags.filter((t) => t.key.toLowerCase() !== key.toLowerCase());
+    setEditDesc(formatDescription(updatedTags, otherLines));
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* Inspector Top Bar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid var(--border-light)',
+          paddingBottom: '0.85rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <Folder size={20} color="var(--accent)" />
+          <div>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              {isRoot ? 'Template Root' : 'Folder Properties'}
+            </h3>
+            <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+              {node.relativePath ? `Path: ${node.relativePath}` : 'Root directory'}
+            </span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={onAddSubfolder}
+            style={{ fontSize: '12px', padding: '0.35rem 0.65rem' }}
+          >
+            <FolderPlus size={14} /> Add Subfolder
+          </button>
+
+          {!isRoot && (
+            <button
+              className="btn btn-secondary"
+              onClick={onDelete}
+              style={{ fontSize: '12px', padding: '0.35rem 0.65rem', color: 'var(--danger)' }}
+            >
+              <Trash2 size={14} /> Delete
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Name Field */}
+      <div>
+        <label
+          style={{
+            display: 'block',
+            fontSize: '12px',
+            fontWeight: 600,
+            color: 'var(--text-secondary)',
+            marginBottom: '0.4rem',
+          }}
+        >
+          Folder Name
+        </label>
+        <input
+          type="text"
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onBlur={handleSave}
+          style={{
+            width: '100%',
+            background: 'var(--bg-input)',
+            border: '1px solid var(--border-light)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '0.6rem 0.85rem',
+            color: 'var(--text-primary)',
+            fontSize: '14px',
+            fontWeight: 600,
+            outline: 'none',
+          }}
+        />
+      </div>
+
+      {/* Description & Tags Header with Mode Toggle */}
+      <div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '0.75rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+            <Tag size={15} color="var(--accent)" />
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Metadata & Tags
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              background: 'var(--bg-canvas)',
+              borderRadius: 'var(--radius-full)',
+              border: '1px solid var(--border-light)',
+              padding: '2px',
+            }}
+          >
+            <button
+              onClick={() => setMode('builder')}
+              style={{
+                background: mode === 'builder' ? 'var(--accent)' : 'transparent',
+                color: mode === 'builder' ? '#000' : 'var(--text-secondary)',
+                border: 'none',
+                borderRadius: 'var(--radius-full)',
+                padding: '0.2rem 0.65rem',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Tag Builder
+            </button>
+            <button
+              onClick={() => setMode('raw')}
+              style={{
+                background: mode === 'raw' ? 'var(--accent)' : 'transparent',
+                color: mode === 'raw' ? '#000' : 'var(--text-secondary)',
+                border: 'none',
+                borderRadius: 'var(--radius-full)',
+                padding: '0.2rem 0.65rem',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Raw Text
+            </button>
+          </div>
+        </div>
+
+        {/* Tag Builder Mode */}
+        {mode === 'builder' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {/* Tag Categories List */}
+            {tags.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {tags.map((tag) => (
+                  <div
+                    key={tag.key}
+                    style={{
+                      background: 'var(--bg-canvas)',
+                      border: '1px solid var(--border-light)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '0.75rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span
+                        style={{
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          color: 'var(--accent)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.03em',
+                        }}
+                      >
+                        {tag.key}
+                      </span>
+                      <button
+                        onClick={() => handleRemoveCategory(tag.key)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-dim)',
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                        title="Delete this tag key"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+
+                    {/* Value chips */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
+                      {tag.values.map((v) => (
+                        <span
+                          key={v}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            background: 'var(--bg-card)',
+                            border: '1px solid var(--border-mid)',
+                            borderRadius: 'var(--radius-full)',
+                            padding: '0.2rem 0.55rem',
+                            fontSize: '12px',
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          {v}
+                          <button
+                            onClick={() => handleRemoveValue(tag.key, v)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--text-dim)',
+                              cursor: 'pointer',
+                              padding: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <X size={11} />
+                          </button>
+                        </span>
+                      ))}
+
+                      {/* Input to add tag value */}
+                      <input
+                        type="text"
+                        placeholder="+ add value (Enter)"
+                        value={newTagValInputs[tag.key] || ''}
+                        onChange={(e) =>
+                          setNewTagValInputs({ ...newTagValInputs, [tag.key]: e.target.value })
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAddValueToTag(tag.key, newTagValInputs[tag.key] || '');
+                          }
+                        }}
+                        onBlur={() => {
+                          if (newTagValInputs[tag.key]) {
+                            handleAddValueToTag(tag.key, newTagValInputs[tag.key]);
+                          }
+                        }}
+                        style={{
+                          background: 'var(--bg-input)',
+                          border: '1px dashed var(--border-light)',
+                          borderRadius: 'var(--radius-full)',
+                          padding: '0.2rem 0.55rem',
+                          fontSize: '11.5px',
+                          color: 'var(--text-primary)',
+                          outline: 'none',
+                          width: '120px',
+                        }}
+                      />
+                    </div>
+
+                    {/* Value Suggestions from SQLite Vault */}
+                    {vaultTags[tag.key] && vaultTags[tag.key].length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '10.5px', color: 'var(--text-dim)' }}>Suggestions:</span>
+                        {vaultTags[tag.key]
+                          .filter((sv) => !tag.values.includes(sv))
+                          .slice(0, 5)
+                          .map((sv) => (
+                            <button
+                              key={sv}
+                              onClick={() => handleAddValueToTag(tag.key, sv)}
+                              style={{
+                                background: 'transparent',
+                                border: '1px dotted var(--border-light)',
+                                borderRadius: 'var(--radius-full)',
+                                padding: '0.1rem 0.45rem',
+                                fontSize: '10.5px',
+                                color: 'var(--text-dim)',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              + {sv}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                style={{
+                  padding: '1.25rem',
+                  textAlign: 'center',
+                  background: 'var(--bg-canvas)',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px dashed var(--border-light)',
+                  color: 'var(--text-dim)',
+                  fontSize: '12.5px',
+                }}
+              >
+                No tags defined yet for this folder.
+              </div>
+            )}
+
+            {/* Add New Tag Category Row */}
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="New Tag Key (e.g. Role, Theme, Category)"
+                value={newTagKey}
+                onChange={(e) => setNewTagKey(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddCategory(newTagKey);
+                }}
+                style={{
+                  flex: 1,
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '0.45rem 0.75rem',
+                  color: 'var(--text-primary)',
+                  fontSize: '12.5px',
+                  outline: 'none',
+                }}
+              />
+              <button
+                className="btn btn-secondary"
+                onClick={() => handleAddCategory(newTagKey)}
+                disabled={!newTagKey.trim()}
+                style={{ fontSize: '12px', padding: '0.45rem 0.75rem' }}
+              >
+                <Plus size={14} /> Add Category
+              </button>
+            </div>
+
+            {/* Quick Key Chips from SQLite Vault */}
+            {Object.keys(vaultTags).length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <Sparkles size={11} color="var(--accent)" /> Available Vault Tags:
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                  {Object.keys(vaultTags).map((k) => {
+                    const isAdded = tags.some((t) => t.key.toLowerCase() === k.toLowerCase());
+                    return (
+                      <button
+                        key={k}
+                        onClick={() => handleAddCategory(k)}
+                        disabled={isAdded}
+                        style={{
+                          background: isAdded ? 'var(--bg-canvas)' : 'var(--bg-card)',
+                          border: '1px solid var(--border-light)',
+                          borderRadius: 'var(--radius-full)',
+                          padding: '0.15rem 0.55rem',
+                          fontSize: '11px',
+                          color: isAdded ? 'var(--text-dim)' : 'var(--accent)',
+                          cursor: isAdded ? 'default' : 'pointer',
+                          opacity: isAdded ? 0.5 : 1,
+                        }}
+                      >
+                        {k}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <button
+              className="btn btn-primary"
+              onClick={handleSave}
+              style={{ fontSize: '12px', padding: '0.5rem 1rem', marginTop: '0.5rem' }}
+            >
+              Save Changes to Disk D:
+            </button>
+          </div>
+        ) : (
+          /* Raw Text Mode */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <textarea
+              rows={6}
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+              onBlur={handleSave}
+              placeholder="Role: Protagonist, Antagonist&#10;Theme: Sci-Fi, Cyberpunk"
+              style={{
+                width: '100%',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-light)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '0.75rem',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '13px',
+                lineHeight: 1.5,
+                outline: 'none',
+                resize: 'vertical',
+              }}
+            />
+            <span style={{ fontSize: '11.5px', color: 'var(--text-dim)' }}>
+              Format: <code>Key: Value1, Value2</code> (one category per line). Changes save on blur.
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Immediate Child Folders Summary */}
+      <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Immediate Subfolders ({node.children.length})
+          </span>
+          <button
+            onClick={onAddSubfolder}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--accent)',
+              fontSize: '11.5px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              padding: 0,
+            }}
+          >
+            <Plus size={12} /> Add Child
+          </button>
+        </div>
+
+        {node.children.length > 0 ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
+            {node.children.map((c) => (
+              <span
+                key={c.id}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.25rem 0.6rem',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-canvas)',
+                  border: '1px solid var(--border-light)',
+                  fontSize: '12px',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                <Folder size={12} /> {c.name}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+            No immediate subfolders under this branch.
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};

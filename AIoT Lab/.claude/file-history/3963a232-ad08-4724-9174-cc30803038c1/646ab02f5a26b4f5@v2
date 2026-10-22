@@ -1,0 +1,375 @@
+import React, { useState } from 'react';
+import {
+  Folder,
+  Zap,
+  CheckCircle2,
+  RotateCw,
+  UploadCloud,
+  Trash2,
+} from 'lucide-react';
+import { MultiEntityPlan, EntityPlan } from '../../types/drive';
+import { EntityFolderCard } from './EntityFolderCard';
+
+interface DriveBirdEyeDashboardProps {
+  plan: MultiEntityPlan;
+  onRefresh: (forceLive?: boolean) => void;
+  onExecutePlan: (customPlan?: any) => Promise<void>;
+  isExecuting: boolean;
+  showToast: (msg: string, type?: any) => void;
+  selectedEntityId?: string | null;
+  onSelectEntity?: (id: string | null) => void;
+  onTrashFolder?: (folderId: string) => Promise<void>;
+  onOpenTrashManager?: () => void;
+}
+
+export const DriveBirdEyeDashboard: React.FC<DriveBirdEyeDashboardProps> = ({
+  plan,
+  onRefresh,
+  onExecutePlan,
+  isExecuting,
+  showToast,
+  selectedEntityId,
+  onSelectEntity,
+  onTrashFolder,
+  onOpenTrashManager,
+}) => {
+  const [viewMode, setViewMode] = useState<'all' | 'conflict' | 'perfected'>('all');
+  const [isMirroring, setIsMirroring] = useState(false);
+
+  const displayedGroups = (selectedEntityId
+    ? plan.groups
+        .map((g) => ({
+          ...g,
+          entity_plans: g.entity_plans.filter((ep) => ep.target_root_id === selectedEntityId),
+        }))
+        .filter((g) => g.entity_plans.length > 0)
+    : plan.groups
+  )
+    .map((g) => {
+      if (viewMode === 'all') return g;
+      return {
+        ...g,
+        entity_plans: g.entity_plans.filter((ep) => {
+          const subItems = ep.items.filter((i) => i.relative_path.split('/').filter(Boolean).length > 2);
+          const hasConflicts = subItems.some((i) => i.action_type !== 'MATCH' && i.action_type !== 'CUSTOM');
+          const hasPerfected = subItems.some((i) => i.action_type === 'MATCH' || i.action_type === 'CUSTOM');
+
+          if (viewMode === 'conflict') return hasConflicts;
+          if (viewMode === 'perfected') return hasPerfected;
+          return true;
+        }),
+      };
+    })
+    .filter((g) => viewMode === 'all' || g.entity_plans.length > 0);
+
+  const allItems = plan.groups.flatMap((g) => g.entity_plans.flatMap((ep) => ep.items));
+  const totalExceptions = allItems.filter((i) => i.action_type !== 'MATCH' && i.action_type !== 'CUSTOM');
+  const trashItemsCount = allItems.filter((i) => i.action_type === 'PRUNE_EMPTY').length;
+
+  const allSubfolderItems = allItems.filter((i) => i.relative_path.split('/').filter(Boolean).length > 2);
+  const totalSubfoldersCount = allSubfolderItems.length;
+  const conflictSubfoldersCount = allSubfolderItems.filter(
+    (i) => i.action_type !== 'MATCH' && i.action_type !== 'CUSTOM'
+  ).length;
+  const perfectedSubfoldersCount = totalSubfoldersCount - conflictSubfoldersCount;
+
+  const handleFixEntity = async (entityPlan: EntityPlan) => {
+    const singlePlan = {
+      ...plan,
+      groups: plan.groups
+        .map((g) => ({
+          ...g,
+          entity_plans: g.entity_plans.filter((ep) => ep.target_root_id === entityPlan.target_root_id),
+        }))
+        .filter((g) => g.entity_plans.length > 0),
+    };
+    await onExecutePlan(singlePlan);
+  };
+
+  const handleMirrorToDrive = async () => {
+    setIsMirroring(true);
+    try {
+      const res = await fetch('http://localhost:10191/api/drive/sync_push', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to mirror to Google Drive');
+      showToast(`Mirrored: ${data.created_on_drive} created, ${data.renamed_on_drive} renamed (${data.duration_ms} ms)`, 'saved');
+      onRefresh();
+    } catch (err: any) {
+      showToast(`Mirroring failed: ${err.message}`, 'error');
+    } finally {
+      setIsMirroring(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+      {/* 1. Control Deck */}
+      <div
+        style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-light)',
+          borderRadius: 'var(--radius-md)',
+          padding: '1rem 1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Zap size={20} style={{ color: 'var(--accent)' }} />
+            <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+              DRIVE ARCHITECT
+            </span>
+          </div>
+
+          <div
+            style={{
+              padding: '0.2rem 0.6rem',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-canvas)',
+              border: '1px solid var(--border-light)',
+              fontSize: '11px',
+              color: 'var(--text-dim)',
+            }}
+          >
+            Template: <strong style={{ color: 'var(--accent)' }}>Entropy 0</strong>
+          </div>
+
+          {trashItemsCount > 0 && onOpenTrashManager && (
+            <button
+              onClick={onOpenTrashManager}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.25rem 0.65rem',
+                borderRadius: 'var(--radius-full)',
+                background: 'rgba(244, 63, 94, 0.15)',
+                border: '1px solid var(--danger-border)',
+                color: 'var(--danger)',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              <Trash2 size={12} />
+              <span>{trashItemsCount} Trash in neo_drive.db</span>
+            </button>
+          )}
+        </div>
+
+        {/* Global Action Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+          {totalExceptions.length > 0 && (
+            <button
+              onClick={() => onExecutePlan(plan)}
+              disabled={isExecuting}
+              style={{
+                padding: '0.45rem 1rem',
+                fontSize: '12px',
+                fontWeight: 700,
+                background: 'var(--accent)',
+                color: '#000',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                boxShadow: '0 0 14px var(--accent-glow)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                cursor: 'pointer',
+              }}
+            >
+              <Zap size={13} /> {isExecuting ? 'Fixing...' : `Fix All Mismatches (${totalExceptions.length})`}
+            </button>
+          )}
+
+          <button
+            onClick={handleMirrorToDrive}
+            disabled={isMirroring}
+            style={{
+              padding: '0.45rem 1rem',
+              fontSize: '12px',
+              fontWeight: 700,
+              background: '#2563eb',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+              boxShadow: '0 0 14px rgba(37, 99, 235, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              cursor: 'pointer',
+            }}
+            title="Mirror local SQLite master folders directly onto Google Drive"
+          >
+            <UploadCloud size={14} className={isMirroring ? 'spin' : ''} />
+            <span>{isMirroring ? 'Mirroring...' : 'Mirror to Drive'}</span>
+          </button>
+
+          {/* 3-Mode Filter Segmented Pill */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--bg-canvas)',
+              borderRadius: 'var(--radius-full)',
+              border: '1px solid var(--border-light)',
+              padding: '2px',
+              gap: '2px',
+            }}
+          >
+            <button
+              onClick={() => setViewMode('all')}
+              style={{
+                border: 'none',
+                background: viewMode === 'all' ? 'var(--bg-card-hover)' : 'transparent',
+                color: viewMode === 'all' ? 'var(--text-primary)' : 'var(--text-dim)',
+                fontWeight: viewMode === 'all' ? 700 : 500,
+                fontSize: '11px',
+                padding: '0.3rem 0.65rem',
+                borderRadius: 'var(--radius-full)',
+                cursor: 'pointer',
+              }}
+            >
+              View all ({totalSubfoldersCount})
+            </button>
+
+            <button
+              onClick={() => setViewMode('conflict')}
+              style={{
+                border: 'none',
+                background: viewMode === 'conflict' ? 'var(--warning-bg)' : 'transparent',
+                color: viewMode === 'conflict' ? 'var(--warning)' : 'var(--text-dim)',
+                fontWeight: viewMode === 'conflict' ? 700 : 500,
+                fontSize: '11px',
+                padding: '0.3rem 0.65rem',
+                borderRadius: 'var(--radius-full)',
+                cursor: 'pointer',
+              }}
+            >
+              View conflict ({conflictSubfoldersCount})
+            </button>
+
+            <button
+              onClick={() => setViewMode('perfected')}
+              style={{
+                border: 'none',
+                background: viewMode === 'perfected' ? 'var(--success-bg)' : 'transparent',
+                color: viewMode === 'perfected' ? 'var(--success)' : 'var(--text-dim)',
+                fontWeight: viewMode === 'perfected' ? 700 : 500,
+                fontSize: '11px',
+                padding: '0.3rem 0.65rem',
+                borderRadius: 'var(--radius-full)',
+                cursor: 'pointer',
+              }}
+            >
+              View perfected ({perfectedSubfoldersCount})
+            </button>
+          </div>
+
+          <button
+            onClick={() => onRefresh(true)}
+            style={{
+              padding: '0.4rem 0.75rem',
+              fontSize: '11.5px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              background: 'transparent',
+              border: '1px solid var(--border-light)',
+              color: 'var(--text-secondary)',
+              borderRadius: 'var(--radius-sm)',
+              cursor: 'pointer',
+            }}
+            title="Re-scan local master"
+          >
+            <RotateCw size={12} className={isExecuting ? 'spin' : ''} />
+            <span>Scan Master</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Focus Breadcrumb */}
+      {selectedEntityId && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1.25rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '13px', color: 'var(--text-secondary)' }}>
+            <span>Focused on entity:</span>
+            <strong style={{ color: 'var(--accent)' }}>{displayedGroups[0]?.entity_plans[0]?.target_root_name}</strong>
+          </div>
+          <button
+            onClick={() => onSelectEntity?.(null)}
+            style={{ padding: '0.3rem 0.75rem', fontSize: '12px', fontWeight: 600, background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer' }}
+          >
+            Show All Entities (Bird's Eye) &rarr;
+          </button>
+        </div>
+      )}
+
+      {/* 2. Groups & Entity Cards Grid */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+        {displayedGroups.length === 0 ? (
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-light)',
+              borderRadius: 'var(--radius-md)',
+              padding: '3rem 2rem',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.75rem',
+            }}
+          >
+            <CheckCircle2 size={36} style={{ color: 'var(--success)' }} />
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              Zero Conflict Subfolders
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-dim)', maxWidth: '420px', margin: 0 }}>
+              All subfolders match the master template archetype.
+            </p>
+          </div>
+        ) : (
+          displayedGroups.map((group) => (
+            <section key={group.group_id} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0 0.25rem' }}>
+                <Folder size={17} style={{ color: 'var(--accent)' }} />
+                <h2 style={{ fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)', margin: 0 }}>
+                  {group.group_name}
+                </h2>
+                <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+                  ({group.entity_plans.length} {group.entity_plans.length === 1 ? 'entity' : 'entities'})
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: selectedEntityId ? 'flex' : 'grid',
+                  flexDirection: selectedEntityId ? 'column' : undefined,
+                  gridTemplateColumns: selectedEntityId ? undefined : 'repeat(auto-fill, minmax(380px, 1fr))',
+                  gap: '1rem',
+                  width: '100%',
+                }}
+              >
+                {group.entity_plans.map((ep) => (
+                  <EntityFolderCard
+                    key={ep.target_root_id}
+                    entityPlan={ep}
+                    onFixEntity={handleFixEntity}
+                    isExecuting={isExecuting}
+                    isFullWidth={!!selectedEntityId}
+                    viewMode={viewMode}
+                    onTrashFolder={onTrashFolder}
+                  />
+                ))}
+              </div>
+            </section>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};

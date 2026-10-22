@@ -1,0 +1,398 @@
+warning: in the working copy of '.agents/GEMINI.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/config/n8n_config.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/config/pixai_config.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/MEMORY.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/current_projects/n8n.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/current_projects/novel_wiki_outline_plan.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/manager/authoritative_local_state_doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/manager/drive_is_slave_mirror_doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/manager/less_is_more_ui_doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/manager/live_data_interaction_golden_standard.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/manager/pk_network_outliner_sidebar_doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/manager/raye_visual_dossier.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/n8n-workflow-automation-engine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/pre-presentation-verification.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/rules-stored-in-claude-folder.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/memory/single-run-bat-launcher-pattern.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/plans/faust_sovereign_headless_daemon_plan.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/plans/faust_telegram_remote_agent_plan.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/rules/anti-spaghetti-architecture.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/rules/backend-data-persistence.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/rules/communication-doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/rules/core-engineering-triad.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/rules/empirical-verification.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/rules/live-data-interaction-doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/rules/manager-memory-isolation.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/rules/pk-network-outliner-doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/rules/project-boundary-isolation.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/rules/single-run-bat-launcher-doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/rules/storage-d-drive.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/rules/ui-ux-design-doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/bridge_supervisor.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/build_flora_app.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/c2.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/calc_playlist.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/create_topics.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/daemon/agent_loop.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/daemon/agent_service.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/daemon/cli_runner.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/daemon/domain.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/daemon/faust_remote.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/daemon/jobs.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/daemon/model_provider.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/daemon/poller.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/daemon/repository.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/daemon/telegram_egress.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/daemon/tools.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/dispatch_to_faust.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/faust_listener.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/faust_runner.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/generate_flora_code.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/generate_flora_ui.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/generate_flora_vanilla.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/generate_pixai_art.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/inspect_conv.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/inspect_ports.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/reply_telegram.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/sync_workflow_m2.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.agents/scripts/telegram_notify.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/faust_config.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/MEMORY.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/current_projects/n8n.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/current_projects/novel_wiki_outline_plan.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/manager/authoritative_local_state_doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/manager/drive_is_slave_mirror_doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/manager/less_is_more_ui_doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/manager/live_data_interaction_golden_standard.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/manager/pk_network_outliner_sidebar_doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/manager/raye_visual_dossier.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/n8n-workflow-automation-engine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/pre-presentation-verification.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/rules-stored-in-claude-folder.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/memory/single-run-bat-launcher-pattern.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/plans/Phase2-Config-Reorganization.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/plans/greedy-brewing-feather.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/rules/anti-spaghetti-architecture.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/rules/backend-data-persistence.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/rules/communication-doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/rules/core-engineering-triad.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/rules/empirical-verification.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/rules/live-data-interaction-doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/rules/manager-memory-isolation.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/rules/pk-network-outliner-doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/rules/project-boundary-isolation.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/rules/single-run-bat-launcher-doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/rules/storage-d-drive.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/rules/ui-ux-design-doctrine.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/skills/sound/SKILL.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.claude/skills/sound/scripts/cli.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'BT/Mathlab/CT400/No01.svg', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'BT/Mathlab/CT400/No02.svg', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/ESP32_BACKEND_INTEGRATION_GUIDE.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/ESP32_UI_SPEC.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/PRESCRIPTS_PLAN.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/compile_projections.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/db (1).py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/db.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/dev_server.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/dev_server.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/esp32_19_display_mock.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/prescripts_entry.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/run_rose (1).bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/run_rose.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/schemas/quote_schema (1).json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/schemas/quote_schema.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/seed_quote (1).py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/seed_quote.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/server.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Entropy/Rose/turso_sync.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'GEMINI.md', LF will be replaced by CRLF the next time Git touches it
+warning: adding embedded git repository: GithubTempRepos/rose-beeper-gateway
+hint: You've added another git repository inside your current repository.
+hint: Clones of the outer repository will not contain the contents of
+hint: the embedded repository and will not know how to obtain it.
+hint: If you meant to add a submodule, use:
+hint:
+hint: 	git submodule add <url> GithubTempRepos/rose-beeper-gateway
+hint:
+hint: If you added this path by mistake, you can remove it from the
+hint: index with:
+hint:
+hint: 	git rm --cached GithubTempRepos/rose-beeper-gateway
+hint:
+hint: See "git help submodule" for more information.
+hint: Disable this message with "git config set advice.addEmbeddedRepo false"
+warning: in the working copy of 'Hardware_Rather_Empty/Entropy/.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Hardware_Rather_Empty/Entropy/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Hardware_Rather_Empty/Entropy/README_Error.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Hardware_Rather_Empty/Entropy/compile_commands.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Hardware_Rather_Empty/Entropy/include/Jq8900Player.h', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Hardware_Rather_Empty/Entropy/include/lgfx_config.h', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Hardware_Rather_Empty/Entropy/include/pins.h', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Hardware_Rather_Empty/Entropy/main_entropy.cpp.bak', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Hardware_Rather_Empty/Entropy/platformio.ini', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Hardware_Rather_Empty/Entropy/src/Jq8900Player.cpp', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Hardware_Rather_Empty/Entropy/src/vfont.h', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Hardware_Rather_Empty/Entropy/tools/make_fonts.py', LF will be replaced by CRLF the next time Git touches it
+warning: adding embedded git repository: Hardware_Rather_Empty/PlatForm
+warning: in the working copy of 'PK Network/.dev.vars', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/.env.example', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/check_schema.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/package-lock.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/push_to_prod.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/run_pk.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/ActionToast.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/AuthModal.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/ColumnEditorDrawer.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/DataGrid.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/GridCell.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/GridHeader.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/GridRow.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/GridToolbar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/Header.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/HexIdCell.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/JsonMatrixCell.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/JsonMatrixPopover.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/MobileCardView.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/MobileRecordDrawer.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/NewTableModal.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/NotionMultiSelect.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/OutlinerGroupNode.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/OutlinerTableNode.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/RelationColumnConfig.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/RelationMultiSelect.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/SaveStatusNotification.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/SchemaView.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/TableSettingsModal.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/TableTabs.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/TreeHeaderRow.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/VaultGate.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/WorkspaceOutliner.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/drive/DriveBirdEyeDashboard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/drive/DriveEntitySidebar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/drive/DriveReconcilerApp.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/drive/DriveReconcilerHeader.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/drive/DriveTrashManager.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/drive/EntityFolderCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/AtomicDeconstructorView.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/ConditionPlayground.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/FacetCodexApp.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/FacetCodexCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/FacetCodexHeader.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/FacetCodexInspectorModal.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/FacetLinkageSubToolbar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/FacetedHairApp.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/PlaygroundGroupsView.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/SynthesizedPromptDock.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/TursoSchemaView.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/authoring/ConditionAuthoringDeck.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/authoring/EntityEditorDrawers.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/authoring/authoringStyles.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/condition/ConditionListTable.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/condition/ConditionStudioView.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/condition/GroupListTable.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/condition/PromptListTable.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/mindmap/GroupConditionMindmap.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/facet/mindmap/PromptGroupMindmap.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/HairCodexApp.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/HairCodexCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/HairCodexHeader.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/HairCodexInspectorModal.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/HairCodexRelationshipTree.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/HairCodexSidebar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/HairCodexTraitDetails.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/dependency/HairDependencyGrid.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/graph/GraphCanvas.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/graph/GraphControls.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/graph/GraphNodeCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/graph/GraphPaletteDrawer.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/linkage/CreateTaglessNodeModal.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/linkage/DiscardedPoolDrawer.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/linkage/HairLinkageNodeCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/linkage/HairLinkageQuickConnect.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/linkage/HairLinkageRibbonCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/linkage/HairLinkageRibbonSlider.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/linkage/HairLinkageSubToolbar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/linkage/HairLinkageViewport.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hair/linkage/TaglessInspectorView.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hazard/HazardArena.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hazard/HazardDossierModal.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hazard/HazardHeader.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hazard/HazardScrubber.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hazard/HazardSlotPickerModal.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/hazard/HazardTriggerApp.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/ActiveEvaHeroCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/AppearanceTraitCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/AutomatedRestSlot.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/ColorPromptRecognizer.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/EvaDossierCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/EvaSelectorModal.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/HairBangsAhogeSection.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/HairChromaticsSection.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/HairFoundationSection.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/HairTabContent.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/HairTraitCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/ManualPromptCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/OcularTabContent.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/OcularTraitCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/PromptCompositeCard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/PromptHeader.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/PromptStudioApp.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/RealisticEyePair.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/RealisticHairSilhouette.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/components/prompt/WorldRouteSpine.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/hooks/useSaveTracker.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/main.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/api.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/branchDragDrop.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/branchOptions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/changeTracker.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/colorExtractor.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/columnOptions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/conditionEngine.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/conditionLiveApi.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/conditionStudioData.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/driveApi.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/facetLiveDataService.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/facetSubspaceService.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/formula.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/hairCodexService.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/hairDependencyService.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/hairGraphService.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/hairLinkageService.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/hairLiveService.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/hairMockData.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/hazardAdvance.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/hazardLiveApi.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/hazardMockData.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/hazardSvgRouting.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/headingSort.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/linkageLayout.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/mindmapLayout.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/notificationManager.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/ocularLiveService.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/ocularMockData.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/popoverPosition.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/promptHierarchy.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/promptLiveApi.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/relationFilter.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/tagColors.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/services/temptConditionLiveApi.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/styles/hairCodex.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/styles/hairDependency.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/styles/hairGraph.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/styles/hazard.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/styles/index.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/styles/prompt.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/types/conditionStudio.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/types/drive.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/types/facetOntology.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/types/hair.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/types/hairCodex.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/types/hairGraph.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/types/hazard.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/types/index.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/types/ocular.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/types/prompt.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/utils/id.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/src/utils/subdomain.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/start_silent.vbs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/stop_pk.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/tsconfig.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/vite.config.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/worker/conditionRoutes.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/worker/index.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/worker/temptConditionRoutes.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/worker/temptInfrastructure.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/worker/tournament.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/worker/tournamentRoutes.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/worker/turso.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'PK Network/wrangler.jsonc', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Run_Faust_Console.bat', LF will be replaced by CRLF the next time Git touches it
+warning: adding embedded git repository: Test Projects/Drive Folder Template
+warning: in the working copy of 'Test Projects/Google Collab/.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/FAUST_ACCESS_SETUP.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/backend/.env.example', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/backend/avatar_service.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/backend/config.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/backend/drive_downloader.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/backend/fetch_notebook.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/backend/ledger.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/backend/local_cropper.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/backend/main.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/backend/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/backend/update_remote_notebook.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/colab_worker.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/run.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/Google Collab/stop.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/VN-ese TTS/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/VN-ese TTS/bridge.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Test Projects/VN-ese TTS/ui.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ZZ - Shortcuts/OmniRoute.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ZZ - Shortcuts/Run_Faust_Console.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ZZ - Shortcuts/Start_Faust_Remote.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ZZ - Shortcuts/Status_Faust_Remote.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ZZ - Shortcuts/Stop_Drive_Architect.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ZZ - Shortcuts/Stop_Faust_Remote.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ZZ - Shortcuts/Stop_PK_Network.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/.firebase/hosting.ZGlzdA.cache', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/.firebase/hosting.ZGlzdF9hcHA.cache', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/.firebaserc', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/dist_app/assets/index-Bc2_XuQ2.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/dist_app/assets/index-DNGmT3eQ.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/dist_app/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/firebase.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/firestore.rules', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/package-lock.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/domain/alerts.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/domain/cap-rules.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/domain/constants.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/feeder-service.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/firebase.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/main.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/repository/firebase-app.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/repository/rtdb-repo.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/service/auth-service.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/service/config-service.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/service/decision-service.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/service/feeder-service.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/service/fleet-service.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/service/history-service.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/service/station-service.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/state.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/style.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui-renderer.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui/alerts-view.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui/auth-modal.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui/config-view.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui/decision-view.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui/fleet-view.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui/history-view.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui/navigation.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui/param-tile.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui/raw-inspector-view.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui/station-panel.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui/telemetry-view.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/src/ui/user-defaults-bar.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/firebase-task-board/vite.config.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'firebase-task-board/run_app.bat', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/dynscope/Scope.svg', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/dynscope/build_dynscope.m', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/dynscope/dynscope_sfun.m', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/dynscope/install_dynscope.m', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/dynscope/open_dynscope.m', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/dynscope/restyle_dynscope.m', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/dynscope/scope_config_dlg.m', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tools/dynscope/slblocks.m', LF will be replaced by CRLF the next time Git touches it

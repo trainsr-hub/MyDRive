@@ -1,0 +1,285 @@
+"""
+Entropy Rose: Consolidated Pure 2-Table SQLite Engine.
+Contains strictly two user-facing tables:
+  1. 'quotes' (10 clean fields)
+  2. 'speakers' (3 clean fields)
+Zero shadow tables, zero dead legacy columns, zero duplicate timestamps.
+"""
+
+import sqlite3
+import json
+import os
+from typing import Dict, Any, List, Optional
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB_PATH = os.path.join(BASE_DIR, "data", "rose_quotes.db")
+DEFAULT_JSONL_PATH = os.path.join(BASE_DIR, "data", "quotes.jsonl")
+
+
+def get_connection(db_path: str = DEFAULT_DB_PATH) -> sqlite3.Connection:
+    """Creates a connection configured with WAL and concurrency pragmas."""
+    os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
+    conn = sqlite3.connect(db_path, timeout=5.0)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA busy_timeout = 5000;")
+    conn.execute("PRAGMA foreign_keys = ON;")
+    return conn
+
+
+def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
+    """Initializes the pure 2-table schema."""
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        # Table 1: speakers (id, name, bio)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS speakers (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                bio TEXT
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_speakers_name ON speakers(name);")
+
+        # Table 2: quotes (10 clean fields)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS quotes (
+                id TEXT PRIMARY KEY,
+                idx INTEGER UNIQUE NOT NULL,
+                main_content TEXT NOT NULL,
+                context TEXT,
+                date TEXT NOT NULL,
+                speaker_ids TEXT,
+                preference TEXT,
+                backlinks TEXT,
+                tags TEXT,
+                sentiment TEXT
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_quotes_idx ON quotes(idx);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_quotes_date ON quotes(date);")
+
+    conn.close()
+
+
+# ==============================================================================
+# SPEAKER OPERATIONS
+# ==============================================================================
+
+def upsert_speaker(speaker: Dict[str, Any], db_path: str = DEFAULT_DB_PATH) -> None:
+    """Inserts or updates a speaker entity."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        name = speaker["name"].strip()
+        conn.execute("DELETE FROM speakers WHERE name = ? OR id = ?;", (name, speaker["id"]))
+        conn.execute("""
+            INSERT INTO speakers (id, name, bio)
+            VALUES (?, ?, ?);
+        """, (speaker["id"], name, speaker.get("bio", "")))
+    conn.close()
+
+
+def get_speaker(speaker_id: str, db_path: str = DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """O(1) lookup of a speaker by Hex ID."""
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT id, name, bio FROM speakers WHERE id = ?;", (speaker_id,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return {"id": row["id"], "name": row["name"], "bio": row["bio"] or ""}
+
+
+def get_all_speakers(db_path: str = DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    """Returns all speakers sorted by name."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT id, name, bio FROM speakers ORDER BY name ASC;")
+    rows = cur.fetchall()
+    conn.close()
+    return [{"id": r["id"], "name": r["name"], "bio": r["bio"] or ""} for r in rows]
+
+
+# ==============================================================================
+# QUOTE OPERATIONS
+# ==============================================================================
+
+def get_next_index(db_path: str = DEFAULT_DB_PATH) -> int:
+    """Calculates next human sequence number (max + 1)."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT COALESCE(MAX(idx), 0) + 1 AS next_idx FROM quotes;")
+    row = cur.fetchone()
+    conn.close()
+    return row["next_idx"] if row else 1
+
+
+def upsert_quote(quote: Dict[str, Any], db_path: str = DEFAULT_DB_PATH, compile_after: bool = True) -> None:
+    """Inserts or updates a quote document in SQLite."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        # Resolve speaker IDs
+        speaker_ids = []
+        raw_speakers = quote.get("source_speaker", quote.get("speaker_ids", []))
+        if isinstance(raw_speakers, list):
+            for spk in raw_speakers:
+                if isinstance(spk, str):
+                    cur = conn.execute("SELECT id FROM speakers WHERE id = ? OR name = ?;", (spk, spk))
+                    found = cur.fetchone()
+                    if found:
+                        speaker_ids.append(found["id"])
+                    else:
+                        from seed_quote import generate_hex_id, PREFIX_SPEAKER
+                        new_id = generate_hex_id(PREFIX_SPEAKER)
+                        conn.execute("INSERT OR IGNORE INTO speakers (id, name, bio) VALUES (?, ?, ?);", (new_id, spk, ""))
+                        speaker_ids.append(new_id)
+                elif isinstance(spk, dict):
+                    speaker_ids.append(spk.get("id"))
+
+        # Tags
+        raw_tags = quote.get("tags", [])
+        tags_json_str = json.dumps(raw_tags if isinstance(raw_tags, list) else [], ensure_ascii=False)
+
+        # Preference & Backlinks
+        preference = quote.get("preference", [])
+        preference_json_str = json.dumps(preference if isinstance(preference, list) else [], ensure_ascii=False)
+
+        backlinks = quote.get("backlink", quote.get("backlinks", []))
+        backlinks_json_str = json.dumps(backlinks if isinstance(backlinks, list) else [], ensure_ascii=False)
+
+        speaker_ids_json_str = json.dumps(speaker_ids, ensure_ascii=False)
+        sentiment_str = quote.get("sentiment", "")
+
+        idx = quote.get("index") or get_next_index(db_path)
+
+        # Clean up any stale record with same idx
+        conn.execute("DELETE FROM quotes WHERE idx = ? AND id != ?;", (idx, quote["id"]))
+
+        conn.execute("""
+            INSERT INTO quotes (
+                id, idx, main_content, context, date,
+                speaker_ids, preference, backlinks, tags, sentiment
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                idx = excluded.idx,
+                main_content = excluded.main_content,
+                context = excluded.context,
+                date = excluded.date,
+                speaker_ids = excluded.speaker_ids,
+                preference = excluded.preference,
+                backlinks = excluded.backlinks,
+                tags = excluded.tags,
+                sentiment = excluded.sentiment;
+        """, (
+            quote["id"],
+            idx,
+            quote["main_content"].strip(),
+            quote.get("context", "").strip(),
+            str(quote["date"]).strip(),
+            speaker_ids_json_str,
+            preference_json_str,
+            backlinks_json_str,
+            tags_json_str,
+            sentiment_str
+        ))
+
+    conn.close()
+
+    if compile_after:
+        try:
+            from compile_projections import compile_projections
+            compile_projections(db_path)
+        except Exception as e:
+            print(f"[WARN] Projection compilation error: {e}")
+
+
+def get_quote(quote_id: str, db_path: str = DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """O(1) lookup of a quote by Hex ID."""
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT * FROM quotes WHERE id = ?;", (quote_id,))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        return None
+
+    speaker_ids = json.loads(row["speaker_ids"]) if row["speaker_ids"] else []
+    preference = json.loads(row["preference"]) if row["preference"] else []
+    backlinks = json.loads(row["backlinks"]) if row["backlinks"] else []
+    tags = json.loads(row["tags"]) if row["tags"] else []
+
+    conn.close()
+    return {
+        "id": row["id"],
+        "index": row["idx"],
+        "main_content": row["main_content"],
+        "context": row["context"] or "",
+        "date": row["date"],
+        "speaker_ids": speaker_ids,
+        "preference": preference,
+        "backlinks": backlinks,
+        "tags": tags,
+        "sentiment": row["sentiment"] or ""
+    }
+
+
+def get_all_quotes(db_path: str = DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    """Returns all quotes ordered by index."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT * FROM quotes ORDER BY idx ASC;")
+    rows = cur.fetchall()
+    results = []
+    for row in rows:
+        results.append({
+            "id": row["id"],
+            "index": row["idx"],
+            "main_content": row["main_content"],
+            "context": row["context"] or "",
+            "date": row["date"],
+            "speaker_ids": json.loads(row["speaker_ids"]) if row["speaker_ids"] else [],
+            "preference": json.loads(row["preference"]) if row["preference"] else [],
+            "backlinks": json.loads(row["backlinks"]) if row["backlinks"] else [],
+            "tags": json.loads(row["tags"]) if row["tags"] else [],
+            "sentiment": row["sentiment"] or ""
+        })
+    conn.close()
+    return results
+
+
+def search_quotes(query: str, db_path: str = DEFAULT_DB_PATH, limit: int = 20) -> List[Dict[str, Any]]:
+    """Fast keyword search across content, context, and tags."""
+    init_db(db_path)
+    conn = get_connection(db_path)
+    like_q = f"%{query}%"
+    cur = conn.execute("""
+        SELECT *
+        FROM quotes
+        WHERE main_content LIKE ? OR context LIKE ? OR tags LIKE ?
+        ORDER BY idx ASC
+        LIMIT ?;
+    """, (like_q, like_q, like_q, limit))
+    rows = cur.fetchall()
+    results = []
+    for row in rows:
+        results.append({
+            "id": row["id"],
+            "index": row["idx"],
+            "main_content": row["main_content"],
+            "context": row["context"] or "",
+            "date": row["date"],
+            "speaker_ids": json.loads(row["speaker_ids"]) if row["speaker_ids"] else [],
+            "preference": json.loads(row["preference"]) if row["preference"] else [],
+            "backlinks": json.loads(row["backlinks"]) if row["backlinks"] else [],
+            "tags": json.loads(row["tags"]) if row["tags"] else [],
+            "sentiment": row["sentiment"] or ""
+        })
+    conn.close()
+    return results

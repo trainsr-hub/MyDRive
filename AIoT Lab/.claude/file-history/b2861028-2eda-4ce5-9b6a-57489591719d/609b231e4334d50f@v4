@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faust Vietnamese TTS Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+            font-size: 16px;
+        }
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        textarea:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result-section {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        .result-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .result-text {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 15px;
+            border: 1px solid #e0e0e0;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+            font-weight: 500;
+        }
+        .status.success { background: #d5f5e3; color: #27ae60; border: 1px solid #a9dfbf; }
+        .status.error { background: #fadbd8; color: #c0392b; border: 1px solid #e74c3c; }
+        .status.info { background: #d6eaf8; color: #2980b9; border: 1px solid #aed6f1; }
+        .status.warning { background: #fdeaa7; color: #d4ac0d; border: 1px solid #f9c74f; }
+        .examples {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .examples h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .example-btn {
+            display: inline-block;
+            margin: 6px 6px 6px 0;
+            padding: 8px 16px;
+            background: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .example-btn:hover {
+            background: #d5dbdb;
+            color: #2c3e50;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Faust Vietnamese TTS Test</h1>
+        <p>Test Faust's voice speaking Vietnamese without changing voice model or parameters.</p>
+
+        <div class="input-group">
+            <label for="vietnamese-input">Enter Vietnamese text:</label>
+            <textarea id="vietnamese-input" rows="4" placeholder="Xin chào Manager. Faust đã sẵn sàng phục vụ."></textarea>
+        </div>
+
+        <div class="input-group">
+            <button id="speak-btn">🔊 Speak Vietnamese</button>
+            <button id="clear-btn">🗑️ Clear</button>
+            <button id="daemon-status-btn">📡 Check Daemon</button>
+        </div>
+
+        <div class="result-section">
+            <div class="result-title">
+                <span>🔤 IPA Conversion:</span>
+                <span id="copy-ipa" style="margin-left: auto; cursor: pointer; color: #3498db; font-size: 14px;">[Copy]</span>
+            </div>
+            <div class="result-text" id="ipa-output">Waiting for input...</div>
+        </div>
+
+        <div id="status" class="status info">Ready to convert Vietnamese to IPA and speak via Faust's TTS daemon</div>
+
+        <div class="examples">
+            <h3>Example Phrases:</h3>
+            <div>
+                <button class="example-btn" onclick="setExample('Xin chào Manager')">Xin chào Manager</button>
+                <button class="example-btn" onclick="setExample('Faust đã sẵn sàng')">Faust đã sẵn sàng</button>
+                <button class="example-btn" onclick="setExample('Tôi là một trợ lý AI')">Tôi là một trợ lý AI</button>
+                <button class="example-btn" onclick="setExample('Cảm ơn bạn rất nhiều')">Cảm ơn bạn rất nhiều</button>
+                <button class="example-btn" onclick="setExample('Chào buổi sáng, bạn có khỏe không?')">Chào buổi sáng, bạn có khỏe không?</button>
+                <button class="example-btn" onclick="setExample('Tạm biệt và hẹn gặp lại')">Tạm biệt và hẹn gặp lại</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Faust's voice remains unchanged: uses existing TTS model (af_bella, speed 0.84, pitch -0.3)</p>
+            <p>🔊 Spoken audio is automatically mirrored to Manager's Telegram</p>
+        </div>
+    </div>
+
+    <script>
+        // Vietnamese G2P mapping tables (ported from python module)
+        const TONE_MAP = {
+            // Huyền (2)
+            'à': ['a', 2], 'ằ': ['ă', 2], 'ầ': ['â', 2], 'è': ['e', 2], 'ề': ['ê', 2],
+            'ì': ['i', 2], 'ò': ['o', 2], 'ồ': ['ô', 2], 'ờ': ['ơ', 2], 'ù': ['u', 2],
+            'ừ': ['ư', 2], 'ỳ': ['y', 2],
+            // Sắc (3)
+            'á': ['a', 3], 'ắ': ['ă', 3], 'ấ': ['â', 3], 'é': ['e', 3], 'ế': ['ê', 3],
+            'í': ['i', 3], 'ó': ['o', 3], 'ố': ['ô', 3], 'ớ': ['ơ', 3], 'ú': ['u', 3],
+            'ứ': ['ư', 3], 'ý': ['y', 3],
+            // Hỏi (4)
+            'ả': ['a', 4], 'ẳ': ['ă', 4], 'ẩ': ['â', 4], 'ẻ': ['e', 4], 'ể': ['ê', 4],
+            'ỉ': ['i', 4], 'ỏ': ['o', 4], 'ổ': ['ô', 4], 'ở': ['ơ', 4], 'ủ': ['u', 4],
+            'ử': ['ư', 4], 'ỷ': ['y', 4],
+            // Ngã (5)
+            'ã': ['a', 5], 'ẵ': ['ă', 5], 'ẫ': ['â', 5], 'ẽ': ['e', 5], 'ễ': ['ê', 5],
+            'ĩ': ['i', 5], 'õ': ['o', 5], 'ỗ': ['ô', 5], 'ỡ': ['ơ', 5], 'ũ': ['u', 5],
+            'ữ': ['ư', 5], 'ỹ': ['y', 5],
+            // Nặng (6)
+            'ạ': ['a', 6], 'ặ': ['ă', 6], 'ậ': ['â', 6], 'ẹ': ['e', 6], 'ệ': ['ê', 6],
+            'ị': ['i', 6], 'ọ': ['o', 6], 'ộ': ['ô', 6], 'ợ': ['ơ', 6], 'ụ': ['u', 6],
+            'ự': ['ư', 6], 'ỵ': ['y', 6]
+        };
+
+        const INITIALS = [
+            ['ngh', 'ŋ'], ['ng', 'ŋ'], ['nh', 'ɲ'], ['ch', 'tʃ'], ['tr', 'tʃ'],
+            ['th', 'tʰ'], ['ph', 'f'], ['kh', 'x'], ['gh', 'ɣ'], ['g', 'ɣ'],
+            ['gi', 'z'], ['qu', 'kw'], ['d', 'z'], ['đ', 'd'], ['b', 'b'],
+            ['c', 'k'], ['k', 'k'], ['h', 'h'], ['l', 'l'], ['m', 'm'],
+            ['n', 'n'], ['p', 'p'], ['r', 'z'], ['s', 's'], ['t', 't'],
+            ['v', 'v'], ['x', 's']
+        ];
+
+        const RIMES = [
+            // Triphthongs / Onset Glides + Diphthongs
+            ['oanh', 'waɲ'], ['oach', 'watʃ'],
+            ['oang', 'waːŋ'], ['oanc', 'waːk'], ['oan', 'waːn'], ['oat', 'waːt'],
+            ['oam', 'waːm'], ['oap', 'waːp'], ['oai', 'waːj'], ['oay', 'waj'], ['oao', 'waːw'],
+            ['oăng', 'waŋ'], ['oăc', 'wak'], ['oăn', 'wan'], ['oăt', 'wat'], ['oăm', 'wam'], ['oăp', 'wap'],
+            ['oeo', 'wɛw'], ['oen', 'wɛn'], ['oet', 'wɛt'], ['oem', 'wɛm'], ['oep', 'wɛp'], ['oe', 'wɛ'],
+
+            ['uynh', 'wiɲ'], ['uych', 'wik'],
+            ['uyên', 'wiən'], ['uyêt', 'wiət'], ['uyt', 'wit'], ['uyn', 'win'], ['uyp', 'wip'],
+            ['uya', 'wiə'], ['uyê', 'wiə'], ['uyu', 'wju'], ['uy', 'wi'],
+
+            ['uâng', 'wəŋ'], ['uâc', 'wək'], ['uân', 'wən'], ['uât', 'wət'], ['uâm', 'wəm'], ['uâp', 'wəp'], ['uây', 'wəj'],
+            ['uên', 'wen'], ['uêt', 'wet'], ['uêm', 'wem'], ['uêp', 'wep'], ['uêu', 'wew'], ['uê', 'we'],
+            ['uai', 'waːj'], ['uay', 'waj'],
+
+            // Diphthongs with codas
+            ['iêng', 'iəŋ'], ['yêng', 'iəŋ'], ['iên', 'iən'], ['yên', 'iən'],
+            ['iêt', 'iət'], ['yêt', 'iət'], ['iêc', 'iək'], ['yêc', 'iək'],
+            ['iêm', 'iəm'], ['yêm', 'iəm'], ['iêp', 'iəp'], ['yêp', 'iəp'],
+            ['iêu', 'iəw'], ['yêu', 'iəw'], ['ia', 'iə'], ['ya', 'iə'],
+            ['iê', 'je'], ['yê', 'je'],
+
+            ['ương', 'ɯəŋ'], ['ươn', 'ɯən'], ['ươt', 'ɯət'], ['ươc', 'ɯək'],
+            ['ươm', 'ɯəm'], ['ươp', 'ɯəp'], ['ươi', 'ɯəj'], ['ươu', 'ɯəw'], ['ưa', 'ɯə'], ['ươ', 'ɯə'],
+
+            ['uông', 'uəŋ'], ['uôn', 'uən'], ['uôt', 'uət'], ['uôc', 'uək'],
+            ['uôm', 'uəm'], ['uôp', 'uəp'], ['uôi', 'uəj'], ['ua', 'uə'], ['uô', 'uə'],
+
+            // Vowel + Glides
+            ['ai', 'aːj'], ['ay', 'aj'], ['ao', 'aːw'], ['au', 'aw'],
+            ['âu', 'ow'], ['ây', 'ej'], ['eo', 'ɛw'], ['êu', 'ew'],
+            ['oi', 'ɔj'], ['ôi', 'oj'], ['ơi', 'ɤj'], ['ui', 'uj'],
+            ['ưi', 'ɯj'], ['ưu', 'ɯw'], ['iu', 'iw'],
+
+            // Simple Vowels + Codas
+            ['ang', 'aːŋ'], ['ăng', 'aŋ'], ['âng', 'əŋ'],
+            ['an', 'aːn'], ['ăn', 'an'], ['ân', 'ən'],
+            ['am', 'aːm'], ['ăm', 'am'], ['âm', 'əm'],
+            ['ap', 'aːp'], ['ăp', 'ap'], ['âp', 'əp'],
+            ['at', 'aːt'], ['ăt', 'at'], ['ât', 'ət'],
+            ['ac', 'aːk'], ['ăc', 'ak'], ['âc', 'ək'],
+            ['anh', 'aɲ'], ['ach', 'atʃ'],
+
+            ['inh', 'iɲ'], ['ich', 'ik'], ['in', 'in'], ['it', 'it'], ['im', 'im'], ['ip', 'ip'],
+
+            ['ênh', 'eɲ'], ['êch', 'ek'], ['ên', 'en'], ['êt', 'et'], ['êm', 'em'], ['êp', 'ep'],
+
+            ['eng', 'ɛŋ'], ['en', 'ɛn'], ['em', 'ɛm'], ['et', 'ɛt'], ['ep', 'ɛp'], ['ec', 'ɛk'],
+
+            ['ong', 'ɔŋ'], ['ông', 'oŋ'], ['ung', 'uŋ'], ['ưng', 'ɯŋ'],
+            ['oc', 'ɔk'], ['ôc', 'ok'], ['uc', 'uk'], ['ưc', 'ɯk'],
+            ['om', 'ɔm'], ['ôm', 'om'], ['ơm', 'ɤm'], ['um', 'um'], ['ưm', 'ɯm'],
+            ['on', 'ɔn'], ['ôn', 'on'], ['ơn', 'ɤn'], ['un', 'un'], ['ưn', 'ɯn'],
+            ['op', 'ɔp'], ['ôp', 'op'], ['ơp', 'ɤp'], ['up', 'up'], ['ưp', 'ɯp'],
+            ['ot', 'ɔt'], ['ôt', 'ot'], ['ơt', 'ɤt'], ['ut', 'ut'], ['ưt', 'ɯt'],
+
+            // Single Vowels
+            ['a', 'aː'], ['ă', 'a'], ['â', 'ə'], ['e', 'ɛ'], ['ê', 'e'],
+            ['i', 'i'], ['y', 'i'], ['o', 'ɔ'], ['ô', 'o'], ['ơ', 'ɤ'],
+            ['u', 'u'], ['ư', 'ɯ']
+        ];
+
+        const TONE_SYMBOLS = {
+            1: '',     // Ngang
+            2: '↓',    // Huyền
+            3: '↗',    // Sắc
+            4: '↘↗',   // Hỏi
+            5: 'ʔ↗',   // Ngã
+            6: '↓'     // Nặng
+        };
+
+        const SPECIAL_WORDS = {
+            'faust': 'fˈaʊst',
+            'manager': 'mˈænədʒɚ',
+            'tts': 'tiː-tiː-ˈɛs',
+            'claude': 'klˈɔːd',
+            'c2': 'siː-tˈuː',
+            'ai': 'eɪ-ˈaɪ',
+            'api': 'eɪ-piː-ˈaɪ',
+            'ui': 'juː-ˈaɪ'
+        };
+
+        function extractToneAndBase(word) {
+            const w = word.toLowerCase().normalize('NFC');
+            let tone = 1;
+            const cleanChars = [];
+            for (const ch of w) {
+                if (TONE_MAP[ch]) {
+                    const [base, t] = TONE_MAP[ch];
+                    cleanChars.push(base);
+                    tone = t;
+                } else {
+                    cleanChars.push(ch);
+                }
+            }
+            return [cleanChars.join(''), tone];
+        }
+
+        function parseVietnameseSyllable(cleanW, tone) {
+            // Special handling for 'gi'
+            if (cleanW === 'gi') {
+                return 'zi' + (TONE_SYMBOLS[tone] || '');
+            }
+            let initIPa = '';
+            let rest = cleanW;
+            if (cleanW.startsWith('gi') && cleanW.length > 2) {
+                initIPa = 'z';
+                rest = cleanW.substring(1);
+                if (rest.startsWith('i') && rest.length > 1) {
+                    rest = rest.substring(1);
+                }
+            } else {
+                for (const [initSpell, ipa] of INITIALS) {
+                    if (cleanW.startsWith(initSpell)) {
+                        initIPa = ipa;
+                        rest = cleanW.substring(initSpell.length);
+                        break;
+                    }
+                }
+            }
+
+            let rimeIPa = null;
+            for (const [rimeSpell, ipa] of RIMES) {
+                if (rest === rimeSpell) {
+                    rimeIPa = ipa;
+                    break;
+                }
+            }
+
+            if (rimeIPa !== null) {
+                return initIPa + rimeIPa + (TONE_SYMBOLS[tone] || '');
+            }
+            return null;
+        }
+
+        function viWordToIPA(word) {
+            const cleanW = word.replace(/[^\p{L}\p{N}\s]/gu, '').toLowerCase();
+            if (!cleanW) return word;
+            if (SPECIAL_WORDS[cleanW]) return SPECIAL_WORDS[cleanW];
+
+            const [base, tone] = extractToneAndBase(cleanW);
+            const ipa = parseVietnameseSyllable(base, tone);
+            if (ipa !== null) return ipa;
+            return word; // fallback
+        }
+
+        function containsVietnamese(text) {
+            const t = text.toLowerCase().normalize('NFC');
+            // Check for tone marks
+            for (const ch in TONE_MAP) {
+                if (t.includes(ch)) return true;
+            }
+            // Check for characteristic vowels
+            const vietnameseChars = 'ăâđêôơư';
+            for (const ch of vietnameseChars) {
+                if (t.includes(ch)) return true;
+            }
+            return false;
+        }
+
+        function viTextToIPA(text) {
+            // Split preserving whitespace and punctuation
+            const tokens = text.split(/(\s+|[.,!?;:()"]+)/);
+            let result = '';
+            for (const tok of tokens) {
+                if (!tok) continue;
+                if (/^\s+$/.test(tok) || /^[.,!?;:()"]+$/.test(tok)) {
+                    result += tok;
+                } else {
+                    const clean = tok.replace(/[^\p{L}\p{N}]/gu, '').toLowerCase();
+                    if (SPECIAL_WORDS[clean]) {
+                        result += SPECIAL_WORDS[clean];
+                    } else {
+                        const [base, tone] = extractToneAndBase(clean);
+                        const ipa = parseVietnameseSyllable(base, tone);
+                        if (ipa !== null) {
+                            result += ipa;
+                        } else {
+                            result += tok; // fallback to original
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        // DOM Elements
+        const vietnameseInput = document.getElementById('vietnamese-input');
+        const speakBtn = document.getElementById('speak-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const daemonStatusBtn = document.getElementById('daemon-status-btn');
+        const ipaOutput = document.getElementById('ipa-output');
+        const statusEl = document.getElementById('status');
+        const copyIPA = document.getElementById('copy-ipa');
+
+        function setStatus(message, type = 'info') {
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        function speakVietnamese() {
+            const text = vietnameseInput.value.trim();
+            if (!text) {
+                setStatus('Please enter some Vietnamese text', 'warning');
+                return;
+            }
+
+            setStatus('Converting Vietnamese to IPA...', 'info');
+            speakBtn.disabled = true;
+            speakBtn.textContent = 'Processing...';
+
+            // Detect and convert
+            const hasVietnamese = containsVietnamese(text);
+            const ipaText = hasVietnamese ? viTextToIPA(text) : text;
+
+            ipaOutput.textContent = ipaText;
+
+            if (hasVietnamese) {
+                setStatus('Vietnamese detected! Sending to Faust Acoustic Core on Port 20129...', 'info');
+            } else {
+                setStatus('Sending text to Faust Acoustic Core on Port 20129...', 'info');
+            }
+
+            // Send raw text to Faust TTS daemon (which has internal G2P with is_phonemes=True)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+            fetch('http://127.0.0.1:20129/speak', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: text,
+                    block: true
+                }),
+                signal: controller.signal
+            })
+            .then(response => {
+                clearTimeout(timeoutId);
+                if (!response.ok) {
+                    throw new Error(`Daemon responded with status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                setStatus('✅ Faust spoke successfully via resident audio daemon!', 'success');
+                speakBtn.textContent = '🔊 Speak Vietnamese';
+                speakBtn.disabled = false;
+            })
+            .catch(error => {
+                clearTimeout(timeoutId);
+                console.error('TTS Error:', error);
+                const isTimeout = error.name === 'AbortError';
+                const msg = isTimeout ? 'Request timed out after 60s' : error.message;
+                setStatus(`❌ Daemon Error: ${msg}\n\nMake sure daemon is running on port 20129.`, 'error');
+                speakBtn.textContent = '🔊 Speak Vietnamese';
+                speakBtn.disabled = false;
+            });
+        }
+
+        function clearAll() {
+            vietnameseInput.value = '';
+            ipaOutput.textContent = 'Waiting for input...';
+            setStatus('Ready to convert Vietnamese to IPA and speak via Faust\'s TTS daemon', 'info');
+        }
+
+        function checkDaemonStatus() {
+            setStatus('Checking Faust TTS daemon status...', 'info');
+            daemonStatusBtn.disabled = true;
+            daemonStatusBtn.textContent = 'Checking...';
+
+            const ctrl = new AbortController();
+            const tid = setTimeout(() => ctrl.abort(), 4000);
+
+            fetch('http://127.0.0.1:20129/health', { signal: ctrl.signal })
+                .then(response => {
+                    clearTimeout(tid);
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Daemon returned ' + response.status);
+                })
+                .then(data => {
+                    setStatus('✅ Faust TTS daemon is ONLINE and ready', 'success');
+                })
+                .catch(error => {
+                    setStatus(`❌ Faust TTS daemon appears OFFLINE\n\nStart it with:\npython .claude/skills/sound/scripts/cli.py --status`, 'error');
+                })
+                .finally(() => {
+                    daemonStatusBtn.disabled = false;
+                    daemonStatusBtn.textContent = '📡 Check Daemon';
+                });
+        }
+
+        function setExample(text) {
+            vietnameseInput.value = text;
+        }
+
+        // Copy IPA to clipboard
+        copyIPA.addEventListener('click', () => {
+            const ipaText = ipaOutput.textContent;
+            if (ipaText && ipaText !== 'Waiting for input...') {
+                navigator.clipboard.writeText(ipaText).then(() => {
+                    const originalText = copyIPA.textContent;
+                    copyIPA.textContent = '[Copied!]';
+                    setTimeout(() => {
+                        copyIPA.textContent = originalText;
+                    }, 1500);
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                });
+            }
+        });
+
+        // Event listeners
+        speakBtn.addEventListener('click', speakVietnamese);
+        clearBtn.addEventListener('click', clearAll);
+        daemonStatusBtn.addEventListener('click', checkDaemonStatus);
+
+        // Allow Enter key to trigger speech (Ctrl+Enter to avoid form submission issues)
+        vietnameseInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+                e.preventDefault();
+                speakVietnamese();
+            }
+        });
+
+        // Initial status
+        setStatus('Ready to convert Vietnamese to IPA and speak via Faust\'s TTS daemon', 'info');
+    </script>
+</body>
+</html>

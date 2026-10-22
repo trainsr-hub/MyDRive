@@ -1,0 +1,165 @@
+"""
+Rebased Worlds/Series Database: SQLite Relational Engine
+Rose 3-Tier Core Architecture.
+
+Hex ID Standards:
+  - 1006: Worlds/Series
+"""
+
+import sqlite3
+import json
+import os
+import time
+from typing import Dict, Any, List, Optional
+import tournament_db as tdb
+
+PREFIX_WORLD = "1006"
+
+
+def init_world_schema(db_path: str = tdb.DEFAULT_DB_PATH) -> None:
+    """Initializes the worlds/series table."""
+    conn = tdb.get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        # Table: worlds (1006...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS worlds (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                franchise TEXT,
+                universe TEXT,
+                media_type TEXT,
+                description TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_worlds_name ON worlds(name);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_worlds_franchise ON worlds(franchise);")
+
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+
+
+def generate_world_hex_id(prefix: str = PREFIX_WORLD) -> str:
+    """Generate 16-character hex ID: <4-char prefix><12-char monotonic unix ms>"""
+    return tdb.generate_tournament_hex_id(prefix)
+
+
+def upsert_world(world: Dict[str, Any], db_path: str = tdb.DEFAULT_DB_PATH) -> Dict[str, Any]:
+    """Upsert a world/series into the database."""
+    init_world_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    world_code = world.get("id") or world.get("name", "").upper().replace(" ", "_")
+
+    # Check if exists
+    cur = conn.execute("SELECT id FROM worlds WHERE name = ?;", (world["name"].strip(),))
+    row = cur.fetchone()
+    world_id = row["id"] if row else tdb.generate_tournament_hex_id(PREFIX_WORLD)
+    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        conn.execute("""
+            INSERT INTO worlds (id, name, franchise, universe, media_type, description, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(name) DO UPDATE SET
+                franchise = excluded.franchise,
+                universe = excluded.universe,
+                media_type = excluded.media_type,
+                description = excluded.description,
+                updated_at = excluded.updated_at;
+        """, (
+            world_id,
+            world["name"].strip(),
+            world.get("franchise", ""),
+            world.get("universe", ""),
+            world.get("media_type", ""),
+            world.get("description", ""),
+            now_str,
+            now_str
+        ))
+
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return get_world_by_id(world_id)
+
+
+def get_world_by_id(world_id: str, db_path: str = tdb.DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """Get a world by its ID."""
+    conn = tdb.get_connection(db_path)
+    cur = conn.execute("SELECT * FROM worlds WHERE id = ?;", (world_id,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return dict(row)
+
+
+def get_world_by_name(name: str, db_path: str = tdb.DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """Get a world by its name."""
+    conn = tdb.get_connection(db_path)
+    cur = conn.execute("SELECT * FROM worlds WHERE name = ?;", (name.strip(),))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return dict(row)
+
+
+def get_all_worlds(db_path: str = tdb.DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    """List all worlds."""
+    conn = tdb.get_connection(db_path)
+    cur = conn.execute("SELECT * FROM worlds ORDER BY name ASC;")
+    rows = cur.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def delete_world(world_id: str, db_path: str = tdb.DEFAULT_DB_PATH) -> bool:
+    """Delete a world."""
+    conn = tdb.get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        conn.execute("DELETE FROM worlds WHERE id = ?;", (world_id,))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return True
+
+
+def seed_worlds_from_characters(db_path: str = tdb.DEFAULT_DB_PATH) -> int:
+    """Extract unique series from characters table and create worlds entries."""
+    init_world_schema(db_path)
+    conn = tdb.get_connection(db_path)
+
+    # Get unique series from characters
+    cur = conn.execute("SELECT DISTINCT series FROM characters WHERE series IS NOT NULL AND series != '';")
+    series_list = [row["series"] for row in cur.fetchall()]
+    conn.close()
+
+    created = 0
+    for series_name in series_list:
+        if not series_name.strip():
+            continue
+        world = get_world_by_name(series_name)
+        if not world:
+            upsert_world({
+                "name": series_name.strip(),
+                "franchise": series_name.strip(),
+                "universe": "",
+                "media_type": "",
+                "description": f"Auto-seeded from character series: {series_name}"
+            })
+            created += 1
+
+    return created
+
+
+if __name__ == "__main__":
+    print("Seeding worlds from characters...")
+    count = seed_worlds_from_characters()
+    print(f"Created {count} new worlds.")
+    worlds = get_all_worlds()
+    for w in worlds:
+        print(f"  {w['name']} ({w['id']})")

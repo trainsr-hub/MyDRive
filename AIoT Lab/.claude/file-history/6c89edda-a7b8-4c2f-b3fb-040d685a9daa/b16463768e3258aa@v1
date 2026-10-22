@@ -1,0 +1,242 @@
+import React from 'react';
+import { PlanSummary } from '../types';
+import { FolderPlus, FileEdit, Trash2, AlertTriangle, CheckCircle, Clock, Layers } from 'lucide-react';
+
+interface MetricsBarProps {
+  summary: PlanSummary;
+  durationMs: number;
+}
+
+export const MetricsBar: React.FC<MetricsBarProps> = ({ summary, durationMs }) => {
+  return (
+    <section
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: '0.85rem',
+      }}
+    >
+      {/* 1. Entities Total */}
+      <div
+        className="card"
+        style={{
+          padding: '0.85rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+        }}
+      >
+        <div
+          style={{
+            padding: '0.45rem',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--info-bg)',
+            color: 'var(--info)',
+            border: '1px solid var(--info-border)',
+          }}
+        >
+          <Layers size={18} />
+        </div>
+        <div>
+          <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+            Analysis Scope
+          </div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {summary.total_groups} Groups • {summary.total_entities} Entities
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Need Creation */}
+      <div
+        className="card"
+        style={{
+          padding: '0.85rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          borderColor: summary.create_count > 0 ? 'var(--success-border)' : 'var(--border-light)',
+        }}
+      >
+        <div
+          style={{
+            padding: '0.45rem',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--success-bg)',
+            color: 'var(--success)',
+            border: '1px solid var(--success-border)',
+          }}
+        >
+          <FolderPlus size={18} />
+        </div>
+        <div>
+          <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+            To Provision
+          </div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--success)' }}>
+            +{summary.create_count} folders
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Description Update */}
+      <div
+        className="card"
+        style={{
+          padding: '0.85rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          borderColor: summary.update_desc_count > 0 ? 'var(--warning-border)' : 'var(--border-light)',
+        }}
+      >
+        <div
+          style={{
+            padding: '0.45rem',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--warning-bg)',
+            color: 'var(--warning)',
+            border: '1px solid var(--warning-border)',
+          }}
+        >
+          <FileEdit size={18} />
+        </div>
+        <div>
+          <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+            Desc Updates
+          </div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--warning)' }}>
+            ~{summary.update_desc_count} descriptions
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Prune Empty Extraneous */}
+      <div
+        className="card"
+        style={{
+          padding: '0.85rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+        }}
+      >
+        <div
+          style={{
+            padding: '0.45rem',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--muted-bg)',
+            color: 'var(--muted)',
+            border: '1px solid var(--muted-border)',
+          }}
+        >
+          <Trash2 size={18} />
+        </div>
+        <div>
+          <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+            Empty to Prune
+          </div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--muted)' }}>
+            🗑️ {summary.prune_empty_count} trash
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Populated Anomaly (RED ALERT) */}
+      <div
+        className="card"
+        style={{
+          padding: '0.85rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          borderColor: summary.flagged_red_count > 0 ? 'var(--danger)' : 'var(--border-light)',
+          background: summary.flagged_red_count > 0 ? 'var(--danger-bg)' : 'var(--bg-card)',
+          boxShadow: summary.flagged_red_count > 0 ? '0 0 16px var(--danger-glow)' : 'var(--shadow-sm)',
+        }}
+      >
+        <div
+          style={{
+            padding: '0.45rem',
+            borderRadius: 'var(--radius-sm)',
+            background: 'rgba(244, 63, 94, 0.2)',
+            color: 'var(--danger)',
+            border: '1px solid var(--danger-border)',
+          }}
+        >
+          <AlertTriangle size={18} />
+        </div>
+        <div>
+          <div style={{ fontSize: '11px', color: 'var(--danger)', textTransform: 'uppercase', fontWeight: 700 }}>
+            Anomalies (Preserved)
+          </div>
+          <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--danger)' }}>
+            🚨 {summary.flagged_red_count} populated
+          </div>
+        </div>
+      </div>
+
+      {/* 6. Compliant */}
+      <div
+        className="card"
+        style={{
+          padding: '0.85rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+        }}
+      >
+        <div
+          style={{
+            padding: '0.45rem',
+            borderRadius: 'var(--radius-sm)',
+            background: 'rgba(20, 184, 166, 0.12)',
+            color: '#14b8a6',
+            border: '1px solid rgba(20, 184, 166, 0.35)',
+          }}
+        >
+          <CheckCircle size={18} />
+        </div>
+        <div>
+          <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+            Archetype Match
+          </div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: '#14b8a6' }}>
+            ✓ {summary.compliant_count} items
+          </div>
+        </div>
+      </div>
+
+      {/* 7. Scan Latency */}
+      <div
+        className="card"
+        style={{
+          padding: '0.85rem 1rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+        }}
+      >
+        <div
+          style={{
+            padding: '0.45rem',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--accent-bg)',
+            color: 'var(--accent)',
+            border: '1px solid var(--accent)',
+          }}
+        >
+          <Clock size={18} />
+        </div>
+        <div>
+          <div style={{ fontSize: '11px', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+            Latency
+          </div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--accent)' }}>
+            {durationMs} ms
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};

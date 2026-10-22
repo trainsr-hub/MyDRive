@@ -1,0 +1,144 @@
+// path: src/apps/heraclitus/components/ChronoGachaRollPanel.tsx
+// Tier 4 Presentation Component: Submersed Chrono Gacha with Variants & Arc Jurassic Golden Standard
+
+import React, { useState } from 'react'
+import { Sparkles, Ticket, ChevronDown } from 'lucide-react'
+import { useInventoryStore } from '../../../store/useInventoryStore'
+import { rollChronoDuration } from '../core/chronoGachaEngine'
+import type { GachaRollResult } from '../core/chronoGachaEngine'
+import type { ChronoEngineModule } from './YellowPoolTab'
+
+interface ChronoGachaRollPanelProps {
+  isDepositing: boolean
+  activeEngineId: string
+  engines: ChronoEngineModule[]
+  onSelectEngine: (engineId: string) => void
+  onRoll: (result: GachaRollResult, wagerMultiplier: number) => void
+}
+
+const WAGER_OPTIONS = [1, 2, 4, 8, 16]
+
+export const ChronoGachaRollPanel: React.FC<ChronoGachaRollPanelProps> = ({
+  isDepositing,
+  activeEngineId,
+  engines,
+  onSelectEngine,
+  onRoll,
+}) => {
+  const chronoTickets = useInventoryStore((s) => s.chronoTickets ?? 15)
+  const addChronoTickets = useInventoryStore((s) => s.addChronoTickets)
+  const spendChronoTickets = useInventoryStore((s) => s.spendChronoTickets)
+
+  const [wager, setWager] = useState<number>(1)
+
+  const handleRoll = () => {
+    if (isDepositing) return
+
+    if (chronoTickets < wager) {
+      addChronoTickets(10)
+    }
+
+    const success = spendChronoTickets(wager)
+    if (!success) {
+      addChronoTickets(10)
+      spendChronoTickets(wager)
+    }
+
+    const baseResult = rollChronoDuration()
+    const multipliedSeconds = baseResult.seconds * wager
+    const finalResult: GachaRollResult = {
+      ...baseResult,
+      seconds: multipliedSeconds,
+    }
+
+    onRoll(finalResult, wager)
+  }
+
+  const handleTicketClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    addChronoTickets(10)
+  }
+
+  return (
+    <div className="chrono-gacha-container">
+      {/* ── 1. SUBMERSED VARIANT ENGINE PILLS ──────────────────────────── */}
+      <div className="flex items-center justify-center gap-1 p-1 rounded-full bg-[#120a1f]/60 border border-white/10 backdrop-blur-md shadow-lg">
+        {engines.map((eng) => {
+          const isSelected = activeEngineId === eng.id
+          return (
+            <button
+              key={eng.id}
+              type="button"
+              disabled={isDepositing}
+              onClick={() => onSelectEngine(eng.id)}
+              className={`px-3 py-1 rounded-full text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                isSelected
+                  ? 'bg-white/15 text-white'
+                  : 'text-[#8a7b9d] hover:text-[#cbd5e1] hover:bg-white/5'
+              }`}
+              style={{
+                color: isSelected ? eng.themeColor : undefined,
+                boxShadow: isSelected ? `0 0 12px ${eng.themeColor}40` : undefined,
+              }}
+            >
+              <span>{eng.icon}</span>
+              <span>{eng.name}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* ── 2. PRIMARY SUMMON BUTTON (Golden Standard from Arc Jurassic) ── */}
+      <button
+        type="button"
+        onClick={handleRoll}
+        disabled={isDepositing}
+        className={`chrono-summon-button ${
+          isDepositing ? 'is-spooling' : wager > 1 ? 'is-high-wager' : ''
+        }`}
+      >
+        <span className="flex items-center justify-center gap-2">
+          <Sparkles className="w-5 h-5 text-[#ffd86b] animate-pulse" />
+          <span>
+            {isDepositing
+              ? 'Spooling Chrono Kinetic Stream...'
+              : wager > 1
+              ? `Summon ${wager}x Chrono Duration (Gacha)`
+              : 'Summon Chrono Duration (Gacha)'}
+          </span>
+        </span>
+      </button>
+
+      {/* ── 3. PRE-ROLL WAGER BAR (Golden Standard from Arc Jurassic) ──── */}
+      <div className="chrono-wager-bar">
+        <span className="chrono-wager-label">ROLL WAGER:</span>
+        <div className="chrono-wager-select-wrapper">
+          <select
+            value={wager}
+            onChange={(e) => setWager(Number(e.target.value))}
+            className="chrono-wager-select"
+            disabled={isDepositing}
+          >
+            {WAGER_OPTIONS.map((opt) => (
+              <option key={opt} value={opt} className="bg-[#120f18] text-[#ffd86b]">
+                {opt}x Ticket Wager ({opt} 🎟️)
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="chrono-select-chevron" />
+        </div>
+
+        {/* Ticket Counter Badge — click gives +10 tickets */}
+        <button
+          type="button"
+          onClick={handleTicketClick}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#120a1f] border border-[#d4af37]/40 hover:border-[#ffd86b] text-xs font-mono font-bold text-[#ffd86b] transition cursor-pointer active:scale-95"
+          title="Click to claim +10 Free Tickets"
+        >
+          <Ticket className="w-3.5 h-3.5 text-[#f472b6]" />
+          <span>{chronoTickets} Left</span>
+        </button>
+      </div>
+    </div>
+  )
+}

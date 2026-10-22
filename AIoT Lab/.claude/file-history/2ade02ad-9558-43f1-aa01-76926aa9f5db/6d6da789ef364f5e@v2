@@ -1,0 +1,187 @@
+"""
+Rebased Tournament Database: Relational SQLite Engine for Bracket Topologies.
+Rose 5-Tier Architectural Pattern.
+
+Hex ID Standards:
+  - 1001: Tournaments
+  - 1002: Tournament Matches
+  - 1003: Tournament Participants / Seeds
+  - 1004: Characters (Identity Entities)
+"""
+
+import sqlite3
+import json
+import os
+import time
+from typing import Dict, Any, List, Optional
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB_PATH = os.path.join(BASE_DIR, "data", "rebased.db")
+
+PREFIX_TOURNAMENT = "1001"
+PREFIX_MATCH = "1002"
+PREFIX_PARTICIPANT = "1003"
+PREFIX_CHARACTER = "1004"
+
+_last_ts = 0
+
+
+def generate_tournament_hex_id(prefix: str = PREFIX_TOURNAMENT) -> str:
+    """Generate 16-character hex ID: <4-char prefix><12-char monotonic unix ms>"""
+    global _last_ts
+    unix_ms = int(time.time() * 1000)
+    if unix_ms <= _last_ts:
+        unix_ms = _last_ts + 1
+    _last_ts = unix_ms
+    clean_prefix = str(prefix).upper().rjust(4, "0")[:4]
+    hex_ts = f"{unix_ms:012X}"[-12:]
+    return f"{clean_prefix}{hex_ts}"
+
+
+def get_connection(db_path: str = DEFAULT_DB_PATH) -> sqlite3.Connection:
+    """Creates a connection configured with WAL and concurrency pragmas."""
+    os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
+    conn = sqlite3.connect(db_path, timeout=5.0)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA busy_timeout = 5000;")
+    conn.execute("PRAGMA foreign_keys = ON;")
+    return conn
+
+
+def init_tournament_schema(db_path: str = DEFAULT_DB_PATH) -> None:
+    """Initializes the relational tournament tables."""
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        # 1. Tournaments Table (1001...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS tournaments (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                format TEXT DEFAULT 'single_elimination_32',
+                status TEXT DEFAULT 'draft',
+                winner_id TEXT,
+                winner_name TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                notes TEXT
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);")
+
+        # 2. Tournament Participants / Seeds Table (1003...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS tournament_participants (
+                id TEXT PRIMARY KEY,
+                tournament_id TEXT NOT NULL,
+                character_id TEXT NOT NULL,
+                seed_index INTEGER NOT NULL,
+                initial_slot TEXT NOT NULL,
+                display_name TEXT,
+                avatar_url TEXT,
+                FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_tp_tourney ON tournament_participants(tournament_id);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_tp_char ON tournament_participants(character_id);")
+
+        # 3. Tournament Matches Table (1002...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS tournament_matches (
+                id TEXT PRIMARY KEY,
+                tournament_id TEXT NOT NULL,
+                round_name TEXT NOT NULL,
+                match_order INTEGER NOT NULL,
+                position_code TEXT NOT NULL,
+                slot_a_char_id TEXT,
+                slot_a_name TEXT,
+                slot_a_avatar TEXT,
+                slot_b_char_id TEXT,
+                slot_b_name TEXT,
+                slot_b_avatar TEXT,
+                winner_char_id TEXT,
+                winner_name TEXT,
+                winner_avatar TEXT,
+                next_match_id TEXT,
+                next_slot_target TEXT,
+                completed_at TEXT,
+                FOREIGN KEY (tournament_id) REFERENCES tournaments(id) ON DELETE CASCADE,
+                FOREIGN KEY (next_match_id) REFERENCES tournament_matches(id) ON DELETE SET NULL
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_tm_tourney ON tournament_matches(tournament_id);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_tm_pos ON tournament_matches(position_code);")
+
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+
+
+# ==============================================================================
+# TOURNAMENTS CRUD
+# ==============================================================================
+
+def create_tournament_record(
+    name: str,
+    format_type: str = "single_elimination_32",
+    notes: str = "",
+    db_path: str = DEFAULT_DB_PATH
+) -> Dict[str, Any]:
+    init_tournament_schema(db_path)
+    conn = get_connection(db_path)
+    tourney_id = generate_tournament_hex_id(PREFIX_TOURNAMENT)
+    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        conn.execute("""
+            INSERT INTO tournaments (id, name, format, status, created_at, updated_at, notes)
+            VALUES (?, ?, ?, 'in_progress', ?, ?, ?);
+        """, (tourney_id, name.strip(), format_type, now_str, now_str, notes))
+
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return {
+        "id": tourney_id,
+        "name": name.strip(),
+        "format": format_type,
+        "status": "in_progress",
+        "winner_id": None,
+        "winner_name": None,
+        "created_at": now_str,
+        "updated_at": now_str,
+        "notes": notes
+    }
+
+
+def get_tournament_record(tournament_id: str, db_path: str = DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    init_tournament_schema(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT * FROM tournaments WHERE id = ?;", (tournament_id,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return dict(row)
+
+
+def list_tournaments(db_path: str = DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    init_tournament_schema(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT * FROM tournaments ORDER BY created_at DESC;")
+    rows = cur.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def delete_tournament_record(tournament_id: str, db_path: str = DEFAULT_DB_PATH) -> bool:
+    init_tournament_schema(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        conn.execute("DELETE FROM tournaments WHERE id = ?;", (tournament_id,))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return True

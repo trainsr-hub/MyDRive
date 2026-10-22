@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""
+Tier 1: Domain Schemas
+Pure dataclasses and typed contracts for the Faust Sovereign Daemon.
+Strictly decoupled from database, network, or UI dependencies.
+"""
+
+from dataclasses import dataclass, field
+from typing import Optional, Dict
+
+
+@dataclass(frozen=True)
+class TelegramDirective:
+    """Incoming command or inquiry from Telegram."""
+    text: str
+    message_id: str = "0"
+    chat_id: str = ""
+    thread_id: str = ""
+    user_id: int = 0
+
+    @property
+    def is_empty(self) -> bool:
+        return not bool(self.text.strip())
+
+    @property
+    def clean_text(self) -> str:
+        return self.text.strip()
+
+
+@dataclass(frozen=True)
+class TopicConfig:
+    """Topic-to-Workspace mapping configuration."""
+    thread_id: str
+    name: str
+    workspace: str
+    port: int = 28543
+
+
+@dataclass(frozen=True)
+class ExecutionResult:
+    """Standardized result of a task or command execution."""
+    success: bool
+    output: str
+    latency_ms: float = 0.0
+    error: Optional[str] = None
+    artifacts: Dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class SessionMessage:
+    """Single conversational turn persisted in SQLite."""
+    role: str
+    content: str
+    timestamp: str
+    thread_id: str
+    message_id: str = "0"

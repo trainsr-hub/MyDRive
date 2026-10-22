@@ -1,0 +1,100 @@
+# Tactical Blueprint: Sovereign Playlist Federation & Filter Replacement
+
+## Context & Architectural Directives
+Per the Manager's exact specifications:
+1. **Dedicated Database File & Table**:
+   - `_5_config.db` is reserved strictly for application configuration (`filter_settings`).
+   - Create a dedicated SQLite database: `playlists.db` in `backend/data/projects/music_app/app_data/playlists.db`.
+   - Register in `backend/data/projects/music_app/index.json` as tier `"playlists"`.
+   - Table name: `playlists`.
+2. **Include & Exclude Migration in Gameplay Tab (`VinylPlayer.tsx`)**:
+   - **Include Selector**: Selects which Playlist to stream (All Catalog, or any Custom Playlist, or specific raw channel baseline).
+   - **Exclude Selector**: Multi-select popover to exclude Playlists from the stream (excluding a playlist automatically excludes all of its member channels from sampling).
+   - Custom Playlists federate multiple channels under a shared theme and compatible Time Block Arcs.
+
+---
+
+## Architectural Specifications
+
+### 1. Database Tier: `playlists.db`
+- **File Path**: `backend/data/projects/music_app/app_data/playlists.db`
+- **Tier Configuration (`backend/data/projects/music_app/index.json`)**:
+  ```json
+  "playlists": { "filename": "playlists.db", "format": "sqlite" }
+  ```
+- **Table Name**: `playlists`
+- **Columns**:
+  - `id`: `TEXT PRIMARY KEY` (e.g. `pl_1730000000_abc`)
+  - `name`: `TEXT NOT NULL` (e.g. `"Epic Orchestral Wave"`)
+  - `emoji`: `TEXT DEFAULT '🎵'`
+  - `description`: `TEXT`
+  - `channels`: `TEXT NOT NULL` (JSON-serialized array of channel names, e.g. `["HOYO-MiX - Topic", "NoCopyrightSounds"]`)
+  - `compatible_timeblocks`: `TEXT` (JSON-serialized array of timeblock strings)
+  - `created_at`: `TEXT NOT NULL` (ISO 8601 string)
+  - `updated_at`: `TEXT NOT NULL` (ISO 8601 string)
+
+### 2. Backend Storage Engine (`backend/core/storage_engine.py`)
+1. **Multi-Channel & Multi-Exclude Support in `count` and `sample`**:
+   - Support `channels` (list of included channels) in payload:
+     `WHERE channel_name IN (?, ?, ...)`
+   - Support `exclude_channels` (resolved list of channels from excluded playlists):
+     `AND channel_name NOT IN (?, ?, ...)`
+   - Combines seamlessly with `hazard_cap` and `search` query.
+
+### 3. Data Contracts & Zustand Store
+- **Interface (`types.ts`)**:
+  ```typescript
+  export interface CustomPlaylist {
+    id: string;
+    name: string;
+    emoji: string;
+    description?: string;
+    channels: string[];
+    compatible_timeblocks?: string[];
+    created_at: string;
+    updated_at: string;
+  }
+  ```
+- **Store (`useVinylStore.ts`)**:
+  - `customPlaylists: CustomPlaylist[]`
+  - Actions: `setCustomPlaylists`, `addCustomPlaylist`, `updateCustomPlaylist`, `removeCustomPlaylist`
+
+### 4. Engine Services (`universe-25/src/apps/vinyl-angel/services/engine.ts`)
+- `fetchCustomPlaylists(projectId)`: Reads all playlists from `tier: 'playlists'`.
+- `saveCustomPlaylist(projectId, playlist)`: Upserts a playlist into `tier: 'playlists'`.
+- `deleteCustomPlaylist(projectId, playlistId)`: Deletes a playlist from `tier: 'playlists'`.
+- Update `fetchSampledTracks` & `fetchMoreSampledTracks` to accept `channels?: string[]` (for included playlist) and `excludeChannels?: string[]` (for excluded playlists).
+
+---
+
+## UI Components & Integration
+
+### 1. `PlaylistManagerModal.tsx`
+- Dialog to create, edit, or delete custom playlists.
+- Searchable channel checklist with track counts.
+- Timeblock Arc compatibility checklist.
+- Saves directly to `playlists.db`.
+
+### 2. Include & Exclude Redesign in Gameplay Tab (`VinylPlayer.tsx`)
+- **Include Selector**:
+  - `<optgroup label="⭐ Custom Playlists">`: Shows custom playlists (e.g. `⚔️ Epic Fusion (3 channels • 2.4k songs)`) + `➕ New Custom Playlist...` trigger.
+  - `<optgroup label="📻 Channel Origins">`: Individual baseline channels.
+  - Option 1: `🌐 All Tracks (No Filter)`
+- **Exclude Selector (Replacing Raw Channel Exclusions)**:
+  - Multi-select popover listing playlists with checkboxes.
+  - Selecting a playlist to exclude resolves its member channels and excludes them from the audio stream.
+  - Active exclusion pills show: `Excluded (2): 🌙 Lo-Fi, ☕ Coffee Beats`.
+- **Telemetry Bar**:
+  - Displays: `Active Pool: ⚔️ Epic Fusion • Excluded: 1 Playlist • Hazard: All • 2,410 songs remaining`.
+
+---
+
+## Verification & Testing Plan
+1. **Database & Backend Verification**:
+   - Python script verifying `playlists.db` creation and `tier: 'playlists'` order processing.
+   - Test multi-channel `sample` and multi-channel `exclude`.
+2. **Frontend Diagnostics**: Verify 0 diagnostics via `mcp_claude_vscode_getDiagnostics`.
+3. **End-to-End User Flow**:
+   - Create a playlist "Battle Wave" combining 2 channels.
+   - Select "Battle Wave" in Include; verify only those channels play.
+   - Exclude another playlist in Exclude; verify excluded channels are barred.

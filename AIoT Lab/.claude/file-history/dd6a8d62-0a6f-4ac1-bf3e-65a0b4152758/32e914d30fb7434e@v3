@@ -1,0 +1,179 @@
+"""
+Faust Acoustic Core - Unified Speech API
+=========================================
+Single unified interface for all Faust voice channels.
+
+Usage:
+    from sound import speak
+    speak("Hello Manager")                           # PC Speakers
+    speak("Hello Manager", to="esp32")               # ESP32 Speaker
+"""
+import base64
+import json
+import os
+import sys
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+from typing import Optional
+
+SKILL_ROOT = Path(__file__).resolve().parent
+if str(SKILL_ROOT) not in sys.path:
+    sys.path.insert(0, str(SKILL_ROOT))
+
+from sound.scripts.engine import get_engine
+from sound.scripts.config import (
+    DEFAULT_CONFIG,
+    load_rom_config,
+    is_acoustic_presence_enabled,
+    set_acoustic_presence_enabled,
+    toggle_acoustic_presence,
+)
+
+DAEMON_HOST = os.getenv("FAUST_AUDIO_HOST", "127.0.0.1")
+DAEMON_PORT = int(os.getenv("FAUST_AUDIO_PORT", "20129"))
+
+
+def speak(text: str, to: str = "speaker", **kwargs) -> bool:
+    """
+    Unified speech synthesis function.
+
+    Args:
+        text: Speech text to synthesize
+        to: Output channel - "speaker" (PC) or "esp32" (field speaker)
+        **kwargs: Voice parameters (voice, speed, pitch_shift, etc.)
+
+    Returns:
+        True if transmission succeeded
+    """
+    if to == "esp32":
+        return _speak_to_esp32(text, **kwargs)
+    return _dispatch(text, "/speak", **kwargs)
+
+
+def _dispatch(text: str, endpoint: str = "/speak", **kwargs) -> bool:
+    """Dispatch to resident daemon."""
+    if not is_acoustic_presence_enabled():
+        return True
+
+    url = f"http://{DAEMON_HOST}:{DAEMON_PORT}{endpoint}"
+    payload: dict = {"text": text}
+    for k in kwargs:
+        if kwargs[k] is not None:
+            payload[k] = kwargs[k]
+
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        timeout = 60.0 if payload.get("block", False) else 3.0
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
+def _speak_to_esp32(text: str, **kwargs) -> bool:
+    """Stream speech to ESP32 field speaker."""
+    # Synthesize via shared daemon
+    url = f"http://{DAEMON_HOST}:{DAEMON_PORT}/synthesize"
+    payload = {"text": text, "target_sample_rate": 24000}
+    for k in ["voice", "speed", "pitch_shift", "normalization_type"]:
+        if kwargs.get(k):
+            payload[k] = kwargs[k]
+
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10.0) as resp:
+            res = json.loads(resp.read().decode("utf-8"))
+            if res.get("status") != "ok":
+                return False
+            pcm_bytes = base64.b64decode(res["pcm_base64"])
+            sample_rate = res["sample_rate"]
+    except Exception:
+        return False
+
+    # Stream to ESP32
+    import numpy as np
+    import serial
+
+    samples = np.frombuffer(pcm_bytes, dtype=np.int16)
+    gain = kwargs.get("gain", 1.2)
+    if gain != 1.0:
+        samples = np.clip(samples.astype(np.float32) * gain, -32768, 32767).astype(np.int16)
+
+    stream_bytes = samples.tobytes()
+    port = kwargs.get("port", "COM5")
+    baud = kwargs.get("baud", 921600)
+    chunk_size = kwargs.get("chunk_size", 512)
+
+    ser = serial.Serial()
+    ser.port = port
+    ser.baudrate = baud
+    ser.timeout = 0.5
+    ser.dtr = False
+    ser.rts = False
+    ser.open()
+    try:
+        ser.setDTR(False)
+        ser.setRTS(True)
+        time.sleep(0.05)
+        ser.setRTS(False)
+        time.sleep(0.3)
+
+        total = len(stream_bytes)
+        sent = 0
+        t0 = time.perf_counter()
+        bytes_per_sec = sample_rate * 2
+
+        while sent < total:
+            chunk = stream_bytes[sent:sent + chunk_size]
+            ser.write(chunk)
+            sent += len(chunk)
+            lead = (sent / bytes_per_sec) - (time.perf_counter() - t0)
+            if lead > 0.15:
+                time.sleep(lead - 0.10)
+
+        ser.flush()
+        time.sleep(1.0)
+        return True
+    finally:
+        ser.close()
+
+
+def preload():
+    """Preload and warmup the acoustic engine."""
+    return get_engine().preload()
+
+
+def shutdown():
+    """Shutdown the acoustic engine."""
+    return get_engine().shutdown()
+
+
+def synthesize(text: str, **kwargs):
+    """Synthesize speech to raw PCM (in-process fallback)."""
+    return get_engine().synthesize(text, **kwargs)
+
+
+def list_voices():
+    """List all available voices."""
+    return get_engine().list_voices()
+
+
+def is_daemon_running() -> bool:
+    """Check if the resident audio daemon is currently alive."""
+    try:
+        with urllib.request.urlopen(f"http://{DAEMON_HOST}:{DAEMON_PORT}/health", timeout=1.0):
+            return True
+    except Exception:
+        return False

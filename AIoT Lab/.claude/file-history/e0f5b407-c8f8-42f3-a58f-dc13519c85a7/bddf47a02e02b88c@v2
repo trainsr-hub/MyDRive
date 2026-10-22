@@ -1,0 +1,113 @@
+/**
+ * Project Entry: Core State & Constants
+ */
+
+export const API_BASE = '';
+
+export const FIELD_TYPES = {
+  hex_id:          { category: 'pk',      icon: '🔑', title: 'Hex ID',          sql: 'TEXT PRIMARY KEY' },
+  text_single:     { category: 'text',    icon: '📝', title: 'Text (single)',    sql: 'TEXT' },
+  text_multi:      { category: 'text',    icon: '📋', title: 'Text (multi)',     sql: 'TEXT' },
+  int_scalar:      { category: 'scalar',  icon: '🔢', title: 'Integer',         sql: 'INTEGER' },
+  float_scalar:    { category: 'scalar',  icon: '🔢', title: 'Float',           sql: 'REAL' },
+  boolean:         { category: 'boolean', icon: '🔘', title: 'Boolean',         sql: 'INTEGER DEFAULT 0' },
+  enum_single:     { category: 'enum',    icon: '🏷️', title: 'Enum (single)',   sql: 'TEXT' },
+  enum_multi:      { category: 'enum',    icon: '🏷️', title: 'Enum (multi)',    sql: 'TEXT (JSON)' },
+  relation_single: { category: 'rel',     icon: '🔗', title: 'Relation (→1)',   sql: 'TEXT' },
+  relation_multi:  { category: 'rel',     icon: '🔗', title: 'Relation (→N)',   sql: 'TEXT (JSON)' },
+};
+
+export const MOCK_DATA = {
+  "containers": {
+    "table_name": "containers",
+    "columns": [
+      { "name": "Container ID", "slug": "id", "type": "hex_id", "metadata": { "prefix": "CONT" } },
+      { "name": "Name", "slug": "name", "type": "text_single", "metadata": {} },
+      { "name": "Type", "slug": "type", "type": "enum_single", "metadata": { "options": ["intellect", "personal", "author", "anime", "Writer", "persona"] } },
+      { "name": "Notes", "slug": "notes", "type": "text_multi", "metadata": {} },
+      { "name": "Default Tags", "slug": "default_tags", "type": "enum_multi", "metadata": { "options": ["core", "daily", "quote", "system"] } }
+    ]
+  },
+  "specifics": {
+    "table_name": "specifics",
+    "columns": [
+      { "name": "Specific ID", "slug": "id", "type": "hex_id", "metadata": { "prefix": "SPEC" } },
+      { "name": "Collection Name", "slug": "name", "type": "text_single", "metadata": {} },
+      { "name": "Container", "slug": "container_id", "type": "relation_single", "metadata": { "target": "containers" } },
+      { "name": "Category", "slug": "category", "type": "enum_single", "metadata": { "options": ["insight", "diary", "thought", "book", "poem", "writing", "music"] } },
+      { "name": "Notes", "slug": "notes", "type": "text_multi", "metadata": {} },
+      { "name": "Default Tags", "slug": "default_tags", "type": "enum_multi", "metadata": { "options": ["fav", "core", "archive"] } },
+      { "name": "Default Usages", "slug": "default_usage_ids", "type": "relation_multi", "metadata": { "target": "usages" } },
+      { "name": "Date / Era", "slug": "date", "type": "text_single", "metadata": {} }
+    ]
+  },
+  "themes": {
+    "table_name": "themes",
+    "columns": [
+      { "name": "Theme ID", "slug": "id", "type": "hex_id", "metadata": { "prefix": "THME" } },
+      { "name": "Theme Name", "slug": "name", "type": "text_single", "metadata": {} },
+      { "name": "Parent Theme", "slug": "child_of", "type": "relation_single", "metadata": { "target": "themes" } },
+      { "name": "Notes", "slug": "notes", "type": "text_multi", "metadata": {} }
+    ]
+  },
+  "usages": {
+    "table_name": "usages",
+    "columns": [
+      { "name": "Usage ID", "slug": "id", "type": "hex_id", "metadata": { "prefix": "USAG" } },
+      { "name": "Usage Name", "slug": "name", "type": "text_single", "metadata": {} },
+      { "name": "Description", "slug": "description", "type": "text_multi", "metadata": {} },
+      { "name": "Icon", "slug": "icon", "type": "text_single", "metadata": {} },
+      { "name": "Conflicting Usages", "slug": "conflicts_with", "type": "relation_multi", "metadata": { "target": "usages" } }
+    ]
+  },
+  "quotes": {
+    "table_name": "quotes",
+    "columns": [
+      { "name": "Quote ID", "slug": "id", "type": "hex_id", "metadata": { "prefix": "QUOT" } },
+      { "name": "Index Number", "slug": "idx", "type": "int_scalar", "metadata": { "default_option": "max(idx) + 1" } },
+      { "name": "Quote Content", "slug": "main_content", "type": "text_multi", "metadata": {} },
+      { "name": "Context & Attribution", "slug": "context", "type": "text_multi", "metadata": {} },
+      { "name": "Date Added", "slug": "date", "type": "text_single", "metadata": {} },
+      { "name": "Specific Source", "slug": "specific_id", "type": "relation_single", "metadata": { "target": "specifics" } },
+      { "name": "Themes", "slug": "theme_ids", "type": "relation_multi", "metadata": { "target": "themes" } },
+      { "name": "Usages", "slug": "usage_ids", "type": "relation_multi", "metadata": { "target": "usages" } },
+      { "name": "Preference Tags", "slug": "preference", "type": "enum_multi", "metadata": { "options": ["starred", "favorite", "essential"] } },
+      { "name": "Average Score", "slug": "average_score", "type": "float_scalar", "metadata": {} }
+    ]
+  }
+};
+
+export const state = {
+  tables: JSON.parse(JSON.stringify(MOCK_DATA)),
+  activeTable: 'quotes',
+  activeFilter: 'all',
+  activeSidebarTab: 'edit',
+  activeColIdx: null,
+  currentViewMode: 'schema', // 'schema' | 'data'
+  tableRecords: {},
+  dataSearchQuery: '',
+  isServerConnected: false
+};
+
+export function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+export function showToast(msg) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2400);
+}
+
+export function generateHexId(prefix) {
+  const p = (prefix || 'ROW').substring(0, 4).toUpperCase();
+  const hex = Array.from(crypto.getRandomValues(new Uint8Array(4)))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+  return `${p}_${hex}`;
+}

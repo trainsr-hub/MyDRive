@@ -1,0 +1,397 @@
+@echo off
+setlocal EnableDelayedExpansion
+title OmniRoute Phase 1 Migration Console
+
+REM ==============================================================================
+REM   OmniRoute Phase 1: Linear Execution - Only Pause on Fallback
+REM ==============================================================================
+
+set "PROJECT_ROOT=D:\My Drive\Blue AI"
+set "OLD_SOURCE=D:\My Drive\Sync\omniroute"
+set "LOCAL_DEST=D:\My System\Local App Junction\OmniRoute"
+set "C_JUNCTION=C:\Users\Admin\AppData\Roaming\npm\node_modules\omniroute"
+set "RECOVERY_DIR=D:\My System\Local App Junction\OmniRoute-Phase1-Recovery"
+set "ROLLBACK_DIR=%RECOVERY_DIR%\rollback\omniroute-original"
+set "LOG_DIR=%RECOVERY_DIR%\logs"
+set "STATE_FILE=%RECOVERY_DIR%\state.ini"
+set "OMNI_SHORTCUT=%PROJECT_ROOT%\ZZ - Shortcuts\OmniRoute.bat"
+set "PID_DIR=%TEMP%\OmniRoute"
+set "PORT=20128"
+
+REM --- Create Recovery Structure ---
+if not exist "%RECOVERY_DIR%" mkdir "%RECOVERY_DIR%"
+if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
+if not exist "%RECOVERY_DIR%\rollback" mkdir "%RECOVERY_DIR%\rollback"
+
+set "LOG_FILE=%LOG_DIR%\migration_%DATE:~10,4%%DATE:~4,2%%DATE:~7,2%_%TIME:~0,2%%TIME:~3,2%%TIME:~6,2%.log"
+set "LOG_FILE=!LOG_FILE: =0!"
+
+REM --- Get Current State ---
+set "STATE=NOT_STARTED"
+if exist "%STATE_FILE%" (
+    for /f "tokens=2 delims==" %%a in ('findstr /i "STATE=" "%STATE_FILE%" 2^>nul') do set "STATE=%%a"
+)
+
+echo ==============================================================================
+echo   OMNIROUTE PHASE 1: APPLICATION PACKAGE MIGRATION CONSOLE
+echo   Linear Execution - Only Pauses on Errors or Fallbacks
+echo ==============================================================================
+echo.
+echo Current State: %STATE%
+echo.
+
+REM ==============================================================================
+REM   STEP 1: AUDIT SYSTEM STATUS
+echo ==============================================================================
+echo [STEP 1/8] AUDIT SYSTEM STATUS
+echo.
+
+set "CURRENT_TARGET=NOT_FOUND"
+set "CURRENT_LINKTYPE=NONE"
+if exist "%C_JUNCTION%" (
+    for /f "usebackq delims=" %%t in (`powershell -NoProfile -Command "(Get-Item -LiteralPath '%C_JUNCTION%' -ErrorAction SilentlyContinue).Target" 2^>nul`) do set "CURRENT_TARGET=%%t"
+    for /f "usebackq delims=" %%t in (`powershell -NoProfile -Command "(Get-Item -LiteralPath '%C_JUNCTION%' -ErrorAction SilentlyContinue).LinkType" 2^>nul`) do set "CURRENT_LINKTYPE=%%t"
+)
+
+set "PROC_COUNT=0"
+for /f "usebackq delims=" %%p in (`powershell -NoProfile -Command "@(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match 'omniroute' }).Count" 2^>nul`) do set "PROC_COUNT=%%p"
+
+set "PORT_STATUS=CLOSED"
+for /f "usebackq delims=" %%o in (`powershell -NoProfile -Command "if (Get-NetTCPConnection -State Listen -LocalPort %PORT% -ErrorAction SilentlyContinue) { 'LISTENING' } else { 'CLOSED' }" 2^>nul`) do set "PORT_STATUS=%%o"
+
+echo   C: Junction: %C_JUNCTION%
+echo   Link Type: %CURRENT_LINKTYPE%
+echo   Current Target: %CURRENT_TARGET%
+echo   Port %PORT%: %PORT_STATUS%
+echo   OmniRoute Processes: %PROC_COUNT%
+
+if not exist "%OLD_SOURCE%\package.json" (
+    echo.
+    echo [ERROR] Old source not found at: %OLD_SOURCE%
+    pause
+    exit /b 1
+)
+echo.
+echo   [OK] Old source found with package.json
+
+if exist "%LOCAL_DEST%\package.json" (
+    echo   [WARN] Local destination already contains package.json
+    echo   This could be from a previous incomplete migration.
+) else (
+    echo   [OK] Local destination is ready for staging
+)
+
+echo.
+echo [STEP 1 COMPLETE] Audit passed. Proceeding to staging.
+timeout /t 3 >nul
+
+REM ==============================================================================
+REM   STEP 2: STAGE COPY (SAFE WHILE OMNIROUTE IS RUNNING)
+echo ==============================================================================
+echo [STEP 2/8] STAGE COPY (non-destructive, runs while OmniRoute is active)
+echo.
+echo Source     : %OLD_SOURCE%
+echo Destination: %LOCAL_DEST%
+echo.
+
+if not exist "%LOCAL_DEST%" mkdir "%LOCAL_DEST%"
+
+echo Running robocopy to local destination...
+robocopy "%OLD_SOURCE%" "%LOCAL_DEST%" /E /COPY:DAT /DCOPY:DAT /XJ /R:2 /W:2 /TEE /LOG+:"%LOG_FILE%"
+set "RC_ERR=%ERRORLEVEL%"
+
+if %RC_ERR% GEQ 8 (
+    echo.
+    echo [ERROR] Robocopy failed with code %RC_ERR%
+    echo Check log: %LOG_FILE%
+    echo.
+    echo Press any key to review error and choose: [R]etry or [A]bort
+    pause >nul
+    goto STEP2_RETRY_OR_ABORT
+)
+
+echo.
+echo Verifying staged files...
+if exist "%LOCAL_DEST%\package.json" (
+    if exist "%LOCAL_DEST%\bin\omniroute.mjs" (
+        echo [OK] Core files verified in local destination.
+        echo STATE=STAGED > "%STATE_FILE%"
+    ) else (
+        echo [ERROR] bin\omniroute.mjs missing after staging!
+        pause
+        exit /b 1
+    )
+) else (
+    echo [ERROR] package.json missing after staging!
+    pause
+    exit /b 1
+)
+
+echo.
+echo [STEP 2 COMPLETE] Staging done. OmniRoute still running.
+timeout /t 2 >nul
+
+REM ==============================================================================
+REM   STEP 3: STOP OMNIROUTE SERVICE
+echo ==============================================================================
+echo [STEP 3/8] STOP OMNIROUTE SERVICE
+echo.
+echo WARNING: Stopping OmniRoute will disconnect Faust's live terminal.
+echo.
+echo Current Port %PORT% Status: %PORT_STATUS%
+echo Active OmniRoute Processes: %PROC_COUNT%
+echo.
+
+if "%PROC_COUNT%"=="0" (
+    if "%PORT_STATUS%"=="CLOSED" (
+        echo OmniRoute is already stopped. Skipping termination.
+    ) else (
+        echo [WARN] Port is closed but process count shows %PROC_COUNT%
+        echo Proceeding anyway...
+    )
+) else (
+    echo Terminating OmniRoute processes...
+    if exist "%PID_DIR%\omniroute.pid" (
+        for /f "usebackq delims=" %%i in ("%PID_DIR%\omniroute.pid") do (
+            echo Killing PID: %%i
+            taskkill /PID %%i /T /F >nul 2>&1
+        )
+        del "%PID_DIR%\omniroute.pid" >nul 2>&1
+    )
+
+    powershell -NoProfile -Command "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -eq %PORT% } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+
+    echo Waiting for services to stop...
+    timeout /t 3 >nul
+
+    set "PORT_STATUS=CLOSED"
+    for /f "usebackq delims=" %%o in (`powershell -NoProfile -Command "if (Get-NetTCPConnection -State Listen -LocalPort %PORT% -ErrorAction SilentlyContinue) { 'LISTENING' } else { 'CLOSED' }" 2^>nul`) do set "PORT_STATUS=%%o"
+
+    if "%PORT_STATUS%"=="LISTENING" (
+        echo [ERROR] Port %PORT% still active after termination!
+        echo Press any key to continue anyway or [Ctrl+C] to abort
+        pause >nul
+    ) else (
+        echo [OK] OmniRoute stopped cleanly. Port %PORT% is closed.
+    )
+)
+
+echo.
+echo [STEP 3 COMPLETE] OmniRoute stopped. Proceeding to cutover.
+timeout /t 2 >nul
+
+REM ==============================================================================
+REM   STEP 4: EXECUTE CUTOVER
+echo ==============================================================================
+echo [STEP 4/8] EXECUTE CUTOVER
+echo.
+
+echo Current C: Junction Target: %CURRENT_TARGET%
+
+if not "%CURRENT_TARGET%"=="%OLD_SOURCE%" (
+    if "%CURRENT_TARGET%"=="%LOCAL_DEST%" (
+        echo [INFO] C: Junction already points to Local Destination.
+        echo Cutover appears complete from previous run.
+        goto STEP5_VERIFY
+    ) else (
+        echo [ERROR] C: Junction target does not match expected!
+        echo Expected: %OLD_SOURCE%
+        echo Current: %CURRENT_TARGET%
+        echo.
+        echo Press any key to continue and review, or [Ctrl+C] to abort
+        pause >nul
+    )
+)
+
+echo [4a/4] Running final delta robocopy...
+robocopy "%OLD_SOURCE%" "%LOCAL_DEST%" /E /COPY:DAT /DCOPY:DAT /XJ /R:2 /W:2 /TEE /LOG+:"%LOG_FILE%"
+set "RC_ERR=%ERRORLEVEL%"
+if %RC_ERR% GEQ 8 (
+    echo [ERROR] Delta copy failed with code %RC_ERR%
+    echo Press any key to continue or [Ctrl+C] to abort
+    pause >nul
+)
+
+echo [4b/4] Moving old Drive package to local rollback...
+if exist "%ROLLBACK_DIR%" (
+    echo [ERROR] Rollback directory already exists: %ROLLBACK_DIR%
+    echo Press any key to continue and review, or [Ctrl+C] to abort
+    pause >nul
+) else (
+    move "%OLD_SOURCE%" "%ROLLBACK_DIR%"
+    if errorlevel 1 (
+        echo [ERROR] Failed to move old package to rollback!
+        echo Press any key to continue or [Ctrl+C] to abort
+        pause >nul
+    ) else (
+        echo [OK] Old package moved to: %ROLLBACK_DIR%
+    )
+)
+
+echo [4c/4] Removing old C: junction...
+rmdir "%C_JUNCTION%"
+if errorlevel 1 (
+    echo [ERROR] Failed to remove C: junction!
+    echo Press any key to continue or [Ctrl+C] to abort
+    pause >nul
+) else (
+    echo [OK] Old junction removed.
+)
+
+echo [4d/4] Creating new C: junction to Local Destination...
+mklink /J "%C_JUNCTION%" "%LOCAL_DEST%"
+if errorlevel 1 (
+    echo [ERROR] Failed to create new junction!
+    echo Attempting to restore old package from rollback...
+    move "%ROLLBACK_DIR%" "%OLD_SOURCE%"
+    echo Press any key to continue or [Ctrl+C] to abort
+    pause >nul
+) else (
+    echo [OK] New junction created.
+
+    for /f "usebackq delims=" %%t in (`powershell -NoProfile -Command "(Get-Item -LiteralPath '%C_JUNCTION%' -ErrorAction SilentlyContinue).Target" 2^>nul`) do set "NEW_TARGET=%%t"
+
+    if "%NEW_TARGET%"=="%LOCAL_DEST%" (
+        echo [OK] New C: Junction correctly points to: %NEW_TARGET%
+    ) else (
+        echo [WARN] C: Junction target is: %NEW_TARGET%
+    )
+)
+
+echo STATE=CUTOVER_COMPLETE > "%STATE_FILE%"
+echo CUTOVER_TIME=%DATE% %TIME% >> "%STATE_FILE%"
+
+echo.
+echo [STEP 4 COMPLETE] Cutover done. Proceeding to verification.
+timeout /t 2 >nul
+
+REM ==============================================================================
+REM   STEP 5: VERIFY CUTOVER
+echo ==============================================================================
+echo [STEP 5/8] VERIFY CUTOVER STATIC INTEGRITY
+echo.
+
+set "V_TARGET=NOT_FOUND"
+for /f "usebackq delims=" %%t in (`powershell -NoProfile -Command "(Get-Item -LiteralPath '%C_JUNCTION%' -ErrorAction SilentlyContinue).Target" 2^>nul`) do set "V_TARGET=%%t"
+
+echo 1. C: Junction Target: %V_TARGET%
+if "%V_TARGET%"=="%LOCAL_DEST%" (
+    echo    [OK] Correct target.
+) else (
+    echo    [FAIL] Expected: %LOCAL_DEST%
+)
+
+echo 2. Essential Files Check:
+if exist "%LOCAL_DEST%\package.json" (echo    [OK] package.json)
+if exist "%LOCAL_DEST%\bin\omniroute.mjs" (echo    [OK] bin\omniroute.mjs)
+if exist "%LOCAL_DEST%\node_modules" (echo    [OK] node_modules)
+
+echo 3. Node.js Availability:
+where node >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    for /f "delims=" %%v in ('node -v 2^>nul') do echo    [OK] Node.js: %%v
+) else (
+    echo    [WARN] Node not in PATH.
+)
+
+echo 4. Syntax Check:
+node --check "%LOCAL_DEST%\bin\omniroute.mjs" >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+    echo    [OK] bin\omniroute.mjs syntax OK.
+) else (
+    echo    [FAIL] Syntax check failed!
+)
+
+echo.
+echo [STEP 5 COMPLETE] Verification done.
+timeout /t 2 >nul
+
+REM ==============================================================================
+REM   STEP 6: START OMNIROUTE SERVICE (WAKES FAUST)
+echo ==============================================================================
+echo [STEP 6/8] START OMNIROUTE SERVICE (WAKES FAUST)
+echo.
+echo Launching OmniRoute from new local location...
+echo %OMNI_SHORTCUT%
+echo.
+
+if exist "%OMNI_SHORTCUT%" (
+    call "%OMNI_SHORTCUT%"
+    echo Waiting 5 seconds for service to bind to Port %PORT%...
+    timeout /t 5 >nul
+
+    set "NEW_PORT_STATUS=CLOSED"
+    for /f "usebackq delims=" %%o in (`powershell -NoProfile -Command "if (Get-NetTCPConnection -State Listen -LocalPort %PORT% -ErrorAction SilentlyContinue) { 'LISTENING' } else { 'CLOSED' }" 2^>nul`) do set "NEW_PORT_STATUS=%%o"
+
+    if "%NEW_PORT_STATUS%"=="LISTENING" (
+        echo.
+        echo [OK] OmniRoute is LISTENING on Port %PORT%!
+        echo [OK] Faust connection should be restored.
+        echo STATE=VERIFIED > "%STATE_FILE%"
+    ) else (
+        echo.
+        echo [WARN] Port %PORT% not open yet. Check logs.
+        echo[state=STARTED > "%STATE_FILE%"
+    )
+) else (
+    echo [ERROR] Launcher not found: %OMNI_SHORTCUT%
+    echo STATE=START_FAILED > "%STATE_FILE%"
+)
+
+echo.
+echo [STEP 6 COMPLETE] OmniRoute launch initiated.
+
+REM ==============================================================================
+REM   STEP 7: ROLLBACK (IF NEEDED - ONLY RUN THIS IF OMNIROUTE FAILS TO START)
+echo ==============================================================================
+echo [STEP 7] ROLLBACK OPTION (only run if OmniRoute failed to start)
+echo.
+echo To roll back to original setup, type: CONFIRM ROLLBACK
+set /p "RB_PHRASE=Optionally type to rollback: "
+if "%RB_PHRASE%"=="CONFIRM ROLLBACK" (
+    echo.
+    echo [ROLLBACK] Stopping any active OmniRoute...
+    if exist "%PID_DIR%\omniroute.pid" (
+        for /f "usebackq delims=" %%i in ("%PID_DIR%\omniroute.pid") do taskkill /PID %%i /T /F >nul 2>&1
+        del "%PID_DIR%\omniroute.pid" >nul 2>&1
+    )
+
+    echo [ROLLBACK] Removing current C: junction...
+    rmdir "%C_JUNCTION%" >nul 2>&1
+
+    echo [ROLLBACK] Moving package back from rollback to Drive source...
+    move "%ROLLBACK_DIR%" "%OLD_SOURCE%"
+
+    echo [ROLLBACK] Recreating original C: junction...
+    mklink /J "%C_JUNCTION%" "%OLD_SOURCE%"
+
+    echo [ROLLBACK] Restored. Type "RECOVER" after OmniRoute restarts to continue.
+    echo STATE=ROLLED_BACK > "%STATE_FILE%"
+    pause
+)
+
+REM ==============================================================================
+REM   STEP 8: FINALIZE
+echo ==============================================================================
+echo [STEP 8] FINALIZE (delete rollback backup after 48h+ stable operation)
+echo.
+echo To permanently delete rollback backup, type: DELETE ROLLBACK BACKUP
+set /p "FIN_PHRASE=Optionally finalize: "
+if "%FIN_PHRASE%"=="DELETE ROLLBACK BACKUP" (
+    if exist "%ROLLBACK_DIR%" (
+        rmdir /S /Q "%ROLLBACK_DIR%"
+        echo [FINALIZE] Rollback backup deleted.
+        echo STATE=FINALIZED > "%STATE_FILE%"
+    ) else (
+        echo [INFO] No rollback backup exists.
+    )
+)
+
+echo.
+echo ==============================================================================
+echo   PHASE 1 COMPLETED
+echo ==============================================================================
+echo   State: %STATE%
+echo   Log: %LOG_FILE%
+echo.
+pause

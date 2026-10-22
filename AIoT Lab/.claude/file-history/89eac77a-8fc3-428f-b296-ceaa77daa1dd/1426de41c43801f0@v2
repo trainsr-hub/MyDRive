@@ -1,0 +1,27 @@
+:: D:\My Drive\Blue AI\Test Projects\Google Collab\stop.bat
+@echo off
+setlocal EnableDelayedExpansion
+title Stop Colab Connect
+
+echo ==========================================
+echo   Stopping Colab Connect Services
+echo ==========================================
+
+set "PID_DIR=%TEMP%\FaustColabConnect"
+
+REM ==========================================================
+REM 1. Terminate Backend from PID file
+REM ==========================================================
+if exist "%PID_DIR%\backend.pid" (
+    for /f "usebackq delims=" %%i in ("%PID_DIR%\backend.pid") do taskkill /PID %%i /T /F >nul 2>&1
+    del "%PID_DIR%\backend.pid" >nul 2>&1
+)
+
+REM ==========================================================
+REM 2. Port Clear Sweep (8000)
+REM ==========================================================
+powershell -NoProfile -Command "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -eq 8000 } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+
+echo.
+echo Colab Connect backend service stopped cleanly.
+timeout /t 2 >nul

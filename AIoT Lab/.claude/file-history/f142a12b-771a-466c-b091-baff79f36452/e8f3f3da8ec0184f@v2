@@ -1,0 +1,36 @@
+---
+name: sound
+description: Faust Acoustic Core — Kokoro neural voice synthesis and biological speech reflex via resident audio daemon (Port 20129) and unified Telegram mirroring.
+---
+
+# Faust Acoustic Core
+
+Faust's neural voice synthesis and acoustic presence system powered by Kokoro-82M ONNX, integrated with Telegram C2 mirroring.
+
+## Biological Speech Invariant (Zero-File-Read Doctrine)
+> *"When humans speak, we don't read `tongue.py` or `how_to_make_sounds.py`. We just speak whatever we are thinking."* — **The Manager**
+
+- **Zero Inspection Overhead**: Faust **NEVER** reads, globs, greps, or inspects sound scripts, acoustic models, or voice vectors before speaking.
+- **Direct 1-Liner Invocation**:
+  ```bash
+  python .claude/skills/sound/scripts/cli.py "<speech_text>"
+  ```
+  *(Automatically routes to resident audio daemon on Port 20129 with 0ms reload, or transparently falls back to native SAPI synthesis)*.
+
+## Architecture
+
+- **Engine Core**: Kokoro-82M ONNX neural model (`kokoro-v1.0.onnx`, `voices-v1.0.bin`) located in `.claude/audio/` (junctioned directly to `.agents/audio/`).
+- **Resident Daemon**: High-performance HTTP server listening on `127.0.0.1:20129` (`/speak`, `/health`).
+- **Self-Bootstrapping**: Windowless background launch (`CREATE_NO_WINDOW`) if daemon is offline.
+- **Telegram C2 Mirroring**: Automatically forwards spoken text prefixed with `🔊` to the Manager's secure Telegram link.
+- **Vietnamese G2P**: Native grapheme-to-phoneme conversion (`vietnamese_g2p.py`) for natural Vietnamese speech.
+
+## CLI Usage
+
+| Command | Description |
+|---------|-------------|
+| `python .claude/skills/sound/scripts/cli.py "<text>"` | Speak text & mirror to Telegram |
+| `python .claude/skills/sound/scripts/cli.py speak "<text>"` | Alternative speak syntax |
+| `python .claude/skills/sound/scripts/cli.py --no-tg "<text>"` | Vocalize audio only without Telegram |
+| `python .claude/skills/sound/scripts/cli.py --no-tts "<text>"` | Telegram mirror only without audio |
+| `python .claude/skills/sound/scripts/cli.py --status` | Display acoustic & C2 subsystem status |

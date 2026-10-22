@@ -1,0 +1,141 @@
+#!/usr/bin/env python3
+"""
+Faust ESP32 Speaker CLI Utility
+Command-line interface for testing, configuring, and vocalizing speech via the ESP32 I2S speaker.
+"""
+import argparse
+import json
+import sys
+from pathlib import Path
+
+# Ensure module path resolution
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_DIR = SCRIPT_DIR.parent
+CONFIG_PATH = SKILL_DIR / "assets" / "esp32_speaker_config.json"
+
+sys.path.insert(0, str(SCRIPT_DIR))
+
+from esp32_streamer import (
+    speak_esp32,
+    list_com_ports,
+    load_config,
+    synthesize_via_daemon,
+    stream_to_esp32_serial,
+)
+
+
+def cmd_speak(args):
+    """Vocalize text through ESP32 speaker."""
+    text = " ".join(args.text) if isinstance(args.text, list) else str(args.text)
+    if not text.strip():
+        print("[ESP32-Speaker] Error: No text provided.")
+        sys.exit(1)
+
+    success = speak_esp32(
+        text=text,
+        port=args.port,
+        baud=args.baud,
+        sample_rate=args.sample_rate,
+        gain=args.gain,
+        voice=args.voice,
+        speed=args.speed,
+    )
+    if success:
+        print("[ESP32-Speaker] Speech transmitted successfully.")
+    else:
+        print("[ESP32-Speaker] Failed to transmit speech.")
+        sys.exit(1)
+
+
+def cmd_test(args):
+    """Run an automated diagnostic test on the ESP32 speaker."""
+    ports = list_com_ports()
+    target_port = args.port or (ports[0] if ports else "COM5")
+    print(f"[ESP32-Speaker] Running diagnostic test on port {target_port}...")
+    test_phrase = args.phrase or "Faust field audio transmission confirmed. Actuator online."
+
+    success = speak_esp32(
+        text=test_phrase,
+        port=target_port,
+        baud=args.baud,
+        sample_rate=args.sample_rate,
+        gain=args.gain,
+    )
+    if success:
+        print("[ESP32-Speaker] Diagnostic audio played successfully.")
+    else:
+        print("[ESP32-Speaker] Diagnostic test failed.")
+
+
+def cmd_ports(args):
+    """List available COM ports."""
+    ports = list_com_ports()
+    print("[ESP32-Speaker] Available Serial Ports:")
+    for p in ports:
+        print(f"  - {p}")
+    if not ports:
+        print("  (No serial devices detected)")
+
+
+def cmd_status(args):
+    """Display current configuration and daemon health."""
+    cfg = load_config()
+    print("[ESP32-Speaker] Current Configuration:")
+    print(json.dumps(cfg, indent=2))
+    ports = list_com_ports()
+    print(f"[ESP32-Speaker] Detected Ports: {ports}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Faust ESP32 Field Speaker Controller")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # Speak command
+    p_speak = subparsers.add_parser("speak", help="Speak text via ESP32 speaker")
+    p_speak.add_argument("text", nargs="+", help="Text for Faust to vocalize")
+    p_speak.add_argument("--port", "-p", default=None, help="COM port (default from config)")
+    p_speak.add_argument("--baud", "-b", type=int, default=None, help="Baud rate (default 921600)")
+    p_speak.add_argument("--sample-rate", "-sr", type=int, default=None, help="Sample rate in Hz (default 16000)")
+    p_speak.add_argument("--gain", "-g", type=float, default=None, help="Gain multiplier (e.g. 1.2)")
+    p_speak.add_argument("--voice", "-v", default=None, help="Voice preset override")
+    p_speak.add_argument("--speed", "-s", type=float, default=None, help="Speech speed override")
+    p_speak.set_defaults(func=cmd_speak)
+
+    # Test command
+    p_test = subparsers.add_parser("test", help="Run audio diagnostic test")
+    p_test.add_argument("--port", "-p", default=None, help="COM port")
+    p_test.add_argument("--phrase", default=None, help="Custom test phrase")
+    p_test.add_argument("--baud", "-b", type=int, default=None, help="Baud rate")
+    p_test.add_argument("--sample-rate", "-sr", type=int, default=None, help="Sample rate")
+    p_test.add_argument("--gain", "-g", type=float, default=None, help="Gain multiplier")
+    p_test.set_defaults(func=cmd_test)
+
+    # Ports command
+    p_ports = subparsers.add_parser("ports", help="List available COM ports")
+    p_ports.set_defaults(func=cmd_ports)
+
+    # Status command
+    p_status = subparsers.add_parser("status", help="Show configuration and status")
+    p_status.set_defaults(func=cmd_status)
+
+    args = parser.parse_args()
+    if not args.command:
+        # If user directly typed a message without subcommand
+        if len(sys.argv) > 1:
+            args.text = sys.argv[1:]
+            args.port = None
+            args.baud = None
+            args.sample_rate = None
+            args.gain = None
+            args.voice = None
+            args.speed = None
+            cmd_speak(args)
+            return
+        parser.print_help()
+        sys.exit(0)
+
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

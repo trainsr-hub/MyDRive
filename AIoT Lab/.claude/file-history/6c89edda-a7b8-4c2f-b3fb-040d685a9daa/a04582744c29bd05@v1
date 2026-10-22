@@ -1,0 +1,171 @@
+# launcher.py
+"""
+Sovereign Background Process Supervisor for Drive Architect.
+Adheres strictly to the Erlang OTP / Windows DETACHED_PROCESS pattern.
+Runs both the FastAPI Backend and Vite Frontend windowless in the background.
+"""
+
+import sys
+import os
+import time
+import subprocess
+import urllib.request
+import webbrowser
+from pathlib import Path
+
+# Enforce UTF-8 console output for Windows CLI
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
+ROOT_DIR = Path(__file__).resolve().parent
+FRONTEND_DIR = ROOT_DIR / "frontend"
+PID_DIR = Path(os.environ.get("TEMP", "D:\\Temp")) / "FaustDriveReconciler"
+PID_DIR.mkdir(parents=True, exist_ok=True)
+
+API_PID_FILE = PID_DIR / "api.pid"
+VITE_PID_FILE = PID_DIR / "vite.pid"
+API_LOG_FILE = PID_DIR / "api.log"
+VITE_LOG_FILE = PID_DIR / "vite.log"
+
+API_PORT = 20171
+VITE_PORT = 20170
+
+
+def kill_process_tree(pid: int):
+    """Terminates a process and all its children via taskkill."""
+    try:
+        subprocess.run(
+            ["taskkill", "/PID", str(pid), "/T", "/F"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        pass
+
+
+def kill_by_port(port: int):
+    """Kills any process listening on the specified local TCP port."""
+    try:
+        cmd = f"Get-NetTCPConnection -State Listen -LocalPort {port} -ErrorAction SilentlyContinue | ForEach-Object {{ Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }}"
+        subprocess.run(
+            ["powershell", "-NoProfile", "-Command", cmd],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        pass
+
+
+def stop():
+    """Stops all running instances of backend and frontend."""
+    print("Stopping Drive Architect services...")
+    for pid_file in (API_PID_FILE, VITE_PID_FILE):
+        if pid_file.exists():
+            try:
+                pid = int(pid_file.read_text().strip())
+                kill_process_tree(pid)
+            except Exception:
+                pass
+            try:
+                pid_file.unlink()
+            except Exception:
+                pass
+
+    kill_by_port(API_PORT)
+    kill_by_port(VITE_PORT)
+    print("✓ Services stopped.")
+
+
+def is_service_online(url: str, timeout: float = 1.0) -> bool:
+    """Checks if HTTP service responds."""
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "FaustSupervisor/1.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as res:
+            return res.status in (200, 304)
+    except Exception:
+        return False
+
+
+def start():
+    """Starts backend and frontend in windowless detached mode."""
+    stop()
+    time.sleep(1.0)
+
+    print("========================================================")
+    print("  Drive Architect — Background Process Supervisor")
+    print("========================================================")
+
+    flags = (
+        subprocess.CREATE_NEW_PROCESS_GROUP
+        | subprocess.DETACHED_PROCESS
+        | subprocess.CREATE_NO_WINDOW
+        if os.name == "nt"
+        else 0
+    )
+
+    # 1. Start FastAPI Backend with persistent OS file descriptor
+    api_log_fd = os.open(str(API_LOG_FILE), os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
+    api_proc = subprocess.Popen(
+        [sys.executable, "-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", str(API_PORT)],
+        cwd=str(ROOT_DIR),
+        stdout=api_log_fd,
+        stderr=subprocess.STDOUT,
+        creationflags=flags,
+    )
+    API_PID_FILE.write_text(str(api_proc.pid))
+    print(f"• Launching FastAPI Backend (PID {api_proc.pid}) on port {API_PORT}...")
+
+    # 2. Start Vite Frontend with persistent OS file descriptor
+    vite_log_fd = os.open(str(VITE_LOG_FILE), os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
+    vite_proc = subprocess.Popen(
+        ["npx.cmd", "vite", "--host", "0.0.0.0", "--port", str(VITE_PORT)],
+        cwd=str(FRONTEND_DIR),
+        stdout=vite_log_fd,
+        stderr=subprocess.STDOUT,
+        creationflags=flags,
+    )
+    VITE_PID_FILE.write_text(str(vite_proc.pid))
+    print(f"• Launching Vite Frontend (PID {vite_proc.pid}) on port {VITE_PORT}...")
+
+    # Wait for port binding
+    print("Waiting for network binding...")
+    api_online = False
+    vite_online = False
+
+    for _ in range(30):
+        time.sleep(0.5)
+        if not api_online:
+            api_online = is_service_online(f"http://127.0.0.1:{API_PORT}/api/status", timeout=2.0)
+        if not vite_online:
+            vite_online = is_service_online(f"http://127.0.0.1:{VITE_PORT}", timeout=2.0)
+        if api_online and vite_online:
+            break
+
+    print("========================================================")
+    print(f"Backend API  : http://localhost:{API_PORT}  [{'ONLINE ✓' if api_online else 'STARTING...'}]")
+    print(f"Frontend UI  : http://localhost:{VITE_PORT}  [{'ONLINE ✓' if vite_online else 'STARTING...'}]")
+    print("========================================================")
+
+    webbrowser.open(f"http://localhost:{VITE_PORT}")
+
+
+def status():
+    """Prints current health status."""
+    api_online = is_service_online(f"http://127.0.0.1:{API_PORT}/api/status")
+    vite_online = is_service_online(f"http://127.0.0.1:{VITE_PORT}")
+    print(f"Backend (Port {API_PORT}): {'ONLINE ✓' if api_online else 'OFFLINE ✗'}")
+    print(f"Frontend (Port {VITE_PORT}): {'ONLINE ✓' if vite_online else 'OFFLINE ✗'}")
+
+
+if __name__ == "__main__":
+    action = sys.argv[1].lower() if len(sys.argv) > 1 else "start"
+    if action == "start":
+        start()
+    elif action == "stop":
+        stop()
+    elif action == "status":
+        status()
+    else:
+        print(f"Usage: python launcher.py [start|stop|status]")

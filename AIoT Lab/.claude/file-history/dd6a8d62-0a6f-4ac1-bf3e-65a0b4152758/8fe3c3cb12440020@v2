@@ -1,0 +1,80 @@
+/**
+ * ============================================================================
+ * VGWD025K3 ~ Codex of Time (Varis Gear Walpurgis Driver Actuator)
+ * Faust Acoustic Field Speaker Firmware (ESP32 I2S Real-Time Audio Receiver)
+ * ============================================================================
+ * Hardware: ESP32 + MAX98357A / PCM5102 / I2S DAC Breakout
+ *
+ * Pinout (Standard I2S Master TX):
+ *   - I2S BCLK (SCK) : GPIO 16
+ *   - I2S LRC  (WS)  : GPIO 17
+ *   - I2S DIN  (SD)  : GPIO 15
+ *   - GND to GND, VIN to 5V (or 3.3V)
+ *
+ * Protocol:
+ *   - High-Speed UART: 921,600 baud
+ *   - Format: 16-bit Mono PCM @ 16,000 Hz (Little-Endian)
+ *   - Hardware Diagnostic: Plays startup chime (C5 -> E5 -> G5) on boot
+ * ============================================================================
+ */
+
+#include <Arduino.h>
+#include <I2SSpeaker.h>
+
+// --- Pinout Configuration ---
+#define PIN_I2S_BCLK     16    // Bit Clock (SCK)
+#define PIN_I2S_LRC      17    // Word Select (WS / LRC)
+#define PIN_I2S_DOUT     15    // Data Out to Speaker Amp DIN
+
+#define AUDIO_SAMPLE_RATE 16000 // 16 kHz high-fidelity voice
+#define SERIAL_BAUD_RATE  921600 // 921.6k baud streaming
+#define RX_BUFFER_SIZE    1024   // 512 samples per batch
+
+// Reusable Monorepo Driver Instance
+I2SSpeaker speaker(I2S_NUM_0);
+
+uint8_t rx_buffer[RX_BUFFER_SIZE];
+
+void setup() {
+    // 1. Initialize High-Speed Serial for audio streaming
+    Serial.begin(SERIAL_BAUD_RATE);
+    Serial.setRxBufferSize(8192); // Expand hardware RX buffer to avoid UART overflow
+
+    // 2. Initialize I2S Speaker Driver
+    bool ok = speaker.begin(
+        PIN_I2S_BCLK,
+        PIN_I2S_LRC,
+        PIN_I2S_DOUT,
+        AUDIO_SAMPLE_RATE,
+        8,    // 8 DMA buffers
+        512,  // 512 samples per buffer
+        true  // Duplicate mono to Left + Right stereo for universal DAC compatibility
+    );
+
+    if (!ok) {
+        Serial.println(F("[ERROR] I2S Speaker driver initialization failed!"));
+        while (true) { delay(100); }
+    }
+
+    // 3. Hardware Self-Test: Play 3-tone acoustic chime (C5 -> E5 -> G5)
+    // Confirms speaker amplifier power and wiring independently of serial connection
+    speaker.playChime();
+
+    // 4. Signal readiness to host
+    Serial.println();
+    Serial.println(F("[FAUST_VGWD025K3_SPEAKER_READY]"));
+}
+
+void loop() {
+    int available_bytes = Serial.available();
+    if (available_bytes >= 2) {
+        // Read in chunks aligned to 2 bytes (16-bit PCM sample boundary)
+        int to_read = min(available_bytes, (int)RX_BUFFER_SIZE);
+        to_read = to_read & (~1);
+
+        int bytes_read = Serial.readBytes((char*)rx_buffer, to_read);
+        if (bytes_read > 0) {
+            speaker.writeBytes(rx_buffer, bytes_read);
+        }
+    }
+}

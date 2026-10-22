@@ -1,0 +1,370 @@
+import React, { useState, useEffect } from 'react';
+import { Header } from './components/Header';
+import { CommandDeck } from './components/CommandDeck';
+import { MetricsBar } from './components/MetricsBar';
+import { ReconciliationTree } from './components/ReconciliationTree';
+import { ConfirmationModal } from './components/ConfirmationModal';
+import { HistoryDrawer } from './components/HistoryDrawer';
+import { TargetConfigModal } from './components/TargetConfigModal';
+import { ActionToast, ToastMessage } from './components/ActionToast';
+import { TemplateStudio } from './components/TemplateStudio';
+import { DriveNavigator } from './components/DriveNavigator';
+import { BirdEyeDashboard } from './components/BirdEyeDashboard';
+import { EntitySidebar } from './components/EntitySidebar';
+import { NewEntityModal } from './components/NewEntityModal';
+import { MultiEntityPlan, AuditLog } from './types';
+
+const DEFAULT_TEMPLATE = 'https://drive.google.com/drive/folders/1qPYOlZ3-LlnfiBRorXUnNa_0yVZcILvM';
+const DEFAULT_ROOT = 'https://drive.google.com/drive/folders/14J8QBCqdSQOPerLBIaR2jLyYhZ4WbJUA';
+
+export const App: React.FC = () => {
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('da_theme') as 'dark' | 'light') || 'dark';
+  });
+
+  const [activeTab, setActiveTab] = useState<'reconciler' | 'navigator' | 'studio'>('reconciler');
+  const [mockMode, setMockMode] = useState(true);
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+
+  // Persistent target folder links
+  const [templateLink, setTemplateLink] = useState(() => {
+    return localStorage.getItem('da_template_link') || DEFAULT_TEMPLATE;
+  });
+  const [rootLink, setRootLink] = useState(() => {
+    return localStorage.getItem('da_root_link') || DEFAULT_ROOT;
+  });
+
+  const [bypassCache, setBypassCache] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [plan, setPlan] = useState<MultiEntityPlan | null>(null);
+  const [durationMs, setDurationMs] = useState(0);
+
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyLogs, setHistoryLogs] = useState<AuditLog[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
+  // PK Network Golden Standard Entity Modal State
+  const [isNewEntityModalOpen, setIsNewEntityModalOpen] = useState(false);
+  const [targetCreateGroupId, setTargetCreateGroupId] = useState<string | null>(null);
+
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const handleOpenCreateEntityModal = (groupId?: string) => {
+    setTargetCreateGroupId(groupId || null);
+    setIsNewEntityModalOpen(true);
+  };
+
+  const handleCreateNewEntity = async (entity: { name: string; folder_slug: string; group_id: string }) => {
+    try {
+      const res = await fetch('/api/drive/clone_template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parent_id: entity.group_id,
+          clone_name: entity.folder_slug,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to spawn entity');
+
+      addToast(
+        'success',
+        'Entity Spawned Successfully',
+        `Created '${entity.name}' with ${data.total_folders_created} template subfolders`
+      );
+      setIsNewEntityModalOpen(false);
+      handleScan();
+    } catch (err: any) {
+      addToast('error', 'Creation Error', err.message);
+      throw err;
+    }
+  };
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('da_theme', theme);
+  }, [theme]);
+
+  // Sync initial mock mode from backend and auto-scan immediately
+  useEffect(() => {
+    fetch('/api/status')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.mock_mode !== undefined) {
+          setMockMode(data.mock_mode);
+        }
+      })
+      .catch(() => {});
+
+    // Initial 0ms scan
+    handleScan();
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const handleToggleMockMode = async () => {
+    try {
+      const res = await fetch('/api/mock/toggle', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setMockMode(data.mock_mode);
+        addToast(
+          'info',
+          data.mock_mode ? 'Switched to 0ms Mock Mode' : 'Switched to Live Google Drive',
+          data.mock_mode
+            ? 'Operating on in-memory mock store with instant 0ms responses.'
+            : 'Connecting directly to Google Drive API.'
+        );
+      }
+    } catch (err: any) {
+      addToast('error', 'Toggle Error', err.message);
+    }
+  };
+
+  const handleResetMockData = async () => {
+    try {
+      const res = await fetch('/api/mock/reset', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        addToast('success', 'Mock Store Reset', 'Reset to initial canonical state.');
+        handleScan();
+      }
+    } catch (err: any) {
+      addToast('error', 'Reset Error', err.message);
+    }
+  };
+
+  const addToast = (type: 'success' | 'error' | 'info', title: string, message?: string) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, type, title, message }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4500);
+  };
+
+  const dismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Perform Scan
+  const handleScan = async () => {
+    if (!templateLink || !rootLink) return;
+    setIsScanning(true);
+    try {
+      const res = await fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          template_link: templateLink,
+          root_link: rootLink,
+          bypass_cache: bypassCache,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Failed to scan target folders');
+      }
+
+      setPlan(data.plan);
+      setDurationMs(data.duration_ms);
+      addToast(
+        'success',
+        'Hierarchy Tree Scanned',
+        `Analyzed in ${data.duration_ms} ms (${data.plan.summary.total_entities} entities evaluated)`
+      );
+    } catch (err: any) {
+      addToast('error', 'Scan Error', err.message);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Perform Reconcile Live or Single Entity
+  const handleExecutePlan = async (customPlan?: any) => {
+    const planToRun = customPlan || plan;
+    if (!planToRun) return;
+    setIsExecuting(true);
+    try {
+      const res = await fetch('/api/reconcile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          template_link: templateLink,
+          root_link: rootLink,
+          plan: planToRun,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Failed to execute reconciliation');
+      }
+
+      addToast(
+        'success',
+        'Reconciliation Executed',
+        `Renamed: ${data.results.renamed_count || 0} | Created: ${data.results.created_count} | Updated: ${data.results.updated_desc_count} | Trashed: ${data.results.pruned_empty_count}`
+      );
+
+      // Re-scan to update state
+      handleScan();
+    } catch (err: any) {
+      addToast('error', 'Execution Error', err.message);
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  // Fetch History
+  const handleOpenHistory = async () => {
+    setIsHistoryOpen(true);
+    setIsHistoryLoading(true);
+    try {
+      const res = await fetch('/api/history');
+      const data = await res.json();
+      if (res.ok && data.history) {
+        setHistoryLogs(data.history);
+      }
+    } catch (err: any) {
+      addToast('error', 'History Error', err.message);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  };
+
+  return (
+    <div className="app-container">
+      <Header
+        theme={theme}
+        toggleTheme={toggleTheme}
+        onOpenHistory={handleOpenHistory}
+        onOpenConfig={() => setIsConfigOpen(true)}
+        isScanning={isScanning}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        mockMode={mockMode}
+        onToggleMockMode={handleToggleMockMode}
+        onResetMockData={handleResetMockData}
+      />
+
+      <main className="main-content">
+        {activeTab === 'studio' ? (
+          <TemplateStudio
+            templateLink={templateLink}
+            onOpenConfig={() => setIsConfigOpen(true)}
+            addToast={addToast}
+          />
+        ) : activeTab === 'navigator' ? (
+          <DriveNavigator
+            initialFolderId={rootLink}
+            templateLink={templateLink}
+            addToast={addToast}
+          />
+        ) : (
+          plan ? (
+            <div
+              style={{
+                display: 'flex',
+                height: 'calc(100vh - 75px)',
+                margin: '-2rem -2rem',
+                overflow: 'hidden',
+                background: 'var(--bg-canvas)',
+              }}
+            >
+              {/* Left Sidebar showing the full persistent tree of entities (PK Network Standard) */}
+              <EntitySidebar
+                groups={plan.groups}
+                selectedEntityId={selectedEntityId}
+                onSelectEntity={setSelectedEntityId}
+                onOpenNewCloneModal={handleOpenCreateEntityModal}
+                totalExceptionsCount={
+                  plan.groups
+                    .flatMap((g) => g.entity_plans.flatMap((ep) => ep.items))
+                    .filter((i) => i.action_type !== 'MATCH').length
+                }
+                onSyncAll={() => handleExecutePlan(plan)}
+                isExecuting={isExecuting}
+              />
+
+              {/* Right Panel: Bird-Eye View Dashboard */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 2rem' }}>
+                <BirdEyeDashboard
+                  plan={plan}
+                  onRefresh={handleScan}
+                  onExecutePlan={handleExecutePlan}
+                  isExecuting={isExecuting}
+                  addToast={addToast}
+                  mockMode={mockMode}
+                  onToggleMockMode={handleToggleMockMode}
+                  onResetMockData={handleResetMockData}
+                  selectedEntityId={selectedEntityId}
+                  onSelectEntity={setSelectedEntityId}
+                  onOpenCreateModal={handleOpenCreateEntityModal}
+                />
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-dim)' }}>
+              Loading entities workspace...
+            </div>
+          )
+        )}
+      </main>
+
+      {/* PK Network Golden Standard Entity Modal */}
+      {plan && (
+        <NewEntityModal
+          isOpen={isNewEntityModalOpen}
+          onClose={() => setIsNewEntityModalOpen(false)}
+          availableGroups={plan.groups}
+          defaultGroupId={targetCreateGroupId}
+          onCreate={handleCreateNewEntity}
+          templateName="Entropy 0 Archetype"
+        />
+      )}
+
+      {/* Target Folders Configuration Modal */}
+      <TargetConfigModal
+        isOpen={isConfigOpen}
+        onClose={() => setIsConfigOpen(false)}
+        templateLink={templateLink}
+        setTemplateLink={setTemplateLink}
+        rootLink={rootLink}
+        setRootLink={setRootLink}
+        onSaved={() => {
+          addToast('info', 'Target Endpoints Updated', 'New folder anchors saved.');
+          setPlan(null); // Clear previous plan to re-scan
+        }}
+      />
+
+      {/* Confirmation Modal */}
+      {plan && (
+        <ConfirmationModal
+          isOpen={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          onConfirm={() => handleExecutePlan()}
+          summary={plan.summary}
+          isExecuting={isExecuting}
+        />
+      )}
+
+      {/* History Drawer */}
+      <HistoryDrawer
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        logs={historyLogs}
+        isLoading={isHistoryLoading}
+      />
+
+      {/* Toast Notifications */}
+      <ActionToast toasts={toasts} onDismiss={dismissToast} />
+    </div>
+  );
+};
+export default App;

@@ -1,0 +1,255 @@
+import React from 'react';
+import {
+  FolderTree,
+  Trash2,
+  Table,
+  Zap,
+  Sparkles,
+  Scissors,
+  Layers,
+  Moon,
+  Sun,
+  Database,
+  ExternalLink,
+} from 'lucide-react';
+
+interface DriveReconcilerHeaderProps {
+  activeTab: 'reconciler' | 'trash';
+  setActiveTab: (tab: 'reconciler' | 'trash') => void;
+  trashCount: number;
+  onSwitchToPk: () => void;
+  onSwitchToHazard: () => void;
+  onSwitchToPrompt: () => void;
+  onSwitchToHair: () => void;
+  onSwitchToFacet: () => void;
+  theme: 'dark' | 'light';
+  onToggleTheme: () => void;
+  isMobile?: boolean;
+}
+
+export const DriveReconcilerHeader: React.FC<DriveReconcilerHeaderProps> = ({
+  activeTab,
+  setActiveTab,
+  trashCount,
+  onSwitchToPk,
+  onSwitchToHazard,
+  onSwitchToPrompt,
+  onSwitchToHair,
+  onSwitchToFacet,
+  theme,
+  onToggleTheme,
+  isMobile = false,
+}) => {
+  return (
+    <header
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0.6rem 1rem',
+        borderBottom: '1px solid var(--border-light)',
+        background: 'var(--bg-card)',
+        gap: '0.75rem',
+        flexWrap: 'nowrap',
+        zIndex: 10,
+      }}
+    >
+      {/* Brand & Internal Tabs */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, fontSize: '15px' }}>
+          <FolderTree size={18} style={{ color: 'var(--accent)' }} />
+          <span style={{ color: 'var(--accent)' }}>Drive</span>
+          <span style={{ color: 'var(--text-primary)' }}>Architect</span>
+          <span className="badge" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', fontSize: '10px' }}>
+            SQLite Master
+          </span>
+        </div>
+
+        {/* View Switcher: Reconciler vs Trash Manager */}
+        <div style={{ display: 'flex', background: 'var(--bg-canvas)', padding: '2px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+          <button
+            onClick={() => setActiveTab('reconciler')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.35rem 0.75rem',
+              borderRadius: 'calc(var(--radius-sm) - 2px)',
+              border: 'none',
+              background: activeTab === 'reconciler' ? 'var(--accent)' : 'transparent',
+              color: activeTab === 'reconciler' ? '#000' : 'var(--text-tertiary)',
+              fontWeight: activeTab === 'reconciler' ? 700 : 500,
+              cursor: 'pointer',
+              fontSize: '12px',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <FolderTree size={13} />
+            <span>Entities Reconciler</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('trash')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.35rem 0.75rem',
+              borderRadius: 'calc(var(--radius-sm) - 2px)',
+              border: 'none',
+              background: activeTab === 'trash' ? 'var(--danger)' : 'transparent',
+              color: activeTab === 'trash' ? '#fff' : 'var(--text-tertiary)',
+              fontWeight: activeTab === 'trash' ? 700 : 500,
+              cursor: 'pointer',
+              fontSize: '12px',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <Trash2 size={13} />
+            <span>Trash & DB Purge</span>
+            {trashCount > 0 && (
+              <span
+                style={{
+                  fontSize: '10px',
+                  padding: '1px 5px',
+                  borderRadius: '10px',
+                  background: activeTab === 'trash' ? 'rgba(0,0,0,0.3)' : 'var(--danger)',
+                  color: '#fff',
+                  fontWeight: 700,
+                }}
+              >
+                {trashCount}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Subdomain Switchers back to PK tabs */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <button
+          onClick={onSwitchToPk}
+          title="Return to Main PK Network Table Grid"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--border-light)',
+            background: 'var(--bg-canvas)',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 600,
+          }}
+        >
+          <Table size={13} />
+          {!isMobile && <span>PK Tables</span>}
+        </button>
+
+        <button
+          onClick={onSwitchToHazard}
+          title="Switch to Hazard Trigger Arena"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid rgba(56, 189, 248, 0.4)',
+            background: 'rgba(2, 132, 199, 0.15)',
+            color: '#38bdf8',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 600,
+          }}
+        >
+          <Zap size={13} />
+          {!isMobile && <span>Hazard</span>}
+        </button>
+
+        <button
+          onClick={onSwitchToPrompt}
+          title="Switch to Prompt Studio"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid rgba(168, 85, 247, 0.4)',
+            background: 'rgba(168, 85, 247, 0.15)',
+            color: '#c084fc',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 600,
+          }}
+        >
+          <Sparkles size={13} />
+          {!isMobile && <span>Prompt</span>}
+        </button>
+
+        <button
+          onClick={onSwitchToHair}
+          title="Switch to Hair Visual Codex"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid rgba(244, 63, 94, 0.4)',
+            background: 'rgba(244, 63, 94, 0.15)',
+            color: '#fb7185',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 600,
+          }}
+        >
+          <Scissors size={13} />
+          {!isMobile && <span>Hair</span>}
+        </button>
+
+        <button
+          onClick={onSwitchToFacet}
+          title="Switch to Facet Codex"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            padding: '0.35rem 0.75rem',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid rgba(16, 185, 129, 0.4)',
+            background: 'rgba(16, 185, 129, 0.15)',
+            color: '#34d399',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 600,
+          }}
+        >
+          <Layers size={13} />
+          {!isMobile && <span>Facet</span>}
+        </button>
+
+        {/* Theme Toggle */}
+        <button
+          onClick={onToggleTheme}
+          style={{
+            background: 'transparent',
+            border: '1px solid var(--border-light)',
+            color: 'var(--text-secondary)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '0.35rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+        </button>
+      </div>
+    </header>
+  );
+};

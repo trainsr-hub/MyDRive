@@ -1,0 +1,72 @@
+{
+  "id": "black-hole-genesis",
+  "Title": "Black Hole Genesis Pack",
+  "Note": "Singularity Forge • High-Density Tactical Relics",
+  "Cards": 7,
+  "ticketType": "codex-roll",
+  "ticketCost": 2,
+  "Cover": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=500&auto=format&fit=crop&q=80",
+  "Animation": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&auto=format&fit=crop&q=80",
+  "Button": "#a855f7",
+  "ButtonText": "Engage",
+  "color": "#a855f7",
+  "borderColor": "#9333ea",
+  "bgGradient": "from-[#3b0764] via-[#1a1424] to-[#120f18]",
+  "Unpack": [
+    "Singularity Core Scepter ~ 3%",
+    "Chronos Hourglass ~ 6%",
+    "Event Horizon Aegis ~ 12%",
+    "Verdant Bio Core 40...80 ~ 20%",
+    "Void Kinetic Core 50...100 ~ 25%",
+    "Dark Matter Shard"
+  ],
+  "Guarantee": [
+    "Event Horizon Aegis | Singularity Core Scepter"
+  ],
+  "Items": {
+    "Singularity Core Scepter": {
+      "cover": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #451a03 0%, #200d02 50%, #000 100%)",
+      "category": "relic",
+      "rarity": "legendary",
+      "description": "Harnesses miniature gravitational wells to pull enemy trajectories off course."
+    },
+    "Chronos Hourglass": {
+      "cover": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #3b0764 0%, #1a082e 50%, #000 100%)",
+      "category": "relic",
+      "rarity": "epic",
+      "description": "Bends local time seconds to yield additional productive hours."
+    },
+    "Event Horizon Aegis": {
+      "cover": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #082f49 0%, #051a2e 50%, #000 100%)",
+      "category": "relic",
+      "rarity": "rare",
+      "description": "Curvature shield dissipating high-energy physical assaults."
+    },
+    "Verdant Bio Core": {
+      "cover": "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #15803d 0%, #052e16 50%, #000 100%)",
+      "category": "energy-core",
+      "rarity": "rare",
+      "description": "Biological nutrients fueling automated hydroponic hardware.",
+      "energyAttribute": "verdant"
+    },
+    "Void Kinetic Core": {
+      "cover": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #7e22ce 0%, #3b0764 50%, #000 100%)",
+      "category": "energy-core",
+      "rarity": "rare",
+      "description": "Kinetic energy fuel condensed from dimensional voids.",
+      "energyAttribute": "void"
+    },
+    "Dark Matter Shard": {
+      "cover": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)",
+      "category": "collectible",
+      "rarity": "common",
+      "description": "Microscopic crystalline shard of compressed dark matter."
+    }
+  }
+}

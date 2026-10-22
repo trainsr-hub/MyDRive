@@ -1,0 +1,116 @@
+import {
+  ScanResponse,
+  TrashCandidatesResponse,
+  AllFoldersResponse,
+  MultiEntityPlan,
+} from '../types/drive';
+
+// Target port 10191 (FastAPI backend for Drive Reconciler)
+const BASE_URL = 'http://localhost:10191';
+
+async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const url = `${BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  try {
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options?.headers || {}),
+      },
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || `HTTP ${res.status}: Request failed`);
+    }
+    return data;
+  } catch (err: any) {
+    // If localhost fetch fails, provide clear actionable error
+    if (err.message.includes('Failed to fetch')) {
+      throw new Error(
+        `Cannot connect to Drive Reconciler backend at ${BASE_URL}. Ensure run_app.bat is active on port 10191.`
+      );
+    }
+    throw err;
+  }
+}
+
+export const driveApi = {
+  // 1. Core Reconciler
+  scan: (templateLink = '', rootLink = '', bypassCache = false): Promise<ScanResponse> =>
+    request<ScanResponse>('/api/scan', {
+      method: 'POST',
+      body: JSON.stringify({
+        template_link: templateLink,
+        root_link: rootLink,
+        bypass_cache: bypassCache,
+      }),
+    }),
+
+  reconcile: (plan: MultiEntityPlan): Promise<any> =>
+    request('/api/reconcile', {
+      method: 'POST',
+      body: JSON.stringify({ plan }),
+    }),
+
+  syncPush: (): Promise<{
+    success: boolean;
+    created_on_drive: number;
+    renamed_on_drive: number;
+    trashed_on_drive: number;
+    duration_ms: number;
+    message: string;
+  }> => request('/api/drive/sync_push', { method: 'POST' }),
+
+  // 2. Trash Management & Database Inspector
+  getTrashCandidates: (): Promise<TrashCandidatesResponse> =>
+    request<TrashCandidatesResponse>('/api/drive/trash_candidates'),
+
+  getAllFolders: (): Promise<AllFoldersResponse> =>
+    request<AllFoldersResponse>('/api/drive/all_folders'),
+
+  trashFolder: (folderId: string, cascade = true, trashRemote = false): Promise<any> =>
+    request('/api/drive/trash_folder', {
+      method: 'POST',
+      body: JSON.stringify({
+        folder_id: folderId,
+        force: true,
+        cascade,
+        trash_remote: trashRemote,
+      }),
+    }),
+
+  purgeTrash: (folderIds: string[] = [], purgeAll = false, trashRemote = false): Promise<any> =>
+    request('/api/drive/purge_trash', {
+      method: 'POST',
+      body: JSON.stringify({
+        folder_ids: folderIds,
+        purge_all: purgeAll,
+        trash_remote: trashRemote,
+      }),
+    }),
+
+  // 3. Entity & Folder Operations
+  renameFolder: (folderId: string, name: string): Promise<any> =>
+    request('/api/drive/rename_folder', {
+      method: 'POST',
+      body: JSON.stringify({ folder_id: folderId, name }),
+    }),
+
+  moveFolder: (folderId: string, newParentId: string): Promise<any> =>
+    request('/api/drive/move_folder', {
+      method: 'POST',
+      body: JSON.stringify({ folder_id: folderId, new_parent_id: newParentId }),
+    }),
+
+  cloneTemplate: (parentId: string, cloneName: string): Promise<any> =>
+    request('/api/drive/clone_template', {
+      method: 'POST',
+      body: JSON.stringify({ parent_id: parentId, clone_name: cloneName }),
+    }),
+
+  // 4. System & History
+  getStatus: (): Promise<any> => request('/api/status'),
+
+  getHistory: (): Promise<any> => request('/api/history'),
+};

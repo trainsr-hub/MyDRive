@@ -1,0 +1,75 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Python cache & artifacts
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Build artifacts
+dist/
+**/dist/
+dist-ssr/
+build/
+.wrangler/
+**/.wrangler/
+
+# Temporary SQLite WAL & SHM files
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite
+*.db
+.claude/backups/
+.secrets/
+**/.secrets/
+
+# Logs
+logs/
+*.log
+*.err
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Local runtime state, queues & locks
+*.lock
+processed_update_id.txt
+telegram_incoming.jsonl
+status.txt
+.temp/
+
+# Secrets & Local Configurations
+.env
+telegram_config.json
+
+# Large AI Neural Weights & Audio Binaries (Managed via Google Drive / Local Disk)
+*.onnx
+*.bin
+*.wav
+*.mp3
+!Entropy/Rose/audio/*.wav
+**/models/*.onnx
+**/models/*.bin
+**/samples/*.wav
+archive/debug/
+
+# Editor & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude Local Settings (keep .claude/memory and .claude/rules tracked)
+.claude/settings.local.json
+.claude/paste-cache/
+.claude/file-history/
+.claude/tasks/
+.claude/graphify/cache/
+graphify-out/

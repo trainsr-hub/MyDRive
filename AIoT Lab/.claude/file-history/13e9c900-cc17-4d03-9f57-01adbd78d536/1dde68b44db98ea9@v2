@@ -1,0 +1,220 @@
+# Omniroute Combo Configurations Summary
+Generated: 2026-10-12
+Source: D:\My Drive\Sync\Config\omniroute\storage.sqlite
+
+## Overview
+This document summarizes the Combo configurations found in the Omniroute system.
+Full JSON backup available at: omniroute_combos_backup.json
+
+## Combo Definitions (15 Total)
+
+### 1. Faust-ST (Tier 1)
+- **ID**: 7c3549d0-5358-41aa-a480-f0b6fbd7a537
+- **Name**: Faust-ST
+- **Strategy**: round-robin
+- **Sort Order**: 1
+- **Models**: 4
+  - faust-st-ref-1-provider-kiro (combo-ref → Provider - KIRO)
+  - faust-st-ref-3-provider-qoder (combo-ref → Provider - Qoder) 
+  - faust-st-ref-9-faust-nd (combo-ref → Faust-ND)
+  - faust-st-ref-5-provider-antigravity (combo-ref → Provider - Antigravity)
+- **Config**:
+  - Strategy: round-robin
+  - Weights: quota(0.16), health(0.2), costInv(0.16), latencyInv(0.12), taskFit(0.08), stability(0.05), tierPriority(0.05), tierAffinity(0.05), specificityMatch(0.05), contextAffinity(0.08), sessionAvailability(0.05), resetWindowAffinity(0.05)
+  - ModePack: ship-fast
+  - ExplorationRate: 0.05
+  - RouterStrategy: rules
+  - MaxRetries: 1
+  - RetryDelayMs: 2000
+  - HandoffThreshold: 0.85
+  - TrackMetrics: true
+  - ReasoningTokenBufferEnabled: true
+  - ZeroLatencyOptimizationsEnabled: false
+
+### 2. Faust-ND (Tier 2)
+- **ID**: 283d4daa-5aa7-4150-8f71-e638bc182625
+- **Name**: Faust-ND
+- **Strategy**: round-robin
+- **Sort Order**: 2
+- **Models**: 7
+  - faust-nd-ref-1-provider-kiro (combo-ref → Provider - KIRO)
+  - faust-nd-ref-18-provider-qoder (combo-ref → Provider - Qoder)
+  - faust-nd-ref-3-provider-cline (combo-ref → Provider - Cline)
+  - faust-nd-ref-10-provider-openrouter (combo-ref → Provider - OpenRouter)
+  - faust-nd-ref-7-provider-nvidia (combo-ref → Provider - NVIDIA)
+  - faust-nd-ref-7-provider-antigravity (combo-ref → Provider - Antigravity)
+  - faust-nd-ref-6-provider-codex (combo-ref → Provider - Codex)
+- **Config**:
+  - Strategy: round-robin
+  - MaxRetries: 1
+  - RetryDelayMs: 2000
+  - HandoffThreshold: 0.85
+  - TrackMetrics: true
+  - ReasoningTokenBufferEnabled: true
+  - ZeroLatencyOptimizationsEnabled: false
+  - CompatFilterFailOpen: true
+
+### 3. Faust-RD (Tier 2.5)
+- **ID**: 31e16089-f2fe-4773-8147-84a941fa89d8
+- **Name**: Faust-RD
+- **Strategy**: auto
+- **Sort Order**: 3
+- **Models**: 2
+  - faust-rd-ref-1-provider-groq (model: groq/compound)
+  - faust-rd-ref-2-provider-agy (model: agy/gemini-3.7-flash-high)
+- **Config**:
+  - Strategy: auto
+  - CandidatePool: ["groq"]
+  - MaxRetries: 1
+  - RetryDelayMs: 2000
+  - HandoffThreshold: 0.85
+  - TrackMetrics: true
+  - ReasoningTokenBufferEnabled: true
+  - ZeroLatencyOptimizationsEnabled: false
+  - CompatFilterFailOpen: true
+
+### 4. Faust-TH (Tier 3)
+- **ID**: a30fd409-2345-4852-afb7-fe2de44d009a
+- **Name**: Faust-TH
+- **Strategy**: reset-aware
+- **Sort Order**: 4
+- **Models**: 3
+  - faust-th-model-1-agy-gpt-oss-120b-medium-d382e042-5e4a-46d4-84a6-4ad40afaecf1 (model: agy/gpt-oss-120b-medium, connection: d382e042-5e4a-46d4-84a6-4ad40afaecf1, label: phamhoangkha14012020@gmail.com)
+  - faust-th-model-2-agy-gpt-oss-120b-medium (model: agy/gpt-oss-120b-medium)
+  - faust-th-ref-1-provider-groq (combo-ref → Provider - Groq)
+- **Config**:
+  - Strategy: reset-aware
+  - MaxRetries: 1
+  - RetryDelayMs: 2000
+  - HandoffThreshold: 0.85
+  - TrackMetrics: true
+  - ReasoningTokenBufferEnabled: true
+  - ZeroLatencyOptimizationsEnabled: false
+  - CompatFilterFailOpen: true
+
+### 5-13. Provider-Specific Combos
+Each provider has a dedicated Combo for direct access:
+
+5. **Provider - KIRO**
+   - ID: 2cb3f3e7-28f2-4a68-bef7-7d24ec85facc
+   - Strategy: priority
+   - Models: 1 (kiro/* via kiro provider)
+
+6. **Provider - Qoder**
+   - ID: 398d126b-2814-464f-8a3f-22ed37d28d9c
+   - Strategy: priority
+   - Models: 1 (qoder/* via qoder provider)
+
+7. **Provider - Cline**
+   - ID: 67f0bfcd-4096-49c3-aa5f-38216f48c213
+   - Strategy: priority
+   - Models: 1 (cline/* via cline provider)
+
+8. **Provider - Codex**
+   - ID: 3b694fca-a53c-4af1-aa9b-6b1e1da08cc1
+   - Strategy: priority
+   - Models: 1 (codex/* via codex provider)
+
+9. **Provider - NVIDIA**
+   - ID: 5d825e9e-4423-49d5-af03-62d8b2909ac2
+   - Strategy: priority
+   - Models: 1 (nvidia/* via nvidia provider)
+
+10. **Provider - OpenRouter**
+    - ID: c1fcc106-77ab-4df9-a8be-b700d80fdf1f
+    - Strategy: priority
+    - Models: 1 (openrouter/* via openrouter provider)
+
+11. **Provider - Google AI Studio**
+    - ID: efdc766b-1e5b-45d3-9aac-79c78234f228
+    - Strategy: priority
+    - Models: 1 (google/* via google-ai-studio provider)
+
+12. **Provider - Groq**
+    - ID: d66e2a46-660f-4992-83f2-ca47f976ff70
+    - Strategy: priority
+    - Models: 1 (groq/* via groq provider)
+
+13. **Provider - Antigravity**
+    - ID: 684467c9-a344-4905-8d29-4ddf9851a6a7
+    - Strategy: priority
+    - Models: 1 (antigravity/* via antigravity provider)
+
+### 14. AGY - Claude
+- **ID**: f783f791-29f3-4b0c-a9f0-3bba1b7602c5
+- **Name**: AGY - Claude
+- **Strategy**: priority
+- **Sort Order**: 5
+- **Models**: 2
+  - agy-claude-ref-1-agy (model: agy/claude-sonnet-4-6)
+  - agy-claude-ref-2-agy (model: agy/claude-sonnet-4-6)
+- **Config**:
+  - Strategy: priority
+  - MaxRetries: 1
+  - RetryDelayMs: 2000
+  - HandoffThreshold: 0.85
+  - TrackMetrics: true
+  - ReasoningTokenBufferEnabled: true
+  - ZeroLatencyOptimizationsEnabled: false
+  - CompatFilterFailOpen: true
+
+### 15. nfttt
+- **ID**: 7b0486df-265c-4676-9fce-d4011ca6fcca
+- **Name**: nfttt
+- **Strategy**: priority
+- **Sort Order**: 6
+- **Models**: 1
+  - nfttt-ref-1-agy (model: agy/claude-sonnet-4-6)
+- **Config**:
+  - Strategy: priority
+  - MaxRetries: 1
+  - RetryDelayMs: 2000
+  - HandoffThreshold: 0.85
+  - TrackMetrics: true
+  - ReasoningTokenBufferEnabled: true
+  - ZeroLatencyOptimizationsEnabled: false
+  - CompatFilterFailOpen: true
+
+## Related Configuration Tables
+
+### model_combo_mappings (Routing Rules)
+4 entries mapping model patterns to Combo IDs:
+1. claude-sonnet* → Faust-ND (283d4daa-5aa7-4150-8f71-e638bc182625)
+2. claude-3-5-sonnet* → Faust-ND (283d4daa-5aa7-4150-8f71-e638bc182625)
+3. claude-opus* → Faust-ND (283d4daa-5aa7-4150-8f71-e638bc182625)
+4. Priority values: 10 (all enabled)
+
+### Provider Connections
+83 total provider connections including:
+- agy (Google) - Multiple accounts
+- groq
+- nvidia/openrouter
+- kiro
+- qoder
+- cline
+- codex
+- antigravity
+- pollinations
+- longcat
+- cerebras
+- huggingface
+- And many more...
+
+## Usage Notes
+
+1. **Combo References**: Combos can reference other Combos (kind: "combo-ref") or direct models (kind: "model")
+2. **Strategies**: 
+   - round-robin: Distribute requests evenly
+   - priority: Use first available model
+   - auto: Automatic selection based on weights/candidate pool
+   - reset-aware: Special handling for model resets
+3. **Configuration**: Each Combo has configurable retries, timeouts, handoff thresholds, and routing weights
+4. **Backups**: The JSON backup contains all this data and can be used for restoration
+
+## File Locations
+- Source Database: `D:\My Drive\Sync\Config\omniroute\storage.sqlite`
+- JSON Backup: `D:\My Drive\Blue AI\omniroute_combos_backup.json`
+- This Summary: `D:\My Drive\Blue AI\omniroute_combos_summary.md`
+
+---
+*This summary excludes sensitive credential material found in provider_connections for security purposes.*

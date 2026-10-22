@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biogenesis Incubator · Procedural Organism Evolution</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #02080c; font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #ecfeff; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+.hud {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 24px; z-index: 10;
+}
+.header { text-align: center; }
+.sub-title { font-size: 11px; letter-spacing: .35em; text-transform: uppercase; color: #10b981; font-weight: 700; margin-bottom: 2px; }
+.main-title { font-size: 20px; font-weight: 800; letter-spacing: .12em; color: #fff; text-shadow: 0 0 16px rgba(16,185,129,0.5); }
+.evo-card {
+  position: absolute; right: 30px; top: 50%; transform: translateY(-50%);
+  background: rgba(4, 20, 24, 0.85); border: 1.5px solid rgba(16,185,129,0.35);
+  border-radius: 14px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;
+  pointer-events: auto; min-width: 220px; box-shadow: 0 0 24px rgba(0,0,0,0.6);
+}
+.card-lbl { font-size: 10px; letter-spacing: .2em; color: #6ee7b7; text-transform: uppercase; }
+.card-hrs { font-size: 32px; font-weight: 900; font-family: monospace; color: #fff; text-shadow: 0 0 14px rgba(16,185,129,0.8); }
+.card-form { font-size: 11px; font-weight: 700; color: #34d399; letter-spacing: .08em; }
+.controls { pointer-events: auto; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+.btn {
+  min-height: 52px; padding: 0 22px; background: rgba(6, 30, 36, 0.85);
+  border: 1.5px solid rgba(16,185,129,0.35); border-radius: 12px; color: #a7f3d0;
+  font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  cursor: pointer; transition: all .15s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:hover { background: #064e3b; border-color: #34d399; color: #fff; box-shadow: 0 0 24px rgba(16,185,129,0.5); transform: translateY(-2px); }
+.btn:active { transform: translateY(1px); }
+.btn.active { background: #059669; border-color: #ecfdf5; color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="header">
+    <div class="sub-title">Primordial Morphogenesis Chamber</div>
+    <div class="main-title">Organism Evolution Incubator · 10,000h</div>
+  </div>
+  <div class="evo-card">
+    <span class="card-lbl">Life Fuel Bank</span>
+    <span class="card-hrs" id="hoursVal">0 h</span>
+    <span class="card-form" id="formVal">Form I: Primordial Amoeba</span>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="bankHours(10)">🧬 Feed Mote (+10h)</button>
+    <button class="btn" onclick="bankHours(200)">🧪 Gene Splice (+200h)</button>
+    <button class="btn" onclick="bankHours(1000)">🦎 Metamorphosis (+1,000h)</button>
+    <button class="btn" id="flowBtn" onclick="toggleFlow()">🌊 Live Evolution Flow</button>
+    <button class="btn" onclick="resetSpecies()">🔄 Reset Specimen</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const hoursValEl = document.getElementById('hoursVal'), formValEl = document.getElementById('formVal');
+let W, H, cx, cy, hours = 0, targetHours = 0, isFlowing = false, flowTimer = null, audioCtx = null;
+const MAX_HOURS = 10000;
+const SEGMENTS = 14;
+let spine = Array.from({ length: SEGMENTS }, () => ({ x: 0, y: 0 }));
+
+function playBioHeartbeat(pitch = 1.0) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'triangle'; osc.frequency.setValueAtTime(140 * pitch, t);
+    osc.frequency.exponentialRampToValueAtTime(45, t + 0.2);
+    gain.gain.setValueAtTime(0.12, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.2);
+  } catch(e) {}
+}
+
+function resize() {
+  W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight;
+  cx = W / 2; cy = H / 2;
+  spine.forEach(s => { s.x = cx; s.y = cy; });
+}
+window.addEventListener('resize', resize);
+resize();
+
+function bankHours(n) { targetHours = Math.min(MAX_HOURS, targetHours + n); playBioHeartbeat(1.0 + (hours / MAX_HOURS)); }
+function toggleFlow() {
+  isFlowing = !isFlowing;
+  document.getElementById('flowBtn').classList.toggle('active', isFlowing);
+  if (isFlowing) flowTimer = setInterval(() => bankHours(6), 110);
+  else clearInterval(flowTimer);
+}
+function resetSpecies() { targetHours = 0; hours = 0; }
+
+function draw() {
+  ctx.fillStyle = 'rgba(2, 8, 12, 0.24)'; ctx.fillRect(0, 0, W, H);
+  hours += (targetHours - hours) * 0.08;
+  const rounded = Math.round(hours);
+  hoursValEl.textContent = `${rounded.toLocaleString()} h`;
+
+  // Form names
+  if (hours >= 10000) formValEl.textContent = '🌟 ASTRAL CELESTIAL LEVIATHAN';
+  else if (hours >= 6000) formValEl.textContent = '🐉 Apex Radiant Wyrm (Tier IV)';
+  else if (hours >= 3000) formValEl.textContent = '🐍 Hydro-Serpent (Tier III)';
+  else if (hours >= 1000) formValEl.textContent = '🪼 Abyssal Medusa (Tier II)';
+  else formValEl.textContent = '🦠 Primordial Amoeba (Tier I)';
+
+  const t = Date.now() * 0.002;
+  // Natural figure-8 swimming trajectory
+  const leadX = cx + Math.cos(t * 1.5) * 140;
+  const leadY = cy + Math.sin(t * 3.0) * 60;
+  spine[0].x = leadX; spine[0].y = leadY;
+
+  // Inverse Kinematics spine constraint
+  const segDist = 16 + (hours / MAX_HOURS) * 12;
+  for (let i = 1; i < SEGMENTS; i++) {
+    const dx = spine[i - 1].x - spine[i].x;
+    const dy = spine[i - 1].y - spine[i].y;
+    const angle = Math.atan2(dy, dx);
+    spine[i].x = spine[i - 1].x - Math.cos(angle) * segDist;
+    spine[i].y = spine[i - 1].y - Math.sin(angle) * segDist;
+  }
+
+  // Draw Organism Body
+  const isApex = hours > 6000;
+  for (let i = SEGMENTS - 1; i >= 0; i--) {
+    const p = spine[i];
+    const taper = (1 - i / SEGMENTS);
+    const radius = Math.max(4, (12 + (hours / MAX_HOURS) * 28) * taper);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = isApex ? `hsl(${140 + i * 8}, 90%, 65%)` : `hsl(${160 + i * 5}, 80%, 50%)`;
+    ctx.shadowColor = '#10b981';
+    ctx.shadowBlur = 10 + (hours / MAX_HOURS) * 18;
+    ctx.fill();
+
+    // Lateral Fins / Wings for evolved stages
+    if (hours > 2500 && i > 2 && i < 8) {
+      const finAngle = Math.atan2(spine[i - 1].y - p.y, spine[i - 1].x - p.x) + Math.PI / 2;
+      const finLen = (20 + (hours / MAX_HOURS) * 35) * Math.sin(t * 5 + i);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x + Math.cos(finAngle) * finLen, p.y + Math.sin(finAngle) * finLen);
+      ctx.strokeStyle = 'rgba(52, 211, 153, 0.7)';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Head Sensory Eyes & Crown
+  const head = spine[0];
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(head.x, head.y, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff'; ctx.shadowColor = '#34d399'; ctx.shadowBlur = 14; ctx.fill();
+  ctx.restore();
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

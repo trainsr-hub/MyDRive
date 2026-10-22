@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vietnamese TTS Test - Faust</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            min-height: 60px;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .status.success { background-color: #d5f5e3; color: #27ae60; }
+        .status.error { background-color: #fadbd8; color: #c0392b; }
+        .status.info { background-color: #d6eaf8; color: #2980b9; }
+        .examples {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .example {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            border-radius: 0 4px 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vietnamese TTS Test</h1>
+        <p>Test Faust's Vietnamese TTS capability using existing G2P conversion</p>
+
+        <div class="input-group">
+            <label for="vietnamese-input">Enter Vietnamese text:</label>
+            <textarea id="vietnamese-input" rows="3" placeholder="Xin chào Manager. Faust đã sẵn sàng phục vụ."></textarea>
+        </div>
+
+        <div class="input-group">
+            <button id="speak-button">Speak Vietnamese</button>
+            <button id="clear-button">Clear</button>
+        </div>
+
+        <div id="result" class="result">
+            <strong>Output:</strong> <span id="ipa-output">Waiting for input...</span>
+        </div>
+
+        <div id="status" class="status info">
+            Ready to convert Vietnamese text to IPA for TTS
+        </div>
+
+        <div class="examples">
+            <h3>Example Phrases:</h3>
+            <div class="example" onclick="setExample('Xin chào Manager')">Xin chào Manager</div>
+            <div class="example" onclick="setExample('Faust đã sẵn sàng phục vụ')">Faust đã sẵn sàng phục vụ</div>
+            <div class="example" onclick="setExample('Tôi là một trợ lý AI')">Tôi là một trợ lý AI</div>
+            <div class="example" onclick="setExample('Cảm ơn bạn rất nhiều')">Cảm ơn bạn rất nhiều</div>
+            <div class="example" onclick="setExample('Chào buổi sáng, bạn có khỏe không?')">Chào buổi sáng, bạn có khỏe không?</div>
+        </div>
+    </div>
+
+    <script>
+        // Vietnamese G2P conversion (simplified version for demo)
+        function containsVietnamese(text) {
+            const vietnameseChars = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/;
+            return vietnameseChars.test(text);
+        }
+
+        // Simplified G2P mapping for demo (in reality, use the full python module)
+        function vietnameseToIPA(text) {
+            // This is a simplified version - the actual conversion is done by the Python module
+            // For demo purposes, we'll show the concept
+            if (!containsVietnamese(text)) {
+                return text; // Return as-is for non-Vietnamese
+            }
+
+            // In real implementation, this would call the Python G2P module
+            // For now, we'll show a placeholder that indicates conversion would happen
+            return `[IPA: ${text}]`; // Placeholder
+        }
+
+        document.getElementById('speak-button').addEventListener('click', async () => {
+            const input = document.getElementById('vietnamese-input').value.trim();
+            if (!input) {
+                showStatus('Please enter some text', 'error');
+                return;
+            }
+
+            const speakButton = document.getElementById('speak-button');
+            speakButton.disabled = true;
+            speakButton.textContent = 'Processing...';
+
+            try {
+                showStatus('Converting Vietnamese to IPA...', 'info');
+
+                // Detect if Vietnamese
+                const hasVietnamese = containsVietnamese(input);
+
+                // In real implementation, we would:
+                // 1. Call Python G2P module to convert to IPA
+                // 2. Pass IPA to existing TTS CLI
+
+                // For demo, we'll simulate the conversion
+                const ipaResult = vietnameseToIPA(input);
+
+                document.getElementById('ipa-output').textContent = ipaResult;
+
+                if (hasVietnamese) {
+                    showStatus('Vietnamese detected! IPA conversion ready. In real implementation, this would be sent to your TTS daemon.', 'success');
+                } else {
+                    showStatus('No Vietnamese detected. Text will be spoken as-is.', 'info');
+                }
+
+                // In real implementation, we would actually call the CLI here:
+                // const response = await fetch('/speak', {
+                //   method: 'POST',
+                //   headers: { 'Content-Type': 'application/json' },
+                //   body: JSON.stringify({ text: ipaResult })
+                // });
+
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                speakButton.disabled = false;
+                speakButton.textContent = 'Speak Vietnamese';
+            }
+        });
+
+        document.getElementById('clear-button').addEventListener('click', () => {
+            document.getElementById('vietnamese-input').value = '';
+            document.getElementById('ipa-output').textContent = 'Waiting for input...';
+            document.getElementById('status').textContent = 'Ready to convert Vietnamese text to IPA for TTS';
+            document.getElementById('status').className = 'status info';
+        });
+
+        function setExample(text) {
+            document.getElementById('vietnamese-input').value = text;
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+    </script>
+</body>
+</html>

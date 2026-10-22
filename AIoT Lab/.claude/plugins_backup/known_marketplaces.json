@@ -1,0 +1,18 @@
+{
+  "claude-plugins-official": {
+    "source": {
+      "source": "github",
+      "repo": "anthropics/claude-plugins-official"
+    },
+    "installLocation": "C:\\Users\\Admin\\.claude\\plugins\\marketplaces\\claude-plugins-official",
+    "lastUpdated": "2026-10-04T10:25:28.611Z"
+  },
+  "ecc": {
+    "source": {
+      "source": "github",
+      "repo": "affaan-m/ECC"
+    },
+    "installLocation": "C:\\Users\\Admin\\.claude\\plugins\\marketplaces\\ecc",
+    "lastUpdated": "2026-10-04T10:21:23.170Z"
+  }
+}

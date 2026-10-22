@@ -1,0 +1,77 @@
+/**
+ * TypeScript Schema Definitions for Hazard Trigger System
+ */
+
+export type Rarity = 'SSR' | 'SR' | 'R' | 'N';
+export type TargetEngine = 'ComfyUI' | 'SD_WebUI' | 'NovelAI' | 'Midjourney' | 'Flux';
+export type SelectionType = 'single' | 'multiple';
+
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  selection_type?: SelectionType;
+}
+
+export interface PromptNode {
+  id: string;
+  category_id: string;
+  label: string;
+  token: string;
+  default_weight?: number;
+  rarity?: Rarity;
+  tags?: string[];
+  gacha_pool_id?: string;
+  description?: string;
+  created_at?: string;
+}
+
+export interface GachaPoolItem {
+  token: string;
+  weight?: number;
+  rarity?: Rarity;
+}
+
+export interface GachaPool {
+  id: string;
+  name: string;
+  description?: string;
+  draw_count?: number;
+  items: GachaPoolItem[];
+}
+
+export interface Preset {
+  id: string;
+  name: string;
+  description?: string;
+  target_engine?: TargetEngine;
+  active_node_ids: string[];
+  node_weights?: Record<string, number>;
+  custom_positive?: string;
+  custom_negative?: string;
+  active_gacha_pool_ids?: string[];
+  created_at?: string;
+}
+
+export interface ExclusionConfig {
+  forbidden_keywords?: string[];
+  auto_negatives?: Record<string, string[]>;
+  global_negatives?: string[];
+}
+
+export interface ResolvedPromptResult {
+  positive_prompt: string;
+  negative_prompt: string;
+  loras: string[];
+  token_count: number;
+  active_nodes: PromptNode[];
+  gacha_draws: Array<{
+    pool_id: string;
+    pool_name: string;
+    items: string[];
+  }>;
+  seed: number;
+  timestamp: number;
+}

@@ -1,0 +1,43 @@
+chunk-SVG7M4VJ.js?v=9661ea47:21607 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+Header.tsx:176 Uncaught ReferenceError: trashCount is not defined
+    at Header (Header.tsx:176:12)
+    at renderWithHooks (chunk-SVG7M4VJ.js?v=9661ea47:11594:26)
+    at mountIndeterminateComponent (chunk-SVG7M4VJ.js?v=9661ea47:14972:21)
+    at beginWork (chunk-SVG7M4VJ.js?v=9661ea47:15960:22)
+    at HTMLUnknownElement.callCallback2 (chunk-SVG7M4VJ.js?v=9661ea47:3678:22)
+    at Object.invokeGuardedCallbackDev (chunk-SVG7M4VJ.js?v=9661ea47:3703:24)
+    at invokeGuardedCallback (chunk-SVG7M4VJ.js?v=9661ea47:3737:39)
+    at beginWork$1 (chunk-SVG7M4VJ.js?v=9661ea47:19816:15)
+    at performUnitOfWork (chunk-SVG7M4VJ.js?v=9661ea47:19249:20)
+    at workLoopSync (chunk-SVG7M4VJ.js?v=9661ea47:19188:13)
+Header.tsx:176 Uncaught ReferenceError: trashCount is not defined
+    at Header (Header.tsx:176:12)
+    at renderWithHooks (chunk-SVG7M4VJ.js?v=9661ea47:11594:26)
+    at mountIndeterminateComponent (chunk-SVG7M4VJ.js?v=9661ea47:14972:21)
+    at beginWork (chunk-SVG7M4VJ.js?v=9661ea47:15960:22)
+    at HTMLUnknownElement.callCallback2 (chunk-SVG7M4VJ.js?v=9661ea47:3678:22)
+    at Object.invokeGuardedCallbackDev (chunk-SVG7M4VJ.js?v=9661ea47:3703:24)
+    at invokeGuardedCallback (chunk-SVG7M4VJ.js?v=9661ea47:3737:39)
+    at beginWork$1 (chunk-SVG7M4VJ.js?v=9661ea47:19816:15)
+    at performUnitOfWork (chunk-SVG7M4VJ.js?v=9661ea47:19249:20)
+    at workLoopSync (chunk-SVG7M4VJ.js?v=9661ea47:19188:13)
+chunk-SVG7M4VJ.js?v=9661ea47:14078 The above error occurred in the <Header> component:
+
+    at Header (http://localhost:10190/src/components/Header.tsx?t=1792507305776:19:3)
+    at div
+    at App (http://localhost:10190/src/App.tsx?t=1792507305776:33:29)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-SVG7M4VJ.js?v=9661ea47:14078
+chunk-SVG7M4VJ.js?v=9661ea47:19464 Uncaught ReferenceError: trashCount is not defined
+    at Header (Header.tsx:176:12)
+    at renderWithHooks (chunk-SVG7M4VJ.js?v=9661ea47:11594:26)
+    at mountIndeterminateComponent (chunk-SVG7M4VJ.js?v=9661ea47:14972:21)
+    at beginWork (chunk-SVG7M4VJ.js?v=9661ea47:15960:22)
+    at beginWork$1 (chunk-SVG7M4VJ.js?v=9661ea47:19804:22)
+    at performUnitOfWork (chunk-SVG7M4VJ.js?v=9661ea47:19249:20)
+    at workLoopSync (chunk-SVG7M4VJ.js?v=9661ea47:19188:13)
+    at renderRootSync (chunk-SVG7M4VJ.js?v=9661ea47:19167:15)
+    at recoverFromConcurrentError (chunk-SVG7M4VJ.js?v=9661ea47:18784:28)
+    at performConcurrentWorkOnRoot (chunk-SVG7M4VJ.js?v=9661ea47:18732:30)

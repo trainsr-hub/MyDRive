@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""
+Test actual Vietnamese speech via existing CLI pipeline.
+Uses G2P to convert Vietnamese text → IPA, then passes to existing TTS daemon.
+"""
+import sys
+import subprocess
+from pathlib import Path
+
+# Add archived skills to path
+ARCHIVED_SKILLS = Path(r"D:\My Drive\Blue AI\Archived\.claude\skills\sound\scripts")
+sys.path.insert(0, str(ARCHIVED_SKILLS))
+
+from vietnamese_g2p import vi_text_to_ipa, contains_vietnamese
+
+# Vietnamese test phrases WITH diacritics
+VIETNAMESE_PHRASES = [
+    "Xin chào Manager",
+    "Faust đã sẵn sàng phục vụ",
+    "Tôi là một trợ lý AI",
+    "Cảm ơn bạn",
+    "Chào buổi sáng",
+]
+
+def test_actual_speech():
+    """Convert Vietnamese to IPA and speak via existing CLI."""
+    print("=== Actual Vietnamese Speech Test ===\n")
+
+    for phrase in VIETNAMESE_PHRASES:
+        print(f"Original: {phrase}")
+
+        # Detect and convert
+        has_vietnamese = contains_vietnamese(phrase)
+        ipa_text = vi_text_to_ipa(phrase)
+
+        print(f"IPA:      {ipa_text}")
+        print(f"Detected: {has_vietnamese}")
+
+        # Call existing CLI with the IPA text
+        cli_path = r"D:\My Drive\Blue AI\.claude\skills\sound\scripts\cli.py"
+
+        try:
+            # Use the CLI to speak the IPA text
+            result = subprocess.run(
+                [sys.executable, cli_path, ipa_text],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            print(f"CLI Exit: {result.returncode}")
+            if result.stdout:
+                print(f"CLI Out:  {result.stdout.strip()}")
+            if result.stderr:
+                print(f"CLI Err:  {result.stderr.strip()}")
+        except subprocess.TimeoutExpired:
+            print("CLI: Timeout")
+        except Exception as e:
+            print(f"CLI Error: {e}")
+
+        print("-" * 50)
+
+if __name__ == "__main__":
+    test_actual_speech()
+    print("\nDone.")

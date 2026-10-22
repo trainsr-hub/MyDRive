@@ -1,0 +1,278 @@
+#!/usr/bin/env python3
+"""
+Tier 3: CLI Runner with Sliding Heartbeat Watchdog & Self-Healing Retry
+Executes Claude Code CLI headless with adaptive timeout resets based on
+real-time stream-json output, filesystem activity, and auto-retry resumption.
+"""
+
+import json
+import logging
+import os
+import queue
+import subprocess
+import threading
+import time
+from pathlib import Path
+from typing import Optional, Callable, List
+
+from domain import ExecutionResult
+from tools import SovereignTools
+
+
+logger = logging.getLogger("faust.daemon.cli_runner")
+
+
+def has_recent_fs_activity(cwd: str, window_sec: int = 180) -> bool:
+    """Checks if any source file in workspace was modified recently."""
+    now = time.time()
+    try:
+        for root, dirs, files in os.walk(cwd):
+            for skip in ["node_modules", ".git", ".wrangler", "dist"]:
+                if skip in dirs:
+                    dirs.remove(skip)
+            for f in files:
+                p = os.path.join(root, f)
+                try:
+                    if (now - os.path.getmtime(p)) < window_sec:
+                        return True
+                except OSError:
+                    continue
+    except Exception:
+        pass
+    return False
+
+
+TELEGRAM_CONCISE_PROMPT = (
+    "You are communicating with The Manager via Telegram mobile chat. "
+    "Formatting Doctrine: "
+    "1. Keep your final message composed, concise, and executive (under 200 words). "
+    "2. State the key accomplishment or operational outcome in the first 2 sentences. "
+    "3. List only the critical file paths or live URL links created. "
+    "4. Never output redundant design essays, repetitive boilerplate, or dump entire code files."
+)
+
+
+def _run_single_attempt(
+    text: str,
+    cwd: str,
+    resume_session_id: Optional[str] = None,
+    inactivity_timeout: int = 360,
+    max_timeout: int = 1800
+) -> ExecutionResult:
+    """Executes a single headless CLI process guarded by sliding inactivity heartbeat."""
+    cmd = [
+        "claude", "-p", text,
+        "--output-format", "stream-json",
+        "--verbose",
+        "--dangerously-skip-permissions",
+        "--append-system-prompt", TELEGRAM_CONCISE_PROMPT
+    ]
+    if resume_session_id:
+        cmd.extend(["--resume", resume_session_id])
+        logger.info(f"Resuming Claude Code session {resume_session_id[:8]}... in {cwd}")
+    else:
+        logger.info(f"Starting new Claude Code session in {cwd}: {text[:80]}...")
+
+    start_time = time.time()
+    last_activity = time.time()
+
+    proc = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        bufsize=1
+    )
+
+    q: queue.Queue = queue.Queue()
+
+    def _reader():
+        try:
+            for line in proc.stdout:
+                q.put(line)
+        except Exception:
+            pass
+        finally:
+            proc.stdout.close()
+
+    t = threading.Thread(target=_reader, daemon=True)
+    t.start()
+
+    output_lines: List[str] = []
+    assistant_texts: List[str] = []
+    final_result_holder = [""]
+    session_id_holder = [resume_session_id or ""]
+
+    def _process_line(line: str) -> None:
+        output_lines.append(line)
+        stripped = line.strip()
+        if stripped.startswith("{") and stripped.endswith("}"):
+            try:
+                data = json.loads(stripped)
+                if data.get("type") == "result":
+                    final_result_holder[0] = data.get("result", "")
+                elif data.get("type") == "system" and data.get("subtype") == "init":
+                    sid = data.get("session_id", "")
+                    if sid:
+                        session_id_holder[0] = sid
+                elif data.get("sessionId"):
+                    session_id_holder[0] = data.get("sessionId")
+                elif data.get("type") == "assistant" or "message" in data:
+                    msg = data.get("message", {})
+                    content = msg.get("content", [])
+                    for b in content:
+                        if isinstance(b, dict):
+                            if b.get("type") == "tool_use":
+                                t_name = b.get("name", "tool")
+                                t_in = str(b.get("input", {}))[:80]
+                                logger.info(f"Watchdog: Tool invoked -> {t_name} ({t_in})")
+                            elif b.get("type") == "text":
+                                txt = b.get("text", "").strip()
+                                if txt:
+                                    assistant_texts.append(txt)
+            except Exception:
+                pass
+        elif stripped and not stripped.startswith("{"):
+            assistant_texts.append(stripped)
+
+    while proc.poll() is None:
+        has_data = False
+        while not q.empty():
+            try:
+                line = q.get_nowait()
+                has_data = True
+                _process_line(line)
+            except queue.Empty:
+                break
+
+        if has_data:
+            last_activity = time.time()
+
+        now = time.time()
+        inactivity_dur = now - last_activity
+
+        # Inactivity Check: reset if output arrived OR filesystem was touched
+        if inactivity_dur > inactivity_timeout:
+            if has_recent_fs_activity(cwd, window_sec=inactivity_timeout):
+                last_activity = now
+                logger.info(f"Watchdog: Active file modifications detected in {cwd}. Timer reset.")
+            else:
+                logger.error(f"Watchdog: Zero output or file changes for {int(inactivity_dur)}s. Aborting.")
+                proc.kill()
+                return ExecutionResult(
+                    success=False, output="",
+                    error=f"Process stalled with zero output or file activity for {int(inactivity_dur)}s."
+                )
+
+        if now - start_time > max_timeout:
+            logger.error(f"Watchdog: Task exceeded absolute maximum {max_timeout}s.")
+            proc.kill()
+            return ExecutionResult(
+                success=False, output="",
+                error=f"Task exceeded maximum allowed duration of {max_timeout // 60} minutes."
+            )
+
+        time.sleep(1.0)
+
+    # Wait for reader thread to drain completely
+    t.join(timeout=3)
+    while not q.empty():
+        try:
+            _process_line(q.get_nowait())
+        except queue.Empty:
+            break
+
+    elapsed = time.time() - start_time
+    logger.info(f"Claude Code CLI finished in {elapsed:.1f}s with exit code {proc.returncode}")
+
+    # Extract clean text, guaranteeing zero JSON dump
+    clean_text = final_result_holder[0] or (assistant_texts[-1] if assistant_texts else "")
+    if not clean_text:
+        for l in reversed(output_lines):
+            l_str = l.strip()
+            if l_str.startswith("{") and l_str.endswith("}"):
+                try:
+                    d = json.loads(l_str)
+                    for b in d.get("message", {}).get("content", []):
+                        if b.get("type") == "text" and b.get("text", "").strip():
+                            clean_text = b.get("text", "").strip()
+                            break
+                    if clean_text:
+                        break
+                except Exception:
+                    pass
+            elif l_str and not l_str.startswith("{"):
+                clean_text = l_str
+                break
+
+    if proc.returncode == 0:
+        return ExecutionResult(
+            success=True,
+            output=clean_text or "Directive completed successfully.",
+            latency_ms=elapsed * 1000,
+            artifacts={"session_id": session_id_holder[0]}
+        )
+
+    err = clean_text or "".join([l for l in output_lines if not l.strip().startswith("{")]).strip()
+    return ExecutionResult(
+        success=False, output="",
+        error=f"Exit code {proc.returncode}: {err[:400]}",
+        artifacts={"session_id": session_id_holder[0]}
+    )
+
+
+def run_cli_with_watchdog(
+    text: str,
+    cwd: str,
+    progress_cb: Optional[Callable[[str], None]] = None,
+    resume_session_id: Optional[str] = None,
+    inactivity_timeout: int = 360,
+    max_timeout: int = 1800,
+    max_retries: int = 2
+) -> ExecutionResult:
+    """Executes Claude Code CLI with sliding watchdog and self-healing auto-retry."""
+    current_prompt = text
+    active_session_id = resume_session_id
+
+    for attempt in range(1, max_retries + 2):
+        res = _run_single_attempt(
+            text=current_prompt,
+            cwd=cwd,
+            resume_session_id=active_session_id,
+            inactivity_timeout=inactivity_timeout,
+            max_timeout=max_timeout
+        )
+
+        sid = res.artifacts.get("session_id")
+        if sid:
+            active_session_id = sid
+
+        if res.success:
+            return res
+
+        # If turn failed or stalled, evaluate auto-retry
+        if attempt <= max_retries:
+            retry_notice = (
+                f"🔄 <b>Self-Healing Auto-Retry</b> (Attempt {attempt + 1}/{max_retries + 1}):\n"
+                f"Previous turn stalled ({res.error}). Faust is automatically resuming where he left off..."
+            )
+            logger.warning(f"Watchdog trigger on attempt {attempt}: {res.error}. Resuming turn...")
+
+            if progress_cb:
+                progress_cb(retry_notice)
+
+            SovereignTools.trigger_acoustic_reflex(f"Resuming build. Attempt {attempt + 1}.")
+
+            current_prompt = (
+                f"Continue the previous work that stalled. "
+                f"Inspect the project files already created in {cwd}, resume where you left off, and complete the build and verification: {text}"
+            )
+            time.sleep(2)
+        else:
+            return res
+
+    return res

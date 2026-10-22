@@ -1,0 +1,121 @@
+"""
+Avatar Studio Service - Tier 3 Service Layer.
+Orchestrates downloading, local GPU processing, and packaging.
+All operations strictly conform to Local Disk D: Policy.
+"""
+
+import os
+import shutil
+import zipfile
+import threading
+from pathlib import Path
+from typing import Optional, Callable
+
+from local_cropper import process_local_crop
+from drive_downloader import download_drive_folder
+
+PROJECT_ROOT = Path(__file__).parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+RAW_INPUT_DIR = DATA_DIR / "input_images"
+OUTPUT_DIR = DATA_DIR / "output_avatars"
+ZIP_OUTPUT = DATA_DIR / "avatars_result.zip"
+
+# Thread-safe job state
+job_state = {
+    "status": "idle",
+    "total": 0,
+    "processed": 0,
+    "total_avatars": 0,
+    "current_file": "",
+    "result_zip": None,
+    "error": None
+}
+
+def get_job_state() -> dict:
+    return dict(job_state)
+
+def run_avatar_crop_pipeline(
+    folder_source: str,
+    zoom_factor: float = 1.6,
+    score_thresh: float = 0.5
+):
+    """Run end-to-end face crop pipeline locally on NVIDIA GPU."""
+    global job_state
+
+    job_state.update({
+        "status": "downloading",
+        "total": 0,
+        "processed": 0,
+        "total_avatars": 0,
+        "current_file": "Preparing image source...",
+        "result_zip": None,
+        "error": None
+    })
+
+    try:
+        # Prepare storage on Local Disk D:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        if RAW_INPUT_DIR.exists():
+            shutil.rmtree(RAW_INPUT_DIR)
+        if OUTPUT_DIR.exists():
+            shutil.rmtree(OUTPUT_DIR)
+        if ZIP_OUTPUT.exists():
+            ZIP_OUTPUT.unlink()
+
+        RAW_INPUT_DIR.mkdir(parents=True, exist_ok=True)
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+        source_path = folder_source.strip()
+        work_input_dir = RAW_INPUT_DIR
+
+        # Check if source is Google Drive URL or local folder
+        if source_path.startswith("http://") or source_path.startswith("https://"):
+            def dl_cb(msg):
+                job_state["current_file"] = msg
+
+            success = download_drive_folder(source_path, RAW_INPUT_DIR, progress_cb=dl_cb)
+            if not success or not any(RAW_INPUT_DIR.iterdir()):
+                raise RuntimeError(
+                    "Google Drive download failed or was rate-limited by Google. "
+                    "For 100% reliable unthrottled downloads, share this folder with "
+                    "trainjr@affable-doodad-461713-f6.iam.gserviceaccount.com, or use a local folder path on D:."
+                )
+        elif os.path.exists(source_path):
+            work_input_dir = Path(source_path)
+        else:
+            raise ValueError(f"Input source not found: {source_path}")
+
+        job_state["status"] = "processing"
+        job_state["current_file"] = "Initializing YOLOv3 GPU detector..."
+
+        def progress_callback(current, total, filename):
+            job_state["total"] = total
+            job_state["processed"] = current
+            job_state["current_file"] = filename
+
+        total_avatars, saved_paths = process_local_crop(
+            input_dir=str(work_input_dir),
+            output_dir=str(OUTPUT_DIR),
+            zoom_factor=zoom_factor,
+            score_thresh=score_thresh,
+            progress_cb=progress_callback
+        )
+
+        job_state["status"] = "packaging"
+        job_state["current_file"] = "Creating zip archive on Local Disk D:..."
+
+        shutil.make_archive(str(DATA_DIR / "avatars_result"), 'zip', str(OUTPUT_DIR))
+
+        job_state.update({
+            "status": "completed",
+            "total_avatars": total_avatars,
+            "result_zip": str(ZIP_OUTPUT),
+            "current_file": f"Done! Created {total_avatars} avatars on Local Disk D:."
+        })
+
+    except Exception as e:
+        job_state.update({
+            "status": "error",
+            "error": str(e),
+            "current_file": f"Failed: {e}"
+        })

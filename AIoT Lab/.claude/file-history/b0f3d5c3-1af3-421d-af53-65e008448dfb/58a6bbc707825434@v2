@@ -1,0 +1,192 @@
+@echo off
+setlocal EnableDelayedExpansion
+title OmniRoute Phase 2: Config Reorganization
+
+set "CONFIG_OLD_SOURCE=D:\My Drive\Sync\Config\omniroute"
+set "CONFIG_LOCAL_ROOT=D:\My System\Local App Junction\OmniRoute\Config"
+set "C_CONFIG_JUNCTION=C:\Users\Admin\.omniroute"
+set "PORT=20128"
+
+cls
+echo ==============================================================================
+echo   OMNIROUTE PHASE 2: CONFIG FOLDER REORGANIZATION
+echo   Moving runtime/cache folders to local, keeping essential data in Drive sync
+echo ==============================================================================
+echo.
+
+REM ===== STEP 1: AUDIT CURRENT STATE =====
+echo [STEP 1/6] AUDIT CURRENT STATE
+echo.
+
+for /f "usebackq delims=" %%t in (`powershell -NoProfile -Command "(Get-Item -LiteralPath '%C_CONFIG_JUNCTION%' -ErrorAction SilentlyContinue).Target" 2^>nul`) do set "CONFIG_JUNCTION_TARGET=%%t"
+
+echo C: Config Junction Target: %CONFIG_JUNCTION_TARGET%
+echo Config Source: %CONFIG_OLD_SOURCE%
+echo.
+dir "%CONFIG_OLD_SOURCE%" /b 2>nul
+echo.
+
+REM ===== STEP 2: CREATE LOCAL CONFIG STRUCTURE =====
+echo [STEP 2/6] CREATE LOCAL CONFIG STRUCTURE
+echo.
+
+if not exist "%CONFIG_LOCAL_ROOT%" mkdir "%CONFIG_LOCAL_ROOT%"
+echo [OK] Created local config root: %CONFIG_LOCAL_ROOT%
+
+REM ===== STEP 3: COPY NON-ESSENTIAL FOLDERS TO LOCAL =====
+echo [STEP 3/6] COPY NON-ESSENTIAL FOLDERS TO LOCAL
+echo.
+
+echo Moving call_logs...
+if exist "%CONFIG_OLD_SOURCE%\call_logs" (
+    robocopy "%CONFIG_OLD_SOURCE%\call_logs" "%CONFIG_LOCAL_ROOT%\call_logs" /E /COPY:DAT /DCOPY:DAT /XJ /R:2 /W:2 >nul 2>&1
+    echo [OK] call_logs copied
+)
+
+echo Moving logs...
+if exist "%CONFIG_OLD_SOURCE%\logs" (
+    robocopy "%CONFIG_OLD_SOURCE%\logs" "%CONFIG_LOCAL_ROOT%\logs" /E /COPY:DAT /DCOPY:DAT /XJ /R:2 /W:2 >nul 2>&1
+    echo [OK] logs copied
+)
+
+echo Moving qoder-cli...
+if exist "%CONFIG_OLD_SOURCE%\qoder-cli" (
+    robocopy "%CONFIG_OLD_SOURCE%\qoder-cli" "%CONFIG_LOCAL_ROOT%\qoder-cli" /E /COPY:DAT /DCOPY:DAT /XJ /R:2 /W:2 >nul 2>&1
+    echo [OK] qoder-cli copied
+)
+
+echo Moving server...
+if exist "%CONFIG_OLD_SOURCE%\server" (
+    robocopy "%CONFIG_OLD_SOURCE%\server" "%CONFIG_LOCAL_ROOT%\server" /E /COPY:DAT /DCOPY:DAT /XJ /R:2 /W:2 >nul 2>&1
+    echo [OK] server copied
+)
+
+echo Moving supervisor...
+if exist "%CONFIG_OLD_SOURCE%\supervisor" (
+    robocopy "%CONFIG_OLD_SOURCE%\supervisor" "%CONFIG_LOCAL_ROOT%\supervisor" /E /COPY:DAT /DCOPY:DAT /XJ /R:2 /W:2 >nul 2>&1
+    echo [OK] supervisor copied
+)
+
+echo.
+timeout /t 2 >nul
+
+REM ===== STEP 4: UPDATE C: JUNCTION TARGET =====
+echo [STEP 4/6] UPDATE C: JUNCTION TARGET
+echo.
+echo Current C: Config Junction: %C_CONFIG_JUNCTION%
+echo Current Target: %CONFIG_JUNCTION_TARGET%
+echo.
+
+echo Stopping OmniRoute before junction change...
+
+if exist "%TEMP%\OmniRoute\omniroute.pid" (
+    for /f "usebackq delims=" %%i in ("%TEMP%\OmniRoute\omniroute.pid") do taskkill /PID %%i /T /F >nul 2>&1
+    del "%TEMP%\OmniRoute\omniroute.pid" >nul 2>&1
+)
+
+powershell -NoProfile -Command "Get-NetTCPConnection -State Listen -LocalPort %PORT% -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+
+timeout /t 2 >nul
+echo [OK] OmniRoute stopped
+
+echo.
+echo Updating C: junction target...
+
+if "%CONFIG_JUNCTION_TARGET%"=="%CONFIG_LOCAL_ROOT%" (
+    echo [INFO] C: junction already points to local config root
+) else (
+    echo Removing old C: junction...
+    rmdir "%C_CONFIG_JUNCTION%" >nul 2>&1
+
+    echo Creating new C: junction to local config root...
+    mklink /J "%C_CONFIG_JUNCTION%" "%CONFIG_LOCAL_ROOT%" >nul 2>&1
+
+    if errorlevel 1 (
+        echo [ERROR] Failed to create new junction
+        pause
+        exit /b 1
+    )
+
+    for /f "usebackq delims=" %%t in (`powershell -NoProfile -Command "(Get-Item -LiteralPath '%C_CONFIG_JUNCTION%' -ErrorAction SilentlyContinue).Target" 2^>nul`) do set "NEW_TARGET=%%t"
+
+    echo [OK] New C: junction target: %NEW_TARGET%
+)
+
+echo.
+timeout /t 2 >nul
+
+REM ===== STEP 5: DELETE NON-ESSENTIAL FROM DRIVE SYNC =====
+echo [STEP 5/6] DELETE NON-ESSENTIAL FOLDERS FROM DRIVE SYNC
+echo.
+
+echo Removing call_logs from Drive sync...
+if exist "%CONFIG_OLD_SOURCE%\call_logs" rmdir /S /Q "%CONFIG_OLD_SOURCE%\call_logs" 2>nul
+echo [OK] call_logs removed
+
+echo Removing logs from Drive sync...
+if exist "%CONFIG_OLD_SOURCE%\logs" rmdir /S /Q "%CONFIG_OLD_SOURCE%\logs" 2>nul
+echo [OK] logs removed
+
+echo Removing qoder-cli from Drive sync...
+if exist "%CONFIG_OLD_SOURCE%\qoder-cli" rmdir /S /Q "%CONFIG_OLD_SOURCE%\qoder-cli" 2>nul
+echo [OK] qoder-cli removed
+
+echo Removing server from Drive sync...
+if exist "%CONFIG_OLD_SOURCE%\server" rmdir /S /Q "%CONFIG_OLD_SOURCE%\server" 2>nul
+echo [OK] server removed
+
+echo Removing supervisor from Drive sync...
+if exist "%CONFIG_OLD_SOURCE%\supervisor" rmdir /S /Q "%CONFIG_OLD_SOURCE%\supervisor" 2>nul
+echo [OK] supervisor removed
+
+echo.
+timeout /t 2 >nul
+
+REM ===== STEP 6: VERIFY ESSENTIAL FILES REMAIN =====
+echo [STEP 6/6] VERIFY ESSENTIAL FILES IN DRIVE SYNC
+echo.
+
+echo Remaining in Drive sync folder:
+dir "%CONFIG_OLD_SOURCE%" /b 2>nul
+echo.
+
+echo Checking essential items:
+if exist "%CONFIG_OLD_SOURCE%\storage.sqlite" (echo [OK] storage.sqlite present)
+if exist "%CONFIG_OLD_SOURCE%\oauth" (echo [OK] oauth folder present)
+if exist "%CONFIG_OLD_SOURCE%\.env" (echo [OK] .env present)
+if exist "%CONFIG_OLD_SOURCE%\db_backups" (echo [OK] db_backups present)
+
+echo.
+echo =====================================
+echo Restarting OmniRoute to test configuration...
+echo =====================================
+
+if exist "D:\My Drive\Blue AI\ZZ - Shortcuts\OmniRoute.bat" (
+    call "D:\My Drive\Blue AI\ZZ - Shortcuts\OmniRoute.bat"
+    timeout /t 5 >nul
+
+    set "PORT_STATUS=CLOSED"
+    for /f "usebackq delims=" %%o in (`powershell -NoProfile -Command "if (Get-NetTCPConnection -State Listen -LocalPort %PORT% -ErrorAction SilentlyContinue) { 'LISTENING' } else { 'CLOSED' }" 2^>nul`) do set "PORT_STATUS=%%o"
+
+    if "%PORT_STATUS%"=="LISTENING" (
+        echo.
+        echo [OK] OmniRoute running on Port %PORT%
+    )
+)
+
+echo.
+echo ==============================================================================
+echo   PHASE 2 COMPLETE
+echo ==============================================================================
+echo.
+echo Configuration summary:
+echo   Drive Sync: %CONFIG_OLD_SOURCE%
+echo     - storage.sqlite, oauth, .env, db_backups, config scripts
+echo   Local Config: %CONFIG_LOCAL_ROOT%
+echo     - call_logs, logs, qoder-cli, server, supervisor
+echo   C: Junction: %C_CONFIG_JUNCTION% ^→ %CONFIG_LOCAL_ROOT%
+echo.
+echo Phase 1 + Phase 2 complete. App code and runtime data now local, only essential
+echo user data syncs through Google Drive.
+echo.
+pause

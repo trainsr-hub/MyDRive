@@ -1,0 +1,282 @@
+import React from 'react';
+import { EntityPlan, ActionItem } from '../types';
+import { SubfolderExplorer } from './SubfolderExplorer';
+import {
+  Folder,
+  ExternalLink,
+  Zap,
+  CheckCircle2,
+  FileEdit,
+  FolderPlus,
+  RefreshCw,
+  Trash2,
+  ShieldAlert,
+  ArrowRight,
+} from 'lucide-react';
+
+interface EntityDetailViewProps {
+  entityPlan: EntityPlan;
+  groupName: string;
+  onSyncEntity: (plan: EntityPlan) => void;
+  isExecuting: boolean;
+  addToast: (type: 'success' | 'error' | 'info', title: string, message?: string) => void;
+}
+
+export const EntityDetailView: React.FC<EntityDetailViewProps> = ({
+  entityPlan,
+  groupName,
+  onSyncEntity,
+  isExecuting,
+  addToast,
+}) => {
+  const exceptions = entityPlan.items.filter((i) => i.action_type !== 'MATCH');
+
+  const getActionBadge = (action: string) => {
+    switch (action) {
+      case 'RENAME':
+        return (
+          <span className="badge badge-rename" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            <FileEdit size={11} /> RENAME
+          </span>
+        );
+      case 'CREATE':
+        return (
+          <span className="badge badge-create" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            <FolderPlus size={11} /> MISSING FOLDER
+          </span>
+        );
+      case 'UPDATE_DESC':
+        return (
+          <span className="badge badge-update" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            <RefreshCw size={11} /> OUTDATED METADATA
+          </span>
+        );
+      case 'PRUNE_EMPTY':
+        return (
+          <span className="badge badge-prune" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            <Trash2 size={11} /> UNWANTED EMPTY
+          </span>
+        );
+      case 'FLAG_RED':
+        return (
+          <span className="badge badge-anomaly" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+            <ShieldAlert size={11} /> PROTECTED FOLDER
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.5rem 2rem', overflowY: 'auto' }}>
+      {/* 1. Entity Dedicated Space Header */}
+      <div
+        className="card"
+        style={{
+          padding: '1.25rem 1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          background: 'var(--bg-card)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--bg-canvas)',
+              border: '1px solid var(--border-light)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--accent)',
+            }}
+          >
+            <Folder size={22} />
+          </div>
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <h1 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                {entityPlan.target_root_name}
+              </h1>
+              <a
+                href={`https://drive.google.com/drive/folders/${entityPlan.target_root_id}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: 'var(--text-dim)', display: 'inline-flex', alignItems: 'center' }}
+                title="Open in Google Drive"
+              >
+                <ExternalLink size={14} />
+              </a>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem', fontSize: '12px', color: 'var(--text-dim)' }}>
+              <span>Group: <strong style={{ color: 'var(--text-secondary)' }}>{groupName}</strong></span>
+              <span>•</span>
+              <span>Template: <strong style={{ color: 'var(--accent)' }}>Entropy 0</strong></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Button for THIS specific entity */}
+        {exceptions.length > 0 ? (
+          <button
+            onClick={() => onSyncEntity(entityPlan)}
+            disabled={isExecuting}
+            className="btn primary"
+            style={{
+              padding: '0.6rem 1.4rem',
+              fontSize: '13px',
+              fontWeight: 700,
+              background: 'var(--accent)',
+              color: '#000',
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+              boxShadow: '0 0 16px var(--accent-glow)',
+            }}
+          >
+            <Zap size={14} /> {isExecuting ? 'Syncing...' : `Sync ${entityPlan.target_root_name} (${exceptions.length})`}
+          </button>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              color: 'var(--success)',
+              fontSize: '13px',
+              fontWeight: 700,
+              padding: '0.4rem 0.8rem',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--success-bg)',
+              border: '1px solid var(--success-border)',
+            }}
+          >
+            <CheckCircle2 size={16} /> Fully in Sync
+          </div>
+        )}
+      </div>
+
+      {/* 2. Exception Deck (ONLY what does not match!) */}
+      {exceptions.length > 0 ? (
+        <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+          <div style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border-light)', background: 'var(--bg-card-hover)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--warning)', letterSpacing: '0.04em' }}>
+              Mismatches Inside {entityPlan.target_root_name} ({exceptions.length})
+            </span>
+            <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+              Showing only differences
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {exceptions.map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '1rem 1.25rem',
+                  borderBottom: idx < exceptions.length - 1 ? '1px solid var(--border-table)' : 'none',
+                  gap: '1rem',
+                  background: item.action_type === 'FLAG_RED' ? 'var(--danger-bg)' : 'transparent',
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    {getActionBadge(item.action_type)}
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12.5px', color: 'var(--text-dim)' }}>
+                      {item.relative_path}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {item.action_type === 'RENAME' ? (
+                      <>
+                        <span style={{ textDecoration: 'line-through', opacity: 0.5 }}>{item.current_name}</span>
+                        <ArrowRight size={14} style={{ color: '#c084fc' }} />
+                        <span style={{ color: '#c084fc', fontWeight: 700 }}>{item.folder_name}</span>
+                      </>
+                    ) : item.action_type === 'CREATE' ? (
+                      <span style={{ color: 'var(--success)' }}>Create folder "{item.folder_name}"</span>
+                    ) : item.action_type === 'UPDATE_DESC' ? (
+                      <span style={{ color: 'var(--warning)' }}>Update folder description metadata</span>
+                    ) : item.action_type === 'PRUNE_EMPTY' ? (
+                      <span style={{ color: 'var(--muted)' }}>Trash empty folder "{item.folder_name}"</span>
+                    ) : (
+                      <span style={{ color: 'var(--danger)' }}>
+                        Contains {item.files_count} file(s) — Preserved untouched
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-dim)' }}>
+                    {item.reason}
+                  </div>
+                </div>
+
+                {item.target_id && (
+                  <a
+                    href={`https://drive.google.com/drive/folders/${item.target_id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn subtle"
+                    style={{ padding: '0.35rem 0.6rem', color: 'var(--text-dim)' }}
+                    title="Open in Google Drive"
+                  >
+                    <ExternalLink size={13} />
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        /* Zen State: When this specific entity matches */
+        <div
+          className="card"
+          style={{
+            padding: '3rem 2rem',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '0.85rem',
+            background: 'rgba(16, 185, 129, 0.03)',
+            borderColor: 'var(--success-border)',
+          }}
+        >
+          <CheckCircle2 size={36} style={{ color: 'var(--success)' }} />
+          <h2 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+            {entityPlan.target_root_name} is 100% In Sync
+          </h2>
+          <p style={{ fontSize: '13px', color: 'var(--text-dim)', maxWidth: '400px', margin: 0 }}>
+            All subfolders inside this entity match the Entropy 0 template perfectly.
+          </p>
+        </div>
+      )}
+
+      {/* 3. Interactive Subfolder Navigator */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+          <Folder size={15} style={{ color: 'var(--accent)' }} />
+          <span>Subfolder Directory & Files</span>
+        </div>
+
+        <SubfolderExplorer
+          entityRootId={entityPlan.target_root_id}
+          entityRootName={entityPlan.target_root_name}
+          allEntityItems={entityPlan.items}
+          addToast={addToast}
+        />
+      </div>
+    </div>
+  );
+};

@@ -1,0 +1,397 @@
+import React, { useState } from 'react';
+import { MultiEntityPlan, ActionItem, ActionType } from '../types';
+import {
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  FolderPlus,
+  FileEdit,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  ExternalLink,
+  Filter,
+} from 'lucide-react';
+
+interface ReconciliationTreeProps {
+  plan: MultiEntityPlan;
+}
+
+export const ReconciliationTree: React.FC<ReconciliationTreeProps> = ({ plan }) => {
+  const [filterMode, setFilterMode] = useState<'all' | 'actions' | 'anomalies'>('all');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (groupId: string) => {
+    setCollapsedGroups((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }));
+  };
+
+  const getActionBadge = (action: ActionType) => {
+    switch (action) {
+      case 'CREATE':
+        return <span className="badge badge-create">+ CREATE</span>;
+      case 'UPDATE_DESC':
+        return <span className="badge badge-update">~ UPDATE DESC</span>;
+      case 'PRUNE_EMPTY':
+        return <span className="badge badge-prune">🗑️ PRUNE EMPTY</span>;
+      case 'FLAG_RED':
+        return <span className="badge badge-anomaly">🚨 RED ANOMALY</span>;
+      case 'MATCH':
+        return <span className="badge badge-match">✓ MATCH</span>;
+    }
+  };
+
+  const isVisible = (item: ActionItem) => {
+    if (filterMode === 'all') return true;
+    if (filterMode === 'actions') return item.action_type !== 'MATCH';
+    if (filterMode === 'anomalies') return item.action_type === 'FLAG_RED';
+    return true;
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* Outliner Toolbar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.25rem 0',
+          flexWrap: 'wrap',
+          gap: '0.75rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Target Hierarchy:
+          </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--accent)' }}>
+            {plan.data_root_name} &larr; Archetype: {plan.template_name}
+          </span>
+        </div>
+
+        {/* Filter Pills */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <Filter size={13} style={{ color: 'var(--text-dim)', marginRight: '0.2rem' }} />
+          <button
+            onClick={() => setFilterMode('all')}
+            className={`btn subtle ${filterMode === 'all' ? 'active' : ''}`}
+            style={{
+              padding: '0.25rem 0.6rem',
+              fontSize: '11.5px',
+              background: filterMode === 'all' ? 'var(--bg-card-hover)' : 'transparent',
+              borderColor: filterMode === 'all' ? 'var(--border-mid)' : 'transparent',
+              color: filterMode === 'all' ? 'var(--text-primary)' : 'var(--text-dim)',
+            }}
+          >
+            All ({plan.summary.total_evaluated})
+          </button>
+
+          <button
+            onClick={() => setFilterMode('actions')}
+            className={`btn subtle ${filterMode === 'actions' ? 'active' : ''}`}
+            style={{
+              padding: '0.25rem 0.6rem',
+              fontSize: '11.5px',
+              background: filterMode === 'actions' ? 'var(--accent-bg)' : 'transparent',
+              borderColor: filterMode === 'actions' ? 'var(--accent)' : 'transparent',
+              color: filterMode === 'actions' ? 'var(--accent)' : 'var(--text-dim)',
+            }}
+          >
+            Action Required ({plan.summary.create_count + plan.summary.update_desc_count + plan.summary.prune_empty_count + plan.summary.flagged_red_count})
+          </button>
+
+          <button
+            onClick={() => setFilterMode('anomalies')}
+            className={`btn subtle ${filterMode === 'anomalies' ? 'active' : ''}`}
+            style={{
+              padding: '0.25rem 0.6rem',
+              fontSize: '11.5px',
+              background: filterMode === 'anomalies' ? 'var(--danger-bg)' : 'transparent',
+              borderColor: filterMode === 'anomalies' ? 'var(--danger)' : 'transparent',
+              color: filterMode === 'anomalies' ? 'var(--danger)' : 'var(--text-dim)',
+            }}
+          >
+            Red Anomalies ({plan.summary.flagged_red_count})
+          </button>
+        </div>
+      </div>
+
+      {/* Groups & Entities Tree */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {plan.groups.map((group) => {
+          const isCollapsed = collapsedGroups[group.group_id];
+          const allGroupItems = group.entity_plans.flatMap((ep) => ep.items);
+          const visibleItems = allGroupItems.filter(isVisible);
+
+          if (filterMode !== 'all' && visibleItems.length === 0 && !group.empty_note) {
+            return null;
+          }
+
+          return (
+            <div
+              key={group.group_id}
+              className="card"
+              style={{
+                padding: '0',
+                overflow: 'hidden',
+                borderColor: 'var(--border-light)',
+              }}
+            >
+              {/* Group Header (Level 1: Testament XX) */}
+              <div
+                onClick={() => toggleGroup(group.group_id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.85rem 1.25rem',
+                  background: 'var(--bg-card-hover)',
+                  borderBottom: isCollapsed ? 'none' : '1px solid var(--border-light)',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                  <Folder size={17} style={{ color: 'var(--accent)' }} />
+                  <span style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '-0.01em' }}>
+                    {group.group_name}
+                  </span>
+                  <span
+                    className="badge"
+                    style={{
+                      background: 'var(--bg-canvas)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border-light)',
+                    }}
+                  >
+                    {group.entity_plans.length} Entities
+                  </span>
+                </div>
+
+                <div style={{ fontSize: '11.5px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                  ID: {group.group_id}
+                </div>
+              </div>
+
+              {/* Group Body */}
+              {!isCollapsed && (
+                <div style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {group.empty_note ? (
+                    <div
+                      style={{
+                        padding: '1rem',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'var(--bg-canvas)',
+                        color: 'var(--text-dim)',
+                        fontStyle: 'italic',
+                        textAlign: 'center',
+                        fontSize: '12.5px',
+                        border: '1px dashed var(--border-light)',
+                      }}
+                    >
+                      {group.empty_note}
+                    </div>
+                  ) : (
+                    group.entity_plans.map((ep) => {
+                      const entityVisibleItems = ep.items.filter(isVisible);
+                      if (filterMode !== 'all' && entityVisibleItems.length === 0) return null;
+
+                      return (
+                        <div
+                          key={ep.target_root_id}
+                          style={{
+                            border: '1px solid var(--border-mid)',
+                            borderRadius: 'var(--radius-md)',
+                            background: 'var(--bg-canvas)',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {/* Entity Header (Level 2: C24) */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '0.65rem 1rem',
+                              background: 'var(--bg-card)',
+                              borderBottom: '1px solid var(--border-light)',
+                              flexWrap: 'wrap',
+                              gap: '0.5rem',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <Folder size={15} style={{ color: 'var(--info)' }} />
+                              <span style={{ fontWeight: 600, fontSize: '13.5px' }}>
+                                {ep.target_root_name}
+                              </span>
+                              <span
+                                className="badge"
+                                style={{
+                                  background: 'var(--info-bg)',
+                                  color: 'var(--info)',
+                                  border: '1px solid var(--info-border)',
+                                }}
+                              >
+                                Entity Root
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                                ID: {ep.target_root_id}
+                              </span>
+                              <a
+                                href={`https://drive.google.com/drive/folders/${ep.target_root_id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ color: 'var(--text-tertiary)', display: 'inline-flex', alignItems: 'center' }}
+                                title="Open on Google Drive"
+                              >
+                                <ExternalLink size={13} />
+                              </a>
+                            </div>
+                          </div>
+
+                          {/* Action Items List */}
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {entityVisibleItems.map((item, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  padding: '0.75rem 1rem',
+                                  borderBottom:
+                                    idx < entityVisibleItems.length - 1
+                                      ? '1px solid var(--border-table)'
+                                      : 'none',
+                                  background:
+                                    item.action_type === 'FLAG_RED'
+                                      ? 'var(--danger-bg)'
+                                      : 'transparent',
+                                  gap: '0.35rem',
+                                }}
+                              >
+                                {/* Item Row Top */}
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '0.5rem',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                    {getActionBadge(item.action_type)}
+                                    <span
+                                      style={{
+                                        fontFamily: 'var(--font-mono)',
+                                        fontSize: '13px',
+                                        fontWeight: 600,
+                                        color:
+                                          item.action_type === 'FLAG_RED'
+                                            ? 'var(--danger)'
+                                            : 'var(--text-primary)',
+                                      }}
+                                    >
+                                      {item.folder_name}
+                                    </span>
+                                    <span style={{ fontSize: '11.5px', color: 'var(--text-dim)' }}>
+                                      ({item.relative_path})
+                                    </span>
+                                  </div>
+
+                                  <div style={{ fontSize: '11.5px', color: 'var(--text-tertiary)' }}>
+                                    {item.reason}
+                                  </div>
+                                </div>
+
+                                {/* Detailed Content Diffs */}
+                                {item.action_type === 'UPDATE_DESC' && (
+                                  <div
+                                    style={{
+                                      display: 'grid',
+                                      gridTemplateColumns: '1fr 1fr',
+                                      gap: '0.75rem',
+                                      marginTop: '0.35rem',
+                                      padding: '0.5rem 0.75rem',
+                                      borderRadius: 'var(--radius-sm)',
+                                      background: 'var(--bg-input)',
+                                      fontSize: '12px',
+                                      fontFamily: 'var(--font-mono)',
+                                    }}
+                                  >
+                                    <div>
+                                      <span style={{ color: 'var(--danger)', fontWeight: 600 }}>- Current: </span>
+                                      <span style={{ color: 'var(--text-tertiary)' }}>
+                                        {item.current_desc || '(Empty)'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span style={{ color: 'var(--success)', fontWeight: 600 }}>+ Expected: </span>
+                                      <span style={{ color: 'var(--text-secondary)' }}>
+                                        {item.expected_desc}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {item.action_type === 'CREATE' && item.expected_desc && (
+                                  <div
+                                    style={{
+                                      marginTop: '0.2rem',
+                                      padding: '0.4rem 0.65rem',
+                                      borderRadius: 'var(--radius-sm)',
+                                      background: 'var(--success-bg)',
+                                      border: '1px solid var(--success-border)',
+                                      fontSize: '11.5px',
+                                      fontFamily: 'var(--font-mono)',
+                                      color: 'var(--success)',
+                                    }}
+                                  >
+                                    Initial description: {item.expected_desc}
+                                  </div>
+                                )}
+
+                                {item.action_type === 'FLAG_RED' && (
+                                  <div
+                                    style={{
+                                      marginTop: '0.2rem',
+                                      padding: '0.5rem 0.75rem',
+                                      borderRadius: 'var(--radius-sm)',
+                                      background: 'rgba(244, 63, 94, 0.25)',
+                                      border: '1px solid var(--danger-border)',
+                                      fontSize: '12px',
+                                      color: 'var(--danger)',
+                                      fontWeight: 600,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                    }}
+                                  >
+                                    <AlertTriangle size={15} />
+                                    <span>
+                                      Populated anomaly: Contains {item.files_count} file(s) and {item.subfolders_count} subfolder(s). PRESERVED UNTOUCHED (Strict Zero-Data-Loss Invariant).
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};

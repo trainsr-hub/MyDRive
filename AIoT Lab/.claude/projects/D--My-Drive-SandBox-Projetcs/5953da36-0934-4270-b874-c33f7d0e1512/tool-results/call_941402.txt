@@ -1,0 +1,172 @@
+.claude\PROJECT_MANDATE.md:4:**Universe 25 (Codex of Time Engine)** is a sovereign focus and time-gamification system. It replaces traditional Pomodoro timers with tangible, tiered game consumables ("Codex of Time"), where real-world focus time is converted into unforgeable game assets, hazard odometers ($y = \ln(x + 1)$), and Tachyon pools.
+.claude\PROJECT_MANDATE.md:58:    current_hazard_level REAL DEFAULT 0.0,
+.claude\PROJECT_MANDATE.md:82:- [ ] **WP-02**: Implement core calculation engine (diminishing returns, fusion matrix, Tachyon math, hazard odometer) in `backend/core/`.
+arc-jurassic-dino-catalog-design.md:10:- **Right-Aligned Headers**: Tier titles, hazard badges, and ferocity ranges positioned right for focus on left-aligned creature cards
+arc-jurassic-dino-catalog-design.md:127:Each hazard tier section displays a streamlined header positioned **right**:
+arc-jurassic-dino-catalog-design.md:140:   - Circular badge showing numeric hazard level (D=1, C=2, ..., S₄=8, Ψ=9, Ø=10, ✦=11)
+Vision_when_NotionAPI_is_connected.md:45:- Manages rules (hazard math, energy consumption, sync intervals).
+.claude\memory\MEMORY.md:23:- `[slice:hazard-level-design]` -> [hazard-level-design.md](div/backend/hazard-level-design.md)
+.claude\memory\div\game\gamification-master-game-vision.md:8:  - div:backend:hazard_math
+docs\U25 ~ Codex of Time_backup\Trash\04 ~ Obsidian Automation & Heraclitus Schemas.md:54:hazard_delta ~~ +0.082
+docs\U25 ~ Codex of Time_backup\Trash\04 ~ Obsidian Automation & Heraclitus Schemas.md:69:| `# tag` | `domain`, `resource`, `hazard_delta` | Categorization links to your active projects and resources. |
+backend\core\storage_engine.py:249:                hazard_cap = payload.get("hazard_cap") or payload.get("max_hazard") if isinstance(payload, dict) else None
+backend\core\storage_engine.py:252:                if hazard_cap is not None and str(hazard_cap).lower() not in ["none", "all", "inf", ""]:
+backend\core\storage_engine.py:254:                        cap_val = float(hazard_cap)
+backend\core\storage_engine.py:259:                                cursor4.execute("SELECT id FROM tier_4_data WHERE hazard_level > ?", (cap_val,))
+backend\core\storage_engine.py:331:                hazard_cap = None
+backend\core\storage_engine.py:336:                    hazard_cap = payload.get("hazard_cap") or payload.get("max_hazard")
+backend\core\storage_engine.py:342:                if hazard_cap is not None and str(hazard_cap).lower() not in ["none", "all", "inf", ""]:
+backend\core\storage_engine.py:344:                        cap_val = float(hazard_cap)
+backend\core\storage_engine.py:349:                                cursor4.execute("SELECT id FROM tier_4_data WHERE hazard_level > ?", (cap_val,))
+docs\U25 ~ Codex of Time_backup\Trash\03 ~ Hardware Specs & NFC Sync Protocol.md:148:    "current_hazard_level": 5.92,
+.claude\memory\div\backend\hazard-level-design.md:2:name: hazard-level-design
+.claude\memory\div\backend\hazard-level-design.md:3:key: div:backend:hazard_math
+.claude\memory\div\backend\hazard-level-design.md:5:  - div:backend:hazard_math
+backend\integrations\google_tasks\client.py:73:    elif "hazard" in t_lower:
+backend\integrations\google_tasks\client.py:77:            "tags": ["hazard", "endgame", "backlog"],
+.claude\memory\div\backend\data-engine-architecture.md:27:| Tier 4 | `_4_display.db` | Projected display: computed `hazard_level`, `played`, `timeblock`, `unlock_date` |
+.claude\memory\div\backend\data-engine-architecture.md:31:| System | `system/bad_kpi_list.db` | Tracks purged for hazard < 2.0 |
+.claude\memory\div\backend\data-engine-architecture.md:35:2. **T3 → T4**: Calculate hazard scores via logarithmic formula, project to display tier, purge bad KPI tracks (< 2.0)
+docs\U25 ~ Codex of Time_backup\Old\03_CODEX_OF_TIME_ENGINE.md:122:    current_hazard_level REAL DEFAULT 0.0,
+docs\U25 ~ Codex of Time_backup\Old\04_ORIGIN_WORLDS_SUBGAMES.md:41:- **VinylGallery**: 16-per-page paginated track list with real-time hazard badges.
+universe-25\SETUP_COMPLETE.md:145:   - Rank filtering and hazard sorting
+universe-25\STATUS.md:46:  - `hazard_level` - Quality score (e.g., 3.25)
+universe-25\STATUS.md:140:**Result:** 59 tracks with hazard scoring
+docs\U25 ~ Codex of Time_backup\Old\06_BACKEND_DATA_STORAGE_ENGINE.md:44:| **Tier 4** | `_4_display.db`| SQLite | Read-Heavy | Materialized view: computed `hazard_level`, `played`, `timeblock`. Serves UI galleries. |
+universe-25\src\apps\vinyl-angel\VinylAngel.tsx:45:          hazardLevel: undefined,
+universe-25\src\apps\vinyl-angel\types.ts:56:  hazard_level: number;
+universe-25\src\apps\vinyl-angel\types.ts:65:  hazard_level: number;
+universe-25\src\apps\vinyl-angel\types.ts:76:  hazard_level?: number;
+universe-25\src\components\GameLayout.tsx:23:    hazardLevel?: number
+universe-25\src\components\ImperialHeader.tsx:18:  const { hazardLevel } = calculateHazardFromTime(timeBalance)
+universe-25\src\components\ImperialHeader.tsx:19:  const currentRank = getRankFromScore(hazardLevel)
+universe-25\src\components\ImperialHeader.tsx:103:            {/* HAZARD SECTION (Formula: hazard = ln(time/3600)) */}
+universe-25\src\components\ImperialHeader.tsx:116:                  <span className="font-mono text-lg md:text-xl font-black text-[#ffd86b] tracking-tight leading-none ide-hazard-glow">
+universe-25\src\components\ImperialHeader.tsx:117:                    {hazardLevel.toFixed(2)}
+universe-25\src\components\ImperialHeader.tsx:120:                    <HazardBadge score={hazardLevel} rank={currentRank} size="sm" showDetails={false} />
+universe-25\src\apps\vinyl-angel\components\VinylConfig.tsx:46:            Customize local aesthetic themes, player autoplay preferences, and review mathematical hazard formulas.
+universe-25\src\index.css:302:.ide-hazard-glow {
+universe-25\src\apps\vinyl-angel\store\useVinylStore.ts:44:    perkEffect: 'Decodes lost hazard protocols.',
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:91:  // Sorting & Filtering parameters: channel_name, excluded_channels, and hazard_cap (from File 1 & File 4)
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:94:  const [hazardCap, setHazardCap] = useState<string>('3.2');
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:141:  const hazardCapRef = useRef<string>('3.2');
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:161:  hazardCapRef.current = hazardCap;
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:203:    return val && !isNaN(val.hazard_level) ? val.hazard_level : 3.0;
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:291:  // Replenish playlist buffer from backend in background respecting channel_name, excluded_channels, and hazard_cap
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:301:        hazardCapRef.current,
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:372:      const current = prev[trackId] || { played: 0, hazard_level: 3.0, timeblock: null, unlock_date: null };
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:465:        const newHazard = res.hazard;
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:475:                hazard_level: newHazard,
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:489:              ? { ...t, hazard_level: newHazard, played: newPlayed, timeblock: newTimeblock }
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:602:  // Load sampled tracks filtered by channel_name, hazard_cap, and excluded_channels from Backend File 1, 4 & 5
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:606:      capToFilter: string = hazardCapRef.current,
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:657:          const queuedHazard = queued.hazard_level ?? 3.0;
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:661:            hazard_level: queuedHazard,
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:719:    const trackHazard = track.hazard_level ?? 3.0;
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:723:      hazard_level: trackHazard,
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:766:          const hCap = saved.hazardCap || '3.2';
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:772:          hazardCapRef.current = hCap;
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:812:      hazardCap: hazardCapRef.current,
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:816:    loadData(selectedChannel, hazardCap, next);
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:828:      hazardCap: hazardCapRef.current,
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:832:    loadData(selectedChannel, hazardCap, []);
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:849:      hazardCap: hazardCapRef.current,
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:853:    loadData(channelName, hazardCap, excludedChannels);
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:859:    hazardCapRef.current = capValue;
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:870:      hazardCap: capValue,
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:884:    hazardCapRef.current = '3.2';
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:889:      hazardCap: '3.2',
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:975:        await loadData(selectedChannel, hazardCap, excludedChannels);
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:1180:    selectedChannel !== 'ALL' || excludedChannels.length > 0 || hazardCap !== 'ALL';
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:1351:                value={hazardCap}
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:1354:                title="Cap maximum hazard level"
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:1441:            {hazardCap !== 'ALL' && (
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:1443:                Hazard ≤ {hazardCap}
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:1543:              {hazardCap !== 'ALL' && `(Hazard ≤ ${hazardCap})`}
+universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:1568:                    Include: {selectedChannel} • Excluded ({excludedChannels.length}): {excludedChannels.length > 0 ? excludedChannels.join(', ') : 'None'} • Hazard ≤ {hazardCap}
+universe-25\src\apps\vinyl-angel\services\engine.ts:139:): Promise<{ success: boolean; hazard: number; played: number; record: ChannelStateRecord }> {
+universe-25\src\apps\vinyl-angel\services\engine.ts:227:  const hazard = calculateHazardLevel(chRecord);
+universe-25\src\apps\vinyl-angel\services\engine.ts:230:  return { success: true, hazard, played, record: chRecord };
+universe-25\src\apps\vinyl-angel\services\engine.ts:253:    const rawHazard = t4Item.hazard_level;
+universe-25\src\apps\vinyl-angel\services\engine.ts:254:    const hazard =
+universe-25\src\apps\vinyl-angel\services\engine.ts:259:    if (hazard <= 3.0) continue;
+universe-25\src\apps\vinyl-angel\services\engine.ts:273:      hazard_level: hazard,
+universe-25\src\apps\vinyl-angel\services\engine.ts:277:      rankCategory: getRankFromScore(hazard),
+universe-25\src\apps\vinyl-angel\services\engine.ts:703:  const badKpiMap: Record<string, { id: string; hazard_level: number; purged_at: string }> = {};
+universe-25\src\apps\vinyl-angel\services\engine.ts:785:      const hazard = calculateHazardLevel(compositeRecord);
+universe-25\src\apps\vinyl-angel\services\engine.ts:787:      if (hazard < 2.0) {
+universe-25\src\apps\vinyl-angel\services\engine.ts:790:          hazard_level: hazard,
+universe-25\src\apps\vinyl-angel\services\engine.ts:798:        hazard_level: hazard,
+universe-25\src\apps\vinyl-angel\services\engine.ts:810:    const hazard = calculateHazardLevel(t3);
+universe-25\src\apps\vinyl-angel\services\engine.ts:812:    if (hazard < 2.0) {
+universe-25\src\apps\vinyl-angel\services\engine.ts:815:        hazard_level: hazard,
+universe-25\src\apps\vinyl-angel\services\engine.ts:823:      hazard_level: hazard,
+universe-25\src\apps\vinyl-angel\services\engine.ts:895:// Samples random tracks from Tier 1 with channel_name and hazard_level cap support
+universe-25\src\apps\vinyl-angel\services\engine.ts:901:  hazardCap?: number | string | null,
+universe-25\src\apps\vinyl-angel\services\engine.ts:915:  if (hazardCap !== undefined && hazardCap !== null && hazardCap !== 'ALL' && hazardCap !== 'NONE') {
+universe-25\src\apps\vinyl-angel\services\engine.ts:916:    samplePayload.hazard_cap = hazardCap;
+universe-25\src\apps\vinyl-angel\services\engine.ts:926:  if (hazardCap !== undefined && hazardCap !== null && hazardCap !== 'ALL' && hazardCap !== 'NONE') {
+universe-25\src\apps\vinyl-angel\services\engine.ts:927:    countPayload.hazard_cap = hazardCap;
+universe-25\src\apps\vinyl-angel\services\engine.ts:953:      let hazard_level = 3.0;
+universe-25\src\apps\vinyl-angel\services\engine.ts:962:        const rawHazard = Number(v.hazard_level);
+universe-25\src\apps\vinyl-angel\services\engine.ts:963:        hazard_level = !isNaN(rawHazard) ? rawHazard : 3.0;
+universe-25\src\apps\vinyl-angel\services\engine.ts:972:        hazard_level: Math.round(hazard_level * 100) / 100,
+universe-25\src\apps\vinyl-angel\services\engine.ts:992:      const effectiveHazard = t4 ? t4.hazard_level : chHazard;
+universe-25\src\apps\vinyl-angel\services\engine.ts:999:          hazard_level: effectiveHazard,
+universe-25\src\apps\vinyl-angel\services\engine.ts:1016:        hazard_level: effectiveHazard,
+universe-25\src\apps\vinyl-angel\services\engine.ts:1032:  hazardCap?: number | string | null,
+universe-25\src\apps\vinyl-angel\services\engine.ts:1042:  if (hazardCap !== undefined && hazardCap !== null && hazardCap !== 'ALL' && hazardCap !== 'NONE') {
+universe-25\src\apps\vinyl-angel\services\engine.ts:1043:    samplePayload.hazard_cap = hazardCap;
+universe-25\src\apps\vinyl-angel\services\engine.ts:1064:      let hazard_level = 3.0;
+universe-25\src\apps\vinyl-angel\services\engine.ts:1073:        const rawHazard = Number(v.hazard_level);
+universe-25\src\apps\vinyl-angel\services\engine.ts:1074:        hazard_level = !isNaN(rawHazard) ? rawHazard : 3.0;
+universe-25\src\apps\vinyl-angel\services\engine.ts:1083:        hazard_level: Math.round(hazard_level * 100) / 100,
+universe-25\src\apps\vinyl-angel\services\engine.ts:1113:        hazard_level: t4 ? t4.hazard_level : chHazard,
+universe-25\src\apps\vinyl-angel\services\engine.ts:1140:          const rawHazard = Number(v.hazard_level);
+universe-25\src\apps\vinyl-angel\services\engine.ts:1141:          const hazard_level = !isNaN(rawHazard) ? rawHazard : 3.0;
+universe-25\src\apps\vinyl-angel\services\engine.ts:1144:            hazard_level: Math.round(hazard_level * 100) / 100,
+universe-25\src\apps\vinyl-angel\services\engine.ts:1310:  hazardCap?: string;
+universe-25\src\apps\vinyl-angel\services\engine.ts:1318:      hazard_cap?: string;
+universe-25\src\apps\vinyl-angel\services\engine.ts:1349:      hazardCap: res.data.hazard_cap || '3.2',
+universe-25\src\apps\vinyl-angel\services\engine.ts:1371:          hazard_cap: config.hazardCap || '3.2',
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:75:  const [hazardSort, setHazardSort] = useState<'desc' | 'asc' | 'none'>('desc');
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:95:      hazard_level: track.hazard_level,
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:172:    if (hazardSort === 'desc') return [...res].sort((a, b) => b.hazard_level - a.hazard_level);
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:173:    if (hazardSort === 'asc') return [...res].sort((a, b) => a.hazard_level - b.hazard_level);
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:175:  }, [allEligibleItems, searchQuery, selectedRank, hazardSort]);
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:181:  }, [searchQuery, selectedRank, hazardSort]);
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:365:              hazardSort === 'desc'
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:367:                : hazardSort === 'asc'
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:372:            {hazardSort === 'desc' && <ArrowDown10 className="w-4 h-4 text-[#ffd86b]" />}
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:373:            {hazardSort === 'asc' && <ArrowUp01 className="w-4 h-4 text-[#4ade80]" />}
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:374:            {hazardSort === 'none' && <ArrowUpDown className="w-4 h-4 text-[#8c7a9e]" />}
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:376:              Hazard: {hazardSort === 'desc' ? 'High ➔ Low' : hazardSort === 'asc' ? 'Low ➔ High' : 'Default'}
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:444:                  <HazardBadge score={item.hazard_level} rank={item.rankCategory} size="md" />
+universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:579:                      score={inspectItem.hazard_level}
+universe-25\src\components\shared\TelemetryBar.tsx:4:  hazardLevel: number;
+universe-25\src\components\shared\TelemetryBar.tsx:13:  hazardLevel,
+universe-25\src\components\shared\TelemetryBar.tsx:20:  // Format hazard level with 2 decimal places
+universe-25\src\components\shared\TelemetryBar.tsx:21:  const formattedHazard = hazardLevel.toFixed(2);
+universe-25\src\core\syncEngine.ts:14:  hazardProfile?: { goldenHours: number; hazardLevel: number }
+universe-25\src\apps\golden-hour\GoldenHour.tsx:20:  const { goldenHours, hazardLevel } = calculateHazardFromTime(timeBalance);
+universe-25\src\apps\golden-hour\GoldenHour.tsx:35:      globalInfo={{ hazardLevel, goldenHours }}
+universe-25\src\apps\golden-hour\types.ts:92:  score: number;               // hazard score for rank calculation
+universe-25\src\apps\golden-hour\types.ts:144:  hazardLevel: number;         // f(x) = 1.5 * ln(x + 1), clamped >= 0
+universe-25\src\apps\golden-hour\types.ts:165:  hazardProfile: HazardProfile;
+universe-25\src\apps\golden-hour\store\useGoldenHourStore.ts:23:// hazard = ln(x + 1), where x is golden hours (timeSeconds / 3600, clamped >= 0)
+universe-25\src\apps\golden-hour\store\useGoldenHourStore.ts:31:export function calculateHazardFromTime(timeBalanceSeconds: number): { timeSeconds: number; goldenHours: number; hazardLevel: number } {
+universe-25\src\apps\golden-hour\store\useGoldenHourStore.ts:34:  const hazardLevel = calculateHazardLevel(goldenHours);
+universe-25\src\apps\golden-hour\store\useGoldenHourStore.ts:35:  return { timeSeconds, goldenHours, hazardLevel };
+universe-25\src\apps\golden-hour\store\useGoldenHourStore.ts:112:    description: 'Synthesized from hazard rank validations and dimensional matrix indexing.',
+universe-25\src\apps\golden-hour\store\useGoldenHourStore.ts:304:    hazardProfile: {
+universe-25\src\apps\golden-hour\store\useGoldenHourStore.ts:306:      hazardLevel: 0,
+universe-25\src\apps\golden-hour\store\useGoldenHourStore.ts:540:        const newHours = Math.max(0, state.hazardProfile.goldenHours + hours);
+universe-25\src\apps\golden-hour\store\useGoldenHourStore.ts:542:          hazardProfile: {
+universe-25\src\apps\golden-hour\store\useGoldenHourStore.ts:544:            hazardLevel: calculateHazardLevel(newHours),
+universe-25\src\apps\golden-hour\components\GoldenHourConfig.tsx:53:  const { goldenHours, hazardLevel } = calculateHazardFromTime(timeBalance);
+universe-25\src\apps\golden-hour\components\GoldenHourConfig.tsx:108:              Hazard: <strong className="text-[#ffd86b]">{hazardLevel.toFixed(2)}</strong> ({goldenHours.toFixed(1)} hrs)
+universe-25\src\apps\arc-jurassic\core\hazardEngine.ts:63: * Calculates continuous hazard rank score matching the discrete tier intervals.
+universe-25\src\apps\golden-hour\components\BattleArena.tsx:18:  const { hazardLevel, goldenHours } = calculateHazardFromTime(timeBalance);
+universe-25\src\apps\golden-hour\components\BattleArena.tsx:85:            hazardLevel={hazardLevel}
+universe-25\src\apps\golden-hour\components\BattleArena.tsx:160:              <li>Score-based hazard ranking system</li>
+universe-25\src\apps\arc-jurassic\components\tabs\alldinos\AllDinosTab.tsx:12:} from '../../../core/hazardEngine';

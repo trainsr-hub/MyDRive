@@ -1,0 +1,173 @@
+# Archiver — Writing Voice & Project Codex
+
+## Identity
+- **Project**: P70 ~ Novel Project — *Archiver* (Tiêu Thần Kỷ Lục)
+- **Writer**: The Manager
+- **Tactical Executor**: Faust (Viết theo hướng dẫn giọng văn của Manager)
+- **Language**: Vietnamese (toàn bộ prose, dialogue, narrative)
+- **Scope**: `D:\My Drive\My Obsidian Vault\Main_03\P70 ~ Novel Project\02 ~ Archiver` ONLY
+
+---
+
+## Writing Voice & Narrative Principles
+
+### 1. **Show Through Action, Not Explanation**
+- **Bad**: "Pandora cảm thấy tức giận và buồn"
+- **Good**: "Pandora đá mạnh một cái vỏ lon trên vỉa hè"
+
+Rule: Never explain emotion. Use **hành động**, **cử chỉ**, **phản xạ** để nói lên tâm trạng.
+
+### 2. **Dialogue & Voice Carry Character**
+- **Pandora**: Ngắn gọn, cáu bẳn, có gai. Từ ngữ thô bạo ("đồ khốn", "tch", "lũ đần"). Không lịch sự.
+- **Aeolus**: Lạnh lùng, mơ hồ, không giải thích. Từng câu như một nhận xét, không lời cảm xúc.
+- **Amber**: Ấm áp, trêu chọc, là "mom friend". Nói chuyện thoải mái, hay dùng biệt danh.
+
+Rule: Tone of voice ≠ description. Để người đọc suy ra tính cách qua cách nói.
+
+### 3. **Sparse Description, Dense Implication**
+- **Bad**: "Con đường tối tăm, lạnh lẻo, cô cảm thấy sợ hãi..."
+- **Good**: "Con hẻm lặng im. Chỉ có tiếng bước chân của Pandora cọ xát trên đá ướt."
+
+Rule: Mô tả **cụ thể, nhỏ**, không tổng quát. Để độc giả tự cảm nhận.
+
+### 4. **Pacing: Ngắn, Nhịp Nhanh**
+- Câu ngắn, chủ yếu 5-15 từ
+- Chia đoạn thường xuyên — mỗi hành động, mỗi suy nghĩ có thể là một dòng riêng
+- Không viết đoạn dài hơn 3-4 câu trừ khi cần thiết
+
+Example:
+```
+"Tch, cái tên đó..."
+Pandora tặc lưỡi, đá mạnh một cái vỏ lon trên vỉa hè.
+```
+
+### 5. **Tone: Noir-ish, Hơi Châm Biếm, Lạnh**
+- Không bi lụy, không sentimental
+- Có chút **gai** trong giọng nói — ngay cả lúc nói chuyện, cũng như cảm nhận
+- Khi mô tả quái vật hay sợ hãi, vẫn giữ giọng **khách quan**, **lạnh lùng**
+
+Example (từ Old 1):
+> "Nhìn chẳng hiểu gì cả, cô bạn chỉ đang spam chiêu vào không khí như thường lệ."
+
+### 6. **Internal Monologue: Ngắn, Cắt Ngang**
+- Không viết 3-4 dòng suy tưởng liên tiếp
+- Chỉ 1-2 dòng, đứt quãng, như tự nói với mình
+- Sử dụng *italic* cho suy nghĩ
+
+Example:
+> *"Lại là mấy trò cũ."*
+
+Rule: Internal monologue là gợi ý, không phải giải thích.
+
+### 7. **Dialogue Format & Punctuation**
+- Tiếng Việt: Dùng ngoặc đơn `" "` cho đối thoại
+- Không thêm "he said/she said" nếu rõ ràng ai nói
+- Hành động xen giữa đối thoại để rõ nhân vật
+
+Example:
+```
+"Cảm ơn," Aeolus nói.
+Pandora nhíu mày. "Sao lại?"
+```
+
+### 8. **Physical Reality > Metaphor**
+- Không dùng đầu đủ metáphora lãng mạn
+- Tập trung vào **vật lý thực**, **cảm giác thực**
+- Khi viết quái vật, mô tả **chi tiết cơ thể** (xương, móng vuốt, lông) không phải "cảm xúc của nó"
+
+Example (từ Old 3):
+> "Những giọt dịch đỏ bắn ra tung tóe như trong một cuộc hỗn chiến thời trung cổ."
+
+---
+
+## Character Fingerprints
+
+### Pandora (16)
+- **Voice**: Ngắn, cáu bẳn, thô bạo. "Tch", "đồ khốn", "lũ đần"
+- **Action**: Đá lon, cắn bánh, ngủ gục, đánh thiếp nhanh
+- **Thought**: Ngắn gọn, chỉ phàn nàn — không sâu sắc
+- **Mask**: RBF bên ngoài, nhưng hành động hiện lên sự công bằng nội tâm
+
+### Aeolus (16, The Archiver)
+- **Voice**: Lạnh lùng, không xin lỗi, không giải thích. Nói như nhận xét.
+- **Action**: Dịu dàng nhưng sắc sảo. Không lãng phí động tác.
+- **Thought**: Hiếm khi suy tưởng — hành động nói hết
+- **Mystery**: Không tiết lộ động cơ. Chỉ hành động lạnh lùng.
+
+### Amber (16, Mom Friend)
+- **Voice**: Ấm áp, trêu chọc, hay dùng biệt danh ("Panda", "gấu trúc")
+- **Action**: Chủ động, thoải mái, quan tâm nhưng không quá
+- **Thought**: Hiểu được Pandora, biết khi nào nên để cho cô một mình
+- **Role**: Xúc tác cảm xúc cho Pandora; sau này sẽ bị kẹt
+
+---
+
+## Structural Rules
+
+1. **Không giải thích bối cảnh** — để độc giả khám phá qua hành động & đối thoại
+2. **Không recap những gì vừa xảy ra** — viết tiếp, không nhắc lại
+3. **Không mô tả quá nhiều** — chỉ đủ để độc giả hình dung, không phải để họ biết hết
+4. **Hành động thực tế trước** — rồi mới gợi ý tâm lý qua cách nhân vật phản ứng
+5. **Cuối scene phải có tension** — hoặc câu hỏi, hoặc chuyển cảnh, không phải recap
+
+---
+
+## Example: How to Revise
+
+**OLD (My attempt):**
+> Pandora bước đi trên con hẻm tối, đôi giày sneakers cũ kỹ của cô cọ xát vào nền đá ẩm ướt. Chiếc ba lô đen đeo trên vai cô chỉ chứa đựng vài cuốn sách giáo khoa. Cô thầm nhủ, giọng cô mang theo chút mệt mỏi quen thuộc. *"Lại thêm một ngày nhàm chán,"*
+
+**REVISED (Per Manager's style):**
+> Con hẻm tối. Pandora bước đi, giày cọ xát trên đá ướt.
+> Mặt trời sắp lặn.
+> *"Lại là ngày nhàm chán."*
+
+---
+
+## Workflow
+
+1. **Skeleton first**: Dàn Ý bao gồm beat chính, dialogue sơ đồ
+2. **Viết action**: Hành động & cử chỉ — không giải thích tâm lý
+3. **Thêm dialogue**: Lắp vào đối thoại để nổi bật nhân vật
+4. **Polish tone**: Xóa từ ngữ "dài dòng", cắt câu ngắn hơn, kiểm tra tone
+5. **Final check**: Có giải thích thái quá không? Có mô tả quá detail không?
+
+---
+
+## Archiver World Rules (Brief)
+
+- **Thế giới kia**: Tiềm thức con người, nơi quái vật sống
+- **Gateways**: Ở những chỗ tối, không ai quan sát (hẻm, rừng, tối đen)
+- **Wave function**: Khi không được quan sát, tất cả khả năng xảy ra cùng lúc. Khi quan sát, sóng sụp về một khả năng.
+- **Myth**: Tồn tại từ tâm trí con người — ma sói, Wendigo, Medusa, v.v.
+- **Aeolus/The Archiver**: Biết cách "observe" để kiểm soát. Có thể hóa thành các Myth khác nhau.
+
+---
+
+## DO NOT
+
+- ❌ Viết dài dòng giải thích cảm xúc
+- ❌ Dùng metáphora quá lãng mạn hay trừu tượng
+- ❌ Recap những gì vừa xảy ra
+- ❌ Mô tả quá chi tiết cảnh vật (hẻm tối, mặt trăng, v.v.)
+- ❌ Giải thích động cơ nhân vật trước khi họ hành động
+- ❌ Viết đoạn dài hơn 3-4 câu liên tiếp
+- ❌ Dùng "suddenly" (đột nhiên) — action speak for itself
+- ❌ Sentimental tone khi miêu tả sợ hãi hay đau đớn
+
+---
+
+## DO
+
+- ✅ Show through action
+- ✅ Keep sentences short
+- ✅ Let dialogue carry voice
+- ✅ Use specific, concrete details
+- ✅ Break paragraphs often
+- ✅ Tone stays lạnh lùng & châm biếm
+- ✅ Internal monologue brief & cắt ngang
+- ✅ End scenes with tension, not recap
+
+---
+
+*Last updated: 2026-09-24*

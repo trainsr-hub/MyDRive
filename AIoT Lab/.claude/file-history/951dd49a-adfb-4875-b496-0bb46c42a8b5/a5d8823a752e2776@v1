@@ -1,0 +1,146 @@
+import { App, normalizePath } from 'obsidian';
+import { ConditionEntry } from '../types/schema';
+
+export const CONDITIONS_DIR = 'Hazard_Trigger_Data/Conditions';
+export const CONDITIONS_FILE_PATH = 'Hazard_Trigger_Data/Conditions/conditions.json';
+
+function cleanPath(p: string): string {
+  return normalizePath(p).replace(/\\/g, '/');
+}
+
+export class ConditionManager {
+  /**
+   * Sanitizes a ConditionEntry to strictly conform to the clean V2 schema.
+   */
+  public static sanitizeCondition(raw: any): ConditionEntry {
+    const clean: ConditionEntry = {
+      display_name: raw.display_name || 'Unnamed Condition',
+      category: raw.category || 'General',
+      description: raw.description || '',
+    };
+
+    if (raw.completed === true) {
+      clean.completed = true;
+    }
+
+    if (Array.isArray(raw.tag_team) && raw.tag_team.length > 0) {
+      clean.tag_team = raw.tag_team.filter(Boolean);
+    }
+
+    if (Array.isArray(raw.conflicts_with) && raw.conflicts_with.length > 0) {
+      clean.conflicts_with = raw.conflicts_with.filter(Boolean);
+    }
+
+    return clean;
+  }
+
+  /**
+   * Ensures the Conditions folder and primary conditions.json exist in the vault.
+   */
+  public static async ensureConditionsFolder(app: App): Promise<void> {
+    const adapter = app.vault.adapter;
+    const folderPath = cleanPath(CONDITIONS_DIR);
+
+    if (!(await adapter.exists(folderPath))) {
+      try {
+        await adapter.mkdir(folderPath);
+      } catch (e) {
+        console.warn('[ConditionManager] Folder creation notice:', e);
+      }
+    }
+
+    const filePath = cleanPath(CONDITIONS_FILE_PATH);
+    if (!(await adapter.exists(filePath))) {
+      try {
+        await adapter.write(filePath, JSON.stringify({}, null, 2));
+      } catch (e) {
+        console.warn('[ConditionManager] File creation notice:', e);
+      }
+    }
+  }
+
+  /**
+   * Loads all conditions from Hazard_Trigger_Data/Conditions/.
+   * Scans all JSON files inside the folder and merges their dictionaries.
+   */
+  public static async loadAllConditions(app: App): Promise<Record<string, ConditionEntry>> {
+    await this.ensureConditionsFolder(app);
+    const adapter = app.vault.adapter;
+    const folderPath = cleanPath(CONDITIONS_DIR);
+    const conditionsMap: Record<string, ConditionEntry> = {};
+
+    try {
+      const listed = await adapter.list(folderPath);
+      const jsonFiles = listed.files.filter((f) => f.endsWith('.json'));
+
+      for (const filePath of jsonFiles) {
+        try {
+          const raw = await adapter.read(cleanPath(filePath));
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            Object.entries(parsed).forEach(([key, val]) => {
+              conditionsMap[key] = this.sanitizeCondition(val);
+            });
+          }
+        } catch (err) {
+          console.error(`[ConditionManager] Failed to parse condition file ${filePath}:`, err);
+        }
+      }
+    } catch (e) {
+      console.warn('[ConditionManager] Error loading conditions:', e);
+    }
+
+    return conditionsMap;
+  }
+
+  /**
+   * Writes the entire conditions dictionary back to Hazard_Trigger_Data/Conditions/conditions.json.
+   */
+  public static async saveAllConditions(
+    app: App,
+    conditions: Record<string, ConditionEntry>,
+    targetFileName: string = 'conditions.json'
+  ): Promise<boolean> {
+    await this.ensureConditionsFolder(app);
+    const adapter = app.vault.adapter;
+    const filePath = cleanPath(`${CONDITIONS_DIR}/${targetFileName}`);
+
+    try {
+      const sanitized: Record<string, ConditionEntry> = {};
+      Object.entries(conditions).forEach(([k, v]) => {
+        sanitized[k] = this.sanitizeCondition(v);
+      });
+
+      await adapter.write(filePath, JSON.stringify(sanitized, null, 2));
+      return true;
+    } catch (err) {
+      console.error(`[ConditionManager] Failed to write conditions to ${filePath}:`, err);
+      return false;
+    }
+  }
+
+  /**
+   * Saves or updates a single condition entry.
+   */
+  public static async saveCondition(
+    app: App,
+    id: string,
+    entry: ConditionEntry
+  ): Promise<boolean> {
+    const all = await this.loadAllConditions(app);
+    all[id] = this.sanitizeCondition(entry);
+    return await this.saveAllConditions(app, all);
+  }
+
+  /**
+   * Deletes a condition entry by Hex ID.
+   */
+  public static async deleteCondition(app: App, id: string): Promise<boolean> {
+    const all = await this.loadAllConditions(app);
+    if (all[id]) {
+      delete all[id];
+      return await this.saveAllConditions(app, all);
+    }
+    return false;
+  }
+}

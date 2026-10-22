@@ -1,0 +1,35 @@
+---
+name: esp32-field-speaker
+description: Faust ESP32 Field Speaker Skill & I2S hardware bridge using shared resident acoustic daemon on port 20129
+metadata:
+  node_type: memory
+  key: div:backend:esp32_field_speaker
+  keys:
+    - div:backend:resident_audio_daemon
+    - div:backend:acoustic_core
+    - core:hardware_mechatronics
+  type: project
+  originSessionId: e4cdfc13-1769-41c5-a030-e05a95cd7f0b
+  modified: 2026-09-24T05:35:03.413Z
+---
+
+# Faust ESP32 Field Speaker Skill (`.claude/skills/esp32-speaker`)
+
+### 1. Architecture & DRY Primacy
+- **Shared Resident Daemon**: Reuses the Kokoro-82M neural TTS daemon on `http://127.0.0.1:20129` (RAM-pinned weights, 0ms cold-start) with Vietnamese G2P phoneme support and neural style blending.
+- **Synthesizer Bridge (`/synthesize`)**: Synthesizes speech and performs high-speed polyphase sinc resampling (24kHz to 16kHz) without disk I/O.
+- **Hardware UART Streamer**: Paces 16-bit mono/stereo PCM chunks across `COM5` (or configured port) at `921,600` baud with ~0.15s buffer lead.
+- **Reusable C++ Package**: `packages/ui/audio/I2SSpeaker/` provides zero-pop I2S DMA playback and mono-to-stereo expansion.
+- **Standalone Sketch**: `Nháp/esp32_i2s_speaker.ino` connects ESP32 to MAX98357A / I2S DAC (BCLK=GPIO16, LRC=GPIO17, DIN=GPIO15).
+
+### 2. Commands & Usage
+```bash
+# Speak via ESP32 speaker
+python .claude/skills/esp32-speaker/scripts/cli.py speak "<text>"
+
+# Diagnostic test
+python .claude/skills/esp32-speaker/scripts/cli.py test
+```
+
+**Why:** Grants Faust a physical speaker voice presence on embedded ESP32 actuators while reusing the exact same acoustic neural engine as the PC speaker.
+**How to apply:** Link with `[[faust-resident-audio-daemon]]`, `[[faust-acoustic-engine]]`, and `[[vgwd025k3-codex-of-time]]`.

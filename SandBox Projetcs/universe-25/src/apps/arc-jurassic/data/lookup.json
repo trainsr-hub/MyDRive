@@ -1,0 +1,66 @@
+{
+    "class_icons": {
+        "amphibian": "https://cdn.paleo.gg/games/jwtg/images/class/amphibian.png",
+        "carnivore": "https://cdn.paleo.gg/games/jwtg/images/class/carnivore.png",
+        "carnivore-surface": "https://cdn.paleo.gg/games/jwtg/images/class/carnivore-surface.png",
+        "cave": "https://cdn.paleo.gg/games/jwtg/images/class/cave.png",
+        "cavern": "https://cdn.paleo.gg/games/jwtg/images/class/cavern.png",
+        "herbivore": "https://cdn.paleo.gg/games/jwtg/images/class/herbivore.png",
+        "pterosaur": "https://cdn.paleo.gg/games/jwtg/images/class/pterosaur.png",
+        "reef": "https://cdn.paleo.gg/games/jwtg/images/class/reef.png",
+        "savannah": "https://cdn.paleo.gg/games/jwtg/images/class/savannah.png",
+        "snow": "https://cdn.paleo.gg/games/jwtg/images/class/snow.png",
+        "surface": "https://cdn.paleo.gg/games/jwtg/images/class/surface.png"
+    },
+    "card_backgrounds": {
+        "hybrid_common": "https://cdn.paleo.gg/games/jwtg/images/card-bg/hybrid/common.png",
+        "hybrid_legendary": "https://cdn.paleo.gg/games/jwtg/images/card-bg/hybrid/legendary.png",
+        "hybrid_rare": "https://cdn.paleo.gg/games/jwtg/images/card-bg/hybrid/rare.png",
+        "hybrid_super-rare": "https://cdn.paleo.gg/games/jwtg/images/card-bg/hybrid/super-rare.png",
+        "hybrid_tournament": "https://cdn.paleo.gg/games/jwtg/images/card-bg/hybrid/tournament.png",
+        "non-hybrid_boss": "https://cdn.paleo.gg/games/jwtg/images/card-bg/non-hybrid/boss.png",
+        "non-hybrid_common": "https://cdn.paleo.gg/games/jwtg/images/card-bg/non-hybrid/common.png",
+        "non-hybrid_legendary": "https://cdn.paleo.gg/games/jwtg/images/card-bg/non-hybrid/legendary.png",
+        "non-hybrid_rare": "https://cdn.paleo.gg/games/jwtg/images/card-bg/non-hybrid/rare.png",
+        "non-hybrid_star": "https://cdn.paleo.gg/games/jwtg/images/card-bg/non-hybrid/star.png",
+        "non-hybrid_super-rare": "https://cdn.paleo.gg/games/jwtg/images/card-bg/non-hybrid/super-rare.png",
+        "non-hybrid_super-star": "https://cdn.paleo.gg/games/jwtg/images/card-bg/non-hybrid/super-star.png",
+        "non-hybrid_tournament": "https://cdn.paleo.gg/games/jwtg/images/card-bg/non-hybrid/tournament.png",
+        "non-hybrid_toy": "https://cdn.paleo.gg/games/jwtg/images/card-bg/non-hybrid/toy.png",
+        "non-hybrid_vip": "https://cdn.paleo.gg/games/jwtg/images/card-bg/non-hybrid/vip.png",
+        "super-hybrid_common": "https://cdn.paleo.gg/games/jwtg/images/card-bg/super-hybrid/common.png",
+        "super-hybrid_legendary": "https://cdn.paleo.gg/games/jwtg/images/card-bg/super-hybrid/legendary.png",
+        "super-hybrid_rare": "https://cdn.paleo.gg/games/jwtg/images/card-bg/super-hybrid/rare.png",
+        "super-hybrid_super-rare": "https://cdn.paleo.gg/games/jwtg/images/card-bg/super-hybrid/super-rare.png",
+        "super-hybrid_tournament": "https://cdn.paleo.gg/games/jwtg/images/card-bg/super-hybrid/tournament.png"
+    },
+    "hybrid_types": {
+        "non-hybrid": "https://cdn.paleo.gg/games/jwtg/images/hybrid-type/non-hybrid.png",
+        "speed": "https://static.vecteezy.com/system/resources/previews/034/089/782/non_2x/shopping-clock-or-stock-time-or-sale-hours-simple-gold-icon-for-apps-and-websites-vector.jpg",
+        "hybrid": "https://cdn.paleo.gg/games/jwtg/images/hybrid-type/hybrid.png",
+        "super-hybrid": "https://cdn.paleo.gg/games/jwtg/images/hybrid-type/super-hybrid.png"
+    },
+    "region": {
+        "aquatic": "https://cdn.paleo.gg/games/jwtg/images/region/aquatic.png",
+        "cenozoic": "https://cdn.paleo.gg/games/jwtg/images/region/cenozoic.png",
+        "jurassic": "https://cdn.paleo.gg/games/jwtg/images/region/jurassic.png"
+    },
+    "portrait_frames": {
+        "boss": "https://cdn.paleo.gg/games/jwtg/images/portrait-frame/boss.png",
+        "common": "https://cdn.paleo.gg/games/jwtg/images/portrait-frame/common.png",
+        "legendary": "https://cdn.paleo.gg/games/jwtg/images/portrait-frame/legendary.png",
+        "rare": "https://cdn.paleo.gg/games/jwtg/images/portrait-frame/rare.png",
+        "star": "https://cdn.paleo.gg/games/jwtg/images/portrait-frame/star.png",
+        "super-rare": "https://cdn.paleo.gg/games/jwtg/images/portrait-frame/super-rare.png",
+        "super-star": "https://cdn.paleo.gg/games/jwtg/images/portrait-frame/super-star.png",
+        "tournament": "https://cdn.paleo.gg/games/jwtg/images/portrait-frame/tournament.png",
+        "toy": "https://cdn.paleo.gg/games/jwtg/images/portrait-frame/toy.png",
+        "vip": "https://cdn.paleo.gg/games/jwtg/images/portrait-frame/vip.png"
+    },
+    "stats": {
+        "ferocity": "https://cdn.paleo.gg/games/jwtg/images/stats/ferocity.png",
+        "health": "https://cdn.paleo.gg/games/jwtg/images/stats/health.png",
+        "speed": "https://cdn.paleo.gg/games/jwtg/images/stats/speed.png",
+        "damage": "https://cdn.paleo.gg/games/jwtg/images/stats/damage.png"
+    }
+}

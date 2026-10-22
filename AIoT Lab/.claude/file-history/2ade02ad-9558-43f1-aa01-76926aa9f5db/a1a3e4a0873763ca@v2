@@ -1,0 +1,314 @@
+"""
+Rebased Album & Character Images Vault: Decoupled O(1) Per-Character Media Storage.
+Implements Manager's Vision:
+  - 'albums' (SQLite 1007...): Album containers with Hex IDs
+  - Individual '{CHAR_CODE}.json' files in 'Hazard_Trigger_Data/Identity/Images/':
+    Instant O(1) direct file lookup without monolithic JSON scanning.
+    Each file maps image entries with image_url directly linked to an album_id.
+"""
+
+import sqlite3
+import json
+import os
+import time
+from typing import Dict, Any, List, Optional
+import tournament_db as tdb
+
+PREFIX_ALBUM = "1007"
+PREFIX_IMAGE = "1008"
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB_PATH = tdb.DEFAULT_DB_PATH
+DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "Hazard_Trigger_Data", "Identity", "Images"))
+
+DEFAULT_FALLBACK_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3a'/%3E%3Ctext x='50' y='55' font-size='32' text-anchor='middle' fill='%23d4af37' font-family='monospace'%3E%3F%3C/text%3E%3C/svg%3E"
+
+
+# ==============================================================================
+# SQLITE: ALBUMS TABLE (1007...)
+# ==============================================================================
+
+def init_album_schema(db_path: str = DEFAULT_DB_PATH) -> None:
+    """Initializes the albums table in SQLite."""
+    conn = tdb.get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS albums (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT DEFAULT '',
+                created_at TEXT NOT NULL
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_albums_name ON albums(name);")
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+
+
+def upsert_album(album_data: Dict[str, Any], db_path: str = DEFAULT_DB_PATH) -> Dict[str, Any]:
+    """Upserts an album container into SQLite."""
+    init_album_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    name = album_data["name"].strip()
+    description = album_data.get("description", "")
+    now_str = time.strftime("%Y-%m-%d %H:%M:%S")
+
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        cur = conn.execute("SELECT id FROM albums WHERE name = ?;", (name,))
+        row = cur.fetchone()
+        album_id = album_data.get("id") or (row["id"] if row else tdb.generate_tournament_hex_id(PREFIX_ALBUM))
+
+        conn.execute("""
+            INSERT INTO albums (id, name, description, created_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(name) DO UPDATE SET
+                description = excluded.description;
+        """, (album_id, name, description, now_str))
+
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return get_album_by_id(album_id, db_path)
+
+
+def get_album_by_id(album_id: str, db_path: str = DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """Gets an album by its ID."""
+    init_album_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    cur = conn.execute("SELECT * FROM albums WHERE id = ?;", (album_id,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return dict(row)
+
+
+def get_album_by_name(name: str, db_path: str = DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    """Gets an album by name."""
+    init_album_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    cur = conn.execute("SELECT * FROM albums WHERE name = ?;", (name.strip(),))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return dict(row)
+
+
+def get_all_albums(db_path: str = DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    """Lists all albums."""
+    init_album_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    cur = conn.execute("SELECT * FROM albums ORDER BY name ASC;")
+    rows = cur.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def delete_album(album_id: str, db_path: str = DEFAULT_DB_PATH) -> bool:
+    """Deletes an album from SQLite."""
+    init_album_schema(db_path)
+    conn = tdb.get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        conn.execute("DELETE FROM albums WHERE id = ?;", (album_id,))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return True
+
+
+def seed_default_albums(db_path: str = DEFAULT_DB_PATH) -> Dict[str, str]:
+    """Pre-seeds default album containers and returns a name -> id mapping."""
+    init_album_schema(db_path)
+    default_albums = [
+        {"name": "Tournament Avatars", "description": "Official combat and bracket portrait headshots"},
+        {"name": "Official Artwork", "description": "Canonical key visual illustrations and splash art"},
+        {"name": "Costumes & Egos", "description": "Alternative outfits, skins, and variant portraits"},
+    ]
+    id_map = {}
+    for a in default_albums:
+        res = upsert_album(a, db_path)
+        id_map[a["name"]] = res["id"]
+    return id_map
+
+
+# ==============================================================================
+# O(1) PER-CHARACTER IMAGE JSON FILES: 'Images/{CHAR_CODE}.json'
+# ==============================================================================
+
+def get_character_images_file_path(char_code: str, images_dir: str = DATA_DIR) -> str:
+    """Returns the direct O(1) file path for a given character code e.g. 'A01.json'."""
+    clean_code = char_code.strip().upper().replace("/", "_").replace("\\", "_")
+    return os.path.join(images_dir, f"{clean_code}.json")
+
+
+def load_character_images(char_code: str, images_dir: str = DATA_DIR) -> Dict[str, Any]:
+    """
+    O(1) Direct file read: loads 'Images/{CHAR_CODE}.json'.
+    Returns structure: { 'char_code': 'A01', 'images': [...] }
+    """
+    file_path = get_character_images_file_path(char_code, images_dir)
+    if not os.path.exists(file_path):
+        return {"char_code": char_code.upper(), "images": []}
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, dict):
+                return data
+            elif isinstance(data, list):
+                return {"char_code": char_code.upper(), "images": data}
+            return {"char_code": char_code.upper(), "images": []}
+    except Exception as e:
+        print(f"[WARN] Error reading {file_path}: {e}")
+        return {"char_code": char_code.upper(), "images": []}
+
+
+def save_character_images(char_code: str, data: Dict[str, Any], images_dir: str = DATA_DIR) -> None:
+    """Writes 'Images/{CHAR_CODE}.json' atomically."""
+    os.makedirs(images_dir, exist_ok=True)
+    file_path = get_character_images_file_path(char_code, images_dir)
+    temp_path = f"{file_path}.tmp"
+
+    with open(temp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    os.replace(temp_path, file_path)
+
+
+def get_images_for_character(
+    char_code: str,
+    images_dir: str = DATA_DIR,
+    db_path: str = DEFAULT_DB_PATH
+) -> List[Dict[str, Any]]:
+    """
+    O(1) Retrieval: Directly opens '{CHAR_CODE}.json' and enriches with album names.
+    """
+    record = load_character_images(char_code, images_dir)
+    images = record.get("images", [])
+    if not images:
+        return []
+
+    albums_map = {a["id"]: a["name"] for a in get_all_albums(db_path)}
+    enriched = []
+
+    for img in images:
+        enriched.append({
+            "image_id": img.get("image_id"),
+            "image_url": img.get("image_url"),
+            "album_id": img.get("album_id"),
+            "album_name": albums_map.get(img.get("album_id"), "Unassigned"),
+        })
+
+    return enriched
+
+
+def add_character_image(
+    char_code: str,
+    image_url: str,
+    album_id: str,
+    character_id: Optional[str] = None,
+    images_dir: str = DATA_DIR
+) -> Dict[str, Any]:
+    """O(1) Image Append: Inserts image into 'Images/{CHAR_CODE}.json'."""
+    clean_code = char_code.strip().upper()
+    record = load_character_images(clean_code, images_dir)
+    image_id = tdb.generate_tournament_hex_id(PREFIX_IMAGE)
+
+    if character_id:
+        record["character_id"] = character_id
+
+    new_img = {
+        "image_id": image_id,
+        "image_url": image_url.strip(),
+        "album_id": str(album_id).strip()
+    }
+
+    if "images" not in record or not isinstance(record["images"], list):
+        record["images"] = []
+
+    record["images"].append(new_img)
+    save_character_images(clean_code, record, images_dir)
+    return new_img
+
+
+def remove_character_image(
+    char_code: str,
+    image_id: str,
+    images_dir: str = DATA_DIR
+) -> bool:
+    """O(1) Image Removal: Deletes specific image from 'Images/{CHAR_CODE}.json'."""
+    clean_code = char_code.strip().upper()
+    record = load_character_images(clean_code, images_dir)
+    images = record.get("images", [])
+    if not images:
+        return False
+
+    initial_len = len(images)
+    record["images"] = [img for img in images if img.get("image_id") != image_id]
+
+    if len(record["images"]) < initial_len:
+        save_character_images(clean_code, record, images_dir)
+        return True
+
+    return False
+
+
+def get_primary_avatar(
+    char_code: str,
+    images_dir: str = DATA_DIR,
+    db_path: str = DEFAULT_DB_PATH
+) -> str:
+    """
+    O(1) Avatar Lookup: Reads '{CHAR_CODE}.json' and returns the primary/first image URL.
+    """
+    images = get_images_for_character(char_code, images_dir, db_path)
+    if images and images[0].get("image_url"):
+        return images[0]["image_url"]
+    return DEFAULT_FALLBACK_AVATAR
+
+
+def migrate_characters_to_individual_json_files(
+    images_dir: str = DATA_DIR,
+    db_path: str = DEFAULT_DB_PATH
+) -> int:
+    """
+    Scans the characters table and generates individual '{CHAR_CODE}.json' files
+    in 'Hazard_Trigger_Data/Identity/Images/', linking each avatar to 'Tournament Avatars'.
+    """
+    os.makedirs(images_dir, exist_ok=True)
+    album_ids = seed_default_albums(db_path)
+    avatar_album_id = album_ids.get("Tournament Avatars", list(album_ids.values())[0])
+
+    conn = tdb.get_connection(db_path)
+    cur = conn.execute("SELECT id, char_code, avatar_url FROM characters;")
+    characters = [dict(r) for r in cur.fetchall()]
+    conn.close()
+
+    migrated_count = 0
+
+    for c in characters:
+        char_code = c["char_code"].strip().upper()
+        char_id = c["id"]
+        avatar_url = (c.get("avatar_url") or "").strip()
+
+        record = load_character_images(char_code, images_dir)
+        record["character_id"] = char_id
+        record["char_code"] = char_code
+
+        if "images" not in record or not isinstance(record["images"], list):
+            record["images"] = []
+
+        if avatar_url:
+            existing_urls = [img.get("image_url") for img in record["images"]]
+            if avatar_url not in existing_urls:
+                record["images"].append({
+                    "image_id": tdb.generate_tournament_hex_id(PREFIX_IMAGE),
+                    "image_url": avatar_url,
+                    "album_id": avatar_album_id
+                })
+                migrated_count += 1
+
+        save_character_images(char_code, record, images_dir)
+
+    return migrated_count

@@ -1,0 +1,23 @@
+; Rien-Prescript-Beeper // Model 01-Oracle
+; ESP32-C3 Supermini + ST7789 170x320 + JQ8900
+[platformio]
+build_dir = D:/.pio_build/entropy
+
+[env:esp32c3_supermini]
+platform = espressif32
+board = esp32-c3-devkitm-1
+framework = arduino
+monitor_speed = 115200
+upload_speed = 460800
+upload_port = COM3
+monitor_port = COM3
+board_build.flash_mode = dio
+board_build.partitions = huge_app.csv
+build_flags =
+    -DARDUINO_USB_MODE=1
+    -DARDUINO_USB_CDC_ON_BOOT=1
+    -DCORE_DEBUG_LEVEL=0
+    -Wl,--wrap=esp_brownout_init
+lib_deps =
+    lovyan03/LovyanGFX@^1.1.16
+    bblanchon/ArduinoJson@^7.0.0

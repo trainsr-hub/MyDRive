@@ -1,0 +1,353 @@
+// path: src/apps/heraclitus/components/DurationCalcTab.tsx
+
+import React, { useState, useRef } from 'react'
+import {
+  Clock,
+  Play,
+  RotateCcw,
+  Sparkles,
+  AlertCircle,
+  Hash,
+  Activity,
+  Layers,
+  Clipboard,
+  Droplet,
+  CheckCircle,
+} from 'lucide-react'
+import { fetchPlaylistDuration, depositToPool } from '../services/heraclitusApi'
+import { SpeedBreakdownCards } from './SpeedBreakdownCards'
+import { VideoListTable } from './VideoListTable'
+import { useTwoPhase } from '../animations/useTwoPhase'
+import { CHRONO_SPOOL_CONFIG, CYBER_VOXEL_CONFIG } from '../animations/themes'
+import type { PlaylistDurationResult } from '../types'
+
+const PRESET_URL =
+  'https://youtube.com/playlist?list=PL256z5LbVRuCjqUseAYQ8vT2BoyE9alov&si=WnbPmOpoqXkWgtte'
+
+export const DurationCalcTab: React.FC = () => {
+  const [url, setUrl] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [result, setResult] = useState<PlaylistDurationResult | null>(null)
+  const [selectedSpeed, setSelectedSpeed] = useState<number>(1.0)
+  const [isDepositing, setIsDepositing] = useState(false)
+  const [depositSuccess, setDepositSuccess] = useState(false)
+
+  // Animation hooks
+  const { state: calcState, trigger: triggerCalcAnimation, reset: resetCalcAnimation } = useTwoPhase(CHRONO_SPOOL_CONFIG)
+  const { state: depositState, trigger: triggerDepositAnimation, reset: resetDepositAnimation } = useTwoPhase(CYBER_VOXEL_CONFIG)
+
+  // Refs for animation elements
+  const calcButtonRef = useRef<HTMLButtonElement>(null)
+  const depositButtonRef = useRef<HTMLButtonElement>(null)
+  const resultsPanelRef = useRef<HTMLDivElement>(null)
+
+  const handleCalculate = async (targetUrl?: string) => {
+    const query = (targetUrl || url).trim()
+    if (!query) {
+      setError('Please input a valid YouTube playlist URL.')
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+    triggerCalcAnimation()
+
+    try {
+      const data = await fetchPlaylistDuration(query)
+      setResult(data)
+    } catch (err: any) {
+      setError(err?.message || 'Failed to calculate playlist duration.')
+      setResult(null)
+      resetCalcAnimation()
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handlePaste = async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (text) {
+        setUrl(text.trim())
+      }
+    } catch {
+      // Clipboard permissions handled gracefully
+    }
+  }
+
+  const handlePreset = () => {
+    setUrl(PRESET_URL)
+    handleCalculate(PRESET_URL)
+  }
+
+  const handleDepositToPool = async () => {
+    if (!result) return
+
+    setIsDepositing(true)
+    setError(null)
+    setDepositSuccess(false)
+    triggerDepositAnimation()
+
+    try {
+      const speedBreakdown = result.speed_breakdowns.find(sb => sb.speed === selectedSpeed)
+      const depositSeconds = speedBreakdown?.duration_seconds || result.total_seconds
+
+      await depositToPool({
+        seconds: depositSeconds,
+        source: result.title,
+        category: 'grind',
+        speed: selectedSpeed,
+        notes: `Auto-deposit from playlist calculation (${result.active_videos}/${result.total_videos} videos)`,
+      })
+
+      setDepositSuccess(true)
+      setTimeout(() => setDepositSuccess(false), 3000)
+    } catch (err: any) {
+      setError(err.message || 'Failed to deposit time to Yellow Pool')
+      resetDepositAnimation()
+    } finally {
+      setIsDepositing(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* ── 1. Monolithic Command Bar (min-h-[64px]) ────────────────────────── */}
+      <div className="p-4 rounded-2xl bg-[#0f0b17]/95 border border-[#2d223c] shadow-2xl">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+          {/* Main URL Input */}
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCalculate()}
+              placeholder="Paste YouTube Playlist link (e.g., https://youtube.com/playlist?list=...)"
+              className="w-full min-h-[52px] px-4 rounded-xl bg-[#171222] border border-[#372a4c] focus:border-[#ffd86b] text-sm font-mono text-white placeholder-[#685b7b] outline-none transition shadow-inner"
+            />
+          </div>
+
+          {/* Action Buttons Row */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handlePaste}
+              className="min-h-[52px] px-4 rounded-xl bg-[#1c1528] hover:bg-[#281d39] border border-[#3e2e54] text-xs font-cinzel font-bold text-[#c4b5d6] hover:text-white transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+              title="Paste from clipboard"
+            >
+              <Clipboard className="w-4 h-4" />
+              <span className="hidden sm:inline">Paste</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePreset}
+              className="min-h-[52px] px-4 rounded-xl bg-[#1c1528] hover:bg-[#281d39] border border-[#3e2e54] text-xs font-cinzel font-bold text-[#ffd86b] hover:border-[#ffd86b] transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+              title="Load sample Fusion 360 playlist"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">Sample</span>
+            </button>
+
+            {url && (
+              <button
+                type="button"
+                onClick={() => {
+                  setUrl('')
+                  setError(null)
+                }}
+                className="min-h-[52px] px-3 rounded-xl bg-[#1c1528] hover:bg-[#281d39] border border-[#3e2e54] text-[#8c7a9e] hover:text-rose-400 transition cursor-pointer"
+                title="Clear input"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Calculate Button */}
+            <button
+              ref={calcButtonRef}
+              type="button"
+              onClick={() => handleCalculate()}
+              disabled={isLoading}
+              className={`min-h-[52px] px-6 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#ffd86b] to-[#b38f22] text-black font-cinzel font-extrabold text-xs tracking-wider transition-all duration-150 shadow-gold-md hover:brightness-110 active:scale-95 cursor-pointer disabled:opacity-50 flex items-center gap-2 relative overflow-hidden ${
+                calcState.phase === 'spooling' ? 'calc-button-spool' : ''
+              }`}
+            >
+              {/* Spool progress overlay */}
+              {calcState.phase === 'spooling' && (
+                <div
+                  className="absolute inset-0 bg-white/20 pointer-events-none transition-transform duration-75"
+                  style={{
+                    transform: `scaleX(${calcState.spoolProgress})`,
+                    transformOrigin: 'left',
+                  }}
+                />
+              )}
+              <Play className={`w-4 h-4 fill-black ${isLoading ? 'animate-spin' : ''}`} />
+              <span className="relative z-10">
+                {isLoading
+                  ? (calcState.phase === 'spooling' ? 'SPOOLING...' : 'CALCULATING...')
+                  : 'CALCULATE DURATION'}
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 2. Error Display Banner ────────────────────────────────────────── */}
+      {error && (
+        <div className="p-4 rounded-xl bg-red-950/70 border border-red-700/60 flex items-center gap-3 text-red-200 text-xs font-mono shadow-lg">
+          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+          <div className="flex-1">{error}</div>
+        </div>
+      )}
+
+      {/* ── 3. Results Dashboard ───────────────────────────────────────────── */}
+      {result && (
+        <div
+          ref={resultsPanelRef}
+          className="space-y-6 animate-in fade-in duration-300"
+        >
+          {/* Header Info + Deposit Action */}
+          <div className="p-4 rounded-xl bg-[#140f1e]/80 border border-[#2b213a] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex-1">
+              <h2 className="font-cinzel font-bold text-lg text-white">
+                {result.title}
+              </h2>
+              <p className="text-xs font-mono text-[#8c7a9e]">
+                Uploader / Channel: <span className="text-[#ffd86b] font-bold">{result.uploader}</span>
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-col gap-2 sm:gap-2">
+              <div className="text-right">
+                <span className="font-cinzel text-xs text-[#8c7a9e] uppercase tracking-wider">
+                  Status
+                </span>
+                <div className="text-xs font-mono font-bold text-emerald-400">
+                  100% Calculated via yt-dlp
+                </div>
+              </div>
+              {depositSuccess ? (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-900/40 border border-emerald-500/60 text-emerald-400 text-xs font-mono">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Deposited!</span>
+                </div>
+              ) : (
+                <button
+                  ref={depositButtonRef}
+                  onClick={handleDepositToPool}
+                  disabled={isDepositing}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#ffd86b]/20 hover:bg-[#ffd86b]/30 disabled:bg-[#4a3f5c] border border-[#ffd86b]/60 text-[#ffd86b] disabled:text-[#8c7a9e] text-xs font-mono font-bold transition-colors cursor-pointer relative overflow-hidden ${
+                    depositState.phase === 'spooling' ? 'deposit-button-voxel' : ''
+                  }`}
+                >
+                  {/* Cyber voxel progress overlay */}
+                  {depositState.phase === 'spooling' && (
+                    <div
+                      className="absolute inset-0 bg-cyan-400/30 pointer-events-none transition-transform duration-75"
+                      style={{
+                        transform: `scaleX(${depositState.spoolProgress})`,
+                        transformOrigin: 'left',
+                      }}
+                    />
+                  )}
+                  <Droplet className="w-3.5 h-3.5 relative z-10" />
+                  <span className="relative z-10">
+                    {isDepositing
+                      ? (depositState.phase === 'spooling' ? 'Compiling...' : 'Depositing...')
+                      : 'Add to Pool'}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Metric Telemetry Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Total Runtime */}
+            <div className="p-4 rounded-2xl bg-[#140f1e] border border-[#332545] shadow-lg flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#ffd86b]/20 to-[#f97316]/20 border border-[#ffd86b]/40 flex items-center justify-center flex-shrink-0">
+                <Clock className="w-6 h-6 text-[#ffd86b]" />
+              </div>
+              <div>
+                <span className="text-[10px] font-cinzel font-bold text-[#8c7a9e] uppercase tracking-wider">
+                  Total Duration (1.0x)
+                </span>
+                <div className="font-mono text-xl font-black text-white mt-0.5">
+                  {result.formatted_duration}
+                </div>
+              </div>
+            </div>
+
+            {/* Total Videos */}
+            <div className="p-4 rounded-2xl bg-[#140f1e] border border-[#332545] shadow-lg flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-500/20 to-blue-600/20 border border-sky-400/40 flex items-center justify-center flex-shrink-0">
+                <Layers className="w-6 h-6 text-sky-400" />
+              </div>
+              <div>
+                <span className="text-[10px] font-cinzel font-bold text-[#8c7a9e] uppercase tracking-wider">
+                  Total Videos
+                </span>
+                <div className="font-mono text-xl font-black text-white mt-0.5">
+                  {result.total_videos}{' '}
+                  <span className="text-xs font-normal text-emerald-400">
+                    ({result.active_videos} active)
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Average Video Length */}
+            <div className="p-4 rounded-2xl bg-[#140f1e] border border-[#332545] shadow-lg flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-600/20 border border-purple-400/40 flex items-center justify-center flex-shrink-0">
+                <Activity className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                <span className="text-[10px] font-cinzel font-bold text-[#8c7a9e] uppercase tracking-wider">
+                  Average Length
+                </span>
+                <div className="font-mono text-xl font-black text-white mt-0.5">
+                  {result.average_duration_formatted}
+                </div>
+              </div>
+            </div>
+
+            {/* Raw Seconds */}
+            <div className="p-4 rounded-2xl bg-[#140f1e] border border-[#332545] shadow-lg flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500/20 to-emerald-600/20 border border-amber-400/40 flex items-center justify-center flex-shrink-0">
+                <Hash className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <span className="text-[10px] font-cinzel font-bold text-[#8c7a9e] uppercase tracking-wider">
+                  Raw Seconds
+                </span>
+                <div className="font-mono text-xl font-black text-white mt-0.5">
+                  {Math.round(result.total_seconds).toLocaleString()}s
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 4. Speed Multipliers Deck ──────────────────────────────────── */}
+          <div className="space-y-2">
+            <h3 className="font-cinzel font-bold text-xs text-[#8c7a9e] uppercase tracking-wider">
+              Playback Velocity Matrix
+            </h3>
+            <SpeedBreakdownCards
+              breakdowns={result.speed_breakdowns}
+              selectedSpeed={selectedSpeed}
+              onSelectSpeed={setSelectedSpeed}
+            />
+          </div>
+
+          {/* ── 5. Video Manifest Outliner ─────────────────────────────────── */}
+          <VideoListTable
+            videos={result.videos}
+            playlistTitle={result.title}
+          />
+        </div>
+      )}
+    </div>
+  )
+}

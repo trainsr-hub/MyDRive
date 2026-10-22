@@ -1,0 +1,219 @@
+// path: src/apps/golden-hour/components/GachaAltar.tsx
+
+import React, { useState } from 'react';
+import { useGoldenHourStore, RARITY_TABLE } from '../store/useGoldenHourStore';
+import { useInventoryStore } from '../../../store/useInventoryStore';
+import { useVinylStore } from '../../vinyl-angel/store/useVinylStore';
+import { LOADED_GACHA_PACKS, type RawDeckPack } from '../packs';
+import { GachaLobby } from './gacha/GachaLobby';
+import { GachaAnimationStage } from './gacha/GachaAnimationStage';
+import { CelestialRevealStage } from './gacha/CelestialRevealStage';
+import { ShredderUniversalTicket } from './ShredderUniversalTicket';
+import type { PullItem } from '../types';
+import {
+  Sparkles,
+  HelpCircle,
+  CheckCircle2,
+  AlertCircle,
+} from 'lucide-react';
+
+type GachaStage = 'lobby' | 'animating' | 'results';
+
+export const GachaAltar: React.FC = () => {
+  const { pullPackBatch, totalPacksOpened, lifetimeDict } = useGoldenHourStore();
+  const {
+    angelRollTickets,
+    solarRollTickets,
+    codexRollTickets,
+    shredderTickets,
+    discs: invDiscs,
+  } = useInventoryStore();
+  const vinylDiscs = useVinylStore((s) => s.discs) || invDiscs || 0;
+
+  const [stage, setStage] = useState<GachaStage>('lobby');
+  const [selectedDeck, setSelectedDeck] = useState<RawDeckPack | null>(null);
+  const [pendingRollResult, setPendingRollResult] = useState<{
+    items: PullItem[];
+    dict: Record<string, number>;
+  } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const ticketBalances = {
+    'angel-roll': angelRollTickets,
+    'solar-roll': solarRollTickets,
+    'codex-roll': codexRollTickets,
+    'discs': vinylDiscs,
+    'shredder-ticket': shredderTickets,
+  };
+
+  // Dispatcher: Lobby -> Animation Stage (supports 1:1 Universal Shredder Pass substitution)
+  const handleRoll = (deck: RawDeckPack, useUniversalShredderTicket: boolean = false) => {
+    const standardCost = deck.cost.amount;
+    const standardAvailable = ticketBalances[deck.cost.currency] || 0;
+    const hasShredder = shredderTickets >= 1;
+
+    if (useUniversalShredderTicket) {
+      if (!hasShredder) {
+        showToast('No A8 Shredder Tickets available! Forge or acquire more.', 'error');
+        return;
+      }
+    } else {
+      if (standardAvailable < standardCost && !hasShredder) {
+        showToast(
+          `Insufficient currency! Need ${standardCost} ${deck.cost.currency.toUpperCase()} or 1 A8 Shredder Pass.`,
+          'error'
+        );
+        return;
+      }
+    }
+
+    // Execute atomic engine batch pull (1 pack open)
+    const res = pullPackBatch(deck, 1, useUniversalShredderTicket);
+    if (!res) {
+      showToast('Summoning execution failed.', 'error');
+      return;
+    }
+
+    setSelectedDeck(deck);
+    setPendingRollResult(res);
+    setStage('animating');
+  };
+
+  // Dispatcher: Animation Completed -> Results Overlay
+  const handleAnimationComplete = () => {
+    setStage('results');
+    if (pendingRollResult) {
+      showToast(
+        `✨ Materialized ${pendingRollResult.items.length} relics from ${selectedDeck?.title}!`,
+        'success'
+      );
+    }
+  };
+
+  // Dismiss Results -> Return to Lobby
+  const handleCloseResults = () => {
+    setStage('lobby');
+    setPendingRollResult(null);
+  };
+
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto w-full">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl bg-[#171320] border border-[#d4af37] text-xs font-semibold shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 text-[#ffd86b]">
+          {toast.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-rose-400" />
+          )}
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      {/* Global Altar Header & Ticket HUD */}
+      <div className="p-6 rounded-2xl bg-[#120f18] border border-[#2b2238] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-[#291e07] to-[#120f18] border border-[#524124]">
+            <Sparkles className="w-7 h-7 text-[#ffd86b]" />
+          </div>
+          <div>
+            <h2 className="font-cinzel text-xl font-bold text-[#ffd86b] flex items-center gap-2">
+              Babylonian Card Packs Altar
+            </h2>
+            <p className="text-xs text-[#8c7a9e]">
+              Channel proof-of-effort dimensional tickets into combat armaments, lore relics, and IoT fuel cells.
+            </p>
+          </div>
+        </div>
+
+        {/* Global Ticket Balances */}
+        <div className="flex flex-wrap items-center gap-2 self-stretch md:self-auto text-xs font-mono">
+          <div className="flex items-center gap-1.5 bg-[#171320] px-3 py-1.5 rounded-xl border border-[#3d304f]">
+            <span>🎟️</span>
+            <span className="text-[#8c7a9e]">Angel:</span>
+            <strong className="text-[#ffd86b]">{angelRollTickets}</strong>
+          </div>
+          <div className="flex items-center gap-1.5 bg-[#171320] px-3 py-1.5 rounded-xl border border-[#3d304f]">
+            <span>☀️</span>
+            <span className="text-[#8c7a9e]">Solar:</span>
+            <strong className="text-[#f97316]">{solarRollTickets}</strong>
+          </div>
+          <div className="flex items-center gap-1.5 bg-[#171320] px-3 py-1.5 rounded-xl border border-[#3d304f]">
+            <span>📜</span>
+            <span className="text-[#8c7a9e]">Codex:</span>
+            <strong className="text-[#38bdf8]">{codexRollTickets}</strong>
+          </div>
+          <div className="flex items-center gap-1.5 bg-[#171320] px-3 py-1.5 rounded-xl border border-[#3d304f]">
+            <span>🎫</span>
+            <span className="text-[#8c7a9e]">Shredder:</span>
+            <strong className="text-amber-400">{shredderTickets}</strong>
+          </div>
+          <div className="flex items-center gap-1.5 bg-[#171320] px-3 py-1.5 rounded-xl border border-[#3d304f]">
+            <span>💽</span>
+            <span className="text-[#8c7a9e]">Discs:</span>
+            <strong className="text-[#ffffff]">{vinylDiscs}</strong>
+          </div>
+          <div className="flex items-center gap-1.5 bg-[#1c1424] px-3 py-1.5 rounded-xl border border-[#4a3461]">
+            <span className="text-[#8c7a9e]">Packs Opened:</span>
+            <strong className="text-white">{totalPacksOpened}</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* STAGE 1: Card Packs Lobby (CardPacks UI Reborn - Centered) */}
+      {stage === 'lobby' && (
+        <div className="space-y-6">
+          <ShredderUniversalTicket onRollPack={(deck) => handleRoll(deck, true)} />
+          <GachaLobby
+            cardpacks={LOADED_GACHA_PACKS}
+            totalDict={lifetimeDict}
+            totalPackOpened={totalPacksOpened}
+            ticketBalances={ticketBalances}
+            onRoll={handleRoll}
+          />
+        </div>
+      )}
+
+      {/* STAGE 2: High-Fidelity Black Hole Genesis Animation (Click Anywhere to Skip) */}
+      {stage === 'animating' && (
+        <GachaAnimationStage
+          animationSrc="/animations/black-hole.html"
+          packTitle={selectedDeck?.title || 'Dimensional Summoning'}
+          onComplete={handleAnimationComplete}
+        />
+      )}
+
+      {/* STAGE 3: Celestial Altar Revelation Stage (3D Holographic Cascade & Conduits) */}
+      {stage === 'results' && pendingRollResult && (
+        <CelestialRevealStage
+          items={pendingRollResult.items}
+          dict={pendingRollResult.dict}
+          packTitle={selectedDeck?.title || 'Celestial Revelation'}
+          onClose={handleCloseResults}
+        />
+      )}
+
+      {/* Transparency Footer */}
+      <div className="p-4 rounded-xl bg-[#0f0d14] border border-[#261d33] flex flex-wrap items-center justify-between gap-3 text-[11px] font-mono text-[#8c7a9e]">
+        <div className="flex items-center gap-1.5">
+          <HelpCircle className="w-3.5 h-3.5 text-[#ffd86b]" />
+          <span>Universal Drop Rates & Guarantee Rules:</span>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          {Object.values(RARITY_TABLE).map((r) => (
+            <span key={r.rarity} style={{ color: r.color }}>
+              {r.label}: <strong>{r.weight}%</strong>
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GachaAltar;

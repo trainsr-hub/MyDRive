@@ -1,0 +1,71 @@
+{
+  "id": "vinyl-angel",
+  "Title": "Vinyl Angel Pack",
+  "Note": "Harmonic Lab • 432Hz Resonant Relics",
+  "Cards": 5,
+  "ticketType": "angel-roll",
+  "ticketCost": 1,
+  "Cover": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80",
+  "Animation": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80",
+  "Button": "#ffd86b",
+  "ButtonText": "Engage",
+  "color": "#ffd86b",
+  "borderColor": "#d4af37",
+  "bgGradient": "from-[#291e07] via-[#1a1424] to-[#120f18]",
+  "Unpack": [
+    "Babylonian Star Scepter ~ 2%",
+    "Celestial Harmonica ~ 5%",
+    "Angelic Sine Vinyl ~ 15%",
+    "Aether Cyber Core 30...60 ~ 25%",
+    "Harmonic Resonance Catalyst ~ 20%",
+    "Celestial Stardust Residue"
+  ],
+  "Guarantee": [
+    "Angelic Sine Vinyl | Harmonic Resonance Catalyst"
+  ],
+  "Items": {
+    "Babylonian Star Scepter": {
+      "cover": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #451a03 0%, #1e1302 50%, #000 100%)",
+      "category": "relic",
+      "rarity": "legendary",
+      "description": "Forged from the primordial core of Babylon. Supreme cosmic authority."
+    },
+    "Celestial Harmonica": {
+      "cover": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #3b0764 0%, #180929 50%, #000 100%)",
+      "category": "relic",
+      "rarity": "epic",
+      "description": "Resonates with celestial sine waves, amplifying all tactical buffs."
+    },
+    "Angelic Sine Vinyl": {
+      "cover": "https://images.unsplash.com/photo-1539185441755-769473a23570?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #2e1065 0%, #170733 50%, #000 100%)",
+      "category": "collectible",
+      "rarity": "rare",
+      "description": "First pressing archival vinyl record containing pure harmonic frequencies."
+    },
+    "Harmonic Resonance Catalyst": {
+      "cover": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)",
+      "category": "collectible",
+      "rarity": "uncommon",
+      "description": "A tuned acoustic prism that vibrates whenever high quality music plays."
+    },
+    "Aether Cyber Core": {
+      "cover": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #0369a1 0%, #082f49 50%, #000 100%)",
+      "category": "energy-core",
+      "rarity": "rare",
+      "description": "High-frequency cyber energy cell powering sensory telemetry.",
+      "energyAttribute": "aether"
+    },
+    "Celestial Stardust Residue": {
+      "cover": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)",
+      "category": "collectible",
+      "rarity": "common",
+      "description": "Fine cosmic stardust gathered from the periphery of harmonic gates."
+    }
+  }
+}

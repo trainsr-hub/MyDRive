@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chrono Matrix · Cyber Voxel Defrag</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #01080e; font-family: 'Consolas', 'Courier New', monospace;
+  color: #00f0ff; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+.hud-layer {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  align-items: center; padding: 26px 20px 24px; z-index: 10;
+}
+.header { text-align: center; }
+.sub-title { font-size: 10px; letter-spacing: .35em; text-transform: uppercase; color: #00f0ff; opacity: .8; }
+.main-title { font-size: 18px; font-weight: 800; letter-spacing: .12em; color: #e0faff; text-shadow: 0 0 16px rgba(0,240,255,0.6); }
+
+.pool-vault {
+  pointer-events: auto; display: flex; align-items: center; gap: 14px;
+  background: rgba(2, 18, 30, 0.9); border: 1.5px solid #00f0ff;
+  border-radius: 12px; padding: 12px 24px; margin-top: 8px;
+  box-shadow: 0 0 24px rgba(0,240,255,0.3); transition: transform .1s ease, border-color .1s ease;
+}
+.pool-vault.absorb { transform: scale(1.05); border-color: #fff; box-shadow: 0 0 36px rgba(0,240,255,0.8); }
+.vault-icon {
+  width: 42px; height: 42px; border-radius: 8px; background: #002b47; border: 1.5px solid #00f0ff;
+  display: flex; align-items: center; justify-content: center; font-size: 20px; color: #00f0ff;
+}
+.vault-meta { display: flex; flex-direction: column; }
+.vault-lbl { font-size: 9px; letter-spacing: .2em; color: #5eead4; text-transform: uppercase; }
+.vault-val { font-size: 28px; font-weight: 900; color: #fff; text-shadow: 0 0 12px rgba(0,240,255,0.7); }
+
+/* ── Value Display Positioned Cleanly Below Block ── */
+.burst-yield-container {
+  position: absolute; top: calc(50% + 68px); left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none;
+}
+.yield-lbl {
+  font-size: 10px; font-family: inherit; letter-spacing: .25em; text-transform: uppercase;
+  color: #64748b; font-weight: 700; transition: color .2s ease;
+}
+.yield-lbl.active { color: #00f0ff; text-shadow: 0 0 10px rgba(0,240,255,0.8); }
+.spool-odometer {
+  font-size: 24px; font-weight: 900; color: #d1d5db; letter-spacing: .08em; transition: all .2s ease;
+}
+.spool-odometer.lingering {
+  font-size: 28px; color: #5eead4; text-shadow: 0 0 20px rgba(0,240,255,0.9), 0 0 35px rgba(94,234,212,0.6);
+  transform: scale(1.06);
+}
+
+.controls { pointer-events: auto; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; width: 100%; max-width: 860px; }
+.btn {
+  min-height: 52px; padding: 0 22px; background: #021422; border: 1.5px solid #00f0ff;
+  border-radius: 8px; color: #00f0ff; font-family: inherit; font-size: 12px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; cursor: pointer; transition: all .15s ease;
+  box-shadow: 0 0 16px rgba(0,240,255,0.2); display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn:hover:not(:disabled) { background: #00f0ff; color: #01080e; box-shadow: 0 0 28px rgba(0,240,255,0.7); transform: translateY(-2px); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud-layer">
+  <div class="header">
+    <div class="sub-title">Neural Cyber-Voxel Matrix</div>
+    <div class="main-title">Chrono Buffer Ingestion & Nanite Stream</div>
+    <div class="pool-vault" id="poolVault">
+      <div class="vault-icon">💾</div>
+      <div class="vault-meta">
+        <span class="vault-lbl">Mainframe Vault Ledger</span>
+        <span class="vault-val" id="poolVal">0s</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="burst-yield-container">
+    <span class="yield-lbl" id="yieldLabel">STANDBY</span>
+    <span class="spool-odometer" id="spoolOdometer">0s</span>
+  </div>
+
+  <div class="controls">
+    <button class="btn" onclick="depositSession(1800)">Compile 30m Session</button>
+    <button class="btn" onclick="depositSession(7200)">Compile 2h Session</button>
+    <button class="btn" onclick="depositSession(21600)">Compile 6h Session</button>
+    <button class="btn" onclick="resetAll()">Reset</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const poolVaultEl = document.getElementById('poolVault'), poolValEl = document.getElementById('poolVal');
+const yieldLabelEl = document.getElementById('yieldLabel'), spoolOdometerEl = document.getElementById('spoolOdometer');
+let W, H, cx, cy, targetX = 0, targetY = 0, permanentSec = 0, displayPermanentSec = 0;
+let phase = 'idle', currentSpoolSec = 0, targetSessionSec = 0, spoolProgress = 0;
+let screenShake = 0, bits = [], audioCtx = null;
+
+function resize() {
+  W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; cx = W / 2; cy = H / 2 - 15;
+  const r = poolVaultEl.getBoundingClientRect(); targetX = r.left + r.width / 2; targetY = r.top + r.height / 2;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function formatDuration(sec) {
+  if (!sec || isNaN(sec) || sec < 0) return '0s';
+  let s = Math.floor(sec);
+  const Y = Math.floor(s / 31536000); s %= 31536000;
+  const M = Math.floor(s / 2592000); s %= 2592000;
+  const D = Math.floor(s / 86400); s %= 86400;
+  const h = Math.floor(s / 3600); s %= 3600;
+  const m = Math.floor(s / 60); const rem = s % 60;
+  const p = [];
+  if (Y > 0) p.push(`${Y}Y`); if (M > 0) p.push(`${M}M`); if (D > 0) p.push(`${D}D`);
+  if (h > 0) p.push(`${h}h`); if (m > 0) p.push(`${m}m`); if (rem > 0 || p.length === 0) p.push(`${rem}s`);
+  return p.join('');
+}
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playCyberChirp(freq) {
+  try {
+    initAudio();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'square'; osc.frequency.setValueAtTime(freq, t); gain.gain.setValueAtTime(0.04, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.03); osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.03);
+  } catch(e) {}
+}
+
+function playDefragBoom() {
+  try {
+    initAudio();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(240, t); osc.frequency.exponentialRampToValueAtTime(30, t + 0.4);
+    gain.gain.setValueAtTime(0.4, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    osc.connect(gain); gain.connect(audioCtx.destination); osc.start(t); osc.stop(t + 0.4);
+  } catch(e) {}
+}
+
+function depositSession(totalSeconds) {
+  if (phase !== 'idle') return;
+  phase = 'spooling'; targetSessionSec = totalSeconds; currentSpoolSec = 0; spoolProgress = 0;
+  yieldLabelEl.className = 'yield-lbl active'; yieldLabelEl.textContent = 'ACCUMULATING BURST';
+  spoolOdometerEl.classList.remove('lingering');
+  document.querySelectorAll('.btn').forEach(b => b.disabled = true);
+}
+
+function triggerPhase2Shatter() {
+  phase = 'shattering';
+  yieldLabelEl.className = 'yield-lbl active'; yieldLabelEl.textContent = 'EXPLOSION WORTH';
+  spoolOdometerEl.textContent = formatDuration(targetSessionSec); spoolOdometerEl.classList.add('lingering');
+  playDefragBoom();
+  screenShake = Math.min(30, 8 + (targetSessionSec / 3600) * 4);
+
+  const pCount = Math.min(220, Math.max(45, Math.floor(targetSessionSec / 80)));
+  const secPerP = targetSessionSec / pCount;
+  for (let i = 0; i < pCount; i++) {
+    const angle = Math.random() * Math.PI * 2, burstSpeed = 5 + Math.random() * 16;
+    bits.push({
+      x: cx, y: cy, vx: Math.cos(angle) * burstSpeed, vy: Math.sin(angle) * burstSpeed,
+      secVal: secPerP, age: 0, magnetWait: 12 + Math.random() * 16,
+      char: Math.random() > 0.5 ? '1' : '0'
+    });
+  }
+}
+
+function resetAll() {
+  phase = 'idle'; permanentSec = 0; displayPermanentSec = 0; currentSpoolSec = 0;
+  bits = []; screenShake = 0; poolValEl.textContent = '0s';
+  yieldLabelEl.className = 'yield-lbl'; yieldLabelEl.textContent = 'STANDBY';
+  spoolOdometerEl.textContent = '0s'; spoolOdometerEl.classList.remove('lingering');
+  document.querySelectorAll('.btn').forEach(b => b.disabled = false);
+}
+
+function draw() {
+  ctx.save();
+  if (screenShake > 0) {
+    ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+    screenShake *= 0.88; if (screenShake < 0.2) screenShake = 0;
+  }
+  ctx.fillStyle = 'rgba(1, 8, 14, 0.28)'; ctx.fillRect(-20, -20, W + 40, H + 40);
+
+  ctx.strokeStyle = 'rgba(0, 240, 255, 0.06)'; ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 50) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+
+  // Phase 1: Cyber Matrix Spool
+  if (phase === 'spooling') {
+    spoolProgress += 0.035;
+    currentSpoolSec = Math.round(targetSessionSec * Math.min(1.0, Math.pow(spoolProgress, 1.4)));
+    spoolOdometerEl.textContent = formatDuration(currentSpoolSec);
+    screenShake = 1.0 + spoolProgress * 8;
+    playCyberChirp(600 + spoolProgress * 800);
+
+    const boxSize = 50 + spoolProgress * 40;
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(Date.now() * 0.002);
+    ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 2; ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 18;
+    ctx.strokeRect(-boxSize / 2, -boxSize / 2, boxSize, boxSize);
+
+    ctx.fillStyle = 'rgba(0, 240, 255, 0.35)';
+    ctx.fillRect(-boxSize / 2 + 6, boxSize / 2 - 6 - (boxSize - 12) * spoolProgress, boxSize - 12, (boxSize - 12) * spoolProgress);
+    ctx.restore();
+
+    if (spoolProgress >= 1.0) triggerPhase2Shatter();
+  }
+
+  // Phase 2: Binary Bits Ingestion (Cube is gone, final hours linger below)
+  if (phase === 'shattering') {
+    ctx.font = '12px Consolas, monospace';
+    for (let i = bits.length - 1; i >= 0; i--) {
+      const p = bits[i]; p.age++;
+      if (p.age < p.magnetWait) {
+        p.x += p.vx; p.y += p.vy; p.vx *= 0.93; p.vy *= 0.93;
+      } else {
+        const dx = targetX - p.x, dy = targetY - p.y, dist = Math.hypot(dx, dy);
+        if (dist < 26) {
+          permanentSec += p.secVal; poolVaultEl.classList.add('absorb');
+          setTimeout(() => poolVaultEl.classList.remove('absorb'), 70);
+          playCyberChirp(900 + (p.age % 10) * 80);
+          bits.splice(i, 1); continue;
+        }
+        const pull = Math.min(26, 2.0 + (p.age - p.magnetWait) * 0.95);
+        p.vx = (dx / dist) * pull; p.vy = (dy / dist) * pull; p.x += p.vx; p.y += p.vy;
+      }
+      ctx.fillStyle = '#5eead4'; ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 8;
+      ctx.fillText(p.char, p.x, p.y);
+    }
+    if (bits.length === 0) {
+      phase = 'idle';
+      setTimeout(() => {
+        yieldLabelEl.className = 'yield-lbl'; yieldLabelEl.textContent = 'STANDBY';
+        spoolOdometerEl.classList.remove('lingering');
+        document.querySelectorAll('.btn').forEach(b => b.disabled = false);
+      }, 1200);
+    }
+  }
+
+  if (displayPermanentSec < permanentSec) {
+    displayPermanentSec += Math.ceil((permanentSec - displayPermanentSec) * 0.2);
+    poolValEl.textContent = formatDuration(displayPermanentSec);
+  }
+  ctx.restore();
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

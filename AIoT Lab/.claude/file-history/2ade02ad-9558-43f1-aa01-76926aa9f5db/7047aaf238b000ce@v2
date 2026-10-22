@@ -1,0 +1,35 @@
+import React, { useState } from 'react';
+import { HeaderBar } from './components/HeaderBar';
+import { MatrixGrid } from './components/MatrixGrid';
+import { OutputPanel } from './components/OutputPanel';
+import { PoolInspector } from './components/PoolInspector';
+import { useStudioStore } from '@/store/useStudioStore';
+
+export const App: React.FC = () => {
+  const [isPoolsOpen, setIsPoolsOpen] = useState(false);
+  const { init, isLoading } = useStudioStore();
+
+  React.useEffect(() => {
+    init();
+  }, [init]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-hazard-void">
+        <div className="text-center">
+          <div className="w-8 h-8 rounded-full border-2 border-hazard-gold border-t-transparent animate-spin mx-auto mb-4" />
+          <p className="text-hazard-textMuted text-sm">Initializing Hazard Trigger...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-screen bg-hazard-void text-hazard-textBright">
+      <HeaderBar onOpenPools={() => setIsPoolsOpen(true)} />
+      <MatrixGrid />
+      <OutputPanel />
+      {isPoolsOpen && <PoolInspector onClose={() => setIsPoolsOpen(false)} />}
+    </div>
+  );
+};

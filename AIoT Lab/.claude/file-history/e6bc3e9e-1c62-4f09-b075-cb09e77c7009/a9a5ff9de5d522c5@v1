@@ -1,0 +1,126 @@
+"""backend/integrations/heraclitus/yellow_pool_repo.py
+
+Repository tier for Yellow Time Pool state persistence.
+Authoritative JSON-backed persistence under app_data/heraclitus.
+"""
+
+import json
+import uuid
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel
+
+BACKEND_ROOT = Path(__file__).resolve().parent.parent.parent
+POOL_FILE = BACKEND_ROOT / "data" / "projects" / "universe_25" / "app_data" / "heraclitus" / "yellow_time_pool.json"
+
+
+class PoolTransaction(BaseModel):
+    id: str
+    timestamp: str
+    source: str
+    category: str
+    seconds: float
+    formatted: str
+    speed: float = 1.0
+    notes: Optional[str] = None
+
+
+class YellowTimePoolState(BaseModel):
+    balance_seconds: float = 0.0
+    total_earned_seconds: float = 0.0
+    formatted_balance: str = "0s"
+    formatted_total_earned: str = "0s"
+    transactions: List[PoolTransaction] = []
+
+
+def format_duration(seconds: float) -> str:
+    total_int = int(seconds)
+    days, rem = divmod(total_int, 86400)
+    hours, rem = divmod(rem, 3600)
+    minutes, secs = divmod(rem, 60)
+
+    parts = []
+    if days > 0:
+        parts.append(f"{days}d")
+    if hours > 0 or days > 0:
+        parts.append(f"{hours}h")
+    parts.append(f"{minutes}m")
+    parts.append(f"{secs}s")
+    return " ".join(parts)
+
+
+def ensure_pool_file() -> None:
+    if not POOL_FILE.parent.exists():
+        POOL_FILE.parent.mkdir(parents=True, exist_ok=True)
+    if not POOL_FILE.exists():
+        initial = {
+            "balance_seconds": 0.0,
+            "total_earned_seconds": 0.0,
+            "transactions": []
+        }
+        with open(POOL_FILE, "w", encoding="utf-8") as f:
+            json.dump(initial, f, indent=2, ensure_ascii=False)
+
+
+def load_pool_state() -> YellowTimePoolState:
+    ensure_pool_file()
+    try:
+        with open(POOL_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        balance = float(data.get("balance_seconds", 0.0))
+        earned = float(data.get("total_earned_seconds", 0.0))
+        raw_txs = data.get("transactions", [])
+        txs = [PoolTransaction(**t) for t in raw_txs]
+        return YellowTimePoolState(
+            balance_seconds=round(balance, 2),
+            total_earned_seconds=round(earned, 2),
+            formatted_balance=format_duration(balance),
+            formatted_total_earned=format_duration(earned),
+            transactions=txs
+        )
+    except Exception as e:
+        print(f"[YellowPoolRepo] Error loading pool state: {e}")
+        return YellowTimePoolState()
+
+
+def save_pool_state(state: YellowTimePoolState) -> None:
+    ensure_pool_file()
+    payload = {
+        "balance_seconds": round(state.balance_seconds, 2),
+        "total_earned_seconds": round(state.total_earned_seconds, 2),
+        "transactions": [t.dict() for t in state.transactions]
+    }
+    with open(POOL_FILE, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+
+
+def record_deposit(
+    seconds: float,
+    source: str,
+    category: str = "grind",
+    speed: float = 1.0,
+    notes: Optional[str] = None
+) -> YellowTimePoolState:
+    state = load_pool_state()
+    deposit_amount = max(0.0, float(seconds))
+    
+    tx = PoolTransaction(
+        id=f"tx_{uuid.uuid4().hex[:10]}",
+        timestamp=datetime.now().isoformat(),
+        source=source,
+        category=category,
+        seconds=round(deposit_amount, 2),
+        formatted=format_duration(deposit_amount),
+        speed=speed,
+        notes=notes
+    )
+    
+    state.balance_seconds += deposit_amount
+    state.total_earned_seconds += deposit_amount
+    state.formatted_balance = format_duration(state.balance_seconds)
+    state.formatted_total_earned = format_duration(state.total_earned_seconds)
+    state.transactions.insert(0, tx)
+    
+    save_pool_state(state)
+    return state

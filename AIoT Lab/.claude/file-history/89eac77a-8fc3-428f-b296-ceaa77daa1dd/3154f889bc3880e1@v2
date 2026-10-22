@@ -1,0 +1,106 @@
+"""
+Robust Google Drive Downloader using Service Account API with gdown fallback.
+"""
+
+import os
+import io
+import re
+from pathlib import Path
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
+
+CREDS_FILE = Path("D:/My Drive/Blue AI/Test Projects/Google Collab/.secrets/colab-service-account.json")
+
+def extract_folder_id(url_or_id: str) -> str:
+    """Extract folder ID from Google Drive URL or return raw ID."""
+    url = url_or_id.strip()
+    match = re.search(r"/folders/([a-zA-Z0-9_-]+)", url)
+    if match:
+        return match.group(1)
+    if re.fullmatch(r"[a-zA-Z0-9_-]{15,60}", url):
+        return url
+    return url
+
+
+def download_with_service_account(folder_id: str, dest_dir: Path, progress_cb=None) -> bool:
+    """Download folder using official Google Drive API v3 with service account credentials."""
+    if not CREDS_FILE.exists():
+        return False
+
+    try:
+        creds = service_account.Credentials.from_service_account_file(
+            str(CREDS_FILE),
+            scopes=["https://www.googleapis.com/auth/drive"]
+        )
+        service = build("drive", "v3", credentials=creds)
+
+        # Check access
+        service.files().get(fileId=folder_id, fields="id, name", supportsAllDrives=True).execute()
+
+        def download_folder_recursive(curr_id: str, curr_dest: Path):
+            curr_dest.mkdir(parents=True, exist_ok=True)
+            page_token = None
+
+            while True:
+                q = f"'{curr_id}' in parents and trashed = false"
+                res = service.files().list(
+                    q=q,
+                    fields="nextPageToken, files(id, name, mimeType)",
+                    pageToken=page_token,
+                    supportsAllDrives=True,
+                    includeItemsFromAllDrives=True
+                ).execute()
+
+                files = res.get("files", [])
+                for f in files:
+                    name = f["name"]
+                    fid = f["id"]
+                    mime = f.get("mimeType", "")
+
+                    if mime == "application/vnd.google-apps.folder":
+                        download_folder_recursive(fid, curr_dest / name)
+                    else:
+                        out_path = curr_dest / name
+                        if progress_cb:
+                            progress_cb(f"Downloading: {name}")
+
+                        request = service.files().get_media(fileId=fid, supportsAllDrives=True)
+                        with open(out_path, "wb") as fh:
+                            downloader = MediaIoBaseDownload(fh, request)
+                            done = False
+                            while not done:
+                                _, done = downloader.next_chunk()
+
+                page_token = res.get("nextPageToken")
+                if not page_token:
+                    break
+
+        download_folder_recursive(folder_id, dest_dir)
+        return any(dest_dir.iterdir())
+
+    except Exception as e:
+        print(f"[*] Service Account Drive API access failed (likely not shared): {e}")
+        return False
+
+
+def download_drive_folder(url_or_id: str, dest_dir: Path, progress_cb=None) -> bool:
+    """
+    Downloads Google Drive folder:
+    1. First tries Service Account (official Drive API, zero rate limits).
+    2. Falls back to gdown for unshared public links.
+    """
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    folder_id = extract_folder_id(url_or_id)
+
+    # 1. Try Service Account API first
+    if download_with_service_account(folder_id, dest_dir, progress_cb):
+        return True
+
+    # 2. Fall back to gdown
+    if progress_cb:
+        progress_cb("Service account not shared with this folder. Attempting public download via gdown...")
+
+    import gdown
+    gdown.download_folder(url=url_or_id, output=str(dest_dir), quiet=False, use_cookies=False)
+    return any(dest_dir.iterdir())

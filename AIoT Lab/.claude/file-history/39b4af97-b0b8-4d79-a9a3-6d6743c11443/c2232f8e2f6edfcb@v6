@@ -1,0 +1,172 @@
+"""
+Entropy Rose / Prescripts: Deterministic Hex ID Generator & Schema Seed Utility.
+Generates 16-character uppercase hex identifiers:
+  <4 HEX PREFIX><12 HEX UNIX MILLISECONDS>
+Prefixes:
+  - 0001: Quotes
+  - 0002: Containers (Origin / Franchise / Creator) with default_tags
+  - 0003: Specifics (Work / Character / Diary / Wisdom) with default_tags
+"""
+
+import time
+from datetime import datetime
+import json
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+PREFIX_QUOTE = "0001"
+PREFIX_CONTAINER = "0002"
+PREFIX_SPECIFIC = "0003"
+
+# Canonical fixed IDs for foundational seed entities
+CANONICAL_ID_VINYL_CONTAINER = "00020001A1088D80"
+CANONICAL_ID_FAUST_CONTAINER = "00020001A1088D81"
+CANONICAL_ID_MANAGER_CONTAINER = "00020001A1088D82"
+CANONICAL_ID_MARCUS_CONTAINER = "00020001A1088D83"
+CANONICAL_ID_BLAKE_CONTAINER = "00020001A1088D84"
+CANONICAL_ID_EVA_CONTAINER = "00020001A1088D85"
+
+CANONICAL_ID_KOI_SPECIFIC = "00030001A1088D80"
+CANONICAL_ID_FAUST_SPECIFIC = "00030001A1088D81"
+CANONICAL_ID_DIARY_SPECIFIC = "00030001A1088D82"
+CANONICAL_ID_WISDOM_SPECIFIC = "00030001A1088D83"
+CANONICAL_ID_MEDITATIONS_SPECIFIC = "00030001A1088D84"
+CANONICAL_ID_INFANT_JOY_SPECIFIC = "00030001A1088D85"
+CANONICAL_ID_ASUKA_SPECIFIC = "00030001A1088D86"
+CANONICAL_ID_THOUGHT_SPECIFIC = "00030001A1088D87"
+
+CANONICAL_ID_VINYL_QUOTE = "00010001A1088D80"
+CANONICAL_ID_FAUST_QUOTE = "00010001A1088D81"
+CANONICAL_ID_BLAKE_QUOTE = "00010001A1088D82"
+
+
+def generate_hex_id(prefix: str = PREFIX_QUOTE, unix_ms: int = None) -> str:
+    """
+    Generates a 16-character uppercase hex identifier:
+      <4 HEX PREFIX><12 HEX UNIX MILLISECONDS>
+    """
+    if unix_ms is None:
+        unix_ms = int(time.time() * 1000)
+    clean_prefix = str(prefix).upper().rjust(4, "0")[:4]
+    hex_ts = f"{unix_ms:012X}"[-12:]
+    return f"{clean_prefix}{hex_ts}"
+
+
+def parse_hex_id_timestamp(hex_id: str) -> float:
+    """Extracts Unix epoch timestamp (in seconds) directly from the 16-char hex ID."""
+    if len(hex_id) < 16:
+        return 0.0
+    unix_ms = int(hex_id[4:], 16)
+    return unix_ms / 1000.0
+
+
+def create_sample_quotes(deterministic: bool = True):
+    if deterministic:
+        id_vinyl = CANONICAL_ID_VINYL_QUOTE
+        id_faust = CANONICAL_ID_FAUST_QUOTE
+        id_blake = CANONICAL_ID_BLAKE_QUOTE
+        date_str = "2026-09-30"
+    else:
+        now_ms = int(time.time() * 1000)
+        id_vinyl = generate_hex_id(PREFIX_QUOTE, now_ms - 10000)
+        id_faust = generate_hex_id(PREFIX_QUOTE, now_ms - 5000)
+        id_blake = generate_hex_id(PREFIX_QUOTE, now_ms)
+        date_str = datetime.now().strftime("%Y-%m-%d")
+
+    import db
+    db.init_db()
+
+    # 1. Seed Containers (Table 2) with default_tags
+    core_containers = [
+        {"id": CANONICAL_ID_VINYL_CONTAINER, "name": "Vinyl Angel", "type": "persona", "default_tags": ["music", "acoustic"], "notes": "Project & Acoustic Fiction"},
+        {"id": CANONICAL_ID_FAUST_CONTAINER, "name": "Faust", "type": "intellect", "default_tags": ["intellect", "cybernetics"], "notes": "Strategic Analytical Intellect"},
+        {"id": CANONICAL_ID_MANAGER_CONTAINER, "name": "The Manager", "type": "personal", "default_tags": ["personal"], "notes": "Visionary & Commander"},
+        {"id": CANONICAL_ID_MARCUS_CONTAINER, "name": "Marcus Aurelius", "type": "author", "default_tags": ["stoic", "philosophy"], "notes": "Stoic Emperor"},
+        {"id": CANONICAL_ID_BLAKE_CONTAINER, "name": "William Blake", "type": "author", "default_tags": ["poetry", "romanticism"], "notes": "Romantic Poet & Painter"},
+        {"id": CANONICAL_ID_EVA_CONTAINER, "name": "Neon Genesis Evangelion", "type": "anime", "default_tags": ["anime", "psychological"], "notes": "Studio Gainax"}
+    ]
+    for c in core_containers:
+        db.upsert_container(c)
+
+    # 2. Seed Specifics (Table 3) with default_tags
+    core_specifics = [
+        {"id": CANONICAL_ID_KOI_SPECIFIC, "name": "Koi no Koe", "container_id": CANONICAL_ID_VINYL_CONTAINER, "category": "music", "default_tags": ["lyricism", "temporal-suspension"], "notes": ""},
+        {"id": CANONICAL_ID_FAUST_SPECIFIC, "name": "System Reflections", "container_id": CANONICAL_ID_FAUST_CONTAINER, "category": "insight", "default_tags": ["sovereignty", "symmetry"], "notes": ""},
+        {"id": CANONICAL_ID_DIARY_SPECIFIC, "name": "Diary", "container_id": CANONICAL_ID_MANAGER_CONTAINER, "category": "diary", "default_tags": ["diary", "anchor"], "notes": "Personal daily life reflections"},
+        {"id": CANONICAL_ID_WISDOM_SPECIFIC, "name": "Wisdom", "container_id": CANONICAL_ID_MANAGER_CONTAINER, "category": "wisdom", "default_tags": ["wisdom", "rule"], "notes": "Accumulated personal meta-rules"},
+        {"id": CANONICAL_ID_MEDITATIONS_SPECIFIC, "name": "Meditations", "container_id": CANONICAL_ID_MARCUS_CONTAINER, "category": "book", "default_tags": ["discipline", "memento-mori"], "notes": "Greek notes to himself"},
+        {"id": CANONICAL_ID_INFANT_JOY_SPECIFIC, "name": "Infant Joy", "container_id": CANONICAL_ID_BLAKE_CONTAINER, "category": "poem", "default_tags": ["innocence", "joy"], "notes": "Songs of Innocence (1789)"},
+        {"id": CANONICAL_ID_ASUKA_SPECIFIC, "name": "Asuka Langley Soryu", "container_id": CANONICAL_ID_EVA_CONTAINER, "category": "character", "default_tags": ["defiant", "pride"], "notes": "Second Child"},
+        {"id": CANONICAL_ID_THOUGHT_SPECIFIC, "name": "Thought on", "container_id": CANONICAL_ID_MANAGER_CONTAINER, "category": "thought", "default_tags": ["thought", "reflection"], "notes": "Compact personal take, open-ended without final conclusion"}
+    ]
+    for s in core_specifics:
+        db.upsert_specific(s)
+
+    # 3. Seed Quotes (Table 1) - Holds Authoritative Final Tags
+    quote_1 = {
+        "id": id_vinyl,
+        "index": 1,
+        "main_content": "Static hum, thrum—needle drops,\nSpinning echo, time just stops.\nFamiliar chords fill up the room,\nWrapped inside this faded tomb.",
+        "context": "Lyricism from 'Koi no Koe' by Vinyl Angel. The needle touching groove marks the suspended temporal boundary where sound transcends decaying physical media—evoking acoustic memory and temporal suspension.",
+        "date": date_str,
+        "specific_ids": [CANONICAL_ID_KOI_SPECIFIC],
+        "preference": [],
+        "backlinks": ["https://vinylangel.net/lyrics/koi-no-koe"],
+        "tags": ["music", "lyricism", "acoustic", "temporal-suspension"],
+        "sentiment": "nostalgic"
+    }
+
+    quote_2 = {
+        "id": id_faust,
+        "index": 2,
+        "main_content": "The universe is built on a plan, the profound symmetry of which is somehow present in every inner corner of human thought.\nWe are not passive observers; we are the system observing itself.",
+        "context": "Reflections on cybernetics and distributed consciousness.\nNoted while constructing the Faust Hivemind infrastructure at the nexus of order and entropy.",
+        "date": date_str,
+        "specific_ids": [CANONICAL_ID_FAUST_SPECIFIC],
+        "preference": [id_vinyl],
+        "backlinks": [],
+        "tags": ["wisdom", "cybernetics", "symmetry", "sovereignty"],
+        "sentiment": "analytical"
+    }
+
+    quote_3 = {
+        "id": id_blake,
+        "index": 3,
+        "main_content": "I have no name:\nI am but two days old.\nWhat shall I call thee?\nI happy am,\nJoy is my name.\nSweet joy befall thee!",
+        "context": "Infant Joy from Songs of Innocence (1789)",
+        "date": "1789",
+        "specific_ids": [CANONICAL_ID_INFANT_JOY_SPECIFIC],
+        "preference": [],
+        "backlinks": ["https://en.wikipedia.org/wiki/Infant_Joy"],
+        "tags": ["poetry", "romanticism", "innocence", "joy", "prompt"],
+        "sentiment": "joyful"
+    }
+
+    out_dir = os.path.join(BASE_DIR, "data")
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Primary O(1) Hash-Map Store
+    json_path = os.path.join(out_dir, "quotes.json")
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump({id_vinyl: quote_1, id_faust: quote_2, id_blake: quote_3}, f, ensure_ascii=False, indent=2)
+
+    # Append-only event log
+    jsonl_path = os.path.join(out_dir, "quotes.jsonl")
+    with open(jsonl_path, "w", encoding="utf-8") as f:
+        f.write(json.dumps(quote_1, ensure_ascii=False) + "\n")
+        f.write(json.dumps(quote_2, ensure_ascii=False) + "\n")
+        f.write(json.dumps(quote_3, ensure_ascii=False) + "\n")
+
+    db.upsert_quote(quote_1, compile_after=False)
+    db.upsert_quote(quote_2, compile_after=False)
+    db.upsert_quote(quote_3, compile_after=True)
+
+    print(f"[OK] Seeded Quote #1 (Koi no Koe · Vinyl Angel) [{id_vinyl}]")
+    print(f"[OK] Seeded Quote #2 (System Reflections · Faust) [{id_faust}]")
+    print(f"[OK] Seeded Quote #3 (Infant Joy · William Blake) [{id_blake}]")
+    print(f"[OK] Synchronized SQLite rose_quotes.db and compiled projections")
+
+
+if __name__ == "__main__":
+    create_sample_quotes()

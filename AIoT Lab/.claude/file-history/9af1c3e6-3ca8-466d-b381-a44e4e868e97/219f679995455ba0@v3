@@ -1,0 +1,303 @@
+// Feeder Service: Firebase Realtime Database (RTDB) Sync, Command Dispatch, and IoT Simulator
+import { rtdb, ref, onValue, set, update, get } from "./firebase.js";
+import { DEFAULT_STATE, evaluateAlerts } from "./state.js";
+
+class FeederService {
+  constructor() {
+    this.stationId = "station_01";
+    this.dbPath = `pet_feeder/${this.stationId}`;
+    this.state = { ...DEFAULT_STATE };
+    this.subscribers = new Set();
+    this.logs = [];
+    this.unsubscribeRTDB = null;
+    this.isUsingLocalFallback = false;
+    this.simTimer = null;
+    this.isSimulating = false;
+  }
+
+  subscribe(callback) {
+    this.subscribers.add(callback);
+    callback(this.state, this.logs, evaluateAlerts(this.state));
+    return () => this.subscribers.delete(callback);
+  }
+
+  notify() {
+    const alerts = evaluateAlerts(this.state);
+    for (const sub of this.subscribers) {
+      sub(this.state, this.logs, alerts);
+    }
+  }
+
+  logActivity(message, type = "info") {
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    this.logs.unshift({ id: `${Date.now()}-${Math.random()}`, message, type, time });
+    if (this.logs.length > 30) this.logs.pop();
+  }
+
+  async connectStation(stationId = "station_01") {
+    this.stationId = stationId;
+    this.dbPath = `pet_feeder/${this.stationId}`;
+
+    if (this.unsubscribeRTDB) {
+      this.unsubscribeRTDB();
+      this.unsubscribeRTDB = null;
+    }
+
+    try {
+      const dbRef = ref(rtdb, this.dbPath);
+
+      this.unsubscribeRTDB = onValue(
+        dbRef,
+        async (snapshot) => {
+          if (!snapshot.exists()) {
+            this.logActivity(`Initializing Realtime Database tree at [${this.dbPath}]...`, "info");
+            const seedData = {
+              ...DEFAULT_STATE,
+              updatedAt: new Date().toISOString(),
+            };
+            try {
+              await set(dbRef, seedData);
+            } catch (err) {
+              console.warn("[FeederService] Seed write permission denied in RTDB:", err);
+            }
+          } else {
+            const data = snapshot.val();
+            this.state = {
+              ...DEFAULT_STATE,
+              ...data,
+              config: { ...DEFAULT_STATE.config, ...(data.config || {}) },
+              capacities: { ...DEFAULT_STATE.capacities, ...(data.capacities || {}) },
+            };
+            this.isUsingLocalFallback = false;
+            this.checkAutoRefillRules();
+            this.notify();
+          }
+        },
+        (error) => {
+          console.warn("[FeederService] RTDB listener error/permission denied:", error);
+          this.isUsingLocalFallback = true;
+          this.logActivity(`RTDB ${error.code || "restricted"}. Set RTDB rules to {".read": true, ".write": true} in console.`, "warning");
+          this.notify();
+        }
+      );
+    } catch (err) {
+      console.warn("[FeederService] Failed to establish RTDB connection:", err);
+      this.isUsingLocalFallback = true;
+      this.notify();
+    }
+  }
+
+  async persistState(partialState, logMsg, logType = "info") {
+    this.state = {
+      ...this.state,
+      ...partialState,
+      lastUpdated: new Date().toISOString(),
+    };
+    if (logMsg) this.logActivity(logMsg, logType);
+    this.checkAutoRefillRules();
+    this.notify();
+
+    if (!this.isUsingLocalFallback) {
+      try {
+        const dbRef = ref(rtdb, this.dbPath);
+        await update(dbRef, { ...partialState, updatedAt: new Date().toISOString() });
+      } catch (err) {
+        console.warn("[FeederService] Write to RTDB failed, attempting set fallback:", err);
+        try {
+          const dbRef = ref(rtdb, this.dbPath);
+          await set(dbRef, {
+            ...this.state,
+            updatedAt: new Date().toISOString()
+          });
+        } catch (setErr) {
+          console.error("[FeederService] RTDB set failed:", setErr);
+        }
+      }
+    }
+  }
+
+  // Active Commands
+  async refillWaterManual(amount = 50) {
+    if (this.state.waterTank < amount) {
+      this.logActivity(`Cannot refill water: Tank empty (${Math.round(this.state.waterTank)} ml)!`, "warning");
+      return;
+    }
+    const maxBowl = this.state.config.bowlWaterMax;
+    const current = this.state.bowlWater;
+    const add = Math.min(amount, Math.max(0, maxBowl - current));
+    if (add <= 0) {
+      this.logActivity(`Water bowl is already at or above max capacity (${maxBowl} ml).`, "info");
+      return;
+    }
+
+    const newWaterTank = Math.max(0, this.state.waterTank - add);
+    const newBowlWater = current + add;
+
+    await this.persistState(
+      {
+        status: "dispensing_water",
+        waterTank: newWaterTank,
+        bowlWater: newBowlWater,
+        lastWaterRefill: new Date().toISOString(),
+      },
+      `Manually dispensed ${add} ml water into bowl.`,
+      "info"
+    );
+
+    setTimeout(() => {
+      this.persistState({ status: "online" });
+    }, 1200);
+  }
+
+  async refillFoodManual(amount = 25) {
+    if (this.state.foodTank < amount) {
+      this.logActivity(`Cannot refill food: Tank empty (${Math.round(this.state.foodTank)} g)!`, "warning");
+      return;
+    }
+    const maxBowl = this.state.config.bowlFoodMax;
+    const current = this.state.bowlFood;
+    const add = Math.min(amount, Math.max(0, maxBowl - current));
+    if (add <= 0) {
+      this.logActivity(`Food bowl is already at or above max capacity (${maxBowl} g).`, "info");
+      return;
+    }
+
+    const newFoodTank = Math.max(0, this.state.foodTank - add);
+    const newBowlFood = current + add;
+
+    await this.persistState(
+      {
+        status: "dispensing_food",
+        foodTank: newFoodTank,
+        bowlFood: newBowlFood,
+        lastFoodRefill: new Date().toISOString(),
+      },
+      `Manually dispensed ${add} g pet food into bowl.`,
+      "info"
+    );
+
+    setTimeout(() => {
+      this.persistState({ status: "online" });
+    }, 1200);
+  }
+
+  async toggleAutoWater(enabled) {
+    await this.persistState(
+      { autoFillWater: enabled },
+      `Auto-fill Water switched ${enabled ? "ON" : "OFF"}.`,
+      enabled ? "info" : "warning"
+    );
+  }
+
+  async toggleAutoFood(enabled) {
+    await this.persistState(
+      { autoFillFood: enabled },
+      `Auto-fill Food switched ${enabled ? "ON" : "OFF"}.`,
+      enabled ? "info" : "warning"
+    );
+  }
+
+  async updateConfig(newConfig) {
+    const updated = { ...this.state.config, ...newConfig };
+    await this.persistState(
+      { config: updated },
+      "Updated feeder configuration thresholds and limits.",
+      "info"
+    );
+  }
+
+  async restockBulkTank(tankType) {
+    if (tankType === "food") {
+      const cap = this.state.capacities.foodTank;
+      await this.persistState({ foodTank: cap }, `Restocked Food Tank to full capacity (${cap} g).`, "info");
+    } else if (tankType === "water") {
+      const cap = this.state.capacities.waterTank;
+      await this.persistState({ waterTank: cap }, `Restocked Water Tank to full capacity (${cap} ml).`, "info");
+    }
+  }
+
+  // Automatic Refill Logic Check
+  checkAutoRefillRules() {
+    const { bowlWater, bowlFood, autoFillWater, autoFillFood, config, waterTank, foodTank } = this.state;
+    if (autoFillWater && bowlWater <= config.bowlWaterMin && waterTank > 20) {
+      const need = config.bowlWaterMax - bowlWater;
+      const actual = Math.min(need, waterTank);
+      if (actual > 0) {
+        this.state.waterTank -= actual;
+        this.state.bowlWater += actual;
+        this.state.lastWaterRefill = new Date().toISOString();
+        this.logActivity(`[AUTO-FILL] Dispensed ${Math.round(actual)} ml water (triggered at ${Math.round(bowlWater)} ml <= min ${config.bowlWaterMin} ml).`, "info");
+      }
+    }
+    if (autoFillFood && bowlFood <= config.bowlFoodMin && foodTank > 10) {
+      const need = config.bowlFoodMax - bowlFood;
+      const actual = Math.min(need, foodTank);
+      if (actual > 0) {
+        this.state.foodTank -= actual;
+        this.state.bowlFood += actual;
+        this.state.lastFoodRefill = new Date().toISOString();
+        this.logActivity(`[AUTO-FILL] Dispensed ${Math.round(actual)} g food (triggered at ${Math.round(bowlFood)} g <= min ${config.bowlFoodMin} g).`, "info");
+      }
+    }
+  }
+
+  // IoT Simulation & Testing Helpers
+  toggleSimulation(enable) {
+    this.isSimulating = enable;
+    if (enable) {
+      if (this.simTimer) clearInterval(this.simTimer);
+      this.simTimer = setInterval(() => this.runSimulationTick(), 6000);
+      this.logActivity("IoT Hardware Simulation started (6s autonomous cycles).", "info");
+    } else {
+      if (this.simTimer) clearInterval(this.simTimer);
+      this.simTimer = null;
+      this.logActivity("IoT Hardware Simulation stopped.", "info");
+    }
+    this.notify();
+  }
+
+  runSimulationTick() {
+    const petAction = Math.random();
+    let updated = false;
+
+    if (petAction < 0.4 && this.state.bowlFood > 5) {
+      const eaten = Math.min(this.state.bowlFood, Math.floor(Math.random() * 8) + 4);
+      this.state.bowlFood = Math.max(0, this.state.bowlFood - eaten);
+      this.logActivity(`🐾 Pet visited: consumed ${eaten} g food.`, "info");
+      updated = true;
+    } else if (petAction < 0.8 && this.state.bowlWater > 10) {
+      const drank = Math.min(this.state.bowlWater, Math.floor(Math.random() * 15) + 8);
+      this.state.bowlWater = Math.max(0, this.state.bowlWater - drank);
+      this.logActivity(`🐾 Pet visited: drank ${drank} ml water.`, "info");
+      updated = true;
+    }
+
+    const tempJitter = (Math.random() - 0.5) * 0.4;
+    const moistJitter = (Math.random() - 0.5) * 0.8;
+    this.state.foodTankTemp = Math.round((this.state.foodTankTemp + tempJitter) * 10) / 10;
+    this.state.foodTankMoisture = Math.round((this.state.foodTankMoisture + moistJitter) * 10) / 10;
+
+    this.checkAutoRefillRules();
+    this.notify();
+    this.persistState({
+      bowlFood: this.state.bowlFood,
+      bowlWater: this.state.bowlWater,
+      foodTankTemp: this.state.foodTankTemp,
+      foodTankMoisture: this.state.foodTankMoisture,
+    });
+  }
+
+  triggerRadicalSpike(type) {
+    if (type === "temp_high") {
+      this.persistState({ foodTankTemp: 32.8 }, "Simulated sudden heatwave spike: 32.8°C", "warning");
+    } else if (type === "temp_low") {
+      this.persistState({ foodTankTemp: 13.5 }, "Simulated severe drop in temperature: 13.5°C", "warning");
+    } else if (type === "moisture_high") {
+      this.persistState({ foodTankMoisture: 78.4 }, "Simulated severe moisture spike: 78.4% RH", "warning");
+    } else if (type === "normalize") {
+      this.persistState({ foodTankTemp: 23.5, foodTankMoisture: 48.0 }, "Normalized temperature and moisture to nominal levels.", "info");
+    }
+  }
+}
+
+export const feederService = new FeederService();

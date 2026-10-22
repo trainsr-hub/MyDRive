@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Local GPU Avatar Studio</title>
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <style>
+    /* Theme Tokens & Design Doctrine */
+    :root {
+      --bg: #0f1115;
+      --surface: #181b21;
+      --surface-hover: #222630;
+      --surface-active: #2a303c;
+      --border: #2d333f;
+      --text: #f0f3f6;
+      --text-secondary: #9da7b7;
+      --text-tertiary: #6b7586;
+      --accent: #f97316;
+      --accent-hover: #ea580c;
+      --accent-surface: rgba(249, 115, 22, 0.12);
+      --success: #22c55e;
+      --success-surface: rgba(34, 197, 94, 0.12);
+      --warning: #eab308;
+      --warning-surface: rgba(234, 179, 8, 0.12);
+      --error: #ef4444;
+      --error-surface: rgba(239, 68, 68, 0.12);
+      --code-bg: #111318;
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      padding-left: max(16px, env(safe-area-inset-left, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px));
+      padding-block: 1.5rem;
+    }
+
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-group h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo-group p {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    .telemetry-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.85rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+    }
+
+    .badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-tertiary);
+    }
+
+    .badge .dot.online {
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.15); }
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+
+    .tab-btn {
+      padding: 0.6rem 1.1rem;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      background: var(--accent-surface);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+      font-size: 0.875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    /* Form Inputs */
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .label-hint {
+      font-size: 0.775rem;
+      color: var(--text-tertiary);
+      font-weight: normal;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.875rem;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-surface);
+    }
+
+    /* Sliders */
+    .slider-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (min-width: 640px) {
+      .slider-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    .range-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .slider-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: monospace;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.4rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-height: 44px;
+    }
+
+    .btn:hover { background: var(--accent-hover); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: var(--surface-hover);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover { background: var(--surface-active); }
+
+    /* Progress & Live Telemetry */
+    .progress-bar-wrap {
+      width: 100%;
+      height: 10px;
+      background: var(--code-bg);
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 1rem 0;
+      border: 1px solid var(--border);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), #fbbf24);
+      transition: width 0.3s ease;
+    }
+
+    .live-status-box {
+      padding: 1rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.825rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    /* Gallery Grid (No Zip Download Needed!) */
+    .gallery-filter-bar {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+
+    .filter-pill {
+      padding: 0.35rem 0.85rem;
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-pill:hover {
+      background: var(--surface-active);
+      color: var(--text);
+    }
+
+    .filter-pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+
+    .avatar-card {
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .avatar-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    }
+
+    .avatar-thumb {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      display: block;
+      background: var(--code-bg);
+    }
+
+    .avatar-meta {
+      padding: 0.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .avatar-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-surface);
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      width: fit-content;
+    }
+
+    .avatar-name {
+      font-size: 0.725rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .gallery-empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-tertiary);
+      font-size: 0.9rem;
+    }
+
+    /* Lightbox Modal */
+    .lightbox-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+
+    .lightbox-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      max-width: 500px;
+      width: 100%;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .lightbox-img {
+      width: 100%;
+      max-height: 460px;
+      object-fit: contain;
+      background: #000;
+      display: block;
+    }
+
+    .lightbox-footer {
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="logo-group">
+      <h1>⚡ Local GPU Avatar Studio</h1>
+      <p>High-Speed Deep Learning Anime Face Detection · Direct Visual Gallery</p>
+    </div>
+    <div class="telemetry-badges">
+      <div class="badge" id="gpuBadge">
+        <span class="dot online" id="gpuDot"></span>
+        <span id="gpuStatusText">Local GPU: NVIDIA GTX 1650 (Online)</span>
+      </div>
+      <div class="badge">
+        <span class="dot online"></span>
+        <span>Storage: Local Disk D:\</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('studio')">🎨 Avatar Studio</button>
+    <button class="tab-btn" onclick="switchTab('gallery')">🖼️ Visual Gallery (<span id="tabCount">0</span>)</button>
+    <button class="tab-btn" onclick="switchTab('explorer')">📂 Storage & Explorer</button>
+  </div>
+
+  <!-- TAB 1: AVATAR STUDIO -->
+  <div id="tab-studio">
+    <div class="card">
+      <div class="card-header">
+        <span>Deep Learning Model Configuration</span>
+        <span style="font-size: 0.75rem; color: var(--accent);">NVIDIA CUDA Core · YOLOv3</span>
+      </div>
+
+      <div class="form-group">
+        <label for="folderUrl">
+          <span>Source: Google Drive Folder Link OR Local Folder Path</span>
+          <span class="label-hint">Paste Drive link or local folder on D:\</span>
+        </label>
+        <input type="text" id="folderUrl" value="https://drive.google.com/drive/folders/1v_dJrlDve97sNU_bIM1a7kl7zHLRhaLy?usp=drive_link" placeholder="https://drive.google.com/drive/folders/... or D:\path\to\images">
+      </div>
+
+      <div class="form-group">
+        <label for="batchName">
+          <span>Batch Subfolder Name (Optional)</span>
+          <span class="label-hint">Leave blank to auto-use Google Drive root folder name</span>
+        </label>
+        <input type="text" id="batchName" placeholder="Auto-detected from Drive link (e.g. A20 - Topaz) or custom label">
+      </div>
+
+      <div class="slider-row">
+        <div class="range-wrap">
+          <label for="zoomSlider">
+            <span>Crop Zoom Factor</span>
+            <span class="slider-val" id="zoomVal">1.6x</span>
+          </label>
+          <input type="range" id="zoomSlider" min="1.0" max="2.4" step="0.1" value="1.6" oninput="document.getElementById('zoomVal').textContent = this.value + 'x'">
+          <div class="label-hint">1.0x = Tight face crop · 1.6x = Standard portrait · 2.2x = Bust crop</div>
+        </div>
+
+        <div class="range-wrap">
+          <label for="threshSlider">
+            <span>Detection Confidence Threshold</span>
+            <span class="slider-val" id="threshVal">0.50</span>
+          </label>
+          <input type="range" id="threshSlider" min="0.30" max="0.90" step="0.05" value="0.50" oninput="document.getElementById('threshVal').textContent = parseFloat(this.value).toFixed(2)">
+          <div class="label-hint">Lower = Catches stylized / occluded faces · Higher = Strict</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-top: 1.5rem;">
+        <button class="btn" id="runCropBtn" onclick="startGpuCrop()">
+          <span id="btnIcon">🚀</span>
+          <span id="btnText">Crop Avatars on Local GTX 1650</span>
+        </button>
+        <button class="btn btn-secondary" onclick="openExplorerFolder()">📂 Open Avatars in Explorer</button>
+      </div>
+    </div>
+
+    <!-- Live Telemetry Card -->
+    <div class="card" id="telemetryCard" style="display:none;">
+      <div class="card-header">
+        <span>Processing Telemetry</span>
+        <span id="activeJobStatus" style="color:var(--accent);">Active</span>
+      </div>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="live-status-box">
+        <div><strong>Status:</strong> <span id="telemetryStatus">Idle</span></div>
+        <div><strong>Current File:</strong> <span id="telemetryFile">-</span></div>
+        <div><strong>Progress:</strong> <span id="telemetryCount">0 / 0</span></div>
+      </div>
+
+      <!-- Diagnostic Error Feed (No Masked Errors) -->
+      <div id="errorBox" style="display:none; margin-top:1rem;" class="notice warn">
+        <div style="width:100%;">
+          <strong style="color:var(--error);">⚠️ Diagnostic Issues (<span id="errorCount">0</span>):</strong>
+          <div id="errorList" style="margin-top:0.5rem; max-height:180px; overflow-y:auto; font-family:monospace; font-size:0.75rem; display:flex; flex-direction:column; gap:0.35rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: VISUAL AVATAR GALLERY (NO ZIP REQUIRED) -->
+  <div id="tab-gallery" style="display:none;">
+    <div class="card">
+      <div class="card-header">
+        <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+          <span>Cropped Avatar Gallery</span>
+          <span id="galleryCountTag" style="font-size:0.8rem; color:var(--text-tertiary);"></span>
+          <div style="display:inline-flex; align-items:center; gap:0.35rem; margin-left:0.5rem;">
+            <label style="font-size:0.75rem; color:var(--text-tertiary); margin:0;">Batch:</label>
+            <select id="batchSelect" style="background:var(--code-bg); border:1px solid var(--border); color:var(--accent); font-weight:600; padding:0.25rem 0.6rem; border-radius:6px; font-size:0.75rem; cursor:pointer;" onchange="loadGallery(this.value)">
+              <option value="">All Batches</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary" style="min-height:36px; padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="loadGallery(document.getElementById('batchSelect').value)">🔄 Refresh</button>
+          <button class="btn btn-secondary" style="min-height:36px; padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="openExplorerFolder()">📂 Open in Explorer</button>
+        </div>
+      </div>
+
+      <!-- Character Filter Pills -->
+      <div class="gallery-filter-bar" id="galleryFilterBar">
+        <div class="filter-pill active" onclick="filterGallery('ALL')">All</div>
+      </div>
+
+      <!-- Grid Cards -->
+      <div class="gallery-grid" id="galleryGrid">
+        <div class="gallery-empty">No cropped avatars yet. Run the crop engine on Tab 1 to generate avatars!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: STORAGE & EXPLORER -->
+  <div id="tab-explorer" style="display:none;">
+    <div class="card">
+      <div class="card-header">Local Disk D: Storage Locations</div>
+      <p style="color:var(--text-secondary); font-size:0.875rem; margin-bottom:1rem;">
+        In accordance with Faust's Sovereign Local Disk D Policy, zero files or weights touch C:. Everything is saved directly to your permanent storage on D:\.
+      </p>
+
+      <div style="display:flex; flex-direction:column; gap:0.75rem; font-family:monospace; font-size:0.825rem;">
+        <div style="background:var(--code-bg); padding:0.75rem 1rem; border-radius:8px; border:1px solid var(--border);">
+          <strong style="color:var(--accent);">Avatars Directory (Google Drive Synced):</strong><br>
+          D:\My Drive\My Hazard Drive\Avatars\
+        </div>
+        <div style="background:var(--code-bg); padding:0.75rem 1rem; border-radius:8px; border:1px solid var(--border);">
+          <strong style="color:var(--accent);">Model Weights & Cache:</strong><br>
+          D:\Program Data\Faust\models\huggingface\
+        </div>
+        <div style="background:var(--code-bg); padding:0.75rem 1rem; border-radius:8px; border:1px solid var(--border);">
+          <strong style="color:var(--accent);">Virtual Environment:</strong><br>
+          D:\Program Data\Faust\venvs\anime_crop\
+        </div>
+      </div>
+
+      <div style="margin-top:1.5rem;">
+        <button class="btn" onclick="openExplorerFolder()">📂 Open Output Folder in Windows Explorer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox Modal -->
+<div id="lightbox" class="lightbox-backdrop" style="display:none;" onclick="closeLightbox(event)">
+  <div class="lightbox-modal" onclick="event.stopPropagation()">
+    <img id="lightboxImg" class="lightbox-img" src="" alt="Avatar preview">
+    <div class="lightbox-footer">
+      <div>
+        <div id="lightboxTag" class="avatar-tag">Character</div>
+        <div id="lightboxName" style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">filename.png</div>
+      </div>
+      <button class="btn btn-secondary" style="min-height:36px; padding:0.3rem 0.8rem;" onclick="closeLightbox()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.location.protocol === 'file:'
+  ? 'http://127.0.0.1:8000/api/v1'
+  : window.location.origin + '/api/v1';
+
+let allGalleryItems = [];
+let activeFilter = 'ALL';
+let pollingTimer = null;
+
+// Tab switcher
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  document.getElementById('tab-studio').style.display = tabId === 'studio' ? 'block' : 'none';
+  document.getElementById('tab-gallery').style.display = tabId === 'gallery' ? 'block' : 'none';
+  document.getElementById('tab-explorer').style.display = tabId === 'explorer' ? 'block' : 'none';
+
+  if (tabId === 'gallery') {
+    loadGallery();
+  }
+}
+
+// Start GPU Cropping Pipeline
+async function startGpuCrop() {
+  const folderUrl = document.getElementById('folderUrl').value.trim();
+  const zoomFactor = parseFloat(document.getElementById('zoomSlider').value);
+  const scoreThresh = parseFloat(document.getElementById('threshSlider').value);
+
+  if (!folderUrl) {
+    alert('Please enter a Google Drive link or local folder path.');
+    return;
+  }
+
+  const runBtn = document.getElementById('runCropBtn');
+  const btnIcon = document.getElementById('btnIcon');
+  const btnText = document.getElementById('btnText');
+
+  runBtn.disabled = true;
+  btnIcon.innerHTML = '<span class="spinner"></span>';
+  btnText.textContent = 'Processing on GTX 1650...';
+
+  document.getElementById('telemetryCard').style.display = 'block';
+
+  try {
+    const customBatch = document.getElementById('batchName').value.trim();
+    const res = await fetch(`${API_BASE}/gpu/crop-folder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        folder_url: folderUrl,
+        zoom_factor: zoomFactor,
+        score_thresh: scoreThresh,
+        custom_batch_name: customBatch || null
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      startJobPolling();
+    } else {
+      alert(`Error starting job: ${data.detail || 'Unknown error'}`);
+      resetRunButton();
+    }
+  } catch (err) {
+    alert(`Communication error: ${err.message}`);
+    resetRunButton();
+  }
+}
+
+// Poll Active Job
+function startJobPolling() {
+  if (pollingTimer) clearInterval(pollingTimer);
+
+  pollingTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/gpu/job-status`);
+      const job = await res.json();
+
+      const fill = document.getElementById('progressFill');
+      const statusSpan = document.getElementById('telemetryStatus');
+      const fileSpan = document.getElementById('telemetryFile');
+      const countSpan = document.getElementById('telemetryCount');
+      const activeStatus = document.getElementById('activeJobStatus');
+
+      statusSpan.textContent = job.status.toUpperCase();
+      fileSpan.textContent = job.current_file || '-';
+      activeStatus.textContent = job.status.toUpperCase();
+
+      if (job.total > 0) {
+        const pct = Math.round((job.processed / job.total) * 100);
+        fill.style.width = pct + '%';
+        const skipText = job.total_skipped > 0 ? ` · ${job.total_skipped} skipped` : '';
+        countSpan.textContent = `${job.processed} / ${job.total} (${pct}%)${skipText}`;
+      }
+
+      if (job.errors && job.errors.length > 0) {
+        const errorBox = document.getElementById('errorBox');
+        const errorCount = document.getElementById('errorCount');
+        const errorList = document.getElementById('errorList');
+        errorBox.style.display = 'flex';
+        errorCount.textContent = job.errors.length;
+        errorList.innerHTML = job.errors.map(e =>
+          `<div style="color:var(--text-secondary); border-bottom:1px solid var(--border); padding-bottom:2px;">
+            <span style="color:var(--error); font-weight:bold;">[${e.type}]</span>
+            <span style="color:var(--accent);">[${e.folder}]</span>
+            <strong>${e.file}</strong>: ${e.details}
+          </div>`
+        ).join('');
+        job.errors.forEach(e => console.warn(`[AvatarStudio Diagnostic] [${e.folder}] ${e.file}:`, e.details));
+      }
+
+      if (job.status === 'completed') {
+        clearInterval(pollingTimer);
+        fill.style.width = '100%';
+        resetRunButton();
+        // Automatically switch to gallery or load gallery!
+        await loadGallery();
+        document.querySelector('.tab-btn:nth-child(2)').click();
+      } else if (job.status === 'error') {
+        clearInterval(pollingTimer);
+        resetRunButton();
+        console.error('[AvatarStudio Fatal Error]', job.error);
+        alert(`Crop Error: ${job.error}`);
+      }
+    } catch (err) {
+      console.warn('Polling error:', err);
+    }
+  }, 1000);
+}
+
+function resetRunButton() {
+  const runBtn = document.getElementById('runCropBtn');
+  document.getElementById('btnIcon').textContent = '🚀';
+  document.getElementById('btnText').textContent = 'Crop Avatars on Local GTX 1650';
+  runBtn.disabled = false;
+}
+
+// Load and render direct visual avatar gallery
+async function loadGallery(selectedBatch = '') {
+  try {
+    const url = selectedBatch
+      ? `${API_BASE}/gallery/items?batch_folder=${encodeURIComponent(selectedBatch)}`
+      : `${API_BASE}/gallery/items`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    allGalleryItems = data.items || [];
+    document.getElementById('tabCount').textContent = data.total || 0;
+    document.getElementById('galleryCountTag').textContent = `(${data.total || 0} avatars in view)`;
+
+    // Update Batch dropdown
+    const batchSelect = document.getElementById('batchSelect');
+    if (batchSelect && data.batches) {
+      const currVal = selectedBatch || batchSelect.value;
+      batchSelect.innerHTML = '<option value="">All Batches</option>';
+      data.batches.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b;
+        opt.textContent = b;
+        if (b === currVal) opt.selected = true;
+        batchSelect.appendChild(opt);
+      });
+    }
+
+    // Render filter pills
+    const filterBar = document.getElementById('galleryFilterBar');
+    filterBar.innerHTML = `<div class="filter-pill ${activeFilter === 'ALL' ? 'active' : ''}" onclick="filterGallery('ALL')">All (${data.total || 0})</div>`;
+
+    (data.folders || []).forEach(f => {
+      const count = allGalleryItems.filter(i => i.folder === f).length;
+      const pill = document.createElement('div');
+      pill.className = `filter-pill ${activeFilter === f ? 'active' : ''}`;
+      pill.textContent = `${f} (${count})`;
+      pill.onclick = () => filterGallery(f);
+      filterBar.appendChild(pill);
+    });
+
+    renderGalleryGrid();
+  } catch (err) {
+    console.warn('Error loading gallery:', err);
+  }
+}
+
+function filterGallery(folder) {
+  activeFilter = folder;
+  document.querySelectorAll('.filter-pill').forEach(p => {
+    p.classList.toggle('active', p.textContent.startsWith(folder === 'ALL' ? 'All' : folder));
+  });
+  renderGalleryGrid();
+}
+
+function renderGalleryGrid() {
+  const grid = document.getElementById('galleryGrid');
+  const items = activeFilter === 'ALL'
+    ? allGalleryItems
+    : allGalleryItems.filter(i => i.folder === activeFilter);
+
+  if (!items.length) {
+    grid.innerHTML = '<div class="gallery-empty">No avatars match the selected filter.</div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'avatar-card';
+    card.onclick = () => openLightbox(item.url, item.folder, item.filename);
+
+    card.innerHTML = `
+      <img src="${item.url}" class="avatar-thumb" loading="lazy" alt="${item.filename}">
+      <div class="avatar-meta">
+        <span class="avatar-tag">${item.folder}</span>
+        <span class="avatar-name" title="${item.filename}">${item.filename}</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// Lightbox Modal
+function openLightbox(url, folder, name) {
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightboxTag').textContent = folder;
+  document.getElementById('lightboxName').textContent = name;
+  document.getElementById('lightbox').style.display = 'flex';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').style.display = 'none';
+}
+
+// Open folder in Windows File Explorer
+async function openExplorerFolder() {
+  try {
+    const batchVal = document.getElementById('batchSelect')?.value || '';
+    await fetch(`${API_BASE}/gallery/open-folder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subfolder: batchVal || null })
+    });
+  } catch (err) {
+    alert('Could not open explorer: ' + err.message);
+  }
+}
+
+// Initial gallery probe
+loadGallery();
+</script>
+
+</body>
+</html>

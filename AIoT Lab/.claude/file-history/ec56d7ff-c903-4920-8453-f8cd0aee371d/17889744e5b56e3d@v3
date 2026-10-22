@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Project Entry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+  <style>
+    /* ========================================================================
+       DESIGN SYSTEM: BIGGER UI FOR 100% ZOOM COMFORT
+       Scaled up base sizes so normal viewing doesn't require zoom
+       ======================================================================== */
+
+    :root {
+      /* Colors */
+      --bg-canvas: #0a0908;
+      --bg-card: #15110d;
+      --bg-card-hover: #1f1813;
+      --bg-input: #1c1611;
+      --bg-input-focus: #28201a;
+      --text-primary: #fefdfb;
+      --text-secondary: #e8ddd0;
+      --text-tertiary: #8f7f6e;
+      --text-dim: #6a5d4f;
+      --border-light: #3a2d23;
+      --border-mid: #4d3d30;
+      --accent: #ff9e1b;
+      --accent-hover: #ffb03a;
+      --accent-glow: rgba(255, 158, 27, 0.3);
+      --accent-bg: rgba(255, 158, 27, 0.15);
+
+      /* Semantic colors */
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #f43f5e;
+
+      /* Typography - BIGGER BASE */
+      --font-display: "IBM Plex Sans", system-ui, sans-serif;
+      --font-body: "IBM Plex Sans", system-ui, sans-serif;
+      --font-mono: "IBM Plex Mono", monospace;
+      --base-font-size: 18px;
+
+      /* Spacing - LARGER GAPS */
+      --gap-xs: 0.75rem;
+      --gap-sm: 1rem;
+      --gap-md: 1.5rem;
+      --gap-lg: 2rem;
+      --gap-xl: 3rem;
+
+      /* Sizing - BIGGER RADIUS */
+      --radius-sm: 8px;
+      --radius-md: 10px;
+      --radius-lg: 12px;
+
+      /* Inputs - MUCH BIGGER */
+      --input-height: 56px;
+      --input-padding: 0 1.25rem;
+
+      color-scheme: dark;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --bg-canvas: #faf8f5;
+        --bg-card: #fff8f3;
+        --bg-card-hover: #fff0e8;
+        --bg-input: #f5ede5;
+        --bg-input-focus: #fff8f3;
+        --text-primary: #18130e;
+        --text-secondary: #382f26;
+        --text-tertiary: #6b5a49;
+        --text-dim: #9e8c79;
+        --border-light: #e8dccf;
+        --border-mid: #d9cabc;
+        --accent: #d97706;
+        --accent-hover: #b45309;
+        --accent-bg: rgba(217, 119, 6, 0.12);
+        color-scheme: light;
+      }
+    }
+
+    :root[data-theme="light"] {
+      --bg-canvas: #faf8f5;
+      --bg-card: #fff8f3;
+      --bg-card-hover: #fff0e8;
+      --bg-input: #f5ede5;
+      --bg-input-focus: #fff8f3;
+      --text-primary: #18130e;
+      --text-secondary: #382f26;
+      --text-tertiary: #6b5a49;
+      --text-dim: #9e8c79;
+      --border-light: #e8dccf;
+      --border-mid: #d9cabc;
+      --accent: #d97706;
+      --accent-hover: #b45309;
+      --accent-bg: rgba(217, 119, 6, 0.12);
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-secondary);
+      font: var(--base-font-size) var(--font-body);
+      line-height: 1.6;
+      padding: 3rem 2rem 5rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 1400px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-xl);
+    }
+
+    /* ========================================================================
+       HEADER & NAVIGATION
+       ======================================================================== */
+
+    .header {
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-md);
+      padding-bottom: var(--gap-lg);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--gap-md);
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font: 700 2.5rem var(--font-display);
+      color: var(--text-primary);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .badge {
+      font: 600 0.85rem var(--font-mono);
+      color: var(--accent);
+      background: var(--accent-bg);
+      border: 1px solid var(--accent);
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .header-subtitle {
+      font: 16px var(--font-body);
+      color: var(--text-tertiary);
+      max-width: 600px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: var(--gap-sm);
+      flex-wrap: wrap;
+    }
+
+    /* ========================================================================
+       BUTTONS & CONTROLS
+       ======================================================================== */
+
+    button {
+      font: inherit;
+      cursor: pointer;
+      border: none;
+      outline: none;
+      transition: all 0.15s ease;
+      border-radius: var(--radius-md);
+    }
+
+    .btn {
+      height: 52px;
+      padding: 0 1.5rem;
+      font-weight: 600;
+      font-size: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      color: var(--text-secondary);
+    }
+
+    .btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-mid);
+      color: var(--text-primary);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0a0908;
+      font-weight: 700;
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .btn.small {
+      height: 42px;
+      padding: 0 1rem;
+      font-size: 14px;
+    }
+
+    .btn.icon-only {
+      width: 52px;
+      padding: 0;
+      justify-content: center;
+    }
+
+    /* Navigation tabs */
+    .nav-tabs {
+      display: flex;
+      gap: var(--gap-xs);
+      flex-wrap: wrap;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      padding: var(--gap-sm);
+      border-radius: var(--radius-md);
+    }
+
+    .tab-btn {
+      padding: 0.8rem 1.2rem;
+      font-weight: 600;
+      font-size: 15px;
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      border-radius: var(--radius-sm);
+    }
+
+    .tab-btn:hover {
+      background: var(--bg-input);
+      color: var(--text-secondary);
+    }
+
+    .tab-btn.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+
+    /* ========================================================================
+       CARDS & SECTIONS
+       ======================================================================== */
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: border-color 0.15s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-mid);
+    }
+
+    .card-header {
+      padding: var(--gap-md);
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--gap-md);
+    }
+
+    .card-title {
+      font-weight: 700;
+      color: var(--text-primary);
+      font-size: 17px;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .card-body {
+      padding: var(--gap-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-lg);
+    }
+
+    /* ========================================================================
+       FORMS & INPUTS
+       ======================================================================== */
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-sm);
+    }
+
+    .field-label {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .field-hint {
+      font-size: 14px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    /* INPUT SIZING: 56px height for comfortable clicking */
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    select,
+    textarea {
+      height: var(--input-height);
+      padding: var(--input-padding);
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 16px;
+      transition: all 0.15s ease;
+      resize: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+      outline: none;
+    }
+
+    textarea {
+      height: 120px;
+      padding: var(--gap-sm);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='8' height='6' viewBox='0 0 8 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23ff9e1b' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 2.5rem;
+      cursor: pointer;
+    }
+
+    /* ========================================================================
+       LAYOUT GRID
+       ======================================================================== */
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: var(--gap-xl);
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .columns-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-lg);
+    }
+
+    /* ========================================================================
+       COLUMN CARDS
+       ======================================================================== */
+
+    .column-card {
+      border-left: 4px solid var(--accent);
+      transition: all 0.2s ease;
+    }
+
+    .column-card.pk { border-left-color: #38bdf8; }
+    .column-card.text { border-left-color: #10b981; }
+    .column-card.scalar { border-left-color: #f59e0b; }
+    .column-card.enum { border-left-color: #f43f5e; }
+    .column-card.rel { border-left-color: #ff9e1b; }
+
+    .column-card-header {
+      padding: var(--gap-md);
+      background: rgba(255, 255, 255, 0.015);
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--gap-md);
+      cursor: pointer;
+    }
+
+    .column-card.collapsed .column-card-body {
+      display: none;
+    }
+
+    .column-card-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .column-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .column-number {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-dim);
+      min-width: 24px;
+    }
+
+    .column-name {
+      font: 600 14px var(--font-body);
+      color: var(--text-primary);
+      word-break: break-word;
+    }
+
+    .column-tag {
+      font: 600 11px var(--font-mono);
+      color: var(--accent);
+      background: var(--accent-bg);
+      border: 1px solid var(--accent);
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .column-card-body {
+      padding: var(--gap-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-lg);
+    }
+
+    .field-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--gap-md);
+    }
+
+    @media (max-width: 640px) {
+      .field-grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ========================================================================
+       QUICK ADD SECTION
+       ======================================================================== */
+
+    .quick-add {
+      background: var(--bg-card);
+      border: 2px dashed var(--border-mid);
+      border-radius: var(--radius-lg);
+      padding: var(--gap-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-md);
+    }
+
+    .quick-add-title {
+      font: 600 13px var(--font-body);
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .quick-add-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: var(--gap-md);
+    }
+
+    .quick-add-btn {
+      padding: var(--gap-sm);
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      text-align: left;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      min-height: 72px;
+      justify-content: flex-start;
+    }
+
+    .quick-add-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .qa-slug {
+      font: 600 11px var(--font-mono);
+      color: var(--accent);
+    }
+
+    .qa-desc {
+      font: 12px var(--font-body);
+      color: var(--text-dim);
+    }
+
+    /* ========================================================================
+       INSPECTOR PANEL
+       ======================================================================== */
+
+    .inspector {
+      position: sticky;
+      top: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-md);
+    }
+
+    .inspector-tabs {
+      display: flex;
+      gap: var(--gap-xs);
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      padding: var(--gap-xs);
+      border-radius: var(--radius-md);
+    }
+
+    .inspector-tab-btn {
+      flex: 1;
+      padding: 0.5rem;
+      font: 600 11px var(--font-mono);
+      color: var(--text-tertiary);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .inspector-tab-btn:hover {
+      background: var(--bg-input);
+      color: var(--text-secondary);
+    }
+
+    .inspector-tab-btn.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+
+    .code-view {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .code-header {
+      padding: var(--gap-md);
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-light);
+      font: 600 12px var(--font-mono);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .code-pre {
+      padding: var(--gap-md);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre;
+    }
+
+    /* ========================================================================
+       FILTER BAR
+       ======================================================================== */
+
+    .filter-bar {
+      display: flex;
+      gap: var(--gap-sm);
+      flex-wrap: wrap;
+      margin-bottom: var(--gap-md);
+    }
+
+    .filter-btn {
+      padding: 0.5rem 1rem;
+      font: 600 13px var(--font-body);
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-secondary);
+    }
+
+    .filter-btn.active {
+      background: var(--accent-bg);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ========================================================================
+       UTILITIES
+       ======================================================================== */
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: var(--gap-sm);
+      padding: var(--gap-sm) var(--gap-md);
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+    }
+
+    .status-dot.offline {
+      background: var(--warning);
+      box-shadow: 0 0 6px var(--warning);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--accent);
+      color: #0a0908;
+      font-weight: 700;
+      padding: var(--gap-md) var(--gap-lg);
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      z-index: 9999;
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .section-divider {
+      height: 1px;
+      background: var(--border-light);
+      margin: var(--gap-lg) 0;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-container">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-top">
+        <div>
+          <h1>
+            <span>Project</span>
+            <span class="badge">Entry</span>
+          </h1>
+          <p class="header-subtitle">Schema architect & table template builder</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn primary" onclick="saveTable()">💾 Save</button>
+          <button class="btn" onclick="syncSqlite()">⚡ Sync</button>
+          <button class="btn" onclick="toggleTheme()">🌓 Theme</button>
+        </div>
+      </div>
+
+      <!-- Table Selection -->
+      <nav class="nav-tabs" id="table-tabs">
+        <!-- Dynamically populated -->
+      </nav>
+    </header>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="workspace">
+
+      <!-- Left: Column Editor -->
+      <div class="columns-list">
+
+        <!-- Table Overview -->
+        <section class="card">
+          <div class="card-header">
+            <span class="card-title">📋 Table: <strong id="active-table-name">users</strong></span>
+          </div>
+          <div class="card-body">
+            <div class="field-group">
+              <label class="field-label">
+                <span>Table Name</span>
+                <span class="field-hint" id="columns-count">11 columns</span>
+              </label>
+              <input type="text" id="table-name-input" placeholder="e.g., users, projects, notes">
+            </div>
+          </div>
+        </section>
+
+        <!-- Column Filters -->
+        <div class="filter-bar" id="filter-bar">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Columns Stream -->
+        <div id="columns-stream" class="columns-list">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Quick Add Section -->
+        <section class="quick-add">
+          <div class="quick-add-title">✨ Add Field Type</div>
+          <div class="quick-add-grid">
+            <button class="quick-add-btn" onclick="addField('hex_id')">
+              <span class="qa-slug">Hex ID</span>
+              <span class="qa-desc">Primary key</span>
+            </button>
+            <button class="quick-add-btn" onclick="addField('text_single')">
+              <span class="qa-slug">Text</span>
+              <span class="qa-desc">Single line</span>
+            </button>
+            <button class="quick-add-btn" onclick="addField('text_multi')">
+              <span class="qa-slug">Text</span>
+              <span class="qa-desc">Multi-line</span>
+            </button>
+            <button class="quick-add-btn" onclick="addField('int_scalar')">
+              <span class="qa-slug">Integer</span>
+              <span class="qa-desc">Whole number</span>
+            </button>
+            <button class="quick-add-btn" onclick="addField('float_scalar')">
+              <span class="qa-slug">Float</span>
+              <span class="qa-desc">Decimal number</span>
+            </button>
+            <button class="quick-add-btn" onclick="addField('boolean')">
+              <span class="qa-slug">Boolean</span>
+              <span class="qa-desc">True/False</span>
+            </button>
+            <button class="quick-add-btn" onclick="addField('enum_single')">
+              <span class="qa-slug">Enum</span>
+              <span class="qa-desc">Single choice</span>
+            </button>
+            <button class="quick-add-btn" onclick="addField('enum_multi')">
+              <span class="qa-slug">Enum</span>
+              <span class="qa-desc">Multi-choice</span>
+            </button>
+            <button class="quick-add-btn" onclick="addField('relation_single')">
+              <span class="qa-slug">Relation</span>
+              <span class="qa-desc">Single link</span>
+            </button>
+            <button class="quick-add-btn" onclick="addField('relation_multi')">
+              <span class="qa-slug">Relation</span>
+              <span class="qa-desc">Multi-link</span>
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Right: Inspector -->
+      <aside class="inspector">
+        <div class="inspector-tabs">
+          <button class="inspector-tab-btn active" onclick="switchTab('sql')">SQL DDL</button>
+          <button class="inspector-tab-btn" onclick="switchTab('json')">JSON</button>
+          <button class="inspector-tab-btn" onclick="switchTab('info')">Status</button>
+        </div>
+
+        <div class="code-view">
+          <div class="code-header">
+            <span id="code-title">CREATE TABLE (DDL)</span>
+            <button class="btn small" onclick="copyCode()">📋 Copy</button>
+          </div>
+          <pre class="code-pre" id="code-content">-- Loading schema...</pre>
+        </div>
+
+        <div class="status-pill">
+          <div class="status-dot"></div>
+          <span>Ready · Standalone mode</span>
+        </div>
+      </aside>
+
+    </main>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* ========================================================================
+       STANDALONE TABLE SCHEMA EDITOR — EMBEDDED MOCK DATA
+       ======================================================================== */
+
+    const FIELD_TYPES = {
+      hex_id: { category: 'pk', icon: '🔑', title: 'Hex ID', sql: 'TEXT PRIMARY KEY' },
+      text_single: { category: 'text', icon: '📝', title: 'Text (single)', sql: 'TEXT' },
+      text_multi: { category: 'text', icon: '📝', title: 'Text (multi)', sql: 'TEXT' },
+      int_scalar: { category: 'scalar', icon: '🔢', title: 'Integer', sql: 'INTEGER' },
+      float_scalar: { category: 'scalar', icon: '🔢', title: 'Float', sql: 'REAL' },
+      boolean: { category: 'boolean', icon: '🔘', title: 'Boolean', sql: 'INTEGER DEFAULT 0' },
+      enum_single: { category: 'enum', icon: '🏷️', title: 'Enum (single)', sql: 'TEXT' },
+      enum_multi: { category: 'enum', icon: '🏷️', title: 'Enum (multi)', sql: 'TEXT (JSON)' },
+      relation_single: { category: 'rel', icon: '🔗', title: 'Relation (single)', sql: 'TEXT' },
+      relation_multi: { category: 'rel', icon: '🔗', title: 'Relation (multi)', sql: 'TEXT (JSON)' }
+    };
+
+    const MOCK_DATA = {
+      users: {
+        table_name: 'users',
+        columns: [
+          { name: 'User ID', slug: 'id', type: 'hex_id', metadata: { prefix: 'USER' } },
+          { name: 'Username', slug: 'username', type: 'text_single', metadata: {} },
+          { name: 'Email', slug: 'email', type: 'text_single', metadata: {} },
+          { name: 'Bio', slug: 'bio', type: 'text_multi', metadata: {} },
+          { name: 'Age', slug: 'age', type: 'int_scalar', metadata: {} },
+          { name: 'Balance', slug: 'balance', type: 'float_scalar', metadata: {} },
+          { name: 'Active', slug: 'is_active', type: 'boolean', metadata: {} },
+          { name: 'Role', slug: 'role', type: 'enum_single', metadata: { options: ['admin', 'editor', 'viewer'] } },
+          { name: 'Tags', slug: 'tags', type: 'enum_multi', metadata: { options: ['premium', 'verified', 'staff'] } },
+          { name: 'Manager', slug: 'manager_id', type: 'relation_single', metadata: { target: 'users' } },
+          { name: 'Projects', slug: 'project_ids', type: 'relation_multi', metadata: { target: 'projects' } }
+        ]
+      },
+      projects: {
+        table_name: 'projects',
+        columns: [
+          { name: 'Project ID', slug: 'id', type: 'hex_id', metadata: { prefix: 'PROJ' } },
+          { name: 'Title', slug: 'title', type: 'text_single', metadata: {} },
+          { name: 'Description', slug: 'description', type: 'text_multi', metadata: {} },
+          { name: 'Budget', slug: 'budget', type: 'float_scalar', metadata: {} },
+          { name: 'Status', slug: 'status', type: 'enum_single', metadata: { options: ['planning', 'active', 'completed'] } },
+          { name: 'Public', slug: 'is_public', type: 'boolean', metadata: {} },
+          { name: 'Owner', slug: 'owner_id', type: 'relation_single', metadata: { target: 'users' } },
+          { name: 'Team Members', slug: 'member_ids', type: 'relation_multi', metadata: { target: 'users' } }
+        ]
+      }
+    };
+
+    let tables = JSON.parse(JSON.stringify(MOCK_DATA));
+    let activeTable = 'users';
+    let activeTab = 'sql';
+    let activeFilter = 'all';
+
+    function init() {
+      renderTableTabs();
+      renderColumns();
+      renderFilters();
+      updateInspector();
+    }
+
+    function renderTableTabs() {
+      const container = document.getElementById('table-tabs');
+      const names = Object.keys(tables);
+      container.innerHTML = names.map(name => `
+        <button class="tab-btn ${name === activeTable ? 'active' : ''}" onclick="switchTable('${name}')">
+          📁 ${name}
+        </button>
+      `).join('') + `
+        <button class="tab-btn" onclick="createTable()" style="border-style: dashed; border-color: var(--border-mid);">
+          + New Table
+        </button>
+      `;
+    }
+
+    function switchTable(name) {
+      if (!tables[name]) return;
+      activeTable = name;
+      document.getElementById('active-table-name').textContent = name;
+      document.getElementById('table-name-input').value = name;
+      renderTableTabs();
+      renderColumns();
+      updateInspector();
+    }
+
+    function createTable() {
+      const name = prompt('Table name (e.g., tasks, inventory):');
+      if (!name) return;
+      const clean = name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      if (tables[clean]) {
+        alert('Table already exists');
+        return;
+      }
+      tables[clean] = {
+        table_name: clean,
+        columns: [{ name: 'ID', slug: 'id', type: 'hex_id', metadata: { prefix: clean.substring(0, 4).toUpperCase() } }]
+      };
+      switchTable(clean);
+      showToast(`Created table "${clean}"`);
+    }
+
+    function renderFilters() {
+      const bar = document.getElementById('filter-bar');
+      const categories = ['all', 'pk', 'text', 'scalar', 'boolean', 'enum', 'rel'];
+      const icons = { all: '📊', pk: '🔑', text: '📝', scalar: '🔢', boolean: '🔘', enum: '🏷️', rel: '🔗' };
+      bar.innerHTML = categories.map(cat => `
+        <button class="filter-btn ${cat === activeFilter ? 'active' : ''}" onclick="setFilter('${cat}')">
+          ${icons[cat]} ${cat === 'all' ? 'All' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+        </button>
+      `).join('');
+    }
+
+    function setFilter(cat) {
+      activeFilter = cat;
+      renderFilters();
+      renderColumns();
+    }
+
+    function renderColumns() {
+      if (!tables[activeTable]) return;
+      const table = tables[activeTable];
+      const stream = document.getElementById('columns-stream');
+
+      const columnCount = table.columns.length;
+      document.getElementById('columns-count').textContent = `${columnCount} column${columnCount !== 1 ? 's' : ''}`;
+
+      const filtered = activeFilter === 'all'
+        ? table.columns
+        : table.columns.filter(col => FIELD_TYPES[col.type]?.category === activeFilter);
+
+      if (filtered.length === 0) {
+        stream.innerHTML = '<div style="padding: 3rem 1.5rem; text-align: center; color: var(--text-dim);">No columns in this category</div>';
+        return;
+      }
+
+      stream.innerHTML = filtered.map((col, idx) => renderColumnCard(col, idx)).join('');
+    }
+
+    function renderColumnCard(col, idx) {
+      const type = FIELD_TYPES[col.type];
+      return `
+        <section class="card column-card ${type.category}">
+          <div class="column-card-header">
+            <div class="column-card-title">
+              <span class="column-icon">${type.icon}</span>
+              <span class="column-number">#${idx + 1}</span>
+              <span class="column-name">${col.name}</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <span class="column-tag">${type.title}</span>
+              <button class="btn small icon-only" onclick="deleteColumn(${idx})" title="Delete">✕</button>
+            </div>
+          </div>
+          <div class="column-card-body">
+            <div class="field-grid-2">
+              <div class="field-group">
+                <label class="field-label">Column Name</label>
+                <input type="text" value="${col.name}" onchange="updateColumnName(${idx}, this.value)">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Column Type</label>
+                <select onchange="updateColumnType(${idx}, this.value)">
+                  ${Object.entries(FIELD_TYPES).map(([slug, info]) => `
+                    <option value="${slug}" ${col.type === slug ? 'selected' : ''}>
+                      ${info.icon} ${info.title}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+            </div>
+            ${renderMetadata(col, idx)}
+          </div>
+        </section>
+      `;
+    }
+
+    function renderMetadata(col, idx) {
+      const meta = col.metadata || {};
+      if (col.type === 'hex_id') {
+        return `
+          <div class="field-group">
+            <label class="field-label">ID Prefix (4 chars)</label>
+            <input type="text" maxlength="4" value="${meta.prefix || ''}"
+              onchange="updateMeta(${idx}, 'prefix', this.value)">
+          </div>
+        `;
+      }
+      if (col.type.startsWith('enum_')) {
+        const options = Array.isArray(meta.options) ? meta.options : [];
+        return `
+          <div class="field-group">
+            <label class="field-label">Options</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              ${options.map((opt, i) => `
+                <span style="background: var(--accent-bg); color: var(--accent); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 13px; display: flex; gap: 0.5rem; align-items: center;">
+                  ${opt}
+                  <button onclick="removeOption(${idx}, ${i})" style="background: none; border: none; cursor: pointer; color: var(--accent); padding: 0;">✕</button>
+                </span>
+              `).join('')}
+            </div>
+            <input type="text" placeholder="Add option, press Enter"
+              onkeydown="if(event.key==='Enter'){addOption(${idx}, this.value); this.value='';}">
+          </div>
+        `;
+      }
+      if (col.type.startsWith('relation_')) {
+        const target = meta.target || 'self';
+        return `
+          <div class="field-group">
+            <label class="field-label">Target Table</label>
+            <select onchange="updateMeta(${idx}, 'target', this.value)">
+              <option value="self" ${target === 'self' ? 'selected' : ''}>Self (tree)</option>
+              ${Object.keys(tables).map(t => `
+                <option value="${t}" ${target === t ? 'selected' : ''}>${t}</option>
+              `).join('')}
+            </select>
+          </div>
+        `;
+      }
+      return '';
+    }
+
+    function addField(type) {
+      const table = tables[activeTable];
+      const newCol = {
+        name: FIELD_TYPES[type].title,
+        slug: 'new_field',
+        type: type,
+        metadata: {}
+      };
+      if (type.startsWith('enum_')) newCol.metadata.options = ['option1', 'option2'];
+      if (type.startsWith('relation_')) newCol.metadata.target = 'self';
+      if (type === 'hex_id') newCol.metadata.prefix = activeTable.substring(0, 4).toUpperCase();
+      table.columns.push(newCol);
+      renderColumns();
+      updateInspector();
+      showToast(`Added ${FIELD_TYPES[type].title}`);
+    }
+
+    function deleteColumn(idx) {
+      const name = tables[activeTable].columns[idx].name;
+      tables[activeTable].columns.splice(idx, 1);
+      renderColumns();
+      updateInspector();
+      showToast(`Deleted "${name}"`);
+    }
+
+    function updateColumnName(idx, value) {
+      tables[activeTable].columns[idx].name = value;
+      updateInspector();
+    }
+
+    function updateColumnType(idx, value) {
+      tables[activeTable].columns[idx].type = value;
+      tables[activeTable].columns[idx].metadata = {};
+      if (value.startsWith('enum_')) tables[activeTable].columns[idx].metadata.options = ['option1'];
+      if (value.startsWith('relation_')) tables[activeTable].columns[idx].metadata.target = 'self';
+      if (value === 'hex_id') tables[activeTable].columns[idx].metadata.prefix = activeTable.substring(0, 4).toUpperCase();
+      renderColumns();
+      updateInspector();
+    }
+
+    function updateMeta(idx, key, value) {
+      if (!tables[activeTable].columns[idx].metadata) tables[activeTable].columns[idx].metadata = {};
+      tables[activeTable].columns[idx].metadata[key] = value;
+      updateInspector();
+    }
+
+    function addOption(idx, value) {
+      if (!value.trim()) return;
+      const meta = tables[activeTable].columns[idx].metadata;
+      if (!Array.isArray(meta.options)) meta.options = [];
+      if (!meta.options.includes(value)) meta.options.push(value);
+      renderColumns();
+      updateInspector();
+    }
+
+    function removeOption(idx, optIdx) {
+      tables[activeTable].columns[idx].metadata.options.splice(optIdx, 1);
+      renderColumns();
+      updateInspector();
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.inspector-tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      updateInspector();
+    }
+
+    function generateSQL(table) {
+      if (!table) return '-- No table';
+      const lines = [`CREATE TABLE IF NOT EXISTS ${table.table_name} (`];
+      const cols = table.columns.map(col => {
+        const type = FIELD_TYPES[col.type];
+        return `    ${(col.slug || col.name).padEnd(20)} ${type.sql}`;
+      });
+      lines.push(cols.join(',\n'));
+      lines.push(');');
+      return lines.join('\n');
+    }
+
+    function updateInspector() {
+      const table = tables[activeTable];
+      const codeEl = document.getElementById('code-content');
+      const titleEl = document.getElementById('code-title');
+
+      if (activeTab === 'sql') {
+        titleEl.textContent = `CREATE TABLE (${activeTable}.sql)`;
+        codeEl.textContent = generateSQL(table);
+      } else if (activeTab === 'json') {
+        titleEl.textContent = `JSON Schema (${activeTable}.json)`;
+        codeEl.textContent = JSON.stringify(table, null, 2);
+      } else {
+        titleEl.textContent = 'Database Status';
+        codeEl.textContent = JSON.stringify({
+          mode: 'Standalone (embedded mock data)',
+          tables: Object.keys(tables),
+          active_table: activeTable,
+          column_count: table.columns.length
+        }, null, 2);
+      }
+    }
+
+    function copyCode() {
+      const text = document.getElementById('code-content').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard!');
+      });
+    }
+
+    function saveTable() {
+      localStorage.setItem('project_entry_schemas', JSON.stringify(tables));
+      showToast('Saved to local storage');
+    }
+
+    function syncSqlite() {
+      showToast('SQLite sync (frontend only in standalone mode)');
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'system';
+      const next = current === 'dark' ? 'light' : current === 'light' ? 'system' : 'dark';
+      if (next === 'system') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', next);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2400);
+    }
+
+    init();
+  </script>
+</body>
+
+</html>

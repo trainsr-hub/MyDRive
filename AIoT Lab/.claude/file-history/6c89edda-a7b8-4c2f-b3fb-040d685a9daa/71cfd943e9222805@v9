@@ -1,0 +1,394 @@
+import React, { useState } from 'react';
+import { MultiEntityPlan, EntityPlan, ActionItem } from '../types';
+import { EntityFolderCard } from './EntityFolderCard';
+import {
+  Folder,
+  ExternalLink,
+  Zap,
+  CheckCircle2,
+  Plus,
+  RotateCw,
+} from 'lucide-react';
+
+interface BirdEyeDashboardProps {
+  plan: MultiEntityPlan;
+  onRefresh: () => void;
+  onExecutePlan: (customPlan?: any) => Promise<void>;
+  isExecuting: boolean;
+  addToast: (type: 'success' | 'error' | 'info', title: string, message?: string) => void;
+  mockMode: boolean;
+  onToggleMockMode: () => void;
+  onResetMockData: () => void;
+  selectedEntityId?: string | null;
+  onSelectEntity?: (id: string | null) => void;
+  onOpenCreateModal?: (groupId?: string) => void;
+}
+
+export const BirdEyeDashboard: React.FC<BirdEyeDashboardProps> = ({
+  plan,
+  onRefresh,
+  onExecutePlan,
+  isExecuting,
+  addToast,
+  mockMode,
+  onToggleMockMode,
+  onResetMockData,
+  selectedEntityId,
+  onSelectEntity,
+  onOpenCreateModal,
+}) => {
+  // 3-Mode Filter State: 'all' | 'conflict' | 'perfected'
+  const [viewMode, setViewMode] = useState<'all' | 'conflict' | 'perfected'>('all');
+
+  // Filter groups by selected entity, and by viewMode (conflict / perfected / all)
+  const displayedGroups = (selectedEntityId
+    ? plan.groups
+        .map((g) => ({
+          ...g,
+          entity_plans: g.entity_plans.filter((ep) => ep.target_root_id === selectedEntityId),
+        }))
+        .filter((g) => g.entity_plans.length > 0)
+    : plan.groups
+  )
+    .map((g) => {
+      if (viewMode === 'all') return g;
+      return {
+        ...g,
+        entity_plans: g.entity_plans.filter((ep) => {
+          // Check if entity has subfolders matching the viewMode
+          const subItems = ep.items.filter((i) => i.relative_path.split('/').filter(Boolean).length > 2);
+          const hasConflicts = subItems.some((i) => i.action_type !== 'MATCH');
+          const hasPerfected = subItems.some((i) => i.action_type === 'MATCH');
+
+          if (viewMode === 'conflict') return hasConflicts;
+          if (viewMode === 'perfected') return hasPerfected;
+          return true;
+        }),
+      };
+    })
+    .filter((g) => viewMode === 'all' || g.entity_plans.length > 0);
+
+  // Calculate total counts
+  const allItems = plan.groups.flatMap((g) => g.entity_plans.flatMap((ep) => ep.items));
+  const totalExceptions = allItems.filter((i) => i.action_type !== 'MATCH');
+
+  // Subfolder calculations: perfected = all - conflict
+  const allSubfolderItems = allItems.filter((i) => i.relative_path.split('/').filter(Boolean).length > 2);
+  const totalSubfoldersCount = allSubfolderItems.length;
+  const conflictSubfoldersCount = allSubfolderItems.filter((i) => i.action_type !== 'MATCH').length;
+  const perfectedSubfoldersCount = totalSubfoldersCount - conflictSubfoldersCount;
+
+  // Fix Single Entity
+  const handleFixEntity = async (entityPlan: EntityPlan) => {
+    const singlePlan = {
+      ...plan,
+      groups: plan.groups
+        .map((g) => ({
+          ...g,
+          entity_plans: g.entity_plans.filter((ep) => ep.target_root_id === entityPlan.target_root_id),
+        }))
+        .filter((g) => g.entity_plans.length > 0),
+    };
+    await onExecutePlan(singlePlan);
+  };
+
+  // Fix All
+  const handleFixAll = async () => {
+    await onExecutePlan(plan);
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+      {/* 1. Monolithic Top Bar */}
+      <div
+        className="card"
+        style={{
+          padding: '1rem 1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          background: 'var(--bg-card)',
+          borderColor: 'var(--border-mid)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Zap size={20} style={{ color: 'var(--accent)' }} />
+            <span style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+              DRIVE ARCHITECT
+            </span>
+          </div>
+
+          <div
+            style={{
+              padding: '0.25rem 0.65rem',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-canvas)',
+              border: '1px solid var(--border-light)',
+              fontSize: '11.5px',
+              color: 'var(--text-dim)',
+            }}
+          >
+            Template: <strong style={{ color: 'var(--accent)' }}>Entropy 0</strong>
+          </div>
+        </div>
+
+        {/* Global Action Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+          {totalExceptions.length > 0 && (
+            <button
+              onClick={handleFixAll}
+              disabled={isExecuting}
+              className="btn primary"
+              style={{
+                padding: '0.5rem 1.15rem',
+                fontSize: '12.5px',
+                fontWeight: 700,
+                background: 'var(--accent)',
+                color: '#000',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                boxShadow: '0 0 14px var(--accent-glow)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+            >
+              <Zap size={13} /> {isExecuting ? 'Fixing...' : `Fix All Mismatches (${totalExceptions.length})`}
+            </button>
+          )}
+
+          <button
+            onClick={() => onOpenCreateModal?.()}
+            className="btn primary"
+            style={{
+              padding: '0.5rem 1.15rem',
+              fontSize: '12.5px',
+              fontWeight: 700,
+              background: '#9333ea',
+              borderColor: '#a855f7',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+            }}
+          >
+            <Plus size={14} /> New Entity
+          </button>
+
+          {/* 3-Mode Filter Segmented Pill: View all | View conflict | View perfected */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--bg-canvas)',
+              borderRadius: 'var(--radius-full)',
+              border: '1px solid var(--border-light)',
+              padding: '2px',
+              gap: '2px',
+            }}
+          >
+            <button
+              onClick={() => setViewMode('all')}
+              style={{
+                border: 'none',
+                background: viewMode === 'all' ? 'var(--bg-card-hover)' : 'transparent',
+                color: viewMode === 'all' ? 'var(--text-primary)' : 'var(--text-dim)',
+                fontWeight: viewMode === 'all' ? 700 : 500,
+                fontSize: '11.5px',
+                padding: '0.3rem 0.65rem',
+                borderRadius: 'var(--radius-full)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              View all ({totalSubfoldersCount})
+            </button>
+
+            <button
+              onClick={() => setViewMode('conflict')}
+              style={{
+                border: 'none',
+                background: viewMode === 'conflict' ? 'var(--warning-bg)' : 'transparent',
+                color: viewMode === 'conflict' ? 'var(--warning)' : 'var(--text-dim)',
+                fontWeight: viewMode === 'conflict' ? 700 : 500,
+                fontSize: '11.5px',
+                padding: '0.3rem 0.65rem',
+                borderRadius: 'var(--radius-full)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              View conflict ({conflictSubfoldersCount})
+            </button>
+
+            <button
+              onClick={() => setViewMode('perfected')}
+              style={{
+                border: 'none',
+                background: viewMode === 'perfected' ? 'var(--success-bg)' : 'transparent',
+                color: viewMode === 'perfected' ? 'var(--success)' : 'var(--text-dim)',
+                fontWeight: viewMode === 'perfected' ? 700 : 500,
+                fontSize: '11.5px',
+                padding: '0.3rem 0.65rem',
+                borderRadius: 'var(--radius-full)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              View perfected ({perfectedSubfoldersCount})
+            </button>
+          </div>
+
+          <button
+            onClick={onToggleMockMode}
+            className="btn subtle"
+            style={{
+              padding: '0.35rem 0.75rem',
+              fontSize: '11.5px',
+              borderRadius: 'var(--radius-full)',
+              color: mockMode ? '#c084fc' : 'var(--text-dim)',
+              borderColor: mockMode ? 'rgba(168, 85, 247, 0.4)' : 'var(--border-light)',
+            }}
+            title="Toggle Mock / Live Drive"
+          >
+            {mockMode ? '⚡ Mock Mode (0ms)' : '🌐 Live Drive'}
+          </button>
+
+          {mockMode && (
+            <button onClick={onResetMockData} className="btn subtle" style={{ padding: '0.35rem 0.65rem', fontSize: '11px' }}>
+              Reset Data
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Focus Breadcrumb (when an entity is clicked in sidebar) */}
+      {selectedEntityId && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1.25rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '13px', color: 'var(--text-secondary)' }}>
+            <span>Focused on entity:</span>
+            <strong style={{ color: 'var(--accent)' }}>{displayedGroups[0]?.entity_plans[0]?.target_root_name}</strong>
+          </div>
+          <button
+            onClick={() => onSelectEntity && onSelectEntity(null)}
+            className="btn subtle"
+            style={{ padding: '0.3rem 0.75rem', fontSize: '12px', fontWeight: 600 }}
+          >
+            Show All Entities (Bird's Eye) &rarr;
+          </button>
+        </div>
+      )}
+
+      {/* 2. Bird's Eye Groups & Entities Grid */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        {displayedGroups.length === 0 ? (
+          <div
+            className="card"
+            style={{
+              padding: '3rem 2rem',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.85rem',
+              background: 'var(--bg-card)',
+              borderColor: 'var(--border-light)',
+            }}
+          >
+            {viewMode === 'conflict' ? (
+              <>
+                <CheckCircle2 size={36} style={{ color: 'var(--success)' }} />
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                  Zero Conflict Subfolders
+                </h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-dim)', maxWidth: '420px', margin: 0 }}>
+                  All subfolders are perfected. Switch to "View all" or "View perfected" to view them.
+                </p>
+              </>
+            ) : viewMode === 'perfected' ? (
+              <>
+                <Folder size={36} style={{ color: 'var(--warning)' }} />
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                  No Perfected Subfolders Yet
+                </h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-dim)', maxWidth: '420px', margin: 0 }}>
+                  Fix the existing conflicts to move subfolders into the perfected state.
+                </p>
+              </>
+            ) : (
+              <p style={{ fontSize: '13px', color: 'var(--text-dim)', margin: 0 }}>
+                No entities found.
+              </p>
+            )}
+          </div>
+        ) : (
+          displayedGroups.map((group) => {
+            return (
+              <section key={group.group_id} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                {/* Group Banner */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 0.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <Folder size={17} style={{ color: 'var(--accent)' }} />
+                    <h2 style={{ fontSize: '15px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)', margin: 0 }}>
+                      {group.group_name}
+                    </h2>
+                    <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+                      ({group.entity_plans.length} {group.entity_plans.length === 1 ? 'entity' : 'entities'})
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => onOpenCreateModal?.(group.group_id)}
+                    className="btn subtle"
+                    style={{ fontSize: '11.5px', padding: '0.25rem 0.6rem' }}
+                  >
+                    + Add Entity to {group.group_name}
+                  </button>
+                </div>
+
+                {/* Entities Grid for this Group */}
+                {group.entity_plans.length === 0 ? (
+                  <div
+                    className="card"
+                    style={{
+                      padding: '2.5rem',
+                      textAlign: 'center',
+                      borderStyle: 'dashed',
+                      borderColor: 'var(--border-light)',
+                      color: 'var(--text-dim)',
+                      fontSize: '13px',
+                    }}
+                  >
+                    No entities registered in this group yet.
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: selectedEntityId ? 'flex' : 'grid',
+                      flexDirection: selectedEntityId ? 'column' : undefined,
+                      gridTemplateColumns: selectedEntityId ? undefined : 'repeat(auto-fill, minmax(380px, 1fr))',
+                      gap: '1rem',
+                      width: '100%',
+                    }}
+                  >
+                    {group.entity_plans.map((ep) => (
+                      <EntityFolderCard
+                        key={ep.target_root_id}
+                        entityPlan={ep}
+                        onFixEntity={handleFixEntity}
+                        isExecuting={isExecuting}
+                        isFullWidth={!!selectedEntityId}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};

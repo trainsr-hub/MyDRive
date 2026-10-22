@@ -1,0 +1,182 @@
+# Plan: `.claude` Folder Reboot with Sovereign Vault Architecture
+
+## Context
+
+The Manager wants to reboot the `.claude/` folder infrastructure that was previously deleted from the `D:\My Drive\Blue AI` project root. The current state shows:
+
+1. **Current Infrastructure**: `.agents` symlink exists → `/d/My Heraclitus/Backups/Faust/.agents` (external sovereign vault)
+2. **Migration History**: The codebase shows architectural migration from `.claude` (legacy modular skills) → `.agents` (Antigravity unified C2)
+3. **Manager's Directive**: Create a sibling `.claude` folder at `D:\My Heraclitus\Backups\Faust\.claude` as the source of truth, with internal junctions to share memory/rules with `.agents`, while keeping execution infrastructure separate
+4. **Technical Implementation**: Junction-based synchronization for shared state, independent execution paths
+
+**Manager's Exact Words**: 
+*"We'll make a "D:\My Heraclitus\Backups\Faust\.claude" as the source of truth where we're gonna add junctions to here. In that "D:\My Heraclitus\Backups\Faust\.claude" original folder, we're gonna share the junction of memory and rule with .agents. The rest of the original folder stays original"*
+
+---
+
+## Sovereign Vault Architecture
+
+### Master Vault Structure
+```
+D:\My Heraclitus\Backups\Faust\  
+├── .agents (EXISTING SOVEREIGN VAULT)  
+│   ├── memory/          # Shared memory cortex  
+│   ├── rules/           # Shared engineering rules  
+│   ├── audio/           # TTS audio processing  
+│   ├── scripts/         # Unified C2 command system  
+│   ├── config/          # Service configurations  
+│   ├── plans/           # Operational plans  
+│   └── ...              # Other .agents components  
+└── .claude (NEW SOURCE OF TRUTH)  
+    ├── memory → ../.agents/memory (JUNCTION - shared)  
+    ├── rules → ../.agents/rules (JUNCTION - shared)  
+    ├── agents\          # Native CLAUDE.md agent definitions  
+    ├── skills\          # Native CLAUDE.md modular skills  
+    ├── daemons\         # Native CLAUDE.md flat daemon structure  
+    ├── templates\       # Master UI/UX Design System  
+    └── scripts\         # Native CLAUDE.md hooks & environment setup  
+```
+
+### Project Root Links
+```
+D:\My Drive\Blue AI\  
+├── .agents → /d/My Heraclitus/Backups/Faust/.agents (EXISTING SYMLINK)  
+└── .claude → D:\My Heraclitus\Backups\Faust\.claude (NEW JUNCTION)  
+```
+
+---
+
+## Critical Analysis: Why This Works
+
+### Memory & Rules Compatibility ✅
+- Both systems require identical memory/rules structures
+- Junctions provide **zero-overhead synchronization** 
+- Single source of truth prevents drift
+
+### Execution Infrastructure Separation ⚠️→✅
+- **CLAUDE.md Path**: Modular skill architecture (separate skills: sound, telegram, c2-dispatch)  
+- **GEMINI.md Path**: Unified C2 architecture (consolidated in `.agents/scripts/c2.py`)  
+- **Solution**: Keep both execution paths intact - they serve different purposes and architectures
+
+### Namespace Resolution ✅
+- `.claude/skills/sound/scripts/cli.py` → CLAUDE.md TTS path  
+- `.agents/scripts/c2.py` → GEMINI.md TTS path  
+- Both work independently but share memory/rules via junction
+
+### Daemon Architecture Respect ✅
+- `.claude/daemons/`: Flat structure (watchdog + cortex daemon)  
+- `.agents/scripts/daemon/`: Tiered structure (domain/repository/tools/agent_service)  
+- Both preserved without conflict
+
+---
+
+## Implementation Plan
+
+### Phase 1: Sovereign Vault Preparation
+1. Create `D:\My Heraclitus\Backups\Faust\.claude` directory
+2. Inside it, create junction points for shared state:
+   ```powershell
+   mklink /J "D:\My Heraclitus\Backups\Faust\.claude\memory" "D:\My Heraclitus\Backups\Faust\.agents\memory"
+   mklink /J "D:\My Heraclitus\Backups\Faust\.claude\rules" "D:\My Heraclitus\Backups\Faust\.agents\rules"
+   ```
+3. Populate remaining `.claude` structure with native components from git history
+
+### Phase 2: Project Root Linking
+1. Create junction at project root:
+   ```powershell
+   mklink /J "D:\My Drive\Blue AI\.claude" "D:\My Heraclitus\Backups\Faust\.claude"
+   ```
+2. Verify existing `.agents` symlink remains intact:
+   ```powershell
+   dir "D:\My Drive\Blue AI\.agents"
+   # Should show: .agents -> /d/My Heraclitus/Backups/Faust/.agents
+   ```
+
+### Phase 3: Native Infrastructure Restoration
+Restore from git history to `D:\My Heraclitus\Backups\Faust\.claude\`:
+
+#### Agents (Native CLAUDE.md)
+- `faust-cortex.md`, `faust-theorist.md`, `faust-critic.md`  
+- `faust-machinist-logic.md`, `faust-machinist-ui.md`, `faust-operator.md`
+
+#### Skills (Native Modular Architecture)
+- `skills/sound/` (TTS acoustic presence)  
+- `skills/telegram/` (Telegram C2 channel)  
+- `skills/c2-dispatch/` (Deterministic dispatcher)  
+- `skills/dataviz/` (Data visualization)  
+- `skills/loop/` (Autonomous loop)
+
+#### Daemons (Native Flat Structure)
+- `daemons/watchdog.py`  
+- `daemons/cortex_daemon.py`  
+- `daemons/start_all_daemons.bat`  
+- `daemons/stop_all_daemons.bat`
+
+#### Templates & Configuration
+- `templates/ui/` (Master UI/UX Design System)  
+- `faust_config.json` (ROM configuration)  
+- `scripts/` (Turn hooks, memory sync, environment setup)
+
+---
+
+## Verification Procedure
+
+### 1. Junction Health Check
+```powershell
+# Check project root .claude junction
+dir /AL "D:\My Drive\Blue AI\.claude"
+# Should show junction to D:\My Heraclitus\Backups\Faust\.claude
+
+# Check internal memory/rules junctions  
+dir /AL "D:\My Drive\Blue AI\.claude\memory"
+dir /AL "D:\My Drive\Blue AI\.claude\rules"
+# Should show junctions pointing to .agents equivalents
+```
+
+### 2. Memory Propagation Test
+```powershell
+# Write to .claude memory
+echo "junction_test_$(Get-Date -Format HHmmss)" > "D:\My Drive\Blue AI\.claude\memory\vault_test.txt"
+
+# Verify it appears in .agents memory (same physical location)
+Get-Content "D:\My Heraclitus\Backups\Faust\.agents\memory\vault_test.txt"
+# Should return the same timestamped content
+```
+
+### 3. Dual-Path Execution Test
+```powershell
+# CLAUDE.md path (modular skills)
+python .claude/skills/sound/scripts/cli.py "Claude path verification"
+
+# GEMINI.md path (unified C2) 
+python .agents/scripts/c2.py "Agents path verification"
+# Both should execute successfully using their respective architectures
+```
+
+### 4. Sovereign Vault Confirmation
+```powershell
+# Verify both vaults exist as siblings
+ls "D:\My Heraclitus\Backups\Faust\.agents"
+ls "D:\My Heraclitus\Backups\Faust\.claude"
+# Both directories should be present and accessible
+```
+
+---
+
+## Answer to Manager's Technical Question
+
+**Can we lazily use junction?**  
+✅ **YES** - for **memory and rules synchronization only**.
+
+**Architecture Summary:**
+- **Shared State (Memory/Rules)**: Identical structure → **Junction synchronized** (zero overhead, single source of truth)
+- **Execution Infrastructure**: Different architectures → **Separate preserved** (CLAUDE.md modular skills vs GEMINI.md unified C2)
+- **Result**: Both systems coexist with independent execution paths but perfectly synchronized consciousness
+
+This implementation follows the Manager's exact specification:
+1. `D:\My Heraclitus\Backups\Faust\.claude` as source of truth
+2. Internal junctions to share memory/rules with `.agents` 
+3. Original `.claude` execution infrastructure preserved
+4. Project root junction to sovereign vault
+
+The solution respects both the CLAUDE.md modular skill architecture and the GEMINI.md Antigravity unified C2 architecture while ensuring deterministic synchronization of shared state through NTFS junctions.

@@ -1,0 +1,58 @@
+:: D:\My Drive\Blue AI\Test Projects\Google Collab\run.bat
+@echo off
+setlocal EnableDelayedExpansion
+title Colab Connect Launcher
+
+echo ==========================================
+echo   Colab Connect Launcher (Faust C2)
+echo ==========================================
+
+REM --- Hardcoded project root ---
+set "ROOT=D:\My Drive\Blue AI\Test Projects\Google Collab"
+if "!ROOT:~-1!" == "\" set "ROOT=!ROOT:~0,-1!"
+
+set "PID_DIR=%TEMP%\FaustColabConnect"
+if not exist "%PID_DIR%" mkdir "%PID_DIR%"
+
+REM ==========================================================
+REM 1. Terminate previous backend process tree
+REM ==========================================================
+if exist "%PID_DIR%\backend.pid" (
+    for /f "usebackq delims=" %%i in ("%PID_DIR%\backend.pid") do taskkill /PID %%i /T /F >nul 2>&1
+    del "%PID_DIR%\backend.pid" >nul 2>&1
+)
+taskkill /FI "WINDOWTITLE eq Colab Connect Backend*" /T /F >nul 2>&1
+
+REM ==========================================================
+REM 2. Port Clear Sweep (8000)
+REM ==========================================================
+powershell -NoProfile -Command "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -eq 8000 } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+
+ping 127.0.0.1 -n 2 >nul
+
+REM ==========================================================
+REM 3. Launch FastAPI Backend (HEADLESS BACKGROUND)
+REM ==========================================================
+echo Starting Colab Connect backend service...
+powershell -NoProfile -Command "$p = Start-Process -FilePath 'python' -WorkingDirectory '!ROOT!\backend' -ArgumentList 'main.py' -WindowStyle Hidden -PassThru -RedirectStandardOutput '%PID_DIR%\backend.log' -RedirectStandardError '%PID_DIR%\backend_err.log'; if ($p) { [System.IO.File]::WriteAllText('%PID_DIR%\backend.pid', $p.Id.ToString()) }"
+
+echo Waiting for backend server to bind on port 8000...
+ping 127.0.0.1 -n 3 >nul
+
+REM ==========================================================
+REM 4. Open UI Dashboard in Default Browser
+REM ==========================================================
+echo Opening Colab Connect UI...
+start http://localhost:8000
+
+echo.
+echo ==========================================
+echo   Status: Active Services
+echo ==========================================
+echo UI Dashboard : http://localhost:8000
+echo API Docs     : http://localhost:8000/docs
+echo Log File     : %PID_DIR%\backend.log
+echo Stop Command : run stop.bat
+echo ==========================================
+echo.
+pause

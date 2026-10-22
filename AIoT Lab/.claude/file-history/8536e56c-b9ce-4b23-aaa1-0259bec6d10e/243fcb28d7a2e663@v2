@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solar System Genesis · 10,000h Time Nursery</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #020206; font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #f8fafc; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+.hud {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 24px; z-index: 10;
+}
+.header { text-align: center; }
+.sub-title { font-size: 11px; letter-spacing: .35em; text-transform: uppercase; color: #f59e0b; font-weight: 700; margin-bottom: 2px; }
+.main-title { font-size: 20px; font-weight: 800; letter-spacing: .12em; color: #fff; text-shadow: 0 0 16px rgba(245,158,11,0.5); }
+.genesis-card {
+  position: absolute; right: 30px; top: 50%; transform: translateY(-50%);
+  background: rgba(10, 10, 22, 0.85); border: 1.5px solid rgba(245,158,11,0.35);
+  border-radius: 14px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;
+  pointer-events: auto; min-width: 220px; box-shadow: 0 0 24px rgba(0,0,0,0.6);
+}
+.card-lbl { font-size: 10px; letter-spacing: .2em; color: #fde68a; text-transform: uppercase; }
+.card-hrs { font-size: 32px; font-weight: 900; font-family: monospace; color: #fff; text-shadow: 0 0 14px rgba(245,158,11,0.8); }
+.card-stage { font-size: 11px; font-weight: 700; color: #fbbf24; letter-spacing: .08em; }
+.controls { pointer-events: auto; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+.btn {
+  min-height: 52px; padding: 0 22px; background: rgba(22, 18, 38, 0.85);
+  border: 1.5px solid rgba(245,158,11,0.35); border-radius: 12px; color: #fef3c7;
+  font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  cursor: pointer; transition: all .15s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:hover { background: #3c1e5c; border-color: #fbbf24; color: #fff; box-shadow: 0 0 24px rgba(245,158,11,0.5); transform: translateY(-2px); }
+.btn:active { transform: translateY(1px); }
+.btn.active { background: #d97706; border-color: #fde68a; color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="header">
+    <div class="sub-title">Catalytic Stellar Nursery</div>
+    <div class="main-title">Solar System Genesis · 10,000h</div>
+  </div>
+  <div class="genesis-card">
+    <span class="card-lbl">Cosmic Time Fuel</span>
+    <span class="card-hrs" id="hoursVal">0 h</span>
+    <span class="card-stage" id="stageVal">Cold Molecular Cloud</span>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="bankHours(10)">✨ Ingest Spark (+10h)</button>
+    <button class="btn" onclick="bankHours(150)">🪐 Accretion Pulse (+150h)</button>
+    <button class="btn" onclick="bankHours(1000)">☀️ Epoch Ignition (+1,000h)</button>
+    <button class="btn" id="flowBtn" onclick="toggleFlow()">🌌 Continuous Genesis</button>
+    <button class="btn" onclick="resetVoid()">🔄 Return to Void</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const hoursValEl = document.getElementById('hoursVal'), stageValEl = document.getElementById('stageVal');
+let W, H, cx, cy, hours = 0, targetHours = 0, isFlowing = false, flowTimer = null, audioCtx = null;
+const MAX_HOURS = 10000;
+
+const PLANETS = [
+  { unlock: 1000, dist: 75,  size: 5,  speed: 0.035, color: '#f87171', name: 'Vulcan (Molten)' },
+  { unlock: 2500, dist: 125, size: 8,  speed: 0.022, color: '#38bdf8', name: 'Gaia (Oasis)', hasMoon: true },
+  { unlock: 5000, dist: 185, size: 14, speed: 0.014, color: '#fbbf24', name: 'Cronus (Titan)', hasRing: true },
+  { unlock: 7500, dist: 245, size: 11, speed: 0.009, color: '#a78bfa', name: 'Aether (Crystal)' }
+];
+
+function playCosmicChime(pitch = 1.0) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(260 * pitch, t);
+    osc.frequency.exponentialRampToValueAtTime(520 * pitch, t + 0.35);
+    gain.gain.setValueAtTime(0.08, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.35);
+  } catch(e) {}
+}
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; cx = W / 2; cy = H / 2; }
+window.addEventListener('resize', resize);
+resize();
+
+function bankHours(n) { targetHours = Math.min(MAX_HOURS, targetHours + n); playCosmicChime(1.0 + (hours / MAX_HOURS)); }
+function toggleFlow() {
+  isFlowing = !isFlowing;
+  document.getElementById('flowBtn').classList.toggle('active', isFlowing);
+  if (isFlowing) flowTimer = setInterval(() => bankHours(6), 110);
+  else clearInterval(flowTimer);
+}
+function resetVoid() { targetHours = 0; hours = 0; }
+
+function draw() {
+  ctx.fillStyle = 'rgba(2, 2, 6, 0.28)'; ctx.fillRect(0, 0, W, H);
+  hours += (targetHours - hours) * 0.08;
+  const rounded = Math.round(hours);
+  hoursValEl.textContent = `${rounded.toLocaleString()} h`;
+
+  // Stage classification
+  if (hours >= 10000) stageValEl.textContent = '🌟 TRANSCENDENT DYSON SYSTEM';
+  else if (hours >= 7500) stageValEl.textContent = '🔮 Complete 4-Planet Stellar System';
+  else if (hours >= 5000) stageValEl.textContent = '🪐 Ringed Titan Accretion';
+  else if (hours >= 2500) stageValEl.textContent = '🌊 Oasis Biosphere Ignition';
+  else if (hours >= 1000) stageValEl.textContent = '🔥 Protostar Core Ignited';
+  else stageValEl.textContent = 'Cold Molecular Cloud';
+
+  const t = Date.now() * 0.001;
+
+  // Central Star Evolving
+  const starRadius = 12 + Math.min(32, (hours / MAX_HOURS) * 32);
+  const pulse = Math.sin(t * 3) * 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, starRadius + pulse, 0, Math.PI * 2);
+  if (hours < 1000) {
+    ctx.fillStyle = 'rgba(147, 51, 234, 0.4)';
+    ctx.shadowBlur = 15; ctx.shadowColor = '#a855f7';
+  } else {
+    const sGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, starRadius + pulse);
+    sGrad.addColorStop(0, '#ffffff');
+    sGrad.addColorStop(0.4, hours > 5000 ? '#fef08a' : '#f97316');
+    sGrad.addColorStop(1, hours > 5000 ? 'rgba(234, 179, 8, 0.1)' : 'rgba(239, 68, 68, 0.1)');
+    ctx.fillStyle = sGrad;
+    ctx.shadowColor = hours > 5000 ? '#eab308' : '#ef4444';
+    ctx.shadowBlur = 28 + (hours / MAX_HOURS) * 25;
+  }
+  ctx.fill();
+  ctx.restore();
+
+  // Dyson Ring Megastructure (At 10,000h)
+  if (hours >= 9500) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 52, t * 0.5, t * 0.5 + Math.PI * 1.6);
+    ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 2.5;
+    ctx.shadowColor = '#facc15'; ctx.shadowBlur = 18;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Draw Planets
+  PLANETS.forEach(p => {
+    if (hours < p.unlock) {
+      // Faint accretion dust ring
+      ctx.beginPath(); ctx.arc(cx, cy, p.dist, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1; ctx.stroke();
+      return;
+    }
+
+    // Orbit path
+    ctx.beginPath(); ctx.arc(cx, cy, p.dist, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1; ctx.stroke();
+
+    // Planet body
+    const pa = t * p.speed * 8;
+    const px = cx + Math.cos(pa) * p.dist;
+    const py = cy + Math.sin(pa) * p.dist;
+
+    ctx.save();
+    ctx.beginPath(); ctx.arc(px, py, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = p.color; ctx.shadowColor = p.color; ctx.shadowBlur = 12; ctx.fill();
+
+    // Planetary Rings
+    if (p.hasRing) {
+      ctx.beginPath(); ctx.ellipse(px, py, p.size * 2, p.size * 0.7, 0.4, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(254, 240, 138, 0.7)'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    // Orbiting Moon
+    if (p.hasMoon) {
+      const ma = t * 4;
+      const mx = px + Math.cos(ma) * (p.size + 10);
+      const my = py + Math.sin(ma) * (p.size + 10);
+      ctx.beginPath(); ctx.arc(mx, my, 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+    }
+    ctx.restore();
+  });
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

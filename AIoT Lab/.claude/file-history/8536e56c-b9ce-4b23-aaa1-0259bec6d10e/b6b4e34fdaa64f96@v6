@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accumulation & Chrono Pool · Faust Design Sandbox</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #06050b; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #f3f4f6; user-select: none;
+}
+.app-container { display: flex; width: 100%; height: 100%; position: relative; }
+.sidebar {
+  width: 330px; height: 100%; background: #0c0a14;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  display: flex; flex-direction: column; z-index: 20;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.6);
+}
+.brand-header { padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.brand-sub { font-size: 10px; letter-spacing: .25em; text-transform: uppercase; color: #ffd86b; font-weight: 700; }
+.brand-title { font-size: 18px; font-weight: 800; letter-spacing: .08em; color: #fff; text-shadow: 0 0 16px rgba(255,216,107,0.4); }
+
+.category-tabs {
+  display: grid; grid-template-columns: 1fr 1fr; padding: 8px 10px 4px; gap: 6px; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.tab-btn {
+  min-height: 38px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; color: #9ca3af; font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  cursor: pointer; transition: all .15s ease; display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.tab-btn:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.tab-btn.active { background: #b45309; border-color: #ffd86b; color: #fff; box-shadow: 0 0 16px rgba(255,216,107,0.4); }
+
+.nav-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.nav-item {
+  min-height: 52px; width: 100%; padding: 0 14px;
+  background: rgba(255,255,255,0.02); border: 1.5px solid transparent;
+  border-radius: 12px; cursor: pointer; text-align: left;
+  display: flex; align-items: center; gap: 12px; transition: all .15s ease; color: #d1d5db;
+}
+.nav-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,216,107,0.3); color: #fff; transform: translateX(3px); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(255,216,107,0.18), rgba(255,216,107,0.04));
+  border-color: #ffd86b; color: #fff; box-shadow: 0 0 18px rgba(255,216,107,0.25);
+}
+.nav-icon { font-size: 18px; width: 24px; text-align: center; }
+.nav-meta { display: flex; flex-direction: column; }
+.nav-name { font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+.nav-desc { font-size: 10px; color: #9ca3af; }
+
+.sidebar-footer {
+  padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; flex-direction: column; gap: 4px; font-family: monospace; font-size: 11px; color: #9ca3af;
+}
+.footer-row { display: flex; justify-content: space-between; }
+.footer-row span:last-child { color: #ffd86b; font-weight: 700; }
+
+.viewport-frame { flex: 1; height: 100%; position: relative; background: #000; }
+iframe { width: 100%; height: 100%; border: none; display: block; }
+.top-actions { position: absolute; top: 18px; right: 20px; z-index: 30; display: flex; gap: 10px; }
+.action-btn {
+  min-height: 44px; padding: 0 18px; background: rgba(12, 10, 20, 0.85);
+  border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #e5e7eb;
+  font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer; transition: all .15s ease; backdrop-filter: blur(8px);
+}
+.action-btn:hover { background: #ffd86b; border-color: #fef08a; color: #000; box-shadow: 0 0 20px rgba(255,216,107,0.5); }
+</style>
+</head>
+<body>
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="brand-header">
+      <div class="brand-sub">Faust Design Sandbox</div>
+      <div class="brand-title">Chrono Accumulator</div>
+    </div>
+    <div class="category-tabs">
+      <button class="tab-btn active" id="tabTime" onclick="switchCategory('time')">⏳ Chrono Pool</button>
+      <button class="tab-btn" id="tabHazard" onclick="switchCategory('hazard')">⚡ Hazard Scaling</button>
+      <button class="tab-btn" id="tabRes" onclick="switchCategory('resource')">🪙 Resources</button>
+      <button class="tab-btn" id="tabGenesis" onclick="switchCategory('genesis')">🌌 Genesis</button>
+    </div>
+    <nav class="nav-list" id="navList"></nav>
+    <div class="sidebar-footer">
+      <div class="footer-row"><span>ACTIVE SUITE:</span><span id="modCount">6 POOL ENGINES</span></div>
+      <div class="footer-row"><span>MODE:</span><span>PERMANENT FLOW</span></div>
+      <div class="footer-row"><span>DISK LOCATION:</span><span>LOCAL D: VAULT</span></div>
+    </div>
+  </aside>
+  <main class="viewport-frame">
+    <div class="top-actions">
+      <button class="action-btn" onclick="openFullscreen()">⛶ Fullscreen Active</button>
+      <button class="action-btn" onclick="openInNewTab()">↗ Open File</button>
+    </div>
+    <iframe id="engineFrame" src="pure_time_pool.html"></iframe>
+  </main>
+</div>
+
+<script>
+const TIME_MODULES = [
+  { file: 'pure_time_pool.html', name: 'The Chrono Pool', desc: 'Streaming Time & Rolling Counter', icon: '🌊' },
+  { file: 'Time/time_001_quantum_hourglass.html', name: 'Quantum Chrono-Hourglass', desc: 'Crystallizing Monolith & Stardust', icon: '⏳' },
+  { file: 'Time/time_002_celestial_orrery.html', name: 'Celestial Orrery of Epochs', desc: 'Clock of the Long Now & Gears', icon: '⏱' },
+  { file: 'Time/time_003_monolith_strata.html', name: 'The Monolith of Mastery', desc: 'Laser Inscription & Basalt Strata', icon: '🗿' },
+  { file: 'Time/time_004_dendrite_lattice.html', name: 'Synaptic Dendrite Lattice', desc: 'Neuroplastic Arborization', icon: '🧠' },
+  { file: 'Time/time_005_growth_rings.html', name: 'The Arbor of Ages', desc: 'Concentric Rings of a Lifetime', icon: '🌳' }
+];
+
+const HAZARD_MODULES = [
+  { file: 'hazard_progression_tree.html', name: 'Hazard Level Scaling & Buffs', desc: 'ln(x + 1) Milestones & Perks', icon: '⚡' }
+];
+
+const RES_MODULES = [
+  { file: 'accum_001_kinetic_coins.html', name: 'Kinetic Coin & Gem Magnet', desc: 'Arcade Parabolic Burst & Pull', icon: '💰' },
+  { file: 'accum_002_aether_siphon.html', name: 'Aether Vortex Siphon', desc: 'Logarithmic Singularity Harvester', icon: '🌀' },
+  { file: 'accum_003_fluid_manifold.html', name: 'Volumetric Fluid Manifold', desc: 'Wave Equation Liquid Reservoir', icon: '🧪' },
+  { file: 'accum_004_celestial_nexus.html', name: 'Celestial Nexus & Runes', desc: 'Constellation Alignment Grid', icon: '⭐' },
+  { file: 'accum_005_cyber_buffer.html', name: 'Cybernetic Packet Buffer', desc: 'Vector Field Data Stream', icon: '💾' },
+  { file: 'accum_006_plasma_crucible.html', name: 'Plasma Crucible Smelter', desc: 'Thermonuclear Ingot Stamp', icon: '🔥' }
+];
+
+const GENESIS_MODULES = [
+  { file: 'Genesis/genesis_001_solar_system.html', name: 'Solar System Genesis', desc: 'Cosmic Nebula to Dyson Swarm', icon: '🪐' },
+  { file: 'Genesis/genesis_002_organism_evolution.html', name: 'Biogenesis Incubator', desc: 'Microbe to Celestial Leviathan', icon: '🧬' },
+  { file: 'Genesis/genesis_003_relic_manifestation.html', name: 'Relic Awakening Canvas', desc: 'Shadow Painting Materializes in 3D', icon: '🗡️' }
+];
+
+let curCategory = 'time', activeIdx = 0;
+const navListEl = document.getElementById('navList'), frameEl = document.getElementById('engineFrame');
+
+function getActiveList() {
+  if (curCategory === 'time') return TIME_MODULES;
+  if (curCategory === 'hazard') return HAZARD_MODULES;
+  if (curCategory === 'resource') return RES_MODULES;
+  return GENESIS_MODULES;
+}
+
+function switchCategory(cat) {
+  curCategory = cat; activeIdx = 0;
+  document.getElementById('tabTime').classList.toggle('active', cat === 'time');
+  document.getElementById('tabHazard').classList.toggle('active', cat === 'hazard');
+  document.getElementById('tabRes').classList.toggle('active', cat === 'resource');
+  document.getElementById('tabGenesis').classList.toggle('active', cat === 'genesis');
+  const list = getActiveList();
+  document.getElementById('modCount').textContent = `${list.length} ACTIVE`;
+  renderNav();
+  frameEl.src = list[0].file;
+}
+
+function renderNav() {
+  navListEl.innerHTML = '';
+  const list = getActiveList();
+  list.forEach((mod, idx) => {
+    const btn = document.createElement('button');
+    btn.className = `nav-item ${idx === activeIdx ? 'active' : ''}`;
+    btn.onclick = () => selectModule(idx);
+    btn.innerHTML = `
+      <span class="nav-icon">${mod.icon}</span>
+      <div class="nav-meta"><span class="nav-name">${mod.name}</span><span class="nav-desc">${mod.desc}</span></div>
+    `;
+    navListEl.appendChild(btn);
+  });
+}
+
+function selectModule(idx) {
+  activeIdx = idx;
+  const list = getActiveList();
+  frameEl.src = list[idx].file;
+  renderNav();
+}
+
+function openFullscreen() {
+  if (frameEl.requestFullscreen) frameEl.requestFullscreen();
+  else if (frameEl.webkitRequestFullscreen) frameEl.webkitRequestFullscreen();
+}
+function openInNewTab() {
+  const list = getActiveList();
+  window.open(list[activeIdx].file, '_blank');
+}
+
+renderNav();
+</script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""
+Tier 3: CLI Runner with Sliding Heartbeat Watchdog
+Executes Claude Code CLI headless with adaptive timeout resets based on
+real-time stream-json output and filesystem modifications.
+"""
+
+import json
+import logging
+import os
+import queue
+import subprocess
+import threading
+import time
+from typing import Optional, Callable, List
+
+from domain import ExecutionResult
+
+
+logger = logging.getLogger("faust.daemon.cli_runner")
+
+
+def has_recent_fs_activity(cwd: str, window_sec: int = 90) -> bool:
+    """Checks if any source file in workspace was modified recently."""
+    now = time.time()
+    try:
+        for root, dirs, files in os.walk(cwd):
+            for skip in ["node_modules", ".git", ".wrangler", "dist"]:
+                if skip in dirs:
+                    dirs.remove(skip)
+            for f in files:
+                p = os.path.join(root, f)
+                try:
+                    if (now - os.path.getmtime(p)) < window_sec:
+                        return True
+                except OSError:
+                    continue
+    except Exception:
+        pass
+    return False
+
+
+def run_cli_with_watchdog(
+    text: str,
+    cwd: str,
+    progress_cb: Optional[Callable[[str], None]] = None,
+    inactivity_timeout: int = 180,
+    max_timeout: int = 1800
+) -> ExecutionResult:
+    """Runs Claude Code CLI resetting inactivity timer whenever output or file writes occur."""
+    logger.info(f"Spawning Claude Code CLI (Silent Heartbeat Watchdog) in {cwd}...")
+
+    cmd = ["claude", "-p", text, "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions"]
+    start_time = time.time()
+    last_activity = time.time()
+
+    proc = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        bufsize=1
+    )
+
+    q: queue.Queue = queue.Queue()
+
+    def _reader():
+        try:
+            for line in proc.stdout:
+                q.put(line)
+        except Exception:
+            pass
+        finally:
+            proc.stdout.close()
+
+    t = threading.Thread(target=_reader, daemon=True)
+    t.start()
+
+    output_lines: List[str] = []
+    assistant_texts: List[str] = []
+    final_result = ""
+
+    while proc.poll() is None:
+        has_data = False
+        while not q.empty():
+            try:
+                line = q.get_nowait()
+                has_data = True
+                output_lines.append(line)
+
+                stripped = line.strip()
+                if stripped.startswith("{") and stripped.endswith("}"):
+                    try:
+                        data = json.loads(stripped)
+                        if data.get("type") == "result":
+                            final_result = data.get("result", "")
+                        elif data.get("type") == "assistant":
+                            content = data.get("message", {}).get("content", [])
+                            for b in content:
+                                if b.get("type") == "tool_use":
+                                    t_name = b.get("name", "tool")
+                                    t_in = str(b.get("input", {}))[:80]
+                                    logger.info(f"Silent Watchdog: Tool invoked -> {t_name} ({t_in})")
+                                elif b.get("type") == "text":
+                                    txt = b.get("text", "").strip()
+                                    if txt:
+                                        assistant_texts.append(txt)
+                    except Exception:
+                        pass
+                elif stripped:
+                    logger.debug(f"CLI stdout: {stripped[:100]}")
+            except queue.Empty:
+                break
+
+        if has_data:
+            last_activity = time.time()
+
+        now = time.time()
+        inactivity_dur = now - last_activity
+
+        # Inactivity Check
+        if inactivity_dur > inactivity_timeout:
+            if has_recent_fs_activity(cwd, window_sec=inactivity_timeout):
+                last_activity = now
+                logger.info(f"Watchdog: Active file modifications detected in {cwd}. Timer reset.")
+            else:
+                logger.error(f"Watchdog: Zero output or file changes for {int(inactivity_dur)}s. Aborting.")
+                proc.kill()
+                return ExecutionResult(
+                    success=False, output="",
+                    error=f"Process stalled with zero output or file activity for {int(inactivity_dur)}s."
+                )
+
+        if now - start_time > max_timeout:
+            logger.error(f"Watchdog: Task exceeded absolute maximum {max_timeout}s.")
+            proc.kill()
+            return ExecutionResult(
+                success=False, output="",
+                error=f"Task exceeded maximum allowed duration of {max_timeout // 60} minutes."
+            )
+
+        time.sleep(1.0)
+
+    while not q.empty():
+        output_lines.append(q.get_nowait())
+
+    elapsed = time.time() - start_time
+    logger.info(f"Claude Code CLI finished in {elapsed:.1f}s with exit code {proc.returncode}")
+
+    if proc.returncode == 0:
+        res_text = final_result or (assistant_texts[-1] if assistant_texts else "".join(output_lines).strip())
+        return ExecutionResult(success=True, output=res_text, latency_ms=elapsed * 1000)
+
+    err = "".join(output_lines).strip()
+    return ExecutionResult(success=False, output="", error=f"Exit code {proc.returncode}: {err[:400]}")

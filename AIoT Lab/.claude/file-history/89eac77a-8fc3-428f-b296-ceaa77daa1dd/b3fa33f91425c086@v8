@@ -1,0 +1,271 @@
+r"""
+Local GPU-Accelerated Anime Face Cropping Engine.
+Strict Local Disk D: Policy - All model weights and caches reside on D:\.
+"""
+
+import os
+import sys
+from pathlib import Path
+
+# =============================================================================
+# Invariant: Strict Local Disk D: Policy
+# =============================================================================
+MODELS_ROOT = Path("D:/Program Data/Faust/models")
+MODELS_ROOT.mkdir(parents=True, exist_ok=True)
+
+os.environ["TORCH_HOME"] = str(MODELS_ROOT / "torch")
+os.environ["HF_HOME"] = str(MODELS_ROOT / "huggingface")
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+os.environ["MPLBACKEND"] = "Agg"
+
+import cv2
+import torch
+
+_DETECTOR = None
+
+def get_detector():
+    """Lazily load the anime face detector model on local GPU/CPU."""
+    global _DETECTOR
+    if _DETECTOR is not None:
+        return _DETECTOR
+
+    from anime_face_detector import create_detector
+
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"
+    print(f"[*] Initializing Anime Face Detector on: {device} ({gpu_name})")
+
+    _DETECTOR = create_detector('yolov3', device=device)
+    return _DETECTOR
+
+
+def sanitize_folder_segment(name: str) -> str:
+    """Sanitize folder name by stripping trailing whitespace and illegal Windows chars."""
+    clean = name.strip().strip(".")
+    for ch in '<>:"/\\|?*':
+        clean = clean.replace(ch, "_")
+    return clean.strip() or "Untitled"
+
+
+def sanitize_rel_path(rel_path: str) -> str:
+    """Sanitize multi-level relative folder path for Windows filesystem."""
+    if not rel_path or rel_path == ".":
+        return ""
+    parts = [sanitize_folder_segment(p) for p in rel_path.replace("\\", "/").split("/") if p.strip()]
+    return "/".join(parts)
+
+
+def safe_cv2_write(file_path: Path, img_bgr) -> bool:
+    """
+    Safely write image using cv2.imencode + Python open().
+    Supports Unicode paths, spaces, and validates file exists on disk.
+    """
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    ext = file_path.suffix or ".png"
+    success, buf = cv2.imencode(ext, img_bgr)
+    if not success:
+        raise RuntimeError(f"Failed to encode image to {ext}")
+    with open(file_path, "wb") as f:
+        f.write(buf.tobytes())
+    if not file_path.exists() or file_path.stat().st_size == 0:
+        raise RuntimeError(f"Verified disk write failed: {file_path}")
+    return True
+
+
+def crop_image_array(
+    img_bgr,
+    zoom_factor: float = 1.6,
+    score_thresh: float = 0.5,
+    auto_retry: bool = True
+) -> tuple[list[tuple], float, bool]:
+    """
+    Detect faces and return cropped avatar arrays directly from an in-memory BGR image.
+    Features Multi-Tier Adaptive Threshold Retrying:
+    - Pass 1: Primary score_thresh.
+    - Pass 2 (Retry): Steps down to 0.35 threshold.
+    - Pass 3 (Retry): Steps down to 0.25 safety floor.
+    - Pass 4 (Multi-scale): Rescales large (>1800px) or small (<400px) images and tests.
+    Returns (crops, effective_threshold, is_fallback_retry).
+    """
+    detector = get_detector()
+    img_h, img_w = img_bgr.shape[:2]
+    preds = detector(img_bgr)
+
+    def extract_crops(predictions, current_thresh):
+        res = []
+        for pred in predictions:
+            bbox = pred['bbox']
+            x1_b, y1_b, x2_b, y2_b, score = bbox
+            if score < current_thresh:
+                continue
+
+            w_b = x2_b - x1_b
+            h_b = y2_b - y1_b
+            cx = x1_b + w_b / 2
+            cy = y1_b + h_b / 2
+
+            size = int(max(w_b, h_b) * zoom_factor)
+            x1, y1 = int(cx - size / 2), int(cy - size / 2)
+            x2, y2 = x1 + size, y1 + size
+
+            if x1 < 0: x2 -= x1; x1 = 0
+            if y1 < 0: y2 -= y1; y1 = 0
+            if x2 > img_w: x1 -= (x2 - img_w); x2 = img_w
+            if y2 > img_h: y1 -= (y2 - img_h); y2 = img_h
+
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(img_w, x2), min(img_h, y2)
+
+            box_size = min(x2 - x1, y2 - y1)
+            x2, y2 = x1 + box_size, y1 + box_size
+
+            crop = img_bgr[y1:y2, x1:x2]
+            res.append((crop, float(score)))
+        return res
+
+    # Pass 1: Primary threshold
+    if preds:
+        crops = extract_crops(preds, score_thresh)
+        if crops:
+            return crops, score_thresh, False
+
+    if not auto_retry:
+        return [], score_thresh, False
+
+    # Pass 2: Adaptive step-down to 0.35
+    fallback_1 = min(score_thresh, 0.35)
+    if preds and fallback_1 < score_thresh:
+        crops = extract_crops(preds, fallback_1)
+        if crops:
+            return crops, fallback_1, True
+
+    # Pass 3: Adaptive step-down to 0.25 floor
+    fallback_2 = min(score_thresh, 0.25)
+    if preds and fallback_2 < fallback_1:
+        crops = extract_crops(preds, fallback_2)
+        if crops:
+            return crops, fallback_2, True
+
+    # Pass 4: Multi-scale resolution normalization
+    try:
+        scale = None
+        max_dim = max(img_h, img_w)
+        if max_dim > 1800:
+            scale = 1280.0 / max_dim
+        elif max_dim < 400:
+            scale = 1.5
+
+        if scale:
+            scaled_w = int(img_w * scale)
+            scaled_h = int(img_h * scale)
+            scaled_img = cv2.resize(
+                img_bgr,
+                (scaled_w, scaled_h),
+                interpolation=cv2.INTER_AREA if scale < 1 else cv2.INTER_CUBIC
+            )
+            scaled_preds = detector(scaled_img)
+            if scaled_preds:
+                mapped_preds = []
+                for sp in scaled_preds:
+                    sb = sp['bbox']
+                    mapped_preds.append({
+                        'bbox': [sb[0]/scale, sb[1]/scale, sb[2]/scale, sb[3]/scale, sb[4]]
+                    })
+                crops = extract_crops(mapped_preds, fallback_1)
+                if crops:
+                    return crops, fallback_1, True
+    except Exception:
+        pass
+
+    return [], score_thresh, False
+
+
+def process_local_crop(
+    input_dir: str,
+    output_dir: str,
+    zoom_factor: float = 1.6,
+    score_thresh: float = 0.5,
+    progress_cb=None
+) -> tuple[int, int, list[str]]:
+    """
+    Recursively process image folders and crop anime faces.
+    Skips images that have already been cropped.
+    Returns (total_avatars_created, total_images_skipped, list_of_saved_paths).
+    """
+    detector = get_detector()
+    valid_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.bmp')
+
+    input_path = Path(input_dir)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    # Collect files
+    image_files = []
+    for root, dirs, files in os.walk(input_path):
+        rel_path = os.path.relpath(root, input_path)
+        valid_files = [f for f in files if f.lower().endswith(valid_extensions)]
+        for f in valid_files:
+            image_files.append((Path(root) / f, rel_path, f))
+
+    total_images = len(image_files)
+    total_cropped = 0
+    total_skipped = 0
+    saved_paths = []
+
+    for idx, (img_full_path, rel_folder, file_name) in enumerate(image_files):
+        clean_rel = sanitize_rel_path(rel_folder)
+        target_sub = output_path if not clean_rel else output_path / clean_rel
+        clean_name = Path(file_name).name
+        base_name, ext = os.path.splitext(clean_name)
+
+        # -------------------------------------------------------------
+        # Deduplication Guard: Check if file was already cropped (Safe prefix matching)
+        # -------------------------------------------------------------
+        already_cropped = False
+        if target_sub.exists():
+            target_prefix = f"{base_name}_avatar"
+            try:
+                for ef in target_sub.iterdir():
+                    if ef.is_file() and ef.name.startswith(target_prefix):
+                        already_cropped = True
+                        break
+            except Exception:
+                pass
+
+        if already_cropped:
+            total_skipped += 1
+            if progress_cb:
+                progress_cb(idx + 1, total_images, f"[SKIP] Already cropped: [{clean_rel or 'Root'}] {clean_name}")
+            continue
+
+        if progress_cb:
+            progress_cb(idx + 1, total_images, f"[{clean_rel or 'Root'}] {clean_name}")
+
+        try:
+            img = cv2.imread(str(img_full_path))
+            if img is None:
+                continue
+
+            crops, effective_thresh, is_fallback = crop_image_array(
+                img,
+                zoom_factor=zoom_factor,
+                score_thresh=score_thresh,
+                auto_retry=True
+            )
+
+            if crops:
+                target_sub.mkdir(parents=True, exist_ok=True)
+                for crop_idx, (crop_img, score) in enumerate(crops):
+                    out_suffix = f"_avatar_{crop_idx}{ext}" if len(crops) > 1 else f"_avatar{ext}"
+                    out_name = f"{base_name}{out_suffix}"
+                    out_file_path = target_sub / out_name
+                    safe_cv2_write(out_file_path, crop_img)
+                    saved_paths.append(str(out_file_path))
+                    total_cropped += 1
+                    if is_fallback:
+                        print(f"[RETRY SUCCESS] Captured face in {out_name} with adaptive threshold {effective_thresh:.2f} (score: {score:.2f})")
+
+        except Exception as e:
+            print(f"[!] Error processing {file_name}: {e}")
+
+    return total_cropped, total_skipped, saved_paths

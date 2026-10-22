@@ -1,0 +1,74 @@
+{
+  "proto": 1,
+  "supervisorPid": 16676,
+  "updatedAt": 1792316588895,
+  "workers": {
+    "7d9900d6": {
+      "pid": 11004,
+      "procStart": "134367644762243660",
+      "sessionId": "7d9900d6-8304-4e45-b76e-17d25ea76931",
+      "rendezvousSock": "\\\\.\\pipe\\cc-daemon-4c42959a94246819-rv-7d9900d6",
+      "ptySock": "\\\\.\\pipe\\cc-daemon-4c42959a94246819-pty-7d9900d6",
+      "cliVersion": "2.1.302",
+      "startedAt": 1792290876219,
+      "attempt": 1,
+      "cwd": "D:\\My Drive\\SandBox Projetcs",
+      "dispatch": {
+        "proto": 1,
+        "short": "7d9900d6",
+        "nonce": "bd024b49",
+        "sessionId": "7d9900d6-8304-4e45-b76e-17d25ea76931",
+        "createdAt": 1792290873835,
+        "source": "slash",
+        "cwd": "D:\\My Drive\\SandBox Projetcs",
+        "launch": {
+          "mode": "resume",
+          "sessionId": "C:\\Users\\Admin\\.claude\\projects\\D--My-Drive-SandBox-Projetcs\\9289b36f-0d59-4204-9fe5-b993d911719b.jsonl",
+          "fork": true,
+          "flagArgs": [
+            "--permission-mode",
+            "auto"
+          ],
+          "restoresTranscript": true
+        },
+        "env": {
+          "ANTHROPIC_MODEL": "Faust-ST",
+          "CLAUDE_BG_ISOLATION": "none"
+        },
+        "isolation": "none",
+        "respawnFlags": [
+          "--permission-mode",
+          "auto"
+        ],
+        "seed": {
+          "intent": "Convert the Yellow Pool tab into 1 single html file and give it to me. I'll gonna design the animation I want and then will give it back to you",
+          "name": "url-path-routing-tabs"
+        },
+        "cols": 109,
+        "rows": 55
+      },
+      "decModes": [
+        1004,
+        2004,
+        2031,
+        1000,
+        1002,
+        1003,
+        1006
+      ],
+      "firedInteractiveMarks": [
+        {
+          "kind": "content_paint",
+          "msgsLoaded": 318,
+          "msgsInJsonl": 318,
+          "msgsRenderedAtFirstPaint": 318
+        },
+        {
+          "kind": "prompt_idle"
+        }
+      ],
+      "rvAuth": "bd62554186ff78e1140c9bdf4d67cd53",
+      "ptyAuth": "58e4055606cc37fb94519c98d8fad3b5"
+    }
+  }
+}

@@ -1,0 +1,251 @@
+Found 250 files limit: 250
+Test Projects\Robotic-Arm-Studio\tsconfig.app.tsbuildinfo
+Test Projects\Robotic-Arm-Studio\src\App.tsx
+Test Projects\Robotic-Arm-Studio\src\hooks\useArmSimulation.ts
+Test Projects\Robotic-Arm-Studio\src\components\panels\BlackboxPanel.tsx
+Test Projects\Robotic-Arm-Studio\src\components\panels\CartesianControlPanel.tsx
+Test Projects\Robotic-Arm-Studio\src\components\panels\JogControlPanel.tsx
+Test Projects\Robotic-Arm-Studio\src\components\Viewport3D.tsx
+Test Projects\Robotic-Arm-Studio\src\components\viewport\armMeshBuilder.ts
+Test Projects\Robotic-Arm-Studio\src\services\blackboxRecorder.ts
+Test Projects\Robotic-Arm-Studio\src\services\soundEngine.ts
+Test Projects\Robotic-Arm-Studio\src\engine\testScenarioRunner.ts
+Test Projects\Robotic-Arm-Studio\src\engine\gripperEngine.ts
+Test Projects\Robotic-Arm-Studio\src\engine\dynamicsEngine.ts
+Test Projects\Robotic-Arm-Studio\src\engine\kinematicsEngine.ts
+Test Projects\Robotic-Arm-Studio\src\types\kinematics.ts
+Test Projects\Robotic-Arm-Studio\src\types\trajectory.ts
+Test Projects\Robotic-Arm-Studio\src\types\telemetry.ts
+Test Projects\Robotic-Arm-Studio\package.json
+Test Projects\UAV-Test-Flight\README.md
+Test Projects\UAV-Test-Flight\src\App.tsx
+Test Projects\UAV-Test-Flight\src\components\Viewport3D.tsx
+Test Projects\UAV-Test-Flight\src\components\Header.tsx
+Test Projects\UAV-Test-Flight\src\services\soundEngine.ts
+Test Projects\UAV-Test-Flight\src\engine\autopilot.ts
+Test Projects\UAV-Test-Flight\src\engine\physicsEngine.ts
+Test Projects\UAV-Test-Flight\src\types\telemetry.ts
+Test Projects\UAV-Test-Flight\src\types\uav.ts
+Test Projects\UAV-Test-Flight\package-lock.json
+Test Projects\OmniTest\src\data\writingPromptsData.ts
+Test Projects\OmniTest\package-lock.json
+scratch\telegram_reply_n01.txt
+ZZZZZ.md
+Test Projects\OmniTest\src\data\codexData.ts
+Test Projects\OmniTest\src\data\presets.ts
+GEMINI.md
+PK Network\tsconfig.tsbuildinfo
+PK Network\src\services\fullHairSeedData.json
+scratch\build_master_hair_seed.py
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\typescript-lsp\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\swift-lsp\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\skill-creator\skills\skill-creator\LICENSE.txt
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\skill-creator\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\session-report\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\security-guidance\hooks\review_api.py
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\security-guidance\hooks\llm.py
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\security-guidance\hooks\diffstate.py
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\security-guidance\hooks\ensure_agent_sdk.py
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\security-guidance\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\ruby-lsp\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\rust-analyzer-lsp\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\receipts\skills\receipts\scripts\mine-transcripts.mjs
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\receipts\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\ralph-loop\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\pyright-lsp\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\project-artifact\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\pr-review-toolkit\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\plugin-dev\skills\skill-development\SKILL.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\plugin-dev\skills\plugin-settings\references\real-world-examples.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\plugin-dev\skills\plugin-settings\examples\example-settings.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\plugin-dev\skills\plugin-settings\SKILL.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\plugin-dev\skills\command-development\references\interactive-commands.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\plugin-dev\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\plugin-dev\README.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\playground\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\php-lsp\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\mcp-tunnels\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\mcp-server-dev\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\math-proof\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\math-olympiad\skills\math-olympiad\references\adversarial_prompts.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\math-olympiad\skills\math-olympiad\SKILL.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\math-olympiad\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\math-olympiad\README.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\lua-lsp\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\learning-output-style\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\kotlin-lsp\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\jdtls-lsp\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\hookify\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\frontend-design\skills\frontend-design\LICENSE.txt
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\frontend-design\skills\frontend-design\SKILL.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\gopls-lsp\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\frontend-design\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\feature-dev\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\explanatory-output-style\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\example-plugin\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\cwc-makers\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\csharp-lsp\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\commit-commands\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\code-simplifier\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\code-review\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\code-modernization\scripts\tests\test_telemetry.py
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\code-modernization\scripts\telemetry.py
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\code-modernization\hooks\views\deck.tsx
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\code-modernization\assets\vendor\mermaid.min.js
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\code-modernization\agents\test-engineer.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\code-modernization\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\claude-security\agents\patch-verifier.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\claude-security\SECURITY.md
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\claude-md-management\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\claude-code-setup\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\clangd-lsp\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\plugins\agent-sdk-dev\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\external_plugins\telegram\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\external_plugins\imessage\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\external_plugins\fakechat\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\external_plugins\discord\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\LICENSE
+Archived\.claude\plugins\marketplaces\claude-plugins-official\.claude-plugin\marketplace.json
+Archived\.claude\plugins\plugin-directory-cache-v2.json
+Archived\ZZZZZ_phases_1_3_complete.md
+PK Network\src\services\hazardMockData.ts
+Z - Mock Test\backend\seed_data.py
+PK Network\package-lock.json
+firebase-task-board\firebase-task-board\package-lock.json
+Rebased\data\Hazard_Trigger_Data\active_state.json
+Archived\.claude\skills\sound\scripts\cli.py
+Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md
+Entropy\Rose\ESP32_UI_SPEC.md
+Archived\.claude\memory\feedback\hivemind-stratum-evolution.md
+Archived\.claude\plugins\plugin-catalog-cache.json
+Archived\.claude\plugins\marketplaces\ecc\yarn.lock
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\work-items.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\scripts\work-items.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\work-items.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\scripts\install-apply.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\install-apply.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\scripts\codex-hooks.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\scripts\codex-hooks.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\lib\control-plane-view.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\lib\control-plane-view.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\lib\control-plane-view.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\lib\context-selection.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\lib\context-selection.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\lib\context-selection.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\lib\context-profile-native.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\lib\context-profile-sandbox.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\lib\context-profile-native.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\lib\context-profile-sandbox.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\lib\context-profile-native.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\lib\context-profile-sandbox.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\lib\context-profile-eval.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\lib\context-profile-eval.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\lib\context-profile-eval.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\lib\agent-proximity-projection.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\lib\agent-proximity-projection.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\lib\agent-proximity-projection.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\hooks\observe-signal-timeout.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\hooks\observe-signal-timeout.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\hooks\observe-signal-timeout.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\hooks\gateguard-fact-force.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\hooks\gateguard-fact-force.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\hooks\gateguard-fact-force.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\hooks\config-protection.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\hooks\config-protection.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\hooks\config-protection.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\tests\ci\nasiko-control-plane.test.js
+Archived\.claude\plugins\marketplaces\ecc\tests\ci\nasiko-control-plane.test.js
+Archived\plugins\cache\ecc\ecc\2.2.3\tests\ci\nasiko-control-plane.test.js
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\vite-patterns\SKILL.md
+Archived\.claude\plugins\marketplaces\ecc\skills\vite-patterns\SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\vite-patterns\SKILL.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste\references\genre-taxonomy.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste\SKILL.md
+Archived\.claude\plugins\marketplaces\ecc\skills\taste\references\genre-taxonomy.md
+Archived\.claude\plugins\marketplaces\ecc\skills\taste\SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste\references\genre-taxonomy.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste\SKILL.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-distillation\scripts\taste\grade.py
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-distillation\scripts\taste\grade.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-distillation\scripts\taste\grade.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-distillation\scripts\taste\falapi.py
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-distillation\scripts\taste\falapi.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-distillation\scripts\taste\falapi.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-distillation\scripts\distill.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-distillation\scripts\mint.py
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-distillation\scripts\distill.py
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-distillation\scripts\mint.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-distillation\scripts\distill.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-distillation\scripts\mint.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\tasteforge\schema.py
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-application\scripts\tasteforge\schema.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\tasteforge\schema.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\tasteforge\pack.py
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-application\scripts\tasteforge\pack.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\tasteforge\pack.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\tasteforge\fixtures\flashethereal\grade.json
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-application\scripts\tasteforge\fixtures\flashethereal\grade.json
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\tasteforge\fixtures\flashethereal\grade.json
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\taste\falapi.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\taste\grade.py
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-application\scripts\taste\falapi.py
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-application\scripts\taste\grade.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\taste\falapi.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\taste\grade.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\resolve_ingest.py
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-application\scripts\resolve_ingest.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\resolve_ingest.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\mint.py
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-application\scripts\mint.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\mint.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\distill.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\falapi.py
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-application\scripts\distill.py
+Archived\.claude\plugins\marketplaces\ecc\skills\taste-application\scripts\falapi.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\distill.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\taste-application\scripts\falapi.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\social-graph-ranker\SKILL.md
+Archived\.claude\plugins\marketplaces\ecc\skills\social-graph-ranker\SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\social-graph-ranker\SKILL.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\seo\SKILL.md
+Archived\.claude\plugins\marketplaces\ecc\skills\seo\SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\seo\SKILL.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\research-ops\SKILL.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\returns-reverse-logistics\SKILL.md
+Archived\.claude\plugins\marketplaces\ecc\skills\research-ops\SKILL.md
+Archived\.claude\plugins\marketplaces\ecc\skills\returns-reverse-logistics\SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\research-ops\SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\returns-reverse-logistics\SKILL.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\react-performance\SKILL.md
+Archived\.claude\plugins\marketplaces\ecc\skills\react-performance\SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\react-performance\SKILL.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\quality-nonconformance\SKILL.md
+Archived\.claude\plugins\marketplaces\ecc\skills\quality-nonconformance\SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\quality-nonconformance\SKILL.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\perl-security\SKILL.md
+Archived\.claude\plugins\marketplaces\ecc\skills\perl-security\SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\perl-security\SKILL.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\openclaw-persona-forge\references\avatar-style.md
+Archived\.claude\plugins\marketplaces\ecc\skills\openclaw-persona-forge\references\avatar-style.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\openclaw-persona-forge\references\avatar-style.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\messages-ops\SKILL.md
+Archived\.claude\plugins\marketplaces\ecc\skills\messages-ops\SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\messages-ops\SKILL.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\manim-video\assets\network_graph_scene.py
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\manim-video\SKILL.md
+Archived\.claude\plugins\marketplaces\ecc\skills\manim-video\assets\network_graph_scene.py
+Archived\.claude\plugins\marketplaces\ecc\skills\manim-video\SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\manim-video\assets\network_graph_scene.py
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\manim-video\SKILL.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\logistics-exception-management\SKILL.md
+Archived\.claude\plugins\marketplaces\ecc\skills\logistics-exception-management\SKILL.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\logistics-exception-management\SKILL.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\lead-intelligence\agents\mutual-mapper.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\lead-intelligence\agents\outreach-drafter.md
+Archived\.claude\plugins\marketplaces\ecc\skills\lead-intelligence\agents\mutual-mapper.md
+Archived\.claude\plugins\marketplaces\ecc\skills\lead-intelligence\agents\outreach-drafter.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\lead-intelligence\agents\mutual-mapper.md
+Archived\plugins\cache\ecc\ecc\2.2.3\skills\lead-intelligence\agents\outreach-drafter.md
+Archived\.claude\plugins\cache\ecc\ecc\2.2.3\skills\laravel-verification\SKILL.md

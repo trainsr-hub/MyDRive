@@ -1,0 +1,44 @@
+# test_entity_reconciler.py
+"""
+Deterministic test suite for Option A: Multi-Entity Testament Reconciler.
+Validates extraction of archetype from Entropy 0 and planning across Testaments.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+from core import reconciler
+
+
+def test_option_a_reconciliation():
+    print("=== Testing Option A: Multi-Entity Reconciliation ===")
+    template_id = "1qPYOlZ3-LlnfiBRorXUnNa_0yVZcILvM"  # Entropy 0
+    data_root_id = "14J8QBCqdSQOPerLBIaR2jLyYhZ4WbJUA"  # Testaments
+
+    # 1. Extract archetype schema
+    schema = reconciler.extract_schema_from_drive_folder(template_id)
+    assert schema["name"] == "Entropy 0", "Template name mismatch!"
+    assert "Avatar" in schema["subfolders"], "Expected 'Avatar' inside Entropy 0 template!"
+    print(f"✓ Archetype schema extracted: {schema['name']} with subfolders: {list(schema['subfolders'].keys())}")
+
+    # 2. Plan reconciliation across Testaments
+    multi_plan = reconciler.plan_entity_level_reconciliation(
+        data_root_id=data_root_id,
+        template_schema=schema,
+        template_name="Entropy_0_Archetype",
+    )
+    summary = multi_plan.summary()
+    print(f"Multi-Entity Plan summary: {summary}")
+    assert summary["total_groups"] == 2, f"Expected 2 Testament groups, got {summary['total_groups']}!"
+    assert summary["total_entities"] == 1, f"Expected 1 entity (C24), got {summary['total_entities']}!"
+    assert summary["create_count"] == 0, f"Expected 0 creations for C24, got {summary['create_count']}!"
+    assert summary["total_evaluated"] == 3, f"Expected 3 evaluated nodes for C24, got {summary['total_evaluated']}!"
+    print("✓ Live Option A planning test passed deterministically!")
+
+
+if __name__ == "__main__":
+    test_option_a_reconciliation()

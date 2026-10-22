@@ -1,0 +1,115 @@
+import React from 'react';
+import { useStudioStore } from '@/store/useStudioStore';
+import { Flame, Lock, Unlock, Trash2, RefreshCw, Layers } from 'lucide-react';
+
+interface HeaderBarProps {
+  onOpenPools: () => void;
+}
+
+export const HeaderBar: React.FC<HeaderBarProps> = ({ onOpenPools }) => {
+  const {
+    presets,
+    activePresetId,
+    targetEngine,
+    seed,
+    isSeedLocked,
+    loadPreset,
+    setTargetEngine,
+    setSeed,
+    toggleSeedLock,
+    reroll,
+    clearSelections,
+    activeNodeIds,
+  } = useStudioStore();
+
+  const engines = ['ComfyUI', 'SD_WebUI', 'NovelAI', 'Midjourney', 'Flux'] as const;
+
+  return (
+    <header className="flex flex-wrap items-center justify-between gap-4 p-4 border-b border-hazard-border bg-hazard-void shrink-0">
+      {/* Brand */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-hazard-crimson to-hazard-amber">
+          <Flame className="w-6 h-6 text-white animate-pulse" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold tracking-wider uppercase text-hazard-textBright">
+            Hazard Trigger <span className="text-xs text-hazard-gold">STUDIO</span>
+          </h1>
+          <p className="text-xs text-hazard-textMuted">{activeNodeIds.length} Nodes Active</p>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Preset Selector */}
+        <select
+          value={activePresetId || ''}
+          onChange={(e) => loadPreset(e.target.value)}
+          className="bg-hazard-card border border-hazard-border px-3 py-1 text-xs text-hazard-textBright rounded"
+        >
+          <option value="">Select Preset</option>
+          {presets.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Engine Selector */}
+        <select
+          value={targetEngine}
+          onChange={(e) => setTargetEngine(e.target.value as any)}
+          className="bg-hazard-card border border-hazard-border px-3 py-1 text-xs text-hazard-textBright rounded"
+        >
+          {engines.map((e) => (
+            <option key={e} value={e}>
+              {e}
+            </option>
+          ))}
+        </select>
+
+        {/* Seed Controls */}
+        <div className="flex items-center gap-1 bg-hazard-card border border-hazard-border rounded px-2 py-1">
+          <button
+            onClick={toggleSeedLock}
+            className={`p-1 transition ${isSeedLocked ? 'text-hazard-gold' : 'text-hazard-textMuted'}`}
+            title="Lock seed"
+          >
+            {isSeedLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+          </button>
+          <input
+            type="number"
+            value={seed}
+            onChange={(e) => setSeed(parseInt(e.target.value) || 0)}
+            className="w-20 bg-transparent text-xs font-mono text-hazard-gold outline-none"
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <button
+          onClick={reroll}
+          className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-black bg-hazard-gold rounded hover:brightness-110"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Re-Roll
+        </button>
+
+        <button
+          onClick={onOpenPools}
+          className="flex items-center gap-1 px-3 py-2 text-xs bg-hazard-cyan/20 border border-hazard-cyan text-hazard-cyan rounded hover:bg-hazard-cyan/30"
+        >
+          <Layers className="w-4 h-4" />
+          Pools
+        </button>
+
+        <button
+          onClick={clearSelections}
+          className="p-2 text-hazard-textMuted hover:text-hazard-crimson bg-hazard-card border border-hazard-border rounded transition"
+          title="Clear all"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </header>
+  );
+};

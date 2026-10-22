@@ -1,0 +1,14 @@
+#pragma once
+// ESP32-C3 Supermini pin map (LCD CS tied to GND, BLK tied to 3V3)
+#define PIN_LCD_SCK   4
+#define PIN_LCD_MOSI  6
+#define PIN_LCD_DC    5
+#define PIN_LCD_RST   3
+
+#define PIN_JQ_TX     1   // ESP TX -> (1k) -> JQ8900 RX
+#define PIN_BTN_ROLL  9   // onboard BOOT button: draw a new prescript
+#define PIN_BTN_SCROLL 0  // to GND: next page
+
+#define JQ_VOLUME     20  // 0..30
+#define TRACK_DRAW    3   // plays 00003.WAV
+#define TRACK_COMPLETE 4  // plays 00004.WAV

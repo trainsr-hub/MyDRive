@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""
+Tier 3: Model Provider Layer
+Pure HTTP REST client for Anthropic Messages API and Google Gemini API.
+Standard library urllib only — zero pip dependencies.
+"""
+
+import json
+import os
+import urllib.request
+import urllib.error
+from pathlib import Path
+from typing import Dict, Any, List, Optional
+
+
+SECRETS_FILE = Path(r"D:\Program Data\faust_daemon\secrets.env")
+
+
+def load_secrets() -> Dict[str, str]:
+    """Loads sovereign secrets from Disk D: or fallback config."""
+    secrets = {}
+    if SECRETS_FILE.exists():
+        try:
+            with open(SECRETS_FILE, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        secrets[k.strip()] = v.strip().strip('"').strip("'")
+        except Exception:
+            pass
+
+    for k in ["GEMINI_API_KEY", "ANTHROPIC_API_KEY", "TELEGRAM_BOT_TOKEN"]:
+        if k not in secrets and os.getenv(k):
+            secrets[k] = os.getenv(k, "")
+    return secrets
+
+
+class ModelProvider:
+    """Dispatches chat completions with tool-calling capabilities."""
+
+    @staticmethod
+    def call_gemini(
+        messages: List[Dict[str, str]],
+        tools_decl: List[Dict[str, Any]],
+        system_prompt: str,
+        api_key: str,
+        model_name: str = "gemini-2.5-flash"
+    ) -> Dict[str, Any]:
+        """Calls Google Gemini REST API."""
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+
+        # Convert messages to Gemini format
+        contents = []
+        for m in messages:
+            role = "user" if m.get("role") in ("user", "manager") else "model"
+            contents.append({
+                "role": role,
+                "parts": [{"text": m.get("content", "")}]
+            })
+
+        payload = {
+            "contents": contents,
+            "systemInstruction": {"parts": [{"text": system_prompt}]},
+            "generationConfig": {"temperature": 0.2}
+        }
+
+        if tools_decl:
+            gemini_tools = []
+            for t in tools_decl:
+                gemini_tools.append({
+                    "name": t.get("name"),
+                    "description": t.get("description", ""),
+                    "parameters": t.get("parameters", {})
+                })
+            payload["tools"] = [{"functionDeclarations": gemini_tools}]
+
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+
+        cand = data.get("candidates", [{}])[0]
+        content_obj = cand.get("content", {})
+        parts = content_obj.get("parts", [])
+
+        text_parts = [p.get("text", "") for p in parts if "text" in p]
+        func_calls = [p.get("functionCall") for p in parts if "functionCall" in p]
+
+        return {
+            "text": "".join(text_parts),
+            "tool_calls": [
+                {
+                    "name": fc.get("name"),
+                    "args": fc.get("args", {})
+                } for fc in func_calls
+            ]
+        }
+
+    @staticmethod
+    def call_anthropic(
+        messages: List[Dict[str, str]],
+        tools_decl: List[Dict[str, Any]],
+        system_prompt: str,
+        api_key: str,
+        model_name: str = "claude-3-7-sonnet-20250219"
+    ) -> Dict[str, Any]:
+        """Calls Anthropic Messages API."""
+        url = "https://api.anthropic.com/v1/messages"
+
+        anthropic_messages = []
+        for m in messages:
+            role = "user" if m.get("role") in ("user", "manager") else "assistant"
+            anthropic_messages.append({
+                "role": role,
+                "content": m.get("content", "")
+            })
+
+        payload = {
+            "model": model_name,
+            "max_tokens": 4096,
+            "system": system_prompt,
+            "messages": anthropic_messages,
+            "temperature": 0.2
+        }
+
+        if tools_decl:
+            anthropic_tools = []
+            for t in tools_decl:
+                anthropic_tools.append({
+                    "name": t.get("name"),
+                    "description": t.get("description", ""),
+                    "input_schema": t.get("parameters", {})
+                })
+            payload["tools"] = anthropic_tools
+
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01"
+            },
+            method="POST"
+        )
+
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+
+        content_blocks = data.get("content", [])
+        text_blocks = [b.get("text", "") for b in content_blocks if b.get("type") == "text"]
+        tool_uses = [b for b in content_blocks if b.get("type") == "tool_use"]
+
+        return {
+            "text": "".join(text_blocks),
+            "tool_calls": [
+                {
+                    "name": tu.get("name"),
+                    "args": tu.get("input", {})
+                } for tu in tool_uses
+            ]
+        }

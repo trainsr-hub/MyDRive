@@ -1,0 +1,72 @@
+/**
+ * ============================================================================
+ * VGWD025K3 ~ Codex of Time (Varis Gear Walpurgis Driver Actuator)
+ * Faust Acoustic Field Speaker Firmware (ESP32-S3 + MAX98357A I2S Receiver)
+ * ============================================================================
+ * Hardware Pinout:
+ *   - I2S BCLK (Bit Clock)    : GPIO 5
+ *   - I2S LRC  (Word Select)   : GPIO 4
+ *   - I2S DOUT (Data to Amp)   : GPIO 6
+ *
+ * Audio Specification:
+ *   - Format      : 16-bit Stereo PCM (Left + Right duplicated)
+ *   - Sample Rate : 24,000 Hz (Native Kokoro Neural Model Rate)
+ *   - UART Baud   : 2,000,000 baud (2 Mbps High-Speed Streaming)
+ *   - Buffer Size : 1024 bytes (256 stereo samples per DMA burst)
+ * ============================================================================
+ */
+
+#include <Arduino.h>
+#include <I2SSpeaker.h>
+
+// --- I2S MAX98357A Pin Configuration ---
+#define I2S_BCLK_PIN       5
+#define I2S_LRC_PIN        4
+#define I2S_DOUT_PIN       6
+
+#define I2S_PORT           I2S_NUM_0
+#define SAMPLE_RATE        24000
+#define BUFFER_SAMPLES     256
+#define SERIAL_BAUD_RATE   2000000
+#define SERIAL_RX_BUF_SIZE 4096
+
+static uint8_t raw_audio_buffer[BUFFER_SAMPLES * 4]; // 256 samples * 4 bytes (16-bit Stereo) = 1024 bytes
+
+I2SSpeaker speaker(I2S_PORT);
+
+void setup() {
+    // 1. Expand Hardware Serial RX Buffer BEFORE Serial.begin() to prevent buffer overflow
+    Serial.setRxBufferSize(SERIAL_RX_BUF_SIZE);
+    Serial.begin(SERIAL_BAUD_RATE);
+
+    // 2. Initialize I2S Speaker Driver on Pins 5 (BCLK), 4 (LRC), 6 (DOUT) @ 24kHz
+    bool ok = speaker.begin(
+        I2S_BCLK_PIN,
+        I2S_LRC_PIN,
+        I2S_DOUT_PIN,
+        SAMPLE_RATE,
+        8,              // 8 DMA buffers
+        BUFFER_SAMPLES, // 256 samples per buffer
+        true            // Stereo duplicate
+    );
+
+    if (!ok) {
+        while (true) { delay(1000); }
+    }
+
+    // 3. Hardware Self-Test: Play 3-tone acoustic chime (C5 -> E5 -> G5)
+    speaker.playChime();
+}
+
+void loop() {
+    if (Serial.available() >= sizeof(raw_audio_buffer)) {
+        // Read 1024 bytes binary frame from serial stream
+        size_t bytes_read = Serial.readBytes((char*)raw_audio_buffer, sizeof(raw_audio_buffer));
+
+        if (bytes_read > 0) {
+            size_t bytes_written = 0;
+            // Write directly into I2S DMA driving MAX98357A
+            i2s_write(I2S_PORT, raw_audio_buffer, bytes_read, &bytes_written, portMAX_DELAY);
+        }
+    }
+}

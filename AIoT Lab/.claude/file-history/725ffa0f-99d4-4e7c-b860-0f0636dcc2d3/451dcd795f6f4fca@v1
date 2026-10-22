@@ -1,0 +1,105 @@
+# core/local_template.py
+"""
+Sovereign Local Template Engine for Drive Architect.
+The template lives strictly and exclusively as physical directories on Local Disk D:
+Path: templates/Entropy 0
+Completely offline, fixed, and immutable from remote Google Drive.
+"""
+
+from pathlib import Path
+from typing import Dict, List, Any, Optional
+
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates" / "Entropy 0"
+TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def scan_physical_template_tree() -> Dict[str, Any]:
+    """
+    Scans the physical directory structure of templates/Entropy 0 on Local Disk D:
+    Constructs the canonical archetype tree with recognized origin aliases.
+    """
+    # Known alias mappings for robust source tracking across historical seeds
+    KNOWN_ALIASES = {
+        "01_audio": ["tpl_audio", "tpl_01_audio", "01_audio"],
+        "01_source_clips": ["tpl_video", "tpl_01_source_clips", "01_raw_footage", "01_source_clips"],
+        "sub_cuts": ["tpl_video_cuts", "tpl_sub_cuts", "sub_cuts"],
+        "03_docs": ["tpl_docs", "tpl_03_docs", "03_docs"],
+        "04_vfx": ["tpl_vfx", "tpl_04_vfx", "04_vfx"],
+        "05_lighting": ["tpl_lighting", "tpl_05_lighting", "05_lighting"],
+        "avatar": ["tpl_avatar", "avatar"],
+        "default": ["tpl_avatar_default", "default"],
+    }
+
+    def _scan_dir(current_dir: Path, rel_path: str = "", parent_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        nodes = []
+        if not current_dir.exists():
+            return nodes
+
+        for item in sorted(current_dir.iterdir(), key=lambda x: (not x.is_dir(), x.name)):
+            if item.is_dir():
+                child_rel = f"{rel_path}/{item.name}".strip("/")
+                clean_key = item.name.lower()
+                slug_id = f"tpl_{clean_key}"
+                aliases = KNOWN_ALIASES.get(clean_key, [slug_id, clean_key])
+
+                nodes.append({
+                    "id": slug_id,
+                    "name": item.name,
+                    "description": f"src:{slug_id}",
+                    "parentId": parent_id or "tpl_entropy_0_local",
+                    "rel_path": child_rel,
+                    "aliases": aliases,
+                    "children": _scan_dir(item, child_rel, slug_id),
+                })
+        return nodes
+
+    children = _scan_dir(TEMPLATES_DIR, "", "tpl_entropy_0_local")
+
+    return {
+        "id": "tpl_entropy_0_local",
+        "name": "Entropy 0 (Local Master)",
+        "description": "Physical Local Template on Local Disk D:",
+        "parentId": None,
+        "children": children,
+    }
+
+
+def get_local_template_tree() -> Dict[str, Any]:
+    """Alias for scan_physical_template_tree to satisfy API endpoints."""
+    return scan_physical_template_tree()
+
+
+def save_local_template_mutations(creates: List[Any], updates: List[Any], deletes: List[Any]) -> Dict[str, Any]:
+    """Returns the local template tree (fixed locally on Disk D)."""
+    tree = scan_physical_template_tree()
+    return {
+        "success": True,
+        "created_count": 0,
+        "updated_count": 0,
+        "deleted_count": 0,
+        "tree": tree,
+        "vault_tags": {},
+        "master": "local_disk_d",
+    }
+
+
+def get_template_expected_subfolders() -> Dict[str, Any]:
+    """
+    Returns the expected subfolders dictionary formatted for the reconciler:
+    { "01_Source_Clips": { "id": "tpl_01_source_clips", "name": "...", "aliases": [...], "subfolders": {...} } }
+    """
+    tree = scan_physical_template_tree()
+
+    def _convert_to_subfolders_dict(children: List[Dict[str, Any]]) -> Dict[str, Any]:
+        result = {}
+        for c in children:
+            result[c["name"]] = {
+                "id": c["id"],
+                "name": c["name"],
+                "description": c.get("description", ""),
+                "aliases": c.get("aliases", []),
+                "subfolders": _convert_to_subfolders_dict(c.get("children", [])),
+            }
+        return result
+
+    return _convert_to_subfolders_dict(tree.get("children", []))

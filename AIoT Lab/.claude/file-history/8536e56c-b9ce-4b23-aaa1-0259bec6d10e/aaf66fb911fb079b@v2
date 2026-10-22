@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Buffer · Data Packet Ingestion</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #01080e; font-family: 'Consolas', 'Courier New', monospace;
+  color: #00f0ff; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+
+.hud {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 24px; z-index: 10;
+}
+.header { text-align: left; }
+.sub-title {
+  font-size: 10px; letter-spacing: .35em; text-transform: uppercase;
+  color: #00f0ff; opacity: .8; margin-bottom: 2px;
+}
+.main-title {
+  font-size: 20px; font-weight: 700; letter-spacing: .15em;
+  color: #e0faff; text-shadow: 0 0 16px rgba(0,240,255,0.6);
+}
+
+/* ── Cyber Telemetry Matrix ── */
+.telemetry-deck {
+  position: absolute; top: 24px; right: 24px;
+  background: rgba(2, 18, 32, 0.85); border: 1px solid #00f0ff;
+  border-radius: 8px; padding: 12px 18px; display: flex; flex-direction: column; gap: 8px;
+  box-shadow: 0 0 20px rgba(0,240,255,0.25);
+}
+.tel-row { display: flex; justify-content: space-between; gap: 24px; font-size: 11px; }
+.tel-label { color: #5eead4; }
+.tel-val { color: #fff; font-weight: 700; }
+
+/* ── Command Bar ── */
+.controls {
+  pointer-events: auto; display: flex; justify-content: center;
+  gap: 12px; flex-wrap: wrap; width: 100%;
+}
+.btn {
+  min-height: 52px; padding: 0 22px;
+  background: #021422; border: 1.5px solid #00f0ff;
+  border-radius: 6px; color: #00f0ff; font-family: inherit; font-size: 12px;
+  font-weight: 700; letter-spacing: .15em; text-transform: uppercase; cursor: pointer;
+  transition: all .15s ease; box-shadow: 0 0 16px rgba(0,240,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:hover {
+  background: #00f0ff; color: #01080e;
+  box-shadow: 0 0 28px rgba(0,240,255,0.7); transform: translateY(-2px);
+}
+.btn:active { transform: translateY(1px); }
+.btn.turbo-on {
+  background: #f43f5e; border-color: #fda4af; color: #fff;
+  box-shadow: 0 0 30px rgba(244,63,94,0.8);
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="hud">
+  <div class="header">
+    <div class="sub-title">Packet Ingestion Pipeline</div>
+    <div class="main-title">Cybernetic Neural Buffer</div>
+  </div>
+
+  <div class="telemetry-deck">
+    <div class="tel-row">
+      <span class="tel-label">THROUGHPUT:</span>
+      <span class="tel-val" id="bwVal">32.4 GB/s</span>
+    </div>
+    <div class="tel-row">
+      <span class="tel-label">BUFFER ALLOC:</span>
+      <span class="tel-val" id="bufVal">0 / 1024 MB</span>
+    </div>
+    <div class="tel-row">
+      <span class="tel-label">HASH INTEGRITY:</span>
+      <span class="tel-val" style="color: #4ade80;">0x9F4A·VALID</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" onclick="streamPackets(25)">⚡ Ingest Packet (+32MB)</button>
+    <button class="btn" onclick="streamPackets(100)">💾 Mass Dump (+256MB)</button>
+    <button class="btn" id="turboBtn" onclick="toggleTurbo()">🔥 Overclock Turbo</button>
+    <button class="btn" onclick="flushBuffer()">🔄 Commit / Flush</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const bwValEl = document.getElementById('bwVal');
+const bufValEl = document.getElementById('bufVal');
+let W, H, cx, cy, packets = [], bufferMB = 0, targetMB = 0, isTurbo = false, turboTimer = null;
+
+// ── Web Audio Synth ─────────────────────────────────────────────
+let audioCtx = null;
+function playPacketChirp() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1200 + Math.random() * 800, t);
+    gain.gain.setValueAtTime(0.04, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.04);
+  } catch(e) {}
+}
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  cx = W / 2; cy = H / 2;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function streamPackets(count = 25) {
+  for (let i = 0; i < count; i++) {
+    const side = Math.floor(Math.random() * 4);
+    let x, y;
+    if (side === 0) { x = Math.random() * W; y = -20; }
+    else if (side === 1) { x = W + 20; y = Math.random() * H; }
+    else if (side === 2) { x = Math.random() * W; y = H + 20; }
+    else { x = -20; y = Math.random() * H; }
+
+    packets.push({
+      x, y, targetX: cx + (Math.random() - 0.5) * 60, targetY: cy + (Math.random() - 0.5) * 60,
+      speed: 6 + Math.random() * 8, len: 12 + Math.random() * 16,
+      char: Math.random() > 0.5 ? '1' : '0'
+    });
+  }
+  targetMB = Math.min(1024, targetMB + count * 2.5);
+  playPacketChirp();
+}
+
+function toggleTurbo() {
+  isTurbo = !isTurbo;
+  const btn = document.getElementById('turboBtn');
+  btn.classList.toggle('turbo-on', isTurbo);
+  if (isTurbo) {
+    turboTimer = setInterval(() => streamPackets(18), 120);
+  } else {
+    clearInterval(turboTimer);
+  }
+}
+
+function flushBuffer() {
+  targetMB = 0;
+  playPacketChirp();
+}
+
+// ── Render Loop ─────────────────────────────────────────────────
+function draw() {
+  ctx.fillStyle = 'rgba(1, 8, 14, 0.28)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Digital Grid Conduits
+  ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+  ctx.lineWidth = 1;
+  const gridGap = 50;
+  for (let x = 0; x < W; x += gridGap) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += gridGap) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Draw Central Cyber Matrix Core
+  bufferMB += (targetMB - bufferMB) * 0.1;
+  const coreSize = 90;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(Date.now() * 0.001);
+
+  // Wireframe Outer Box
+  ctx.strokeStyle = isTurbo ? '#f43f5e' : '#00f0ff';
+  ctx.shadowColor = ctx.strokeStyle;
+  ctx.shadowBlur = 14;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-coreSize / 2, -coreSize / 2, coreSize, coreSize);
+
+  // Buffer fill blocks
+  const fillRatio = bufferMB / 1024;
+  ctx.fillStyle = isTurbo ? 'rgba(244, 63, 94, 0.65)' : 'rgba(0, 240, 255, 0.65)';
+  ctx.fillRect(-coreSize / 2 + 4, coreSize / 2 - 4 - (coreSize - 8) * fillRatio, coreSize - 8, (coreSize - 8) * fillRatio);
+  ctx.restore();
+
+  // Ingested Data Stream
+  ctx.font = '11px Consolas, monospace';
+  for (let i = packets.length - 1; i >= 0; i--) {
+    const p = packets[i];
+    const dx = p.targetX - p.x, dy = p.targetY - p.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist < 18) {
+      packets.splice(i, 1);
+      continue;
+    }
+
+    const angle = Math.atan2(dy, dx);
+    p.x += Math.cos(angle) * p.speed;
+    p.y += Math.sin(angle) * p.speed;
+
+    ctx.fillStyle = isTurbo ? '#fda4af' : '#67e8f9';
+    ctx.shadowColor = ctx.fillStyle;
+    ctx.shadowBlur = 8;
+    ctx.fillText(p.char, p.x, p.y);
+  }
+
+  // Telemetry updates
+  const throughput = isTurbo ? (120 + Math.random() * 40).toFixed(1) : (24 + Math.random() * 12).toFixed(1);
+  bwValEl.textContent = `${throughput} GB/s`;
+  bufValEl.textContent = `${Math.round(bufferMB)} / 1024 MB`;
+
+  requestAnimationFrame(draw);
+}
+
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

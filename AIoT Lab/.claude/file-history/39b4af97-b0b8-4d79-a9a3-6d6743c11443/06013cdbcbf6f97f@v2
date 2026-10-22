@@ -1,0 +1,117 @@
+# Prescripts — Phase 1 Implementation Plan
+
+## Context
+The Manager is establishing **Prescripts** — a personal wisdom and memory curation engine. At 4AM, an ESP32 OLED displays a designated quote, motivation, or memory to kickstart morning journaling and writing therapy.
+
+Following strategic review and Reddit community verification, we are executing **Phase 1: MVP Metadatas & Data Entry UI** under the **Hybrid CQRS Architecture**:
+- **Authority / Write Model**: SQLite engine (`rose_quotes.db`) with relational integrity, migrations, and FTS5 search.
+- **Cloud Edge Host**: **Turso (Serverless SQLite / libSQL)**, providing 24/7 edge accessibility for Vercel and the ESP32 with zero sleep/pause issues and zero home-server hosting requirements.
+- **Query / Read Model**: A zero-LLM deterministic compiler that generates an $O(1)$ `quotes_map.json` dictionary inside the Obsidian vault for instant recitation.
+- **Data Safety**: Triple redundancy (Turso Cloud + Local Disk D: Google Drive + Git cold archive).
+
+---
+
+## Architectural Blueprint
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        DATA ENTRY INTERFACE                            │
+│                 Entropy/Rose/prescripts_entry.html                     │
+│                                                                        │
+│   • Flexible Date Range (Auto-suggester: YYYY, YYYY-MM, YYYY~YYYY)    │
+│   • Speaker Multi-Select (Search, create, delete, stores Hex IDs)      │
+│   • Response Quotes (Browse & filter by content, stores Hex IDs)       │
+│   • Multiple-Choice Tag Pool (1-click toggle, create, delete)          │
+│   • Backlinks Suggestor (URLs / references)                            │
+│   • Save Pipeline → Posts to Local / Vercel API                        │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                         Immediate Write Action
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                   SQLITE / TURSO CLOUD ENGINE                          │
+│               Authority Store (rose_quotes.db / libSQL)               │
+│                                                                        │
+│   • Table 'speakers': id (Hex), name, bio                              │
+│   • Table 'quotes': id (Hex), idx, content, context, date,             │
+│                     speaker_ids_json, preference_json,                 │
+│                     backlinks_json, tags_json, sentiment_json          │
+│   • Virtual Table 'quotes_fts': FTS5 full-text index                   │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                         Deterministic Compiler
+                         (0-LLM Python Pipeline)
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                        O(1) JSON PROJECTIONS                           │
+│                 For Obsidian Vault & ESP32 Polling                     │
+├────────────────────────────────────────────────────────────────────────┤
+│  • quotes_map.json       → { [hex_id]: QuoteObject } ($O(1) recite)    │
+│  • taxonomy_index.json   → Suggestion pools for tags & speakers        │
+│  • daily_queue.json      → Pre-computed 4AM queue for ESP32 OLED       │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Critical Files to be Modified / Created
+
+1. **`D:\My Drive\Blue AI\Entropy\Rose\db.py`**
+   - Apply Migration 3: Add `speakers` table and update quotes columns (`speaker_ids_json`, `preference_json`, `backlinks_json`, `tags_json`, `sentiment_json`).
+   - Implement `upsert_speaker(id, name, bio)` and `get_all_speakers()`.
+   - Update `upsert_quote()` to handle the flexible date formats and multi-speaker hex ID linkages.
+   - Automatically trigger projection compilation on write.
+
+2. **`D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py`** *(New)*
+   - Deterministic compiler script.
+   - Reads SQLite tables and produces:
+     - `quotes_map.json`: Normalized quotes joined with speaker names for instant Obsidian lookup.
+     - `taxonomy_index.json`: Active pools of tags, speakers, and sentiments for UI autocomplete.
+
+3. **`D:\My Drive\Blue AI\Entropy\Rose\schemas\quote_schema.json`**
+   - Update JSON-Schema Draft-07 to reflect:
+     - Flexible date pattern (`^\d{4}(-\d{2})?(~\d{4}(-\d{2})?)?$|^\d{4}-\d{2}-\d{2}$`).
+     - `source_speaker`: array of 16-char hex IDs.
+     - `preference`: array of 16-char hex IDs.
+     - `backlink`: array of URL strings.
+     - `tags`: array of string choices.
+
+4. **`D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html`** *(Canonical UI)*
+   - Relocate and solidify the data entry UI into the `Entropy/Rose` project root.
+   - Connect Save action to a local Python micro-endpoint (`python -m http.server` with handler or dumb script) to write directly into `rose_quotes.db`.
+   - Preload existing quotes from DB into the Response Quotes browser.
+
+5. **`D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py`** *(New)*
+   - Bridge utility to synchronize `rose_quotes.db` to Turso Cloud using `@libsql/client` or the `turso` CLI.
+
+---
+
+## Existing Utilities Reused
+- **`Entropy/Rose/db.py:get_connection()`**: Mandatory WAL mode, NORMAL synchronous, 5000ms timeout, and foreign keys.
+- **`Entropy/Rose/seed_quote.py:generate_hex_id()`**: Deterministic 16-character hex ID generation based on millisecond timestamp.
+- **`.claude/templates/ui/css/styles.css`**: Master UI/UX styling, dark/light theme tokens, and Fitts's law hitboxes.
+- **`.claude/templates/ui/js/components/multi-select.js`**: Notion-style multi-select logic (search, create, toggle, and pool deletion).
+
+---
+
+## End-to-End Verification Steps
+
+1. **Database Schema Verification**:
+   - Run schema initialization in `db.py`.
+   - Verify `_schema_migrations` records Migration 3.
+   - Test inserting a speaker entity (e.g. `Faust`, `Vinyl Angel`) and a quote referencing them by Hex ID.
+
+2. **Projection Compilation Verification**:
+   - Run `python compile_projections.py`.
+   - Assert `quotes_map.json` contains full joined records with $O(1)$ key lookup.
+   - Verify file size and formatting for Obsidian vault consumption.
+
+3. **Data Entry UI End-to-End Test**:
+   - Launch `prescripts_entry.html` in browser.
+   - Create a test quote with a vague date (`2020~2023-05`), select a speaker, pick a response quote by searching its text, and toggle multiple-choice tags.
+   - Click Save and verify row enters `rose_quotes.db` and updates `quotes_map.json`.
+
+4. **FTS5 Search Test**:
+   - Run `python -c "import db; print(db.search_quotes('symmetry'))"` and verify matching results with snippet extraction.

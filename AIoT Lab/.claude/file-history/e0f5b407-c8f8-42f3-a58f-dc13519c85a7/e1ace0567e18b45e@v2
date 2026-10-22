@@ -1,0 +1,439 @@
+/**
+ * Project Entry: Data Grid Component
+ * Direct Cell Editing, Search, CSV Export & Formula-Driven Record Creation
+ */
+import { state, FIELD_TYPES, escHtml, showToast, generateHexId } from '../state.js';
+import { ensureRecordsLoaded, persistRecord, deleteRecord } from '../api.js';
+
+export function renderDataWorkspace() {
+  const current = state.tables[state.activeTable];
+  if (!current) return;
+
+  const titleEl = document.getElementById('data-table-title');
+  if (titleEl) titleEl.textContent = current.table_name;
+
+  const records = state.tableRecords[state.activeTable] || [];
+
+  // Filter records based on search query
+  const filtered = state.dataSearchQuery
+    ? records.filter(r => Object.values(r).some(v => String(v || '').toLowerCase().includes(state.dataSearchQuery)))
+    : records;
+
+  const countEl = document.getElementById('record-counter');
+  if (countEl) countEl.textContent = `${filtered.length} record${filtered.length === 1 ? '' : 's'}`;
+
+  // 1. Table Head
+  const thead = document.getElementById('data-grid-thead');
+  if (thead) {
+    let headHtml = `
+      <tr>
+        <th style="width:44px;text-align:center;">#</th>
+    `;
+    current.columns.forEach(col => {
+      const ft = FIELD_TYPES[col.type] || {};
+      headHtml += `
+        <th>
+          <div class="th-wrap">
+            <span>${ft.icon || '📝'}</span>
+            <span>${escHtml(col.name)}</span>
+            <span class="th-slug">(${escHtml(col.slug || col.name)})</span>
+          </div>
+        </th>
+      `;
+    });
+    headHtml += `</tr>`;
+    thead.innerHTML = headHtml;
+  }
+
+  // 2. Table Body
+  const tbody = document.getElementById('data-grid-tbody');
+  if (!tbody) return;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="${current.columns.length + 1}" style="text-align:center;padding:2.5rem;color:var(--text-dim);">
+          No records in this table. Click <strong>+ Add Record</strong> to create the first row.
+        </td>
+      </tr>
+      <tr class="grid-row-add" id="grid-row-add-placeholder">
+        <td colspan="${current.columns.length + 1}">+ New Record...</td>
+      </tr>
+    `;
+    const addPh = document.getElementById('grid-row-add-placeholder');
+    if (addPh) addPh.onclick = () => addDataRow();
+    return;
+  }
+
+  let bodyHtml = '';
+  filtered.forEach((rec, rowIdx) => {
+    const recId = rec.id || `row_${rowIdx}`;
+    bodyHtml += `
+      <tr data-record-id="${recId}">
+        <td class="data-num-cell">
+          <span class="row-idx">${rowIdx + 1}</span>
+          <button class="data-del-btn" data-del-id="${recId}" data-del-idx="${rowIdx}" title="Delete record">✕</button>
+        </td>
+    `;
+
+    current.columns.forEach(col => {
+      const cSlug = col.slug || col.name;
+      const val = rec[cSlug];
+      bodyHtml += renderDataCell(col, val, recId, rowIdx);
+    });
+
+    bodyHtml += `</tr>`;
+  });
+
+  bodyHtml += `
+    <tr class="grid-row-add" id="grid-row-add-bottom">
+      <td colspan="${current.columns.length + 1}">+ New Record...</td>
+    </tr>
+  `;
+
+  tbody.innerHTML = bodyHtml;
+
+  // Attach event listeners for delete and inputs
+  attachDataGridListeners(tbody);
+}
+
+export function renderDataCell(col, val, recId, rowIdx) {
+  const cSlug = col.slug || col.name;
+  const colType = col.type || 'text_single';
+  const meta = col.metadata || {};
+
+  // 1. Hex ID (Primary Key)
+  if (colType === 'hex_id') {
+    const idVal = val || generateHexId(meta.prefix || 'ID');
+    return `
+      <td>
+        <span class="grid-hex-id-badge" data-copy-id="${escHtml(idVal)}">
+          🔑 ${escHtml(idVal)}
+        </span>
+      </td>
+    `;
+  }
+
+  // 2. Boolean (Checkbox)
+  if (colType === 'boolean') {
+    const checked = (val === 1 || val === true || val === '1') ? 'checked' : '';
+    return `
+      <td style="text-align:center;">
+        <div class="grid-checkbox-wrapper">
+          <input type="checkbox" class="grid-checkbox" data-rec-id="${recId}" data-slug="${cSlug}" ${checked}>
+        </div>
+      </td>
+    `;
+  }
+
+  // 3. Enum Single (Dropdown)
+  if (colType === 'enum_single') {
+    const options = Array.isArray(meta.options) ? meta.options : [];
+    return `
+      <td>
+        <select class="grid-cell-select" data-rec-id="${recId}" data-slug="${cSlug}">
+          <option value="" ${!val ? 'selected' : ''}>-- Select --</option>
+          ${options.map(opt => `
+            <option value="${escHtml(opt)}" ${val === opt ? 'selected' : ''}>${escHtml(opt)}</option>
+          `).join('')}
+        </select>
+      </td>
+    `;
+  }
+
+  // 4. Enum Multi (Array)
+  if (colType === 'enum_multi') {
+    const tags = Array.isArray(val) ? val : (typeof val === 'string' && val.startsWith('[') ? JSON.parse(val || '[]') : (val ? [val] : []));
+    return `
+      <td>
+        <div style="display:flex;align-items:center;">
+          ${tags.map(t => `<span class="grid-tag-pill">#${escHtml(t)}</span>`).join('')}
+          <input type="text" class="grid-cell-input grid-input-add-tag" data-rec-id="${recId}" data-slug="${cSlug}" style="width:110px;" placeholder="+ tag">
+        </div>
+      </td>
+    `;
+  }
+
+  // 5. Relation Single (Foreign Key)
+  if (colType === 'relation_single') {
+    const targetTable = meta.target && meta.target !== 'self' ? meta.target : state.activeTable;
+    const targetRecs = state.tableRecords[targetTable] || [];
+    return `
+      <td>
+        <select class="grid-cell-select" data-rec-id="${recId}" data-slug="${cSlug}">
+          <option value="" ${!val ? 'selected' : ''}>-- None --</option>
+          ${targetRecs.map(tr => {
+            const trId = tr.id || '';
+            const trLabel = tr.name || tr.title || tr.username || trId;
+            return `
+              <option value="${escHtml(trId)}" ${val === trId ? 'selected' : ''}>
+                ${escHtml(trLabel)} (${trId})
+              </option>
+            `;
+          }).join('')}
+        </select>
+      </td>
+    `;
+  }
+
+  // 6. Relation Multi (Foreign Key Array)
+  if (colType === 'relation_multi') {
+    const rels = Array.isArray(val) ? val : (typeof val === 'string' && val.startsWith('[') ? JSON.parse(val || '[]') : []);
+    return `
+      <td>
+        <div style="display:flex;align-items:center;">
+          ${rels.map(r => `<span class="grid-rel-pill">🔗 ${escHtml(r)}</span>`).join('')}
+          <input type="text" class="grid-cell-input grid-input-add-rel" data-rec-id="${recId}" data-slug="${cSlug}" style="width:120px;" placeholder="+ Hex ID">
+        </div>
+      </td>
+    `;
+  }
+
+  // 7. Numbers (Int / Float)
+  if (colType === 'int_scalar' || colType === 'float_scalar') {
+    const step = colType === 'float_scalar' ? 'any' : '1';
+    return `
+      <td>
+        <input type="number" step="${step}" class="grid-cell-input grid-cell-mono grid-input-number" data-rec-id="${recId}" data-slug="${cSlug}" value="${val !== undefined && val !== null ? val : ''}">
+      </td>
+    `;
+  }
+
+  // 8. Text (Single / Multi)
+  return `
+    <td>
+      <input type="text" class="grid-cell-input grid-input-text" data-rec-id="${recId}" data-slug="${cSlug}" value="${escHtml(val !== undefined && val !== null ? val : '')}" placeholder="Empty">
+    </td>
+  `;
+}
+
+export function attachDataGridListeners(tbody) {
+  // Delete record buttons
+  tbody.querySelectorAll('.data-del-btn').forEach(btn => {
+    btn.onclick = () => {
+      const recId = btn.getAttribute('data-del-id');
+      const idx = parseInt(btn.getAttribute('data-del-idx'), 10);
+      deleteDataRecord(recId, idx);
+    };
+  });
+
+  // Copy hex ID
+  tbody.querySelectorAll('[data-copy-id]').forEach(badge => {
+    badge.onclick = () => {
+      const id = badge.getAttribute('data-copy-id');
+      navigator.clipboard.writeText(id).then(() => showToast(`Copied ${id}`));
+    };
+  });
+
+  // Boolean checkbox
+  tbody.querySelectorAll('.grid-checkbox').forEach(cb => {
+    cb.onchange = () => {
+      const recId = cb.getAttribute('data-rec-id');
+      const slug = cb.getAttribute('data-slug');
+      updateDataCell(recId, slug, cb.checked ? 1 : 0);
+    };
+  });
+
+  // Select dropdowns
+  tbody.querySelectorAll('select.grid-cell-select').forEach(sel => {
+    sel.onchange = () => {
+      const recId = sel.getAttribute('data-rec-id');
+      const slug = sel.getAttribute('data-slug');
+      updateDataCell(recId, slug, sel.value);
+    };
+  });
+
+  // Number inputs
+  tbody.querySelectorAll('.grid-input-number').forEach(inp => {
+    inp.onchange = () => {
+      const recId = inp.getAttribute('data-rec-id');
+      const slug = inp.getAttribute('data-slug');
+      updateDataCell(recId, slug, inp.value ? Number(inp.value) : 0);
+    };
+  });
+
+  // Text inputs
+  tbody.querySelectorAll('.grid-input-text').forEach(inp => {
+    inp.onchange = () => {
+      const recId = inp.getAttribute('data-rec-id');
+      const slug = inp.getAttribute('data-slug');
+      updateDataCell(recId, slug, inp.value);
+    };
+  });
+
+  // Tag inputs
+  tbody.querySelectorAll('.grid-input-add-tag').forEach(inp => {
+    inp.onkeydown = (e) => {
+      if (e.key === 'Enter' && inp.value.trim()) {
+        const recId = inp.getAttribute('data-rec-id');
+        const slug = inp.getAttribute('data-slug');
+        addTagToRecord(recId, slug, inp.value.trim());
+        inp.value = '';
+      }
+    };
+  });
+
+  // Relation inputs
+  tbody.querySelectorAll('.grid-input-add-rel').forEach(inp => {
+    inp.onkeydown = (e) => {
+      if (e.key === 'Enter' && inp.value.trim()) {
+        const recId = inp.getAttribute('data-rec-id');
+        const slug = inp.getAttribute('data-slug');
+        addRelToRecord(recId, slug, inp.value.trim());
+        inp.value = '';
+      }
+    };
+  });
+
+  // Add row button at bottom
+  const addBottom = document.getElementById('grid-row-add-bottom');
+  if (addBottom) addBottom.onclick = () => addDataRow();
+}
+
+/**
+ * FORMULA-DRIVEN RECORD CREATION
+ * Dynamically computes formulas like max(column) + 1, count(*), literal:N
+ */
+export async function addDataRow() {
+  const current = state.tables[state.activeTable];
+  if (!current) return;
+
+  const newRec = {};
+  const records = state.tableRecords[state.activeTable] || [];
+
+  current.columns.forEach(col => {
+    const slug = col.slug || col.name;
+
+    if (col.type === 'hex_id') {
+      newRec[slug] = generateHexId(col.metadata?.prefix || state.activeTable.substring(0, 4));
+    } else if (col.type === 'boolean') {
+      newRec[slug] = col.metadata?.default_value !== undefined ? col.metadata.default_value : 0;
+    } else if (col.type.endsWith('_multi')) {
+      newRec[slug] = [];
+    } else if (col.type === 'int_scalar') {
+      const defaultOption = (col.metadata?.default_option || '').trim();
+
+      if (!defaultOption) {
+        newRec[slug] = 0;
+      } else if (defaultOption.startsWith('literal:')) {
+        const val = parseFloat(defaultOption.substring(8));
+        newRec[slug] = isNaN(val) ? 0 : val;
+      } else if (defaultOption.toLowerCase() === 'count(*)') {
+        newRec[slug] = records.length;
+      } else {
+        const maxPlusMatch = defaultOption.match(/max\((\w+)\)\s*\+\s*(\d+)/i);
+        if (maxPlusMatch) {
+          const targetCol = maxPlusMatch[1];
+          const inc = parseInt(maxPlusMatch[2], 10) || 1;
+          const maxVal = records.reduce((max, r) => {
+            const num = Number(r[targetCol]);
+            return (!isNaN(num) && num > max) ? num : max;
+          }, 0);
+          newRec[slug] = maxVal + inc;
+        } else {
+          const maxSimpleMatch = defaultOption.match(/max\((\w+)\)/i);
+          if (maxSimpleMatch) {
+            const targetCol = maxSimpleMatch[1];
+            const maxVal = records.reduce((max, r) => {
+              const num = Number(r[targetCol]);
+              return (!isNaN(num) && num > max) ? num : max;
+            }, 0);
+            newRec[slug] = maxVal;
+          } else {
+            newRec[slug] = 0;
+          }
+        }
+      }
+    } else if (col.type === 'float_scalar') {
+      newRec[slug] = col.metadata?.default_value !== undefined ? Number(col.metadata.default_value) : 0.0;
+    } else {
+      newRec[slug] = col.metadata?.default_value || '';
+    }
+  });
+
+  if (!state.tableRecords[state.activeTable]) state.tableRecords[state.activeTable] = [];
+  state.tableRecords[state.activeTable].push(newRec);
+
+  renderDataWorkspace();
+  await persistRecord(state.activeTable, newRec);
+  showToast(`Added record to ${state.activeTable}`);
+}
+
+export async function updateDataCell(recId, slug, value) {
+  const records = state.tableRecords[state.activeTable] || [];
+  const rec = records.find(r => r.id === recId || String(r.id) === String(recId));
+  if (!rec) return;
+
+  rec[slug] = value;
+  await persistRecord(state.activeTable, rec);
+}
+
+export function addTagToRecord(recId, slug, tag) {
+  const records = state.tableRecords[state.activeTable] || [];
+  const rec = records.find(r => r.id === recId || String(r.id) === String(recId));
+  if (!rec) return;
+
+  if (!Array.isArray(rec[slug])) rec[slug] = [];
+  if (!rec[slug].includes(tag)) {
+    rec[slug].push(tag);
+    updateDataCell(recId, slug, rec[slug]);
+    renderDataWorkspace();
+  }
+}
+
+export function addRelToRecord(recId, slug, relId) {
+  const records = state.tableRecords[state.activeTable] || [];
+  const rec = records.find(r => r.id === recId || String(r.id) === String(recId));
+  if (!rec) return;
+
+  if (!Array.isArray(rec[slug])) rec[slug] = [];
+  if (!rec[slug].includes(relId)) {
+    rec[slug].push(relId);
+    updateDataCell(recId, slug, rec[slug]);
+    renderDataWorkspace();
+  }
+}
+
+export async function deleteDataRecord(recId, rowIdx) {
+  if (!confirm(`Delete record #${rowIdx + 1} (${recId})?`)) return;
+
+  if (state.tableRecords[state.activeTable]) {
+    state.tableRecords[state.activeTable] = state.tableRecords[state.activeTable].filter(
+      r => r.id !== recId && String(r.id) !== String(recId)
+    );
+  }
+
+  await deleteRecord(state.activeTable, recId);
+  renderDataWorkspace();
+  showToast(`Deleted ${recId}`);
+}
+
+export function exportDataCSV() {
+  const current = state.tables[state.activeTable];
+  const records = state.tableRecords[state.activeTable] || [];
+  if (!current || records.length === 0) {
+    showToast('No records to export');
+    return;
+  }
+
+  const cols = current.columns;
+  const headers = cols.map(c => c.slug || c.name);
+  const rows = records.map(r => {
+    return cols.map(c => {
+      const val = r[c.slug || c.name];
+      if (val === undefined || val === null) return '""';
+      if (typeof val === 'object') return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+      return `"${String(val).replace(/"/g, '""')}"`;
+    }).join(',');
+  });
+
+  const csvContent = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${state.activeTable}_export.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Exported ${state.activeTable}_export.csv`);
+}

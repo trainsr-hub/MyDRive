@@ -1,0 +1,23 @@
+{
+    "jurassic_time": {
+        "amount": 14400,
+        "unit": "seconds",
+        "name": "Jurassic Time",
+        "description": "Exclusive temporal incubation energy for Cretaceous genesis.",
+        "icon": "https://cdn.paleo.gg/games/jwtg/images/stats/speed.png"
+    },
+    "dna": {
+        "amount": 50000,
+        "unit": "dna",
+        "name": "DNA",
+        "description": "Biological genetic currency for synthesizing standard dinosaurs and hybrids.",
+        "icon": "https://cdn.paleo.gg/games/jwtg/images/resource/dna.png"
+    },
+    "red_orbs": {
+        "amount": 50,
+        "unit": "orbs",
+        "name": "Red Orbs",
+        "description": "Apex celestial currency for synthesizing Super-Hybrids and Boss creatures.",
+        "icon": "https://cdn.paleo.gg/games/jwtg/images/hybrid-type/super-hybrid.png"
+    }
+}

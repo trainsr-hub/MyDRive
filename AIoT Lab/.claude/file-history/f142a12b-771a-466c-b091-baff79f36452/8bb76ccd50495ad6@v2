@@ -1,0 +1,27 @@
+@echo off
+setlocal EnableDelayedExpansion
+title Faust Remote Sovereign Daemon - Launcher
+
+set "PYTHON_EXE=D:\Program Files\Python\python.exe"
+if not exist "%PYTHON_EXE%" set "PYTHON_EXE=python"
+set "DAEMON_SCRIPT=D:\My Drive\Blue AI\.agents\scripts\daemon\faust_remote.py"
+
+echo ============================================================
+echo   Faust Sovereign Remote Daemon (Headless Background)
+echo ============================================================
+
+REM Launch detached windowless process using Universe25 Hidden style
+powershell -NoProfile -Command "Start-Process -FilePath '%PYTHON_EXE%' -ArgumentList '\"%DAEMON_SCRIPT%\" run-foreground' -WindowStyle Hidden"
+
+echo.
+echo Initializing headless Telegram daemon...
+ping 127.0.0.1 -n 2 >nul
+
+echo ============================================================
+echo   Status: Active Headless Background Daemon
+echo ============================================================
+echo Telemetry : Telegram Topic #4526 (@FaustoftheBlueRose_bot)
+echo Log       : D:\Program Data\faust_daemon\logs\faust_remote.log
+echo ============================================================
+ping 127.0.0.1 -n 2 >nul
+exit

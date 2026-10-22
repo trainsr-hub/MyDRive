@@ -1,0 +1,100 @@
+{
+  "id": "shredder_protocol",
+  "title": "Shredder Protocol A8 Pack",
+  "subtitle": "Paper Mill Singularity • Tri-Color Authority",
+  "cards_per_pull": 5,
+  "cost": {
+    "currency": "shredder-ticket",
+    "amount": 1
+  },
+  "visuals": {
+    "cover_url": "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=500&auto=format&fit=crop&q=80",
+    "preview_url": "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=80",
+    "accent_color": "#ffc107",
+    "border_color": "#1e88e5",
+    "bg_gradient": "from-[#0f172a] via-[#1e293b] to-[#020617]",
+    "button_text": "Shred & Materialize"
+  },
+  "pools": [
+    {
+      "item_id": "a8_blue_dominion_blueprint",
+      "weight": 5
+    },
+    {
+      "item_id": "a8_yellow_valor_foil",
+      "weight": 15
+    },
+    {
+      "item_id": "a8_red_sovereign_fragment",
+      "weight": 25
+    },
+    {
+      "item_id": "shredder_industrial_blade",
+      "weight": 3
+    },
+    {
+      "item_id": "universal_paper_core",
+      "weight": 30,
+      "amount_range": [50, 120]
+    },
+    {
+      "item_id": "a8_micro_confetti_dust",
+      "weight": 22
+    }
+  ],
+  "guarantees": [
+    "a8_yellow_valor_foil",
+    "shredder_industrial_blade"
+  ],
+  "items": {
+    "shredder_industrial_blade": {
+      "name": "Titan-Cut Industrial Shredder Blade",
+      "category": "relic",
+      "rarity": "legendary",
+      "icon_url": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #1e3a8a 0%, #0f172a 50%, #000 100%)",
+      "description": "Cross-cut precision titanium drum that pulverizes standard A8 documents into multidimensional data filaments."
+    },
+    "a8_blue_dominion_blueprint": {
+      "name": "A8 Blue Dominion Schematic",
+      "category": "relic",
+      "rarity": "epic",
+      "icon_url": "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #1d4ed8 0%, #172554 50%, #000 100%)",
+      "description": "Pocket-sized 52x74mm blueprint inscribed with cobalt cyanotype architectural matrices."
+    },
+    "a8_yellow_valor_foil": {
+      "name": "A8 Yellow Valor Goldleaf",
+      "category": "collectible",
+      "rarity": "rare",
+      "icon_url": "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #a16207 0%, #451a03 50%, #000 100%)",
+      "description": "Pressed 24k gold foil in A8 dimensions representing high-frequency yield validation."
+    },
+    "a8_red_sovereign_fragment": {
+      "name": "A8 Red Sovereign Cinnabar Slip",
+      "category": "collectible",
+      "rarity": "uncommon",
+      "icon_url": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #991b1b 0%, #450a0a 50%, #000 100%)",
+      "description": "Crimson fibrous paper stamped with the imperial seal of the Shredder Sovereign."
+    },
+    "universal_paper_core": {
+      "name": "Tri-Color Kinetic Fiber Core",
+      "category": "energy-core",
+      "rarity": "rare",
+      "energy_attribute": "aether",
+      "icon_url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #0284c7 0%, #b91c1c 50%, #ca8a04 100%)",
+      "description": "Compressed cellulose-polymer energy cell oscillating with Blue, Yellow, and Red pulse vectors."
+    },
+    "a8_micro_confetti_dust": {
+      "name": "A8 Micro-Shred Confetti Dust",
+      "category": "collectible",
+      "rarity": "common",
+      "icon_url": "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #334155 0%, #0f172a 50%, #000 100%)",
+      "description": "Standard 2x15mm DIN 66399 P-5 security level paper shreds with holographic micro-print."
+    }
+  }
+}

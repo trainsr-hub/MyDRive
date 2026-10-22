@@ -1,0 +1,12 @@
+# Faust Sovereign Tooling & VS Code (Linked via NTFS Junction)
+.claude/skills
+.claude/daemons
+.claude/agents
+.claude/scripts
+.vscode/
+
+# Python cache & runtime logs
+__pycache__/
+*.pyc
+*.log
+.env

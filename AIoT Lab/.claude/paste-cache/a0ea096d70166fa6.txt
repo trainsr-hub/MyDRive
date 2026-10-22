@@ -1,0 +1,27 @@
+``` Vision
+# character Table
+- There should be a new Field which will have the shortened version of the Character Name. Like, how they're refering to but not by full name all the time yet not by nicknames either (List of strings)
+- the series shouldn't use hardcoded names. It should use ids (list of ids)
+- "taxonomy" (list of ids)
+- "stand" (list of ids)
+- "dna" (list of ids)
+- "hazard_rank" (int)
+=> Purge "associate_json" (because it's not gonna be json but a list of ids), "names_json", "hazard_class", "taxonomy_json", "dna_phase1_json", "updated_at".
+=> ids mean it link to other tables.
+
+# character variants table
+- No need for "variant_key" because we already have ids
+- "is_default" is a stupid field. It's meaningless
+=> This table should have just exactly what "character" have. Just with a little different that there are:
++ "character_id" to link back the original character (a sing id)
++ "variant_name" (list of string)
++ wouldn't have "char_code" nor "cannonical_name"
+# World
+=> A rather tree build
+- HEx ID
+- Name
+- child of (a single hex id)
+- description
+- rule (list of string)
+=> The idea is that this one can clearly be build into a perfect tree that take Root from: "All" => Internet (Branch of Vtubers and stuffs. Not Games or Anime/Mange) => Vtuber => Hololive => HoloEN => HoloMyth
+```

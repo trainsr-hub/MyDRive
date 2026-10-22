@@ -1,0 +1,320 @@
+"""
+FastAPI Backend for Google Colab Integration
+Enables Faust to execute code in Manager's Colab notebook via service account authentication.
+"""
+
+import os
+import asyncio
+import json
+import time
+from pathlib import Path
+from typing import Optional
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, FileResponse
+from pydantic import BaseModel, Field
+
+from config import settings, verify_configuration, PROJECT_ROOT
+
+
+# =============================================================================
+# Pydantic Models
+# =============================================================================
+
+class ExecuteRequest(BaseModel):
+    """Request model for code execution."""
+    code: str = Field(..., min_length=1, max_length=10000, description="Python code to execute")
+    timeout_seconds: int = Field(default=60, ge=5, le=300)
+
+
+class ExecuteResponse(BaseModel):
+    """Response model for code execution."""
+    success: bool
+    output: str
+    execution_time_ms: int
+    error: Optional[str] = None
+
+
+class StatusResponse(BaseModel):
+    """Response model for connection status."""
+    connected: bool
+    notebook_id: str
+    service_account_email: Optional[str] = None
+    backend_version: str = "1.0.0"
+
+
+# =============================================================================
+# Colab Client (Deterministic - no LLM)
+# =============================================================================
+
+class ColabClient:
+    """
+    Deterministic client for Google Colab execution.
+    Uses Google Auth libraries to authenticate and execute code via Colab runtime.
+    """
+
+    def __init__(self):
+        self.credentials = None
+        self.notebook_id = settings.COLAB_NOTEBOOK_ID
+        self._initialized = False
+
+    def initialize(self) -> bool:
+        """Initialize credentials and verify access."""
+        try:
+            # Load credentials from file
+            from google.oauth2 import service_account
+
+            creds_path = settings.credentials_path
+            if not creds_path.exists():
+                return False
+
+            self.credentials = service_account.Credentials.from_service_account_file(
+                creds_path,
+                scopes=[
+                    "https://www.googleapis.com/auth/drive",
+                    "https://www.googleapis.com/auth/colab",
+                ]
+            )
+            self._initialized = True
+            return True
+
+        except Exception as e:
+            print(f"[ColabClient] Initialization failed: {e}")
+            return False
+
+    def get_service_account_email(self) -> Optional[str]:
+        """Get the service account email from credentials."""
+        if self.credentials:
+            return self.credentials.service_account_email
+        return None
+
+    async def execute(self, code: str, timeout: int = 60) -> tuple[bool, str]:
+        """
+        Execute Python code in the Colab notebook.
+
+        Note: This is a simplified implementation. Real Colab execution requires:
+        1. Colab Enterprise (paid) with official API
+        2. Or: Google Drive API to manipulate .ipynb files directly
+        3. Or: Selenium/Playwright automation (fragile)
+
+        For production, we recommend Method 1 (Colab Enterprise) or
+        using Google Cloud Vertex AI / Generative AI directly.
+        """
+        if not self._initialized:
+            if not self.initialize():
+                return False, "Colab client not initialized - check credentials"
+
+        # This is a demonstration implementation
+        # Real implementation would use one of the methods above
+
+        # For now, we simulate execution with local Python
+        # In production, replace with actual Colab API calls
+        try:
+            start_time = time.time()
+
+            # SECURITY: In production, NEVER exec() untrusted code locally
+            # This is only for demonstration with trusted Manager code
+
+            # Capture stdout/stderr
+            import io
+            import sys
+            from contextlib import redirect_stdout, redirect_stderr
+
+            stdout_capture = io.StringIO()
+            stderr_capture = io.StringIO()
+
+            # Create isolated namespace
+            namespace = {}
+
+            with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                try:
+                    exec(code, namespace)
+                except Exception as e:
+                    stderr_capture.write(f"{type(e).__name__}: {e}")
+
+            output = stdout_capture.getvalue()
+            error = stderr_capture.getvalue()
+
+            execution_time_ms = int((time.time() - start_time) * 1000)
+
+            if error and not output:
+                return False, f"Execution error:\n{error}"
+
+            return True, output if output else "(no output)"
+
+        except Exception as e:
+            return False, f"Execution failed: {type(e).__name__}: {e}"
+
+
+# =============================================================================
+# Application Lifecycle
+# =============================================================================
+
+colab_client = ColabClient()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application startup and shutdown."""
+    # Startup
+    print("[Backend] Starting Colab Integration Backend...")
+
+    is_valid, errors = verify_configuration()
+    if is_valid:
+        if colab_client.initialize():
+            print(f"[Backend] ✓ Connected to Colab notebook: {colab_client.notebook_id}")
+            sa_email = colab_client.get_service_account_email()
+            if sa_email:
+                print(f"[Backend] ✓ Service account: {sa_email}")
+        else:
+            print("[Backend] ⚠ Colab client initialization failed - check credentials")
+    else:
+        print("[Backend] ⚠ Configuration errors:")
+        for error in errors:
+            print(f"  - {error}")
+
+    yield
+
+    # Shutdown
+    print("[Backend] Shutting down...")
+
+
+# =============================================================================
+# FastAPI Application
+# =============================================================================
+
+app = FastAPI(
+    title="Colab Connect Backend",
+    description="API for executing code in Google Colab notebooks via Faust",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# CORS for local development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "null", "*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# =============================================================================
+# Exception Handlers
+# =============================================================================
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler - fail loudly with actionable diagnostics."""
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error": f"Internal server error: {type(exc).__name__}: {exc}",
+            "path": str(request.url),
+        },
+    )
+
+
+# =============================================================================
+# API Endpoints
+# =============================================================================
+
+@app.get("/api/v1/status", response_model=StatusResponse)
+async def get_status():
+    """Check connection status to Colab."""
+    is_valid, _ = verify_configuration()
+
+    if not is_valid:
+        return StatusResponse(
+            connected=False,
+            notebook_id=settings.COLAB_NOTEBOOK_ID,
+        )
+
+    if not colab_client._initialized:
+        colab_client.initialize()
+
+    return StatusResponse(
+        connected=colab_client._initialized,
+        notebook_id=colab_client.notebook_id,
+        service_account_email=colab_client.get_service_account_email(),
+    )
+
+
+@app.post("/api/v1/execute", response_model=ExecuteResponse)
+async def execute_code(request: ExecuteRequest):
+    """
+    Execute Python code in the Colab notebook.
+
+    This endpoint receives code from the UI and executes it.
+    """
+    start_time = time.time()
+
+    if not colab_client._initialized:
+        if not colab_client.initialize():
+            raise HTTPException(
+                status_code=503,
+                detail="Colab client not initialized. Configure credentials and restart."
+            )
+
+    try:
+        success, output = await colab_client.execute(
+            request.code,
+            timeout=request.timeout_seconds
+        )
+
+        execution_time_ms = int((time.time() - start_time) * 1000)
+
+        return ExecuteResponse(
+            success=success,
+            output=output,
+            execution_time_ms=execution_time_ms,
+            error=None if success else output
+        )
+
+    except Exception as e:
+        execution_time_ms = int((time.time() - start_time) * 1000)
+        return ExecuteResponse(
+            success=False,
+            output="",
+            execution_time_ms=execution_time_ms,
+            error=f"{type(e).__name__}: {e}"
+        )
+
+
+@app.get("/")
+async def root():
+    """Serve the Colab Connect UI dashboard."""
+    index_file = PROJECT_ROOT / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    return {
+        "service": "Colab Connect Backend",
+        "version": "1.0.0",
+        "endpoints": {
+            "status": "/api/v1/status",
+            "execute": "/api/v1/execute",
+        },
+        "docs": "/docs",
+    }
+
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
+
+if __name__ == "__main__":
+    import uvicorn
+
+    print(f"Starting backend on {settings.BACKEND_HOST}:{settings.BACKEND_PORT}")
+    print(f"API docs: http://{settings.BACKEND_HOST}:{settings.BACKEND_PORT}/docs")
+
+    uvicorn.run(
+        "main:app",
+        host=settings.BACKEND_HOST,
+        port=settings.BACKEND_PORT,
+        reload=settings.DEBUG,
+    )

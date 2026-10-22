@@ -1,0 +1,52 @@
+# Rien-Prescript-Beeper // Model 01-Oracle
+
+Firmware for the physical **Rien-Prescript-Beeper (Model 01-Oracle)** handheld device running on an ESP32-C3 Supermini with an ST7789V 1.9" IPS display (170×320) and a JQ8900 audio synthesizer module.
+
+---
+
+## 1. Hardware Pinout & Wiring
+
+| Peripheral | Function / Pin | ESP32-C3 Pin | Notes |
+| :--- | :--- | :--- | :--- |
+| **ST7789V Display** | SCL / SCK | GPIO 4 | SPI Clock |
+| | SDA / MOSI | GPIO 6 | SPI Data |
+| | DC / RS | GPIO 5 | Data / Command |
+| | RES / RST | GPIO 3 | Hardware Reset |
+| | CS | GND | Hardwired to GND (Chip Select always active) |
+| | BLK / LEDA | 3V3 | Hardwired to 3.3V (Always ON backlight) |
+| | VCC / GND | 3V3 / GND | Power |
+| **JQ8900 Audio** | RX | GPIO 1 (TX) | Serial control via 1kΩ resistor |
+| | VCC / GND | 5V (or 3V3) / GND | Power |
+| **Tactile Buttons** | ROLL (Draw) | GPIO 0 (Primary) | External button to GND (Alt: GPIO 7, Onboard: GPIO 9) |
+| | SCROLL (Page) | GPIO 10 (Primary) | External button to GND (Alt: GPIO 2) |
+
+---
+
+## 2. JQ8900 Audio Track Mapping
+
+The JQ8900 UART command (`0xAA 0x07 0x02 [High] [Low]`) indexes tracks by **physical FAT table creation order**, which differs from file names or IO pin trigger order:
+
+| Action | Audio File | Hardware IO Pin | UART Serial Track # |
+| :--- | :--- | :--- | :--- |
+| **Draw Prescript** | `0003.wav` | IO3 | **Track 6** |
+| **Complete / Chime** | `0004.wav` | IO4 | **Track 7** |
+
+---
+
+## 3. Display Specifications
+
+* **Controller:** ST7789V
+* **Resolution:** 170 × 320 px (RAM is 240 × 320, visible window offset X = 35)
+* **Rotation:** Landscape (Rotation 1) → Effective 320 × 170 px
+* **Graphic Driver:** LovyanGFX v1.2+
+
+---
+
+## 4. Software Architecture
+
+* **Platform:** PlatformIO / Arduino Framework (`esp32c3_supermini`)
+* **Graphics:** LovyanGFX with custom pre-rasterized IBM Plex Mono vector fonts
+* **Data Sources:**
+  * Online: REST API via HTTPS (`secrets.h`)
+  * Offline: Embedded fallback quotes in flash
+* **Audio Engine:** `Jq8900Player` (Varis Gear C++ OOP driver)

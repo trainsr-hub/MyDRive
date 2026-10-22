@@ -1,0 +1,89 @@
+# Path: D:\My Drive\.gitignore
+
+# =========================================================================
+# [CORE ROOT IGNORE: ÁP DỤNG ĐỆ QUY CHO TOÀN BỘ CÁC DỰ ÁN CON]
+# =========================================================================
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Python artifacts
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+**/venv/
+**/env/
+**/ENV/
+
+# Sovereign Vault & Agent configs
+.agents/
+.claude/backups/
+.claude/settings.local.json
+.claude/paste-cache/
+.claude/file-history/
+.claude/tasks/
+.claude/graphify/cache/
+graphify-out/
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+.wrangler/
+**/.wrangler/
+
+# Databases & local state
+*.sqlite*
+*.db*
+*.lock
+status.txt
+processed_update_id.txt
+telegram_incoming.jsonl
+.temp/
+logs/
+*.log
+
+# =========================================================================
+# [CHẶN TOÀN BỘ SECRET/CREDENTIALS ĐỆ QUY TỪ GỐC XUỐNG DỰ ÁN CON]
+# =========================================================================
+# Chặn toàn bộ file credentials, token, GCP keys ở bất kỳ thư mục nào
+*credentials*.json
+**/*credentials*.json
+*token*.json
+**/*token*.json
+gcp_credentials*.json
+**/gcp_credentials*.json
+client_secret*.json
+**/*client_secret*.json
+telegram_config*.json
+**/telegram_config*.json
+
+# Môi trường & Khóa riêng tư
+.env
+.env.*
+**/.env
+**/.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Binaries & Media lớn
+*.onnx
+*.bin
+*.wav
+*.mp3
+!Entropy/Rose/audio/*.wav
+**/models/*.onnx
+**/models/*.bin
+archive/debug/
+
+# OS & Editor rác
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

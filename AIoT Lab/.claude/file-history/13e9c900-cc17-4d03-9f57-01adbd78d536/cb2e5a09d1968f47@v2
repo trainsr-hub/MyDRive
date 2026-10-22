@@ -1,0 +1,206 @@
+#!/usr/bin/env python3
+"""
+omniroute_config_export.py
+==========================
+Extracts all *configuration* tables from the Omniroute SQLite database and
+writes them to a clean JSON file suitable for backup and restore.
+
+Config tables are those that define how the system behaves — not telemetry,
+logs, caches, or conversation history.
+
+Usage:
+    python omniroute_config_export.py [--db PATH] [--out PATH]
+
+Defaults:
+    --db   D:/My Drive/Sync/Config/omniroute/storage.sqlite
+    --out  D:/My Drive/Sync/Config/omniroute/db_backups/config_backup_<timestamp>.json
+"""
+
+import sqlite3
+import json
+import argparse
+from datetime import datetime, timezone
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Config tables: these define behaviour, not history.
+# Excluded: call_logs, proxy_logs, agentic_conversations, usage_history,
+#           quota_snapshots, xp_audit_log, job_runs, conversation_turn_nodes,
+#           domain_cost_history, context_handoffs, session_model_history,
+#           audit_log, provider_quota_reset_events, _omniroute_migrations, etc.
+# ---------------------------------------------------------------------------
+CONFIG_TABLES = [
+    # --- Core Routing & Combos ---
+    "combos",
+    "model_combo_mappings",
+    "combo_adaptation_state",
+    "compression_combos",
+    "compression_combo_assignments",
+
+    # --- Provider & Connection Config ---
+    "provider_connections",
+    "provider_nodes",
+    "provider_plans",
+    "provider_key_limits",
+    "provider_quota_state",
+    "upstream_proxy_config",
+    "proxy_registry",
+
+    # --- API Keys & Auth ---
+    "api_keys",
+    "key_groups",
+    "key_group_members",
+    "registered_keys",
+    "relay_tokens",
+
+    # --- Model Config ---
+    "model_capabilities",
+    "model_capability_overrides",
+    "model_context_overrides",
+    "model_intelligence",
+    "reasoning_routing_rules",
+    "auto_candidate_overrides",
+
+    # --- Quota & Budget Config ---
+    "quota_pools",
+    "quota_allocations",
+    "quota_allocation_model_caps",
+    "quota_groups",
+    "quota_pool_connections",
+    "domain_budgets",
+    "domain_fallback_chains",
+    "account_key_limits",
+    "api_key_token_limits",
+    "api_key_context_sources",
+
+    # --- Agent & Middleware Config ---
+    "agent_bridge_mappings",
+    "agent_bridge_bypass",
+    "middleware_hooks",
+    "skills",
+    "jobs",
+
+    # --- Proxy & Relay Config ---
+    "proxy_assignments",
+    "proxy_subscriptions",
+    "group_model_permissions",
+
+    # --- Radar / Eval Config ---
+    "radar_settings",
+    "eval_suites",
+    "eval_cases",
+
+    # --- Other Config ---
+    "webhooks",
+    "plugins",
+    "playground_presets",
+    "tier_config",
+    "domain_circuit_breakers",
+    "key_value",
+    "db_meta",
+    "version_manager",
+    "community_servers",
+    "inspector_custom_hosts",
+    "upstream_proxy_config",
+]
+
+
+def get_table_data(cursor: sqlite3.Cursor, table: str) -> dict:
+    """Return schema + rows for a single table."""
+    try:
+        cursor.execute(f"PRAGMA table_info([{table}])")
+        columns = [row[1] for row in cursor.fetchall()]
+
+        cursor.execute(f"SELECT * FROM [{table}]")
+        rows = cursor.fetchall()
+
+        return {
+            "columns": columns,
+            "rows": [dict(zip(columns, row)) for row in rows],
+            "count": len(rows),
+        }
+    except sqlite3.Error as exc:
+        return {"error": str(exc), "count": 0}
+
+
+def export_config(db_path: str, out_path: str) -> None:
+    db_path = Path(db_path)
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if not db_path.exists():
+        raise FileNotFoundError(f"Database not found: {db_path}")
+
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    # Get list of tables that actually exist in this DB
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+    existing = {row[0] for row in cur.fetchall()}
+
+    payload = {
+        "_meta": {
+            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "source_db": str(db_path),
+            "tables_requested": len(CONFIG_TABLES),
+            "tables_found": 0,
+            "tables_missing": [],
+        },
+        "tables": {},
+    }
+
+    missing = []
+    for table in CONFIG_TABLES:
+        if table not in existing:
+            missing.append(table)
+            continue
+        payload["tables"][table] = get_table_data(cur, table)
+
+    payload["_meta"]["tables_found"] = len(payload["tables"])
+    payload["_meta"]["tables_missing"] = missing
+
+    conn.close()
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False, default=str)
+
+    # Print summary
+    print(f"Omniroute Config Export")
+    print(f"  Source  : {db_path}")
+    print(f"  Output  : {out_path}")
+    print(f"  Tables  : {payload['_meta']['tables_found']} exported, {len(missing)} not found")
+    print()
+    for table, data in payload["tables"].items():
+        count = data.get("count", 0)
+        err   = data.get("error", "")
+        tag   = f"ERROR: {err}" if err else f"{count} rows"
+        print(f"    {table:<40} {tag}")
+
+    if missing:
+        print()
+        print("  Not found in DB (schema may differ):")
+        for t in missing:
+            print(f"    - {t}")
+
+    size_kb = out_path.stat().st_size / 1024
+    print()
+    print(f"  Backup size: {size_kb:.1f} KB")
+    print(f"  Done.")
+
+
+def main():
+    default_db = r"D:\My Drive\Sync\Config\omniroute\storage.sqlite"
+    ts = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+    default_out = rf"D:\My Drive\Sync\Config\omniroute\db_backups\config_backup_{ts}.json"
+
+    parser = argparse.ArgumentParser(description="Export Omniroute config tables to JSON")
+    parser.add_argument("--db",  default=default_db,  help="Path to storage.sqlite")
+    parser.add_argument("--out", default=default_out, help="Output JSON path")
+    args = parser.parse_args()
+
+    export_config(args.db, args.out)
+
+
+if __name__ == "__main__":
+    main()

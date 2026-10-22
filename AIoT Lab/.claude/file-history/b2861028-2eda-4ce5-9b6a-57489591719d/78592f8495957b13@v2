@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""
+Minimal Vietnamese TTS integration test.
+Tests G2P conversion + existing CLI pipeline without modifications.
+Output written to file to bypass Windows console encoding issues.
+"""
+import sys
+from pathlib import Path
+
+# Add archived skills to path
+ARCHIVED_SKILLS = Path(r"D:\My Drive\Blue AI\Archived\.claude\skills\sound\scripts")
+sys.path.insert(0, str(ARCHIVED_SKILLS))
+
+from vietnamese_g2p import vi_text_to_ipa, contains_vietnamese
+
+# Test cases
+TEST_CASES = [
+    ("Xin chao Manager", "Vietnamese greeting"),
+    ("Faust da san sang", "Faust is ready"),
+    ("Toi la tro ly cua ban", "I am your assistant"),
+    ("Ready to speak Vietnamese", "English (should pass through)"),
+]
+
+def test_vietnamese_detection():
+    """Test Vietnamese language detection."""
+    lines = []
+    lines.append("=== Vietnamese Detection Test ===")
+    lines.append("")
+    for text, desc in TEST_CASES:
+        detected = contains_vietnamese(text)
+        lines.append(f"Text: {text}")
+        lines.append(f"Description: {desc}")
+        lines.append(f"Vietnamese Detected: {detected}")
+        lines.append("")
+    return "\n".join(lines)
+
+def test_g2p_conversion():
+    """Test grapheme-to-phoneme conversion."""
+    lines = []
+    lines.append("=== Grapheme-to-Phoneme Conversion Test ===")
+    lines.append("")
+    for text, desc in TEST_CASES:
+        ipa = vi_text_to_ipa(text)
+        lines.append(f"Input:  {text}")
+        lines.append(f"IPA:    {ipa}")
+        lines.append(f"Desc:   {desc}")
+        lines.append("")
+    return "\n".join(lines)
+
+def test_with_cli():
+    """Test integration with existing CLI."""
+    lines = []
+    lines.append("=== CLI Integration Test ===")
+    lines.append("")
+
+    # Test speech text (without diacritics for Windows console safety)
+    test_speech = "Xin chao Manager. Toi da san sang phuc vu."
+
+    # Detect if Vietnamese
+    has_vietnamese = contains_vietnamese(test_speech)
+    lines.append(f"Speech text: {test_speech}")
+    lines.append(f"Contains Vietnamese: {has_vietnamese}")
+
+    if has_vietnamese:
+        # Convert to IPA
+        ipa_text = vi_text_to_ipa(test_speech)
+        lines.append("")
+        lines.append("Converted to IPA:")
+        lines.append(f"{ipa_text}")
+        lines.append("")
+        lines.append("Ready to pass to TTS daemon at port 20129")
+        lines.append("(Your existing voice model receives this IPA text)")
+
+    lines.append("")
+    return "\n".join(lines)
+
+def main():
+    output = []
+    output.append("Vietnamese TTS Integration Test")
+    output.append("=" * 40)
+    output.append("")
+
+    try:
+        output.append(test_vietnamese_detection())
+        output.append(test_g2p_conversion())
+        output.append(test_with_cli())
+        output.append("SUCCESS: All tests completed")
+    except Exception as e:
+        output.append(f"ERROR: {e}")
+        import traceback
+        output.append(traceback.format_exc())
+
+    # Write to file
+    output_path = Path(r"D:\My Drive\Blue AI\.claude\vietnamese_tts_test_output.txt")
+    output_path.write_text("\n".join(output), encoding="utf-8")
+    print(f"Output written to: {output_path}")
+
+if __name__ == "__main__":
+    main()

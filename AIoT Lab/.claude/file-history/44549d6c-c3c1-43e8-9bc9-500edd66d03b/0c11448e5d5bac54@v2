@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animation Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap">
+<style>
+/* ───────────────────────────────────────────────────────────
+   Tokens  —  Obsidian-register: two near-identical darks,
+   everything recedes, content is the room.
+─────────────────────────────────────────────────────────── */
+:root {
+  --bg:          #1e1e1e;
+  --sidebar:     #161616;
+  --hover:       rgba(255,255,255,0.052);
+  --active:      rgba(255,255,255,0.088);
+  --fg:          rgba(218,218,218,0.82);
+  --fg-dim:      rgba(180,180,180,0.36);
+  --fg-icon:     rgba(160,160,160,0.45);
+  --accent:      #7c6fcd;
+  --panel-w:     228px;
+  --radius:      4px;
+  --font:        'Inter', system-ui, sans-serif;
+  color-scheme:  dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 13px; display: flex; }
+
+/* ── Sidebar ────────────────────────────────────────────── */
+#sidebar {
+  width: var(--panel-w);
+  min-width: var(--panel-w);
+  height: 100%;
+  background: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Vault title */
+#vault-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 15px 12px 11px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-dim);
+  user-select: none;
+  flex-shrink: 0;
+  letter-spacing: 0.01em;
+}
+#vault-title svg { flex-shrink: 0; opacity: 0.5; }
+
+/* Section header */
+.tree-section-label {
+  padding: 8px 12px 3px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* Tree scroll area */
+#file-tree {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+}
+#file-tree::-webkit-scrollbar { display: none; }
+
+/* Tree rows — shared */
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding-right: 8px;
+  border-radius: var(--radius);
+  margin: 1px 5px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 0.08s;
+  color: var(--fg-dim);
+}
+.tree-row:hover  { background: var(--hover);  color: var(--fg); }
+.tree-row.active { background: var(--active); color: var(--fg); }
+
+.tree-row svg { flex-shrink: 0; }
+.tree-row .row-label { flex: 1; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+
+/* Indent per depth level */
+.tree-row { padding-left: calc(10px + var(--depth, 0) * 14px); }
+
+/* Folder chevron */
+.chevron {
+  width: 14px; height: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.45;
+  transition: transform 0.15s, opacity 0.1s;
+}
+.chevron.open { transform: rotate(90deg); }
+.tree-row:hover .chevron { opacity: 0.7; }
+
+/* Children container */
+.tree-children { overflow: hidden; }
+.tree-children.collapsed { display: none; }
+
+/* ── Status bar ─────────────────────────────────────────── */
+#status-bar {
+  flex-shrink: 0;
+  padding: 7px 12px 10px;
+  font-size: 10px;
+  color: var(--fg-dim);
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Main pane ──────────────────────────────────────────── */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Tab bar */
+#tab-bar {
+  display: flex;
+  align-items: stretch;
+  height: 36px;
+  background: var(--sidebar);
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+#tab-bar::-webkit-scrollbar { display: none; }
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px 0 12px;
+  min-width: 120px;
+  max-width: 200px;
+  height: 100%;
+  font-size: 12px;
+  color: var(--fg-dim);
+  cursor: pointer;
+  border-right: 1px solid rgba(255,255,255,0.04);
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 0.1s, color 0.1s;
+  flex-shrink: 0;
+  position: relative;
+}
+.tab:hover { background: var(--hover); color: var(--fg); }
+.tab.active { background: var(--bg); color: var(--fg); }
+.tab.active::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+.tab-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+
+.tab-close {
+  width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 3px;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.1s, background 0.1s;
+}
+.tab:hover    .tab-close { opacity: 0.5; }
+.tab.active   .tab-close { opacity: 0.45; }
+.tab-close:hover          { opacity: 1 !important; background: rgba(255,255,255,0.1); }
+
+/* Content area */
+#content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Each pane is an iframe, absolutely stacked */
+.pane {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  border: none;
+  display: block;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+.pane.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Welcome / empty state */
+#welcome {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; text-align: center; padding: 32px;
+  pointer-events: none;
+}
+#welcome svg { opacity: 0.12; }
+#welcome p { font-size: 13px; color: var(--fg-dim); max-width: 220px; line-height: 1.7; }
+
+/* Error state inside frame area */
+#load-error {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; color: var(--fg-dim); font-size: 13px;
+}
+
+/* KB hint */
+#kb-hint {
+  position: absolute; bottom: 10px; right: 12px;
+  font-size: 10px; color: var(--fg-dim);
+  opacity: 0.3; pointer-events: none; line-height: 1.9; text-align: right;
+  z-index: 5;
+}
+kbd {
+  display: inline-block; padding: 0 4px;
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 3px;
+  font-size: 9px; background: rgba(255,255,255,0.04); font-family: inherit;
+}
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ─────────────────────────────────────────── -->
+<div id="sidebar">
+
+  <div id="vault-title">
+    <!-- vault icon -->
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.1"/>
+      <path d="M4.5 5h5M4.5 7.5h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    </svg>
+    System Design Sandbox
+  </div>
+
+  <div class="tree-section-label">Animations</div>
+
+  <div id="file-tree">
+    <!-- built by JS after /api/tree response -->
+    <div style="padding:16px 14px;color:var(--fg-dim);font-size:12px;opacity:0.5">Loading…</div>
+  </div>
+
+  <div id="status-bar">—</div>
+</div>
+
+<!-- ── Main pane ───────────────────────────────────────── -->
+<div id="main">
+
+  <div id="tab-bar">
+    <!-- tabs injected by JS -->
+  </div>
+
+  <div id="content">
+    <div id="welcome">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect x="6" y="8" width="36" height="32" rx="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M14 18h20M14 24h14M14 30h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <p>Select a file from the sidebar to open it.</p>
+    </div>
+  </div>
+</div>
+
+<div id="kb-hint">
+  <kbd>W</kbd> close tab &nbsp;·&nbsp; <kbd>←</kbd><kbd>→</kbd> switch &nbsp;·&nbsp; <kbd>F</kbd> fullscreen
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────
+const API       = '/api/tree';          // served by server.py
+const ANIM_BASE = 'Animations/';       // path prefix for iframes
+
+// ── State ─────────────────────────────────────────────────────────────────
+const tabs   = [];   // [{ name, path, el: tabEl, pane: iframeEl }]
+let activeIdx = -1;
+
+// ── DOM ───────────────────────────────────────────────────────────────────
+const treeEl    = document.getElementById('file-tree');
+const tabBar    = document.getElementById('tab-bar');
+const content   = document.getElementById('content');
+const welcome   = document.getElementById('welcome');
+const statusBar = document.getElementById('status-bar');
+
+// ── Tree rendering ────────────────────────────────────────────────────────
+function renderTree(nodes, container, depth) {
+  nodes.forEach(node => {
+    if (node.type === 'folder') {
+      renderFolder(node, container, depth);
+    } else {
+      renderFile(node, container, depth);
+    }
+  });
+}
+
+function renderFolder(node, container, depth) {
+  // Chevron row
+  const row = document.createElement('div');
+  row.className = 'tree-row';
+  row.style.setProperty('--depth', depth);
+  row.innerHTML = `
+    <span class="chevron open">
+      <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+        <path d="M1.5 1.5L5.5 3.5L1.5 5.5" stroke="currentColor" stroke-width="1.2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="opacity:.45">
+      <path d="M1.5 3C1.5 2.448 1.948 2 2.5 2H5L6 3.5H10.5C11.052 3.5 11.5 3.948 11.5 4.5V10C11.5 10.552 11.052 11 10.5 11H2.5C1.948 11 1.5 10.552 1.5 10V3Z"
+            fill="currentColor"/>
+    </svg>
+    <span class="row-label">${node.name}</span>`;
+
+  // Children container
+  const kids = document.createElement('div');
+  kids.className = 'tree-children';
+  renderTree(node.children, kids, depth + 1);
+
+  const chevron = row.querySelector('.chevron');
+  row.addEventListener('click', () => {
+    const open = !kids.classList.contains('collapsed');
+    kids.classList.toggle('collapsed', open);
+    chevron.classList.toggle('open', !open);
+  });
+
+  container.appendChild(row);
+  container.appendChild(kids);
+}
+
+function renderFile(node, container, depth) {
+  const row = document.createElement('div');
+  row.className = 'tree-row';
+  row.style.setProperty('--depth', depth);
+  row.dataset.path = node.path;
+  row.innerHTML = `
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="opacity:.38;margin-left:14px">
+      <path d="M2.5 1.5H7.5L10.5 4.5V11.5H2.5V1.5Z" stroke="currentColor" stroke-width="1"
+            stroke-linejoin="round"/>
+      <path d="M7.5 1.5V4.5H10.5" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+    </svg>
+    <span class="row-label">${node.name}</span>`;
+
+  row.addEventListener('click', () => openFile(node, row));
+  container.appendChild(row);
+}
+
+function syncTreeActive(path) {
+  treeEl.querySelectorAll('.tree-row[data-path]').forEach(r => {
+    r.classList.toggle('active', r.dataset.path === path);
+  });
+}
+
+// ── Tab / file management ─────────────────────────────────────────────────
+function openFile(node, treeRow) {
+  // Already open? Just activate
+  const existing = tabs.findIndex(t => t.path === node.path);
+  if (existing !== -1) { activateTab(existing); return; }
+
+  // Build iframe pane
+  const pane = document.createElement('iframe');
+  pane.className = 'pane';
+  pane.title = node.name;
+  pane.src = ANIM_BASE + node.path;
+  content.appendChild(pane);
+
+  // Build tab element
+  const tabEl = document.createElement('div');
+  tabEl.className = 'tab';
+  tabEl.innerHTML = `
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style="opacity:.4;flex-shrink:0">
+      <path d="M1.5 1H7L9.5 3.5V10H1.5V1Z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+      <path d="M7 1V3.5H9.5" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+    </svg>
+    <span class="tab-name">${node.name}</span>
+    <span class="tab-close" title="Close">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M2 2l6 6M8 2L2 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </span>`;
+
+  const idx = tabs.length;
+  tabEl.querySelector('.tab-close').addEventListener('click', e => {
+    e.stopPropagation();
+    closeTab(tabs.findIndex(t => t.path === node.path));
+  });
+  tabEl.addEventListener('click', () => activateTab(tabs.findIndex(t => t.path === node.path)));
+  tabBar.appendChild(tabEl);
+
+  tabs.push({ name: node.name, path: node.path, el: tabEl, pane });
+  activateTab(tabs.length - 1);
+}
+
+function activateTab(idx) {
+  if (idx < 0 || idx >= tabs.length) return;
+  activeIdx = idx;
+
+  tabs.forEach((t, i) => {
+    t.el.classList.toggle('active', i === idx);
+    t.pane.classList.toggle('visible', i === idx);
+  });
+
+  welcome.style.display = 'none';
+  syncTreeActive(tabs[idx].path);
+  statusBar.textContent = 'Animations / ' + tabs[idx].path.replace(/\//g, ' / ');
+
+  // Scroll tab into view
+  tabs[idx].el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+function closeTab(idx) {
+  if (idx < 0 || idx >= tabs.length) return;
+  const { el, pane } = tabs[idx];
+  el.remove();
+  pane.remove();
+  tabs.splice(idx, 1);
+
+  if (tabs.length === 0) {
+    activeIdx = -1;
+    welcome.style.display = '';
+    statusBar.textContent = '—';
+    treeEl.querySelectorAll('.tree-row.active').forEach(r => r.classList.remove('active'));
+    return;
+  }
+
+  const nextIdx = Math.min(idx, tabs.length - 1);
+  activeIdx = -1;   // force re-activate
+  activateTab(nextIdx);
+}
+
+// ── Keyboard ──────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  if ((e.key === 'w' || e.key === 'W') && !e.ctrlKey && !e.metaKey) {
+    if (activeIdx >= 0) closeTab(activeIdx);
+  }
+  if (e.key === 'ArrowLeft' && !e.ctrlKey) {
+    e.preventDefault();
+    if (activeIdx > 0) activateTab(activeIdx - 1);
+  }
+  if (e.key === 'ArrowRight' && !e.ctrlKey) {
+    e.preventDefault();
+    if (activeIdx < tabs.length - 1) activateTab(activeIdx + 1);
+  }
+  if (e.key === 'f' || e.key === 'F') {
+    if (activeIdx >= 0) window.open(ANIM_BASE + tabs[activeIdx].path, '_blank');
+  }
+});
+
+// ── Boot — fetch file tree ────────────────────────────────────────────────
+async function boot() {
+  let nodes;
+  try {
+    const res = await fetch(API);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    nodes = await res.json();
+  } catch (err) {
+    treeEl.innerHTML = `
+      <div style="padding:14px;color:var(--fg-dim);font-size:12px;line-height:1.7">
+        <strong style="color:var(--fg);opacity:.6">Server not running</strong><br>
+        Double-click <code>open_vault.bat</code><br>
+        or run: <code>python server.py</code>
+      </div>`;
+    return;
+  }
+
+  treeEl.innerHTML = '';
+  if (!nodes.length) {
+    treeEl.innerHTML = `<div style="padding:14px;color:var(--fg-dim);font-size:12px">No HTML files found in Animations/</div>`;
+    return;
+  }
+  renderTree(nodes, treeEl, 0);
+
+  // Count files for status
+  function countFiles(ns) { return ns.reduce((a, n) => a + (n.type === 'file' ? 1 : countFiles(n.children)), 0); }
+  const total = countFiles(nodes);
+  statusBar.textContent = `${total} animation${total !== 1 ? 's' : ''}`;
+}
+
+boot();
+</script>
+</body>
+</html>

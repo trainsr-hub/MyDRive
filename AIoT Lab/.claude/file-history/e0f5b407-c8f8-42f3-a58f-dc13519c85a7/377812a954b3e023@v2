@@ -1,0 +1,109 @@
+/**
+ * Project Entry: Header Component
+ * Handles Table Tabs, View Mode Switcher, and Theme Toggle
+ */
+import { state, showToast } from '../state.js';
+import { saveActiveTable, syncSqlite } from '../api.js';
+
+let onTableSwitched = null;
+let onViewModeSwitched = null;
+
+export function initHeader(tableSwitchCallback, viewModeCallback) {
+  onTableSwitched = tableSwitchCallback;
+  onViewModeSwitched = viewModeCallback;
+
+  // Bind static header buttons
+  const btnSave = document.getElementById('btn-save-schema');
+  if (btnSave) btnSave.onclick = () => saveActiveTable();
+
+  const btnSync = document.getElementById('btn-sync-sqlite');
+  if (btnSync) btnSync.onclick = () => syncSqlite();
+
+  const btnTheme = document.getElementById('btn-theme-toggle');
+  if (btnTheme) btnTheme.onclick = () => toggleTheme();
+
+  const btnSchema = document.getElementById('mode-btn-schema');
+  if (btnSchema) btnSchema.onclick = () => switchViewMode('schema');
+
+  const btnData = document.getElementById('mode-btn-data');
+  if (btnData) btnData.onclick = () => switchViewMode('data');
+
+  renderTableTabs();
+}
+
+export function renderTableTabs() {
+  const container = document.getElementById('table-tabs');
+  if (!container) return;
+  const names = Object.keys(state.tables);
+  container.innerHTML = names.map(name => `
+    <button class="tab-btn ${name === state.activeTable ? 'active' : ''}" data-table="${name}">
+      📁 ${name}
+    </button>
+  `).join('') + `
+    <button class="tab-btn new-table" id="btn-new-table">+ New Table</button>
+  `;
+
+  // Attach tab listeners
+  container.querySelectorAll('.tab-btn[data-table]').forEach(btn => {
+    btn.onclick = () => switchTable(btn.getAttribute('data-table'));
+  });
+
+  const btnNew = document.getElementById('btn-new-table');
+  if (btnNew) btnNew.onclick = () => createTable();
+}
+
+export function switchTable(name) {
+  if (!state.tables[name]) return;
+  state.activeTable = name;
+  state.activeColIdx = null;
+  renderTableTabs();
+  if (onTableSwitched) onTableSwitched(name);
+}
+
+export function switchViewMode(mode) {
+  state.currentViewMode = mode;
+  const btnSchema = document.getElementById('mode-btn-schema');
+  const btnData = document.getElementById('mode-btn-data');
+  const schemaWorkspace = document.querySelector('.workspace');
+  const schemaToolbar = document.getElementById('toolbar');
+  const dataWorkspace = document.getElementById('data-workspace');
+  const btnSaveSchema = document.getElementById('btn-save-schema');
+
+  if (mode === 'schema') {
+    if (btnSchema) btnSchema.classList.add('active');
+    if (btnData) btnData.classList.remove('active');
+    if (schemaWorkspace) schemaWorkspace.style.display = 'flex';
+    if (schemaToolbar) schemaToolbar.style.display = 'flex';
+    if (dataWorkspace) dataWorkspace.style.display = 'none';
+    if (btnSaveSchema) btnSaveSchema.style.display = 'inline-flex';
+  } else {
+    if (btnData) btnData.classList.add('active');
+    if (btnSchema) btnSchema.classList.remove('active');
+    if (schemaWorkspace) schemaWorkspace.style.display = 'none';
+    if (schemaToolbar) schemaToolbar.style.display = 'none';
+    if (dataWorkspace) dataWorkspace.style.display = 'flex';
+    if (btnSaveSchema) btnSaveSchema.style.display = 'none';
+  }
+
+  if (onViewModeSwitched) onViewModeSwitched(mode);
+}
+
+export function createTable() {
+  const name = prompt('Table name (e.g. tasks, inventory):');
+  if (!name) return;
+  const clean = name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  if (state.tables[clean]) { alert('Table already exists'); return; }
+  state.tables[clean] = {
+    table_name: clean,
+    columns: [{ name: 'ID', slug: 'id', type: 'hex_id', metadata: { prefix: clean.substring(0, 4).toUpperCase() } }]
+  };
+  switchTable(clean);
+  showToast(`Created table "${clean}"`);
+}
+
+export function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') || 'system';
+  const next = cur === 'dark' ? 'light' : cur === 'light' ? 'system' : 'dark';
+  if (next === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', next);
+}

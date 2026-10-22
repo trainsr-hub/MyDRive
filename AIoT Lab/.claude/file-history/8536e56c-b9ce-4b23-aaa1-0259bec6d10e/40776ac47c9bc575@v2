@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chrono Pool · Pure Time Accumulator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: radial-gradient(circle at 50% 45%, #0e0919 0%, #030206 100%);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #fff; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+
+/* ── HUD Center Stage ── */
+.hud-layer {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  align-items: center; padding: 34px 20px 28px; z-index: 10;
+}
+.header { text-align: center; }
+.sub-title {
+  font-size: 11px; letter-spacing: .35em; text-transform: uppercase;
+  color: #fbbf24; font-weight: 700; margin-bottom: 4px;
+}
+.main-title {
+  font-size: 20px; font-weight: 800; letter-spacing: .12em;
+  color: #fff; text-shadow: 0 0 16px rgba(251,191,36,0.35);
+}
+
+/* ── Big Prominent Counter ── */
+.pool-counter-container {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  pointer-events: none;
+}
+.time-counter {
+  font-size: 54px; font-weight: 900; font-family: 'Consolas', monospace;
+  color: #fef08a; text-shadow: 0 0 24px rgba(254,240,138,0.5), 0 0 48px rgba(234,179,8,0.3);
+  letter-spacing: .06em; transition: transform .1s ease;
+}
+.time-counter.pulse { transform: scale(1.06); color: #fff; text-shadow: 0 0 32px #fde047; }
+.hours-meta {
+  font-size: 13px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
+  color: #a1a1aa; font-family: monospace;
+}
+.float-feed {
+  position: absolute; top: -30px; font-size: 16px; font-weight: 800; font-family: monospace;
+  color: #4ade80; text-shadow: 0 0 12px rgba(74,222,128,0.7); opacity: 0;
+  animation: floatUp .6s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes floatUp {
+  0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+  30% { opacity: 1; transform: translateY(0) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-24px) scale(0.9); }
+}
+
+/* ── Command Bar (Min-H: 52px Full Surface Hitboxes) ── */
+.controls {
+  pointer-events: auto; display: flex; justify-content: center;
+  align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; max-width: 900px;
+}
+.btn {
+  min-height: 52px; padding: 0 24px;
+  background: rgba(18, 12, 30, 0.85); border: 1.5px solid rgba(251,191,36,0.35);
+  border-radius: 12px; color: #fef08a; font-size: 12px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; cursor: pointer;
+  transition: all .15s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn:hover {
+  background: #2a1845; border-color: #fde047; color: #fff;
+  box-shadow: 0 0 24px rgba(251,191,36,0.45); transform: translateY(-2px);
+}
+.btn:active { transform: translateY(1px); }
+.btn.active {
+  background: #ca8a04; color: #000; border-color: #fef08a;
+  box-shadow: 0 0 28px rgba(234,179,8,0.8);
+}
+.hold-btn {
+  background: linear-gradient(135deg, rgba(234,179,8,0.2), rgba(168,85,247,0.2));
+  border-color: #f59e0b;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="hud-layer">
+  <div class="header">
+    <div class="sub-title">Perpetual Time Reservoir</div>
+    <div class="main-title">The Chrono Pool</div>
+  </div>
+
+  <div class="pool-counter-container">
+    <div id="floatAnchor"></div>
+    <div class="time-counter" id="counterDisplay">00:00:00</div>
+    <div class="hours-meta" id="hoursMeta">0.00 Total Hours Banked</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" onclick="injectTime(900)">⏳ +15 Mins</button>
+    <button class="btn" onclick="injectTime(3600)">⚡ +1 Hour</button>
+    <button class="btn" onclick="injectTime(14400)">👑 +4 Hours</button>
+    <button class="btn hold-btn" id="holdBtn">🌊 Hold to Pour Time</button>
+    <button class="btn" id="liveBtn" onclick="toggleLiveClock()">⏱ Live Flow (1s/s)</button>
+    <button class="btn" onclick="resetPool()">🔄 Reset</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const counterDisplayEl = document.getElementById('counterDisplay');
+const hoursMetaEl = document.getElementById('hoursMeta'), floatAnchor = document.getElementById('floatAnchor');
+let W, H, cx, cy, timeSeconds = 0, targetSeconds = 0;
+let drops = [], ripples = [], splashes = [], isHolding = false, isLive = false, liveTimer = null, audioCtx = null;
+
+function playRippleTone(pitch = 1.0) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(520 * pitch, t);
+    osc.frequency.exponentialRampToValueAtTime(1040 * pitch, t + 0.12);
+    gain.gain.setValueAtTime(0.08, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.12);
+  } catch(e) {}
+}
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; cx = W / 2; cy = H / 2; }
+window.addEventListener('resize', resize);
+resize();
+
+function injectTime(seconds) {
+  targetSeconds += seconds;
+  const count = Math.min(30, Math.max(5, Math.floor(seconds / 300)));
+  for (let i = 0; i < count; i++) spawnDrop();
+  showFloatFeed(`+${formatHMS(seconds)}`);
+  playRippleTone(1.0 + Math.random() * 0.3);
+}
+
+function showFloatFeed(text) {
+  const d = document.createElement('div');
+  d.className = 'float-feed'; d.textContent = text;
+  floatAnchor.appendChild(d); setTimeout(() => d.remove(), 600);
+}
+
+function spawnDrop() {
+  const angle = Math.random() * Math.PI * 2;
+  const dist = 180 + Math.random() * 80;
+  drops.push({
+    x: cx + Math.cos(angle) * dist, y: cy - 220 + (Math.random() - 0.5) * 60,
+    targetX: cx + (Math.random() - 0.5) * 50, targetY: cy + (Math.random() - 0.5) * 50,
+    speed: 5 + Math.random() * 6, size: 2.5 + Math.random() * 3,
+    color: Math.random() > 0.3 ? '#facc15' : '#38bdf8'
+  });
+}
+
+// ── Hold to Stream Trigger ──────────────────────────────────────
+const holdBtn = document.getElementById('holdBtn');
+['mousedown', 'touchstart'].forEach(e => holdBtn.addEventListener(e, () => { isHolding = true; }));
+['mouseup', 'mouseleave', 'touchend'].forEach(e => holdBtn.addEventListener(e, () => { isHolding = false; }));
+
+function toggleLiveClock() {
+  isLive = !isLive;
+  document.getElementById('liveBtn').classList.toggle('active', isLive);
+  if (isLive) liveTimer = setInterval(() => injectTime(1), 1000);
+  else clearInterval(liveTimer);
+}
+function resetPool() { targetSeconds = 0; timeSeconds = 0; }
+
+function formatHMS(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60);
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+function draw() {
+  ctx.fillStyle = 'rgba(3, 2, 6, 0.28)'; ctx.fillRect(0, 0, W, H);
+
+  // If holding, continuously pour time
+  if (isHolding) {
+    targetSeconds += 120;
+    spawnDrop();
+    if (Math.random() < 0.2) playRippleTone(1.2);
+  }
+
+  // Smooth lerp counter
+  timeSeconds += (targetSeconds - timeSeconds) * 0.12;
+  const rounded = Math.round(timeSeconds);
+  counterDisplayEl.textContent = formatHMS(rounded);
+  hoursMetaEl.textContent = `${(timeSeconds / 3600).toFixed(2)} Total Hours Banked`;
+
+  const poolRadius = 160;
+  const t = Date.now() * 0.002;
+
+  // 1. Draw Outer Pool Basin & Radiant Water
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, poolRadius, poolRadius * 0.65, 0, 0, Math.PI * 2);
+  const pGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, poolRadius);
+  pGrad.addColorStop(0, 'rgba(234, 179, 8, 0.18)');
+  pGrad.addColorStop(0.6, 'rgba(168, 85, 247, 0.12)');
+  pGrad.addColorStop(1, 'rgba(3, 2, 6, 0)');
+  ctx.fillStyle = pGrad; ctx.fill();
+
+  ctx.strokeStyle = 'rgba(251, 191, 36, 0.35)'; ctx.lineWidth = 2;
+  ctx.shadowColor = '#facc15'; ctx.shadowBlur = 16;
+  ctx.stroke();
+
+  // 2. Ripples in the Pool
+  for (let i = ripples.length - 1; i >= 0; i--) {
+    const r = ripples[i];
+    r.radius += r.speed; r.alpha -= 0.025;
+    if (r.alpha <= 0) { ripples.splice(i, 1); continue; }
+    ctx.beginPath();
+    ctx.ellipse(r.x, r.y, r.radius, r.radius * 0.65, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(254, 240, 138, ${r.alpha})`;
+    ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  // 3. Falling Time Drops
+  for (let i = drops.length - 1; i >= 0; i--) {
+    const p = drops[i];
+    const dx = p.targetX - p.x, dy = p.targetY - p.y, dist = Math.hypot(dx, dy);
+    if (dist < 14) {
+      // Impact on pool surface
+      ripples.push({ x: p.targetX, y: p.targetY, radius: 4, speed: 2.8, alpha: 0.9 });
+      for (let s = 0; s < 3; s++) {
+        splashes.push({
+          x: p.targetX, y: p.targetY,
+          vx: (Math.random() - 0.5) * 3, vy: -1 - Math.random() * 3,
+          life: 1, color: p.color
+        });
+      }
+      counterDisplayEl.classList.add('pulse');
+      setTimeout(() => counterDisplayEl.classList.remove('pulse'), 80);
+      drops.splice(i, 1);
+      continue;
+    }
+    const angle = Math.atan2(dy, dx);
+    p.x += Math.cos(angle) * p.speed;
+    p.y += Math.sin(angle) * p.speed;
+
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = p.color; ctx.shadowColor = p.color; ctx.shadowBlur = 10; ctx.fill();
+  }
+
+  // 4. Splashing Droplets
+  for (let i = splashes.length - 1; i >= 0; i--) {
+    const sp = splashes[i];
+    sp.x += sp.vx; sp.y += sp.vy; sp.vy += 0.2; sp.life -= 0.05;
+    if (sp.life <= 0) { splashes.splice(i, 1); continue; }
+    ctx.beginPath(); ctx.arc(sp.x, sp.y, 2, 0, Math.PI * 2);
+    ctx.fillStyle = sp.color; ctx.fill();
+  }
+  ctx.restore();
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

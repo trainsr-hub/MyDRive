@@ -1,0 +1,132 @@
+"""
+Local GPU-Accelerated Anime Face Cropping Engine.
+Strict Local Disk D: Policy - All model weights and caches reside on D:\.
+"""
+
+import os
+import sys
+from pathlib import Path
+
+# =============================================================================
+# Invariant: Strict Local Disk D: Policy
+# =============================================================================
+MODELS_ROOT = Path("D:/Program Data/Faust/models")
+MODELS_ROOT.mkdir(parents=True, exist_ok=True)
+
+os.environ["TORCH_HOME"] = str(MODELS_ROOT / "torch")
+os.environ["HF_HOME"] = str(MODELS_ROOT / "huggingface")
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+os.environ["MPLBACKEND"] = "Agg"
+
+import cv2
+import torch
+
+_DETECTOR = None
+
+def get_detector():
+    """Lazily load the anime face detector model on local GPU/CPU."""
+    global _DETECTOR
+    if _DETECTOR is not None:
+        return _DETECTOR
+
+    from anime_face_detector import create_detector
+
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"
+    print(f"[*] Initializing Anime Face Detector on: {device} ({gpu_name})")
+
+    _DETECTOR = create_detector('yolov3', device=device)
+    return _DETECTOR
+
+
+def process_local_crop(
+    input_dir: str,
+    output_dir: str,
+    zoom_factor: float = 1.6,
+    score_thresh: float = 0.5,
+    progress_cb=None
+) -> tuple[int, list[str]]:
+    """
+    Recursively process image folders and crop anime faces.
+    Returns (total_avatars_created, list_of_saved_paths).
+    """
+    detector = get_detector()
+    valid_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.bmp')
+
+    input_path = Path(input_dir)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    # Collect files
+    image_files = []
+    for root, dirs, files in os.walk(input_path):
+        rel_path = os.path.relpath(root, input_path)
+        valid_files = [f for f in files if f.lower().endswith(valid_extensions)]
+        for f in valid_files:
+            image_files.append((Path(root) / f, rel_path, f))
+
+    total_images = len(image_files)
+    total_cropped = 0
+    saved_paths = []
+
+    for idx, (img_full_path, rel_folder, file_name) in enumerate(image_files):
+        if progress_cb:
+            progress_cb(idx + 1, total_images, f"[{rel_folder}] {file_name}")
+
+        try:
+            img = cv2.imread(str(img_full_path))
+            if img is None:
+                continue
+
+            img_h, img_w = img.shape[:2]
+            preds = detector(img)
+            if not preds:
+                continue
+
+            # Target directory mirrors relative path (skip '.' as root folder prefix)
+            target_sub = output_path if rel_folder == "." else output_path / rel_folder
+            target_sub.mkdir(parents=True, exist_ok=True)
+
+            base_name, ext = os.path.splitext(file_name)
+
+            for crop_idx, pred in enumerate(preds):
+                bbox = pred['bbox']
+                x1_b, y1_b, x2_b, y2_b, score = bbox
+
+                if score < score_thresh:
+                    continue
+
+                w_b = x2_b - x1_b
+                h_b = y2_b - y1_b
+                cx = x1_b + w_b / 2
+                cy = y1_b + h_b / 2
+
+                size = int(max(w_b, h_b) * zoom_factor)
+                x1, y1 = int(cx - size / 2), int(cy - size / 2)
+                x2, y2 = x1 + size, y1 + size
+
+                # Clamp to image boundaries
+                if x1 < 0: x2 -= x1; x1 = 0
+                if y1 < 0: y2 -= y1; y1 = 0
+                if x2 > img_w: x1 -= (x2 - img_w); x2 = img_w
+                if y2 > img_h: y1 -= (y2 - img_h); y2 = img_h
+
+                x1, y1 = max(0, x1), max(0, y1)
+                x2, y2 = min(img_w, x2), min(img_h, y2)
+
+                box_size = min(x2 - x1, y2 - y1)
+                x2, y2 = x1 + box_size, y1 + box_size
+
+                cropped_img = img[y1:y2, x1:x2]
+                out_suffix = f"_avatar_{crop_idx}{ext}" if len(preds) > 1 else f"_avatar{ext}"
+                out_name = f"{base_name}{out_suffix}"
+                out_file_path = target_sub / out_name
+
+                cv2.imwrite(str(out_file_path), cropped_img)
+                saved_paths.append(str(out_file_path))
+                total_cropped += 1
+
+        except Exception as e:
+            print(f"[!] Error processing {file_name}: {e}")
+
+    return total_cropped, saved_paths

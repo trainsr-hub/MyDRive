@@ -1,0 +1,211 @@
+export type ActionType = 'CREATE' | 'RENAME' | 'UPDATE_DESC' | 'PRUNE_EMPTY' | 'FLAG_RED' | 'MATCH' | 'CUSTOM';
+
+export interface ActionItem {
+  action_type: ActionType;
+  relative_path: string;
+  folder_name: string;
+  current_name?: string | null;
+  target_id?: string | null;
+  target_parent_id?: string | null;
+  current_desc: string;
+  expected_desc: string;
+  subfolders_count: number;
+  files_count: number;
+  reason: string;
+  source_id?: string | null;
+}
+
+export interface EntityPlan {
+  target_root_id: string;
+  target_root_name: string;
+  template_name: string;
+  summary: Record<string, number>;
+  items: ActionItem[];
+}
+
+export interface EntityGroup {
+  group_name: string;
+  group_id: string;
+  empty_note?: string;
+  entity_plans: EntityPlan[];
+}
+
+export interface PlanSummary {
+  total_groups: number;
+  total_entities: number;
+  create_count: number;
+  rename_count?: number;
+  update_desc_count: number;
+  prune_empty_count: number;
+  flagged_red_count: number;
+  compliant_count: number;
+  total_evaluated: number;
+}
+
+export interface MultiEntityPlan {
+  data_root_id: string;
+  data_root_name: string;
+  template_name: string;
+  template_schema: Record<string, any>;
+  summary: PlanSummary;
+  groups: EntityGroup[];
+}
+
+export interface ScanResponse {
+  success: boolean;
+  duration_ms: number;
+  template_id: string;
+  root_id: string;
+  plan: MultiEntityPlan;
+}
+
+export interface ReconcileResults {
+  dry_run: boolean;
+  created_count: number;
+  renamed_count?: number;
+  updated_desc_count: number;
+  pruned_empty_count: number;
+  flagged_red_count: number;
+  duration_ms: number;
+  summary: Record<string, number>;
+  executed: boolean;
+}
+
+export interface AuditLog {
+  id: number;
+  target_folder_id: string;
+  target_folder_name: string;
+  template_name: string;
+  created_count: number;
+  updated_desc_count: number;
+  pruned_empty_count: number;
+  flagged_red_count: number;
+  dry_run: boolean;
+  details: Record<string, any>;
+  created_at: string;
+}
+
+export interface DriveFolderItem {
+  id: string;
+  name: string;
+  description: string;
+  source_id?: string | null;
+  mimeType: string;
+}
+
+export interface DriveFileItem {
+  id: string;
+  name: string;
+  mimeType: string;
+  thumbnail_url?: string | null;
+}
+
+export interface CurrentFolderInfo {
+  id: string;
+  name: string;
+  description: string;
+  source_id?: string | null;
+  parents: string[];
+}
+
+export interface BrowseResponse {
+  success: boolean;
+  duration_ms: number;
+  current_folder: CurrentFolderInfo;
+  subfolders: DriveFolderItem[];
+  files: DriveFileItem[];
+}
+
+export interface TrashCandidate {
+  id: string;
+  name: string;
+  parent_id?: string | null;
+  parent_name?: string | null;
+  relative_path?: string;
+  description?: string;
+  reason: string;
+  type: 'EXTRANEOUS' | 'ORPHAN' | 'DUPLICATE';
+  action_type?: string;
+  files_count?: number;
+  subfolders_count?: number;
+  child_folders_count?: number;
+  original_id?: string;
+}
+
+export interface TrashCandidatesResponse {
+  success: boolean;
+  total_count: number;
+  trash_items: TrashCandidate[];
+  extraneous_count: number;
+  orphan_count: number;
+  duplicate_count: number;
+  database_total_folders: number;
+}
+
+export interface RawFolderRecord {
+  drive_id: string;
+  name: string;
+  child_of: string | null;
+  parent_name?: string | null;
+  description: string;
+  src_id: string | null;
+  sync_drive_id: string | null;
+  files_count: number;
+  updated_at: string;
+  child_folders_count: number;
+}
+
+export interface TemplateNode {
+  id: string;
+  name: string;
+  description: string;
+  parentId: string | null;
+  relativePath?: string;
+  children: TemplateNode[];
+  isNew?: boolean;
+  isModified?: boolean;
+  isDeleted?: boolean;
+}
+
+export interface CreateMutation {
+  temp_id: string;
+  parent_id: string;
+  name: string;
+  description: string;
+}
+
+export interface UpdateMutation {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface DeleteMutation {
+  id: string;
+  name: string;
+}
+
+export interface TemplateMutations {
+  creates: CreateMutation[];
+  updates: UpdateMutation[];
+  deletes: DeleteMutation[];
+}
+
+export interface TemplateResponse {
+  success: boolean;
+  template_id: string;
+  template_name: string;
+  tree: TemplateNode;
+  vault_tags: Record<string, string[]>;
+  duration_ms: number;
+}
+
+export interface TemplateSaveResponse {
+  success: boolean;
+  duration_ms: number;
+  created_count: number;
+  updated_count: number;
+  deleted_count: number;
+  tree: TemplateNode;
+  vault_tags: Record<string, string[]>;
+}

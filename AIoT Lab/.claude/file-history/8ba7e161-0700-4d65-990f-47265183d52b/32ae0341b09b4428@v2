@@ -1,0 +1,203 @@
+# Vinyl Angel — Complete Architectural & Gameplay Tab Knowledge Base
+
+*Codex Location: `D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel`*  
+*Target Project ID: `music_app` (`backend/data/projects/music_app`)*
+
+---
+
+## 1. System Overview & Multi-Tier Architecture
+
+Vinyl Angel is an audio discovery, roulette curation, and harmonic rating application within Universe 25. It interfaces with an SQLite 5-Tier Data Engine exposed via HTTP API (`http://localhost:8080/api/v1/execute`).
+
+### The Storage Tiers
+1. **Tier 1 (`_1_static.db`)**: 
+   - Static audio catalog.
+   - Contains all scraped/ingested YouTube tracks (`id`, `title`, `channel`, `channel_id`, `duration`).
+2. **Tier 2 (`_2_events.jsonl`)**:
+   - Append-only event log recording every user rating action.
+   - Event structure (`Tier2EventEntry`): `id`, `action` ('3+' | '4+' | '5+' | '6+' | '7+' | 'pass' | 'block'), `timestamp`, `timeblock`, `target_type` ('track' | 'channel'), `channel_id`, `channel_name`, `hazard_rank`.
+3. **Tier 3 (`_3_state.db`)**:
+   - Aggregated track and channel scoring state (`tier_3_data` table).
+   - Tracks scores: `score_3_count` through `score_7_count` (stored as string arrays), `timeblock_arc0`..`arc4`, `unlock_date`, `hazard_rank`.
+   - Also contains `channel_state` table for channel-level aggregate records.
+4. **Tier 4 (`_4_display.db`)**:
+   - Materialized display projections (`tier_4_data` table).
+   - Precomputed `hazard_level`, `played`, `timeblock`, `unlock_date`, `rankCategory`, `hazard_rank`.
+5. **Tier 5 (`_5_config.db`)**:
+   - Player filter & configuration persistence (`tier_5_data` table, key: `'filter_settings'`).
+   - Stores: `selectedChannel`, `excludedChannels`, `hazardCap`.
+6. **Tier Playlists (`playlists.db`)**:
+   - Custom playlists created by the user (`playlists` table). See Section 4 for the schema and the 3 playlist types.
+   - Stores: `id` (12-char HexID), `emoji`, `name`, `type`, `compatible_timeblocks`, `include_playlists`, `include_channels`, `include_songs`, `created_at`, `updated_at`, `description`.
+7. **Tier Channel Metadata (`channel_meta.db` / `playlists.db`)**:
+   - Origin channel curation statuses: `'raw' | 'cleaning' | 'approved'`.
+8. **Blacklist & Unplayable Buffers**:
+   - `blocked.db`: Permanently blacklisted songs.
+   - `unavailable_videos.jsonl`: Unplayable YouTube videos (error codes 100, 101, 150) buffered before being pruned from Tier 1.
+
+---
+
+## 2. File Map & Responsibilities
+
+| File Path | Role | Key Exports / Responsibilities |
+|---|---|---|
+| `VinylAngel.tsx` | Main Application Container | Tab navigation (`gameplay`, `gallery`, `playlists`, `ingestion`, `config`), theme switching, top currency counter (`Celestial Discs`, `Angel Roll Tickets`). |
+| `types.ts` | TypeScript Domain Models | `CustomPlaylist`, `PlaylistItem`, `ChannelOriginItem`, `Tier2EventEntry`, `Tier3StateRecord`, `ScoreTier`, `VinylAction`, etc. |
+| `store/useVinylStore.ts` | Zustand Global Store (Persisted) | Currencies (`discs`, `angelRollTickets`), shop purchases, settings, `customPlaylists`, `channelList`, `channelMetaMap`, `blockedSongIds`, inter-tab queued items. |
+| `services/engine.ts` | Engine API & Mathematical Core | `fetchSampledTracks()`, `fetchCustomPlaylists()`, `saveCustomPlaylist()`, `deleteCustomPlaylist()`, `logRatingEvent()`, `getFilterConfig()`, `saveFilterConfig()`, `fetchChannelOrigins()`, `updateChannelStatus()`. |
+| `components/VinylPlayer.tsx` | Gameplay Tab (Core Workstation) | YouTube iframe player, weighted roulette selection, filter controls (Include/Exclude/Hazard Cap), telemetry stats, harmonic rating deck. |
+| `components/VinylPlaylists.tsx` | Playlists Tab | Displays Custom Playlists & Origin Channels, curation status toggles (`raw` -> `cleaning` -> `approved`), channel purging, playback trigger. |
+| `components/PlaylistManagerModal.tsx` | Playlist Editor Modal | Create/edit Custom Playlist: name, emoji, description, member channel checklist, timeblock arcs. |
+| `components/VinylGallery.tsx` | Gallery & Catalog Sync Tab | Full track leaderboard, search across Tier 1, manual ETL synchronization buttons, queue track to gameplay. |
+| `components/VinylIngestion.tsx` | Song Ingestion Tab | Discover and curl YouTube playlists into Tier 1, SSE progress streaming, unplayable video review. |
+| `components/VinylConfig.tsx` | Settings Tab | Theme selection, autoplay toggles, default pass score. |
+| `components/VinylPipeline.tsx` | Pipeline Diagnostics | Direct diagnostic execution of ETL sync stages. |
+
+---
+
+## 3. Deep Dive: Gameplay Tab (`VinylPlayer.tsx`)
+
+### Architecture & Lifecycle
+1. **Mount & Filter Hydration**:
+   - Reads persistent filter settings (`getFilterConfig`) from Tier 5 (`_5_config.db`).
+   - Restores: `selectedChannel`, `excludedChannels`, `hazardCap`.
+   - If queued item exists in `useVinylStore` (`queuedTrackForGameplay` or `queuedPlaylistForGameplay`), overrides active playback.
+2. **Track Sampling (`loadData`)**:
+   - Calls `fetchSampledTracks()` in `engine.ts`.
+   - Filters out `blockedSongIds`.
+   - Resolves active channel filter:
+     - `ALL`: Samples across all channels.
+     - `CUSTOM:<id>`: Resolves custom playlist channels array and samples from those channels.
+     - `STATUS:approved | STATUS:cleaning | STATUS:raw`: Samples only channels with matching curation status.
+     - `<channel_name>`: Samples songs exclusively from that single origin channel.
+   - Applies `hazardCap` range filter.
+   - Respects `excludedChannels` list.
+3. **Roulette Track Selection (`selectWeightedTrack`)**:
+   - $O(N)$ inverse-play-count weighting: $w = \frac{1}{\text{played} + 1}$.
+   - Songs with 0 plays have highest probability; frequently played songs have lower probability.
+4. **Buffer Maintenance**:
+   - Local `playlist` array holds up to 50 sampled tracks.
+   - When remaining unplayed tracks drop below 15, `replenishBufferIfNeeded()` triggers a background sampling request.
+5. **YouTube Iframe Integration**:
+   - Embeds `#vinyl-yt-player`.
+   - Handlers for `onStateChange`:
+     - Track Ends: If `autoplay` is enabled, automatically logs the track with default pass score and advances.
+     - Errors (100, 101, 150): Appends to `unavailable_videos.jsonl`, excludes track, and spins to next track.
+
+### Visual & Interactive Layout
+1. **Telemetry & Filter Header (Top)**:
+   - **Include Selector Dropdown**:
+     - `ALL` (All Playlists)
+     - `⭐ Custom Playlists` (`CUSTOM:<id>`)
+     - `📁 Channel Status Groups` (`STATUS:approved`, `STATUS:cleaning`, `STATUS:raw`)
+     - `📻 Individual Channels` (Alphabetical list of channels with track counts)
+     - `⚙️ Manage Custom Playlists...`
+   - **Hazard Drag Badge**: Real-time calculation showing how many 3.0 songs must be deleted/raised to gain +0.01 hazard average.
+   - **Exclude Popover**: Multi-select checklist allowing the user to exclude specific Custom Playlists or individual channels.
+   - **Hazard Cap Dropdown**: Filter by hazard tier (`7+`, `6+`, `3.2 to <6.0`, `<4.0`, `<3.2`, `All`).
+   - **Metrics Pill Badges**: Pool count, session rated count, earned discs, offline outbox count, auto-sync batch counter (`X/15`).
+2. **Left Column (Track & Video Deck)**:
+   - Buffer position (`TRACK X / Y • Z in Pool`).
+   - Song Title (`currentTrack.title`).
+   - **Metadata Row**:
+     - **Origin Channel / Playlist Name**: `{currentTrack.channel}`
+     - **Track ID**: `ID: {currentTrack.id}`
+     - **Play Count**: `Played: {getPlayedCount(currentTrack.id)}`
+     - **Hazard Badge**: `HazardBadge` with score.
+     - **Pick Chance**: Weighted probability percentage.
+   - **16:9 YouTube Video Viewport**: `#vinyl-yt-player`.
+3. **Right Column (Harmonic Rating Deck)**:
+   - **Pin Button**: Locks ratings/ranks across tracks.
+   - **Rating Target Toggle**:
+     - `Single Song` (`'track'`): Logs rating to just `currentTrack.id`.
+     - `All in Channel` (`'channel'`): Logs rating to all songs belonging to `currentTrack.channel`.
+   - **Quick Action Row**:
+     - `🥀 Cancel (3+)`: Quick log as 3+ and advance.
+     - `🎲 Spin`: Skip to next roulette track without rating.
+     - `✨ Pass (5+)`: Log with selected score / default score and advance.
+   - **Hazard Rank Staging**: 3 (Base), 4 (Solid), 5 (Prime), 6 (Awaken), 7 (Crown).
+   - **Score Tier Buttons**: 3+, 4+, 5+, 6+, 7+.
+    - **Add to Playlist** (replaces the old Timeblock Arc Tags):
+      - `Add this Channel to a Playlist`: Genre playlists only (Section 5).
+      - `Add this Song to a Playlist`: Genre or Album playlists (Section 5).
+   - **Block Buttons**:
+     - `Blacklist & Skip Now`: Immediate removal, block persistence to `blocked.db`, advance.
+     - `Blacklist on Track End`: Flags song to be blocked once playback finishes.
+
+---
+
+## 4. Custom Playlists vs. Origin Playlists
+
+### Key Distinction
+- **Origin Playlist / Channel (`currentTrack.channel`)**:
+  - The source YouTube playlist/channel that was ingested into Tier 1 (`_1_static.db`).
+  - Represented as `channel` (string) on each track item.
+- **Custom Playlist (`CustomPlaylist`)**:
+- **Custom Playlist (`CustomPlaylist`)**:
+  - A user-defined playlist. There are 3 types (below).
+  - Interface:
+    ```ts
+    type PlaylistType = 'genre' | 'album' | 'collection';
+
+    interface CustomPlaylist {
+      id: string;                       // 12-char HexID: Date.now().toString(16).padStart(12, '0')
+      emoji: string;                    // e.g. "⚡"
+      name: string;                     // e.g. "Cyberpunk Synthwave"
+      type: PlaylistType;
+      compatible_timeblocks?: string[]; // Unchanged from the old schema
+      include_playlists: string[];      // Playlist IDs (used by 'collection')
+      include_channels: string[];       // Origin channels (used by 'genre')
+      include_songs: string[];          // Song IDs (used by 'genre' and 'album')
+      created_at: string;               // Time stamps unchanged
+      updated_at: string;
+      description?: string;             // Short note
+    }
+    ```
+
+### The 3 Playlist Types
+| Type | Meaning | Uses |
+|---|---|---|
+| `genre` (Rock, Pop) | Usually takes whole channels. Takes single songs only when a channel is too diverse. Multi-select. | `include_channels` + `include_songs` |
+| `album` | A remarkable period, built from carefully handpicked songs. Multi-select. | `include_songs` only |
+| `collection` (Album Compilation) | Merges many Albums into one bigger period (e.g. Grade 10 + 11 + 12 -> High School). | `include_playlists` only (Album IDs) |
+
+- Album: no channels; every song must be handpicked (no bulk/blind adds).
+- Collection: contains Album IDs only, never songs or channels.
+- Resolving for playback: genre -> channels' songs + `include_songs`; album -> `include_songs`; collection -> each Album in `include_playlists`.
+- **Legacy data**: old playlists (`channels`, no `type`) are mock data. No auto-migration; the user will gradually recreate them in the new format.
+
+### Persistence Mechanism for Custom Playlists
+- **Database**: SQLite database `backend/data/projects/music_app/app_data/playlists.db`, table `playlists`.
+- **API Call**: `saveCustomPlaylist(projectId, playlist)` in `services/engine.ts`.
+- **Frontend Store**: `customPlaylists` in `useVinylStore.ts`, updated via `addCustomPlaylist(pl)` / `updateCustomPlaylist(pl)`.
+
+---
+
+## 5. Gameplay Tab: Adding to an Existing Playlist
+
+The Timeblock Tag section is removed and replaced by 2 options:
+
+1. **Add this Channel to a Playlist** (`currentTrack.channel`)
+   - Targets: `genre` playlists only (appended to `include_channels`).
+   - Album and Collection are not offered, because Albums are always handpicked.
+2. **Add this Song to a Playlist** (`currentTrack.id`)
+   - Targets: `genre` or `album` playlists (appended to `include_songs`).
+   - Collection is not offered.
+
+```ts
+if (targetPl.type === 'genre' && !targetPl.include_channels.includes(currentTrack.channel)) {
+  const updated = {
+    ...targetPl,
+    include_channels: [...targetPl.include_channels, currentTrack.channel],
+    updated_at: new Date().toISOString(),
+  };
+  await saveCustomPlaylist(targetProjectId, updated);
+  updateCustomPlaylist(updated);
+}
+```
+
+**UI Placement**: in the Rating Deck where the Timeblock tags were (and/or next to `{currentTrack.channel}` in the metadata line). Each option opens a popover that:
+- Lists only eligible playlists as `{pl.emoji} {pl.name}`.
+- Shows a checkmark if the channel/song is already a member.
+- Adds (or removes on toggle) on click.
+- Offers "+ Create New Playlist" (opens `PlaylistManagerModal`).

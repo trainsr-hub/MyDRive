@@ -1,0 +1,511 @@
+import React, { useState } from 'react';
+import { MultiEntityPlan, EntityPlan, ActionItem } from '../types';
+import {
+  Folder,
+  ExternalLink,
+  Zap,
+  CheckCircle2,
+  Plus,
+  FileEdit,
+  FolderPlus,
+  RefreshCw,
+  Trash2,
+  ShieldAlert,
+  ArrowRight,
+  RotateCw,
+} from 'lucide-react';
+
+interface BirdEyeDashboardProps {
+  plan: MultiEntityPlan;
+  onRefresh: () => void;
+  onExecutePlan: (customPlan?: any) => Promise<void>;
+  isExecuting: boolean;
+  addToast: (type: 'success' | 'error' | 'info', title: string, message?: string) => void;
+  mockMode: boolean;
+  onToggleMockMode: () => void;
+  onResetMockData: () => void;
+  selectedEntityId?: string | null;
+  onSelectEntity?: (id: string | null) => void;
+}
+
+export const BirdEyeDashboard: React.FC<BirdEyeDashboardProps> = ({
+  plan,
+  onRefresh,
+  onExecutePlan,
+  isExecuting,
+  addToast,
+  mockMode,
+  onToggleMockMode,
+  onResetMockData,
+  selectedEntityId,
+  onSelectEntity,
+}) => {
+  // Modal State for New Entity
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newEntityName, setNewEntityName] = useState('');
+  const [targetGroupId, setTargetGroupId] = useState(plan.groups[0]?.group_id || 'mock_grp_t01');
+  const [isSpawning, setIsSpawning] = useState(false);
+
+  // Filter groups if a specific entity is selected in the sidebar
+  const displayedGroups = selectedEntityId
+    ? plan.groups
+        .map((g) => ({
+          ...g,
+          entity_plans: g.entity_plans.filter((ep) => ep.target_root_id === selectedEntityId),
+        }))
+        .filter((g) => g.entity_plans.length > 0)
+    : plan.groups;
+
+  // Calculate total mismatches across the entire bird's-eye view
+  const allItems = plan.groups.flatMap((g) => g.entity_plans.flatMap((ep) => ep.items));
+  const totalExceptions = allItems.filter((i) => i.action_type !== 'MATCH');
+
+  // Fix Single Entity
+  const handleFixEntity = async (entityPlan: EntityPlan) => {
+    const singlePlan = {
+      ...plan,
+      groups: plan.groups
+        .map((g) => ({
+          ...g,
+          entity_plans: g.entity_plans.filter((ep) => ep.target_root_id === entityPlan.target_root_id),
+        }))
+        .filter((g) => g.entity_plans.length > 0),
+    };
+    await onExecutePlan(singlePlan);
+  };
+
+  // Fix All
+  const handleFixAll = async () => {
+    await onExecutePlan(plan);
+  };
+
+  // Spawn New Entity
+  const handleCreateEntity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEntityName.trim()) return;
+
+    setIsSpawning(true);
+    try {
+      const res = await fetch('/api/drive/clone_template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parent_id: targetGroupId,
+          clone_name: newEntityName.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to create entity');
+
+      addToast(
+        'success',
+        'Entity Created Successfully',
+        `Created '${newEntityName}' with ${data.total_folders_created} template subfolders`
+      );
+      setIsModalOpen(false);
+      setNewEntityName('');
+      onRefresh();
+    } catch (err: any) {
+      addToast('error', 'Creation Failed', err.message);
+    } finally {
+      setIsSpawning(false);
+    }
+  };
+
+  const getActionBadge = (action: string) => {
+    switch (action) {
+      case 'RENAME':
+        return (
+          <span className="badge badge-rename" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '10.5px' }}>
+            <FileEdit size={10} /> RENAME
+          </span>
+        );
+      case 'CREATE':
+        return (
+          <span className="badge badge-create" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '10.5px' }}>
+            <FolderPlus size={10} /> MISSING
+          </span>
+        );
+      case 'UPDATE_DESC':
+        return (
+          <span className="badge badge-update" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '10.5px' }}>
+            <RefreshCw size={10} /> METADATA
+          </span>
+        );
+      case 'PRUNE_EMPTY':
+        return (
+          <span className="badge badge-prune" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '10.5px' }}>
+            <Trash2 size={10} /> UNWANTED
+          </span>
+        );
+      case 'FLAG_RED':
+        return (
+          <span className="badge badge-anomaly" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '10.5px' }}>
+            <ShieldAlert size={10} /> PROTECTED
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+      {/* 1. Monolithic Top Bar */}
+      <div
+        className="card"
+        style={{
+          padding: '1rem 1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          background: 'var(--bg-card)',
+          borderColor: 'var(--border-mid)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Zap size={20} style={{ color: 'var(--accent)' }} />
+            <span style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+              DRIVE ARCHITECT
+            </span>
+          </div>
+
+          <div
+            style={{
+              padding: '0.25rem 0.65rem',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-canvas)',
+              border: '1px solid var(--border-light)',
+              fontSize: '11.5px',
+              color: 'var(--text-dim)',
+            }}
+          >
+            Template: <strong style={{ color: 'var(--accent)' }}>Entropy 0</strong>
+          </div>
+        </div>
+
+        {/* Global Action Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+          {totalExceptions.length > 0 && (
+            <button
+              onClick={handleFixAll}
+              disabled={isExecuting}
+              className="btn primary"
+              style={{
+                padding: '0.5rem 1.15rem',
+                fontSize: '12.5px',
+                fontWeight: 700,
+                background: 'var(--accent)',
+                color: '#000',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                boxShadow: '0 0 14px var(--accent-glow)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+            >
+              <Zap size={13} /> {isExecuting ? 'Fixing...' : `Fix All Mismatches (${totalExceptions.length})`}
+            </button>
+          )}
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="btn primary"
+            style={{
+              padding: '0.5rem 1.15rem',
+              fontSize: '12.5px',
+              fontWeight: 700,
+              background: '#9333ea',
+              borderColor: '#a855f7',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+            }}
+          >
+            <Plus size={14} /> New Entity
+          </button>
+
+          <button
+            onClick={onToggleMockMode}
+            className="btn subtle"
+            style={{
+              padding: '0.35rem 0.75rem',
+              fontSize: '11.5px',
+              borderRadius: 'var(--radius-full)',
+              color: mockMode ? '#c084fc' : 'var(--text-dim)',
+              borderColor: mockMode ? 'rgba(168, 85, 247, 0.4)' : 'var(--border-light)',
+            }}
+            title="Toggle Mock / Live Drive"
+          >
+            {mockMode ? '⚡ Mock Mode (0ms)' : '🌐 Live Drive'}
+          </button>
+
+          {mockMode && (
+            <button onClick={onResetMockData} className="btn subtle" style={{ padding: '0.35rem 0.65rem', fontSize: '11px' }}>
+              Reset Data
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Focus Breadcrumb (when an entity is clicked in sidebar) */}
+      {selectedEntityId && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1.25rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '13px', color: 'var(--text-secondary)' }}>
+            <span>Focused on entity:</span>
+            <strong style={{ color: 'var(--accent)' }}>{displayedGroups[0]?.entity_plans[0]?.target_root_name}</strong>
+          </div>
+          <button
+            onClick={() => onSelectEntity && onSelectEntity(null)}
+            className="btn subtle"
+            style={{ padding: '0.3rem 0.75rem', fontSize: '12px', fontWeight: 600 }}
+          >
+            Show All Entities (Bird's Eye) &rarr;
+          </button>
+        </div>
+      )}
+
+      {/* 2. Bird's Eye Groups & Entities Grid */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        {displayedGroups.map((group) => {
+          return (
+            <section key={group.group_id} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              {/* Group Banner */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 0.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <Folder size={17} style={{ color: 'var(--accent)' }} />
+                  <h2 style={{ fontSize: '15px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)', margin: 0 }}>
+                    {group.group_name}
+                  </h2>
+                  <span style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+                    ({group.entity_plans.length} {group.entity_plans.length === 1 ? 'entity' : 'entities'})
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => { setTargetGroupId(group.group_id); setIsModalOpen(true); }}
+                  className="btn subtle"
+                  style={{ fontSize: '11.5px', padding: '0.25rem 0.6rem' }}
+                >
+                  + Add Entity to {group.group_name}
+                </button>
+              </div>
+
+              {/* Entities Grid for this Group */}
+              {group.entity_plans.length === 0 ? (
+                <div
+                  className="card"
+                  style={{
+                    padding: '2.5rem',
+                    textAlign: 'center',
+                    borderStyle: 'dashed',
+                    borderColor: 'var(--border-light)',
+                    color: 'var(--text-dim)',
+                    fontSize: '13px',
+                  }}
+                >
+                  No entities registered in this group yet.
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
+                    gap: '1rem',
+                  }}
+                >
+                  {group.entity_plans.map((ep) => {
+                    const mismatches = ep.items.filter((i) => i.action_type !== 'MATCH');
+                    const hasMismatches = mismatches.length > 0;
+
+                    return (
+                      <div
+                        key={ep.target_root_id}
+                        className="card"
+                        style={{
+                          padding: '0',
+                          overflow: 'hidden',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          borderColor: hasMismatches ? 'rgba(245, 158, 11, 0.4)' : 'var(--border-light)',
+                          background: 'var(--bg-card)',
+                          boxShadow: hasMismatches ? '0 4px 16px rgba(0, 0, 0, 0.25)' : 'none',
+                        }}
+                      >
+                        {/* Entity Card Header */}
+                        <div
+                          style={{
+                            padding: '0.85rem 1.15rem',
+                            borderBottom: '1px solid var(--border-light)',
+                            background: 'var(--bg-card-hover)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '0.5rem',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Folder size={17} style={{ color: hasMismatches ? 'var(--warning)' : 'var(--success)' }} />
+                            <span style={{ fontWeight: 700, fontSize: '14.5px', color: 'var(--text-primary)' }}>
+                              {ep.target_root_name}
+                            </span>
+                            <a
+                              href={`https://drive.google.com/drive/folders/${ep.target_root_id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ color: 'var(--text-dim)' }}
+                              title="Open folder in Google Drive"
+                            >
+                              <ExternalLink size={13} />
+                            </a>
+                          </div>
+
+                          {/* Fix Button / In Sync Pill */}
+                          {hasMismatches ? (
+                            <button
+                              onClick={() => handleFixEntity(ep)}
+                              disabled={isExecuting}
+                              className="btn primary"
+                              style={{
+                                padding: '0.3rem 0.75rem',
+                                fontSize: '11.5px',
+                                fontWeight: 700,
+                                background: 'var(--warning)',
+                                color: '#000',
+                                border: 'none',
+                                borderRadius: 'var(--radius-sm)',
+                              }}
+                            >
+                              <Zap size={12} /> Fix ({mismatches.length})
+                            </button>
+                          ) : (
+                            <div style={{ fontSize: '11px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 700 }}>
+                              <CheckCircle2 size={13} /> In Sync
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Entity Card Body: Highlight ONLY Mismatches */}
+                        <div style={{ padding: '0.85rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', flex: 1 }}>
+                          {hasMismatches ? (
+                            mismatches.map((m, mIdx) => (
+                              <div
+                                key={mIdx}
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '0.2rem',
+                                  padding: '0.5rem 0.75rem',
+                                  borderRadius: 'var(--radius-sm)',
+                                  background: m.action_type === 'FLAG_RED' ? 'var(--danger-bg)' : 'var(--bg-canvas)',
+                                  border: '1px solid var(--border-table)',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  {getActionBadge(m.action_type)}
+                                  <span style={{ fontSize: '10.5px', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                                    {m.relative_path.split('/').slice(2).join('/') || m.folder_name}
+                                  </span>
+                                </div>
+
+                                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '0.15rem' }}>
+                                  {m.action_type === 'RENAME' ? (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                      <span style={{ textDecoration: 'line-through', opacity: 0.5 }}>{m.current_name}</span>
+                                      <ArrowRight size={12} style={{ color: '#c084fc' }} />
+                                      <span style={{ color: '#c084fc' }}>{m.folder_name}</span>
+                                    </span>
+                                  ) : m.action_type === 'CREATE' ? (
+                                    <span style={{ color: 'var(--success)' }}>+ Missing: "{m.folder_name}"</span>
+                                  ) : m.action_type === 'UPDATE_DESC' ? (
+                                    <span style={{ color: 'var(--warning)' }}>~ Update description metadata</span>
+                                  ) : m.action_type === 'PRUNE_EMPTY' ? (
+                                    <span style={{ color: 'var(--muted)' }}>🗑️ Unwanted empty folder</span>
+                                  ) : (
+                                    <span style={{ color: 'var(--danger)' }}>🔒 Preserved ({m.files_count} files)</span>
+                                  )}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div style={{ padding: '0.75rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-dim)', fontSize: '12.5px' }}>
+                              <CheckCircle2 size={15} style={{ color: 'var(--success)' }} />
+                              <span>All template subfolders matched and compliant.</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          );
+        })}
+      </div>
+
+      {/* ================= MODAL: CREATE NEW ENTITY ================= */}
+      {isModalOpen && (
+        <div className="modal-backdrop">
+          <div className="modal-box" style={{ maxWidth: '420px' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 0.5rem 0', fontSize: '17px' }}>
+              <Plus size={18} style={{ color: '#c084fc' }} />
+              Create New Entity
+            </h3>
+            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+              Spawns a new entity folder with full template subfolders stamped with source metadata.
+            </p>
+
+            <form onSubmit={handleCreateEntity} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '0.35rem' }}>
+                  Entity Name (e.g. C25_Elena)
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="Enter name..."
+                  value={newEntityName}
+                  onChange={(e) => setNewEntityName(e.target.value)}
+                  className="input-base"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '0.35rem' }}>
+                  Destination Group
+                </label>
+                <select
+                  value={targetGroupId}
+                  onChange={(e) => setTargetGroupId(e.target.value)}
+                  className="input-base"
+                  style={{ cursor: 'pointer' }}
+                >
+                  {plan.groups.map((g) => (
+                    <option key={g.group_id} value={g.group_id}>
+                      {g.group_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn subtle" disabled={isSpawning}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn primary" style={{ background: '#9333ea', borderColor: '#a855f7' }} disabled={isSpawning}>
+                  {isSpawning ? 'Spawning...' : 'Create Entity'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

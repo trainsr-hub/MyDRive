@@ -1,0 +1,252 @@
+"""
+Avatar Studio Service - Tier 3 Service Layer.
+Features Streaming Pipeline with Loud Error Telemetry:
+- Downloads each image directly to RAM buffer (0 MB raw disk usage).
+- Performs GPU face detection and crops avatars immediately on GTX 1650.
+- Checks deduplication BEFORE downloading bytes to save bandwidth.
+- Never hides errors: prints full tracebacks to console and surfaces them to UI.
+"""
+
+import os
+import shutil
+import traceback
+import threading
+from pathlib import Path
+from typing import Optional, Callable
+
+import cv2
+import numpy as np
+
+from local_cropper import process_local_crop, crop_image_array
+from drive_downloader import DriveDownloader, extract_folder_id, download_drive_folder
+
+PROJECT_ROOT = Path(__file__).parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+OUTPUT_DIR = DATA_DIR / "output_avatars"
+
+# Ephemeral temp directory on Local Disk D: (for fallback downloads)
+EPHEMERAL_TEMP_DIR = Path("D:/Temp/FaustAvatarStudio/input_temp")
+
+# Thread-safe job state with explicit error logging
+job_state = {
+    "status": "idle",
+    "total": 0,
+    "processed": 0,
+    "total_avatars": 0,
+    "total_skipped": 0,
+    "current_file": "",
+    "error": None,
+    "errors": []
+}
+
+def get_job_state() -> dict:
+    return dict(job_state)
+
+
+def run_avatar_crop_pipeline(
+    folder_source: str,
+    zoom_factor: float = 1.6,
+    score_thresh: float = 0.5
+):
+    """
+    Run end-to-end face crop pipeline locally on NVIDIA GPU.
+    - Streams directly in-memory from Google Drive (Zero input disk footprint).
+    - Checks deduplication BEFORE downloading bytes to save bandwidth.
+    - Fails loudly with full console tracebacks and UI error listings.
+    """
+    global job_state
+
+    job_state.update({
+        "status": "scanning",
+        "total": 0,
+        "processed": 0,
+        "total_avatars": 0,
+        "total_skipped": 0,
+        "current_file": "Scanning image source...",
+        "error": None,
+        "errors": []
+    })
+
+    source_path = folder_source.strip()
+    is_remote_drive = source_path.startswith("http://") or source_path.startswith("https://")
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # Case A: Google Drive Remote Source (Pipelined Stream-Processing)
+        if is_remote_drive:
+            downloader = DriveDownloader()
+            folder_id = extract_folder_id(source_path)
+
+            if downloader.service:
+                print(f"\n[*] Connecting to Google Drive API for Folder ID: {folder_id}...")
+                job_state["current_file"] = "Querying Google Drive file tree via API..."
+                tree = downloader.list_folder_tree(folder_id)
+                image_tree = [(df, rel) for df, rel in tree if df.is_image]
+
+                if not image_tree:
+                    err_msg = f"No image files found in Google Drive folder: {folder_id}. Verify sharing permissions."
+                    print(f"[!] {err_msg}")
+                    raise RuntimeError(err_msg)
+
+                print(f"[OK] Found {len(image_tree)} images in Google Drive. Starting GPU stream...")
+                job_state["status"] = "processing"
+                job_state["total"] = len(image_tree)
+                total_avatars = 0
+                total_skipped = 0
+
+                for idx, (df, rel_folder) in enumerate(image_tree):
+                    target_sub = OUTPUT_DIR if not rel_folder else OUTPUT_DIR / rel_folder
+                    clean_name = Path(df.name).name
+                    base_name, ext = os.path.splitext(clean_name)
+
+                    # 1. Deduplication check BEFORE downloading bytes (Safe prefix matching)
+                    already_cropped = False
+                    if target_sub.exists():
+                        target_prefix = f"{base_name}_avatar"
+                        try:
+                            for ef in target_sub.iterdir():
+                                if ef.is_file() and ef.name.startswith(target_prefix):
+                                    already_cropped = True
+                                    break
+                        except Exception:
+                            pass
+
+                    if already_cropped:
+                        total_skipped += 1
+                        job_state["processed"] = idx + 1
+                        job_state["total_skipped"] = total_skipped
+                        job_state["current_file"] = f"[SKIP] Already cropped: [{rel_folder or 'Root'}] {clean_name}"
+                        continue
+
+                    # 2. In-memory streaming download (0 bytes saved to disk)
+                    job_state["current_file"] = f"Streaming & Cropping on GPU: [{rel_folder or 'Root'}] {clean_name}"
+
+                    try:
+                        file_bytes = downloader.download_file_bytes(df.id)
+                        if not file_bytes:
+                            warn_msg = f"Failed to download bytes for: [{rel_folder or 'Root'}] {df.name} (ID: {df.id})"
+                            print(f"[ERROR] {warn_msg}")
+                            job_state["errors"].append({
+                                "file": df.name,
+                                "folder": rel_folder or "Root",
+                                "type": "download_failed",
+                                "details": warn_msg
+                            })
+                            continue
+
+                        img = cv2.imdecode(np.frombuffer(file_bytes, np.uint8), cv2.IMREAD_COLOR)
+                        del file_bytes
+
+                        if img is None:
+                            warn_msg = f"Corrupted or unsupported image encoding in: [{rel_folder or 'Root'}] {df.name}"
+                            print(f"[ERROR] {warn_msg}")
+                            job_state["errors"].append({
+                                "file": df.name,
+                                "folder": rel_folder or "Root",
+                                "type": "decode_failed",
+                                "details": warn_msg
+                            })
+                            continue
+
+                        # 3. Detect & crop faces directly on NVIDIA GTX 1650
+                        crops = crop_image_array(img, zoom_factor=zoom_factor, score_thresh=score_thresh)
+                        del img
+
+                        if crops:
+                            target_sub.mkdir(parents=True, exist_ok=True)
+                            for c_idx, (crop_img, score) in enumerate(crops):
+                                out_suffix = f"_avatar_{c_idx}{ext}" if len(crops) > 1 else f"_avatar{ext}"
+                                out_path = target_sub / f"{base_name}{out_suffix}"
+                                cv2.imwrite(str(out_path), crop_img)
+                                total_avatars += 1
+                                print(f"[CROP OK] Created avatar: {out_path.name} (score: {score:.2f})")
+                            del crops
+                        else:
+                            info_msg = f"No anime face detected in: [{rel_folder or 'Root'}] {df.name} (threshold: {score_thresh})"
+                            print(f"[WARN] {info_msg}")
+                            job_state["errors"].append({
+                                "file": df.name,
+                                "folder": rel_folder or "Root",
+                                "type": "no_face_detected",
+                                "details": info_msg
+                            })
+
+                    except Exception as item_err:
+                        err_line = f"Exception processing file [{rel_folder or 'Root'}] {df.name}: {item_err}"
+                        print(f"\n[EXCEPTION] {err_line}")
+                        traceback.print_exc()
+                        job_state["errors"].append({
+                            "file": df.name,
+                            "folder": rel_folder or "Root",
+                            "type": "processing_exception",
+                            "details": f"{type(item_err).__name__}: {item_err}"
+                        })
+
+                    job_state["processed"] = idx + 1
+                    job_state["total_avatars"] = total_avatars
+
+                err_count = len(job_state["errors"])
+                summary_line = f"Done! Streamed & created {total_avatars} avatars ({total_skipped} skipped, {err_count} issues)."
+                print(f"\n[PIPELINE COMPLETE] {summary_line}")
+                job_state.update({
+                    "status": "completed",
+                    "total_avatars": total_avatars,
+                    "total_skipped": total_skipped,
+                    "current_file": summary_line
+                })
+                return
+
+            else:
+                # Fallback to ephemeral disk download if Service Account not configured
+                job_state["current_file"] = "Downloading character folder via fallback downloader..."
+                if EPHEMERAL_TEMP_DIR.exists():
+                    shutil.rmtree(EPHEMERAL_TEMP_DIR, ignore_errors=True)
+                EPHEMERAL_TEMP_DIR.mkdir(parents=True, exist_ok=True)
+
+                def dl_cb(msg):
+                    job_state["current_file"] = msg
+
+                download_drive_folder(source_path, EPHEMERAL_TEMP_DIR, progress_cb=dl_cb)
+                work_input = EPHEMERAL_TEMP_DIR
+
+        # Case B: Local Folder Source on Disk D:
+        elif os.path.exists(source_path):
+            work_input = Path(source_path)
+        else:
+            raise ValueError(f"Input source not found: {source_path}")
+
+        # Process local batch
+        job_state["status"] = "processing"
+        def progress_callback(current, total, filename):
+            job_state["total"] = total
+            job_state["processed"] = current
+            job_state["current_file"] = filename
+
+        total_avatars, total_skipped, saved = process_local_crop(
+            input_dir=str(work_input),
+            output_dir=str(OUTPUT_DIR),
+            zoom_factor=zoom_factor,
+            score_thresh=score_thresh,
+            progress_cb=progress_callback
+        )
+
+        job_state.update({
+            "status": "completed",
+            "total_avatars": total_avatars,
+            "total_skipped": total_skipped,
+            "current_file": f"Done! Created {total_avatars} avatars ({total_skipped} skipped as already existing)."
+        })
+
+    except Exception as e:
+        print(f"\n[FATAL PIPELINE EXCEPTION] {type(e).__name__}: {e}")
+        traceback.print_exc()
+        job_state.update({
+            "status": "error",
+            "error": f"{type(e).__name__}: {e}",
+            "current_file": f"Fatal Error: {e}"
+        })
+
+    finally:
+        # Purge any fallback temporary folder
+        if is_remote_drive and EPHEMERAL_TEMP_DIR.exists():
+            shutil.rmtree(EPHEMERAL_TEMP_DIR, ignore_errors=True)

@@ -1,0 +1,37 @@
+{
+  "state": "done",
+  "detail": "API Error: Claude's response exceeded the 128000 output token maximum. To configure this behavior, set the CLAUDE_CODE_M",
+  "tempo": "idle",
+  "output": null,
+  "children": null,
+  "linkScanOffset": 0,
+  "template": "bg",
+  "respawnFlags": [
+    "--permission-mode",
+    "auto",
+    "--model",
+    "Faust-ST"
+  ],
+  "bgIsolation": "none",
+  "providerEnv": {
+    "ANTHROPIC_MODEL": "Faust-ST"
+  },
+  "interactiveLineage": true,
+  "intent": "<pasted_content id=\"8c1d\">\n❯ Perfect. Now I wonder which Display Module should we choose. Most of our quotes will just be as long as the example below. And I would rather have the display size to be r",
+  "name": "Rose backend real-time reload",
+  "nameSource": "auto",
+  "sessionId": "f22aa174-4654-4824-8202-d214ece1a235",
+  "resumeSessionId": "f22aa174-4654-4824-8202-d214ece1a235",
+  "daemonShort": "f22aa174",
+  "cwd": "D:\\My Drive\\Blue AI",
+  "createdAt": "2026-10-07T02:38:35.266Z",
+  "updatedAt": "2026-10-12T10:23:16.826Z",
+  "firstTerminalAt": "2026-10-07T04:04:25.611Z",
+  "lastTerminalAt": "2026-10-07T04:04:25.611Z",
+  "backend": "daemon",
+  "inFlight": {
+    "tasks": 0,
+    "queued": 0,
+    "kinds": []
+  }
+}

@@ -1,0 +1,16 @@
+@echo off
+title Project Entry — Table Template & SQLite Schema Architect
+cd /d "%~dp0"
+
+echo ========================================================
+echo   Project Entry [Table Templates + SQLite Architecture]
+echo ========================================================
+echo.
+echo Starting Project Entry Server on http://localhost:20139 ...
+echo Schemas stored locally in: %~dp0data\
+echo SQLite database: %~dp0data\database.sqlite
+echo.
+
+start "" "http://localhost:20139/index.html"
+python server.py
+pause

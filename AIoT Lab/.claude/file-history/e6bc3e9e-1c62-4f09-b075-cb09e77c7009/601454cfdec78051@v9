@@ -1,0 +1,129 @@
+// path: src/apps/heraclitus/components/YellowPoolTab.tsx
+// Tier 4 Presentation Component: Minimalist Chrono Gacha Arena matching Image #3
+
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { fetchPoolState, depositToPool } from '../services/heraclitusApi'
+import { ChronoGachaRollPanel } from './ChronoGachaRollPanel'
+import type { GachaRollResult } from '../core/chronoGachaEngine'
+
+export const YellowPoolTab: React.FC = () => {
+  const [balanceSec, setBalanceSec] = useState<number>(0)
+  const [isDepositing, setIsDepositing] = useState<boolean>(false)
+
+  const balanceSecRef = useRef<number>(0)
+  const iframeRef = useRef<HTMLIFrameElement | null>(null)
+
+  useEffect(() => {
+    balanceSecRef.current = balanceSec
+  }, [balanceSec])
+
+  // Load authoritative balance from SQLite on mount
+  const loadPoolState = useCallback(async () => {
+    try {
+      const state = await fetchPoolState()
+      setBalanceSec(state.balance_seconds)
+      balanceSecRef.current = state.balance_seconds
+
+      // Sync to iframe stage
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          { type: 'SET_BALANCE', seconds: state.balance_seconds },
+          '*'
+        )
+      }
+    } catch {
+      // Offline fallback
+    }
+  }, [])
+
+  useEffect(() => {
+    loadPoolState()
+  }, [loadPoolState])
+
+  // PostMessage listener for iframe lifecycle
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (!event.data || typeof event.data !== 'object') return
+
+      if (event.data.type === 'IFRAME_READY') {
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: 'SET_BALANCE', seconds: balanceSecRef.current },
+            '*'
+          )
+        }
+      } else if (event.data.type === 'DEPOSIT_STARTED') {
+        setIsDepositing(true)
+      } else if (event.data.type === 'DEPOSIT_COMMITTED') {
+        setIsDepositing(false)
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [])
+
+  const handleIframeLoad = () => {
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        { type: 'SET_BALANCE', seconds: balanceSecRef.current },
+        '*'
+      )
+    }
+  }
+
+  // Handle single Gacha Roll trigger
+  const handleGachaRoll = async (rollResult: GachaRollResult, wagerMultiplier: number) => {
+    if (isDepositing || rollResult.seconds <= 0) return
+    setIsDepositing(true)
+
+    // 1. Immediately channel rolled duration into the kinetic stage
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        { type: 'TRIGGER_DEPOSIT', seconds: rollResult.seconds },
+        '*'
+      )
+    }
+
+    // 2. Commit atomically to shared SQLite database
+    try {
+      const updatedState = await depositToPool({
+        seconds: rollResult.seconds,
+        source: `Chrono Roll [${rollResult.tier}]`,
+        category: 'gacha',
+        speed: 1.0,
+        notes: `${rollResult.label} • ${wagerMultiplier}x Wager`,
+      })
+      setBalanceSec(updatedState.balance_seconds)
+      balanceSecRef.current = updatedState.balance_seconds
+    } catch {
+      setBalanceSec((prev) => prev + rollResult.seconds)
+      balanceSecRef.current += rollResult.seconds
+    } finally {
+      setIsDepositing(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center w-full max-w-4xl mx-auto space-y-4 py-2">
+      {/* ── 1. The Kinetic Two-Phase Animation Stage ─────────────────────── */}
+      <div className="relative w-full rounded-2xl overflow-hidden border border-[#2b203a] bg-[#07050e] shadow-2xl">
+        <iframe
+          ref={iframeRef}
+          src="/animations/2-phases/phase_005_spool_and_shatter.html"
+          title="Chrono Accumulator Stage"
+          onLoad={handleIframeLoad}
+          className="w-full h-[520px] md:h-[560px] border-0 block"
+        />
+      </div>
+
+      {/* ── 2. The Golden Standard Gacha Summon Button & Roll Wager Bar ──── */}
+      <ChronoGachaRollPanel
+        isDepositing={isDepositing}
+        onRoll={handleGachaRoll}
+      />
+    </div>
+  )
+}
+
+export default YellowPoolTab

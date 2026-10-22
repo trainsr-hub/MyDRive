@@ -1,0 +1,299 @@
+/* ========================================================================
+   NOTION-STYLE SCHEMA TABLE, DRAG REORDER, CHIPS & BADGES
+   ======================================================================== */
+.table-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 0;
+  transition: flex 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.notion-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* Smooth hide for slug/sql cells */
+.notion-table .col-slug,
+.notion-table .col-sql {
+  transition: opacity 0.18s ease;
+}
+.sidebar-open .notion-table .col-slug,
+.sidebar-open .notion-table .col-sql {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Default column widths (sidebar closed) */
+.notion-table colgroup col:nth-child(1) { width: 44px; }
+.notion-table colgroup col:nth-child(2) { width: auto; }
+.notion-table colgroup col:nth-child(3) { width: 140px; }
+.notion-table colgroup col:nth-child(4) { width: 120px; }
+.notion-table colgroup col:nth-child(5) { width: 175px; }
+.notion-table colgroup col:nth-child(6) { width: 140px; }
+.notion-table colgroup col:nth-child(7) { width: 106px; }
+
+/* Sidebar open: hide Slug & SQL columns to free space, keep Name + Type + Config */
+.sidebar-open .notion-table colgroup col:nth-child(4) { width: 0; }
+.sidebar-open .notion-table colgroup col:nth-child(6) { width: 0; }
+.sidebar-open .notion-table colgroup col:nth-child(7) { width: 52px; }
+.sidebar-open .notion-table .col-slug { display: none; }
+.sidebar-open .notion-table .col-sql  { display: none; }
+.sidebar-open .notion-table .th-slug  { display: none; }
+.sidebar-open .notion-table .th-sql   { display: none; }
+
+/* Config / Default Badges */
+.config-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font: 500 11.5px var(--font-mono);
+  white-space: nowrap;
+  border: 1px solid var(--border-light);
+  background: var(--bg-input);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.config-badge:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+.config-badge.active-formula {
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-color: rgba(255, 158, 27, 0.4);
+  font-weight: 600;
+}
+.config-badge.pk {
+  color: var(--c-pk);
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+.config-badge.enum {
+  color: var(--c-enum);
+  background: rgba(244, 63, 94, 0.08);
+  border-color: rgba(244, 63, 94, 0.25);
+}
+.config-badge.rel {
+  color: var(--c-rel);
+  background: rgba(255, 158, 27, 0.08);
+  border-color: rgba(255, 158, 27, 0.25);
+}
+.config-badge.muted {
+  color: var(--text-dim);
+  border-style: dashed;
+  background: transparent;
+}
+
+/* Table head */
+.notion-table thead th {
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  font: 600 11px var(--font-mono);
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border-table);
+  background: var(--bg-canvas);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.notion-table thead th:first-child { text-align: center; }
+
+/* Table body rows */
+.notion-table tbody tr {
+  border-bottom: 1px solid var(--border-table);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.notion-table tbody tr:hover:not(.row-add) { background: var(--bg-row-hover); }
+
+.notion-table tbody tr.selected {
+  background: var(--bg-row-active);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Table cells */
+.notion-table tbody td {
+  padding: 0 0.75rem;
+  height: 44px;
+  vertical-align: middle;
+  border-right: 1px solid var(--border-table);
+  font-size: 13.5px;
+}
+
+.notion-table tbody td:last-child { border-right: none; }
+
+/* Row number cell */
+.td-num {
+  text-align: center;
+  font: 500 11px var(--font-mono);
+  color: var(--text-dim);
+}
+
+.notion-table tbody tr.draggable .td-num {
+  cursor: grab;
+}
+
+.notion-table tbody tr.draggable:active .td-num {
+  cursor: grabbing;
+}
+
+.notion-table tbody tr:hover .td-num .row-num { display: none; }
+.notion-table tbody tr:hover .td-num .row-expand { display: none; }
+.notion-table tbody tr:hover .td-num .drag-handle { display: inline; }
+.td-num .row-expand { display: none; font-size: 14px; color: var(--accent); }
+.td-num .drag-handle {
+  display: none;
+  font-size: 12px;
+  color: var(--accent);
+  letter-spacing: -1px;
+}
+
+/* Name cell */
+.td-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 100%;
+}
+
+.col-icon { font-size: 15px; flex-shrink: 0; }
+.col-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Type chip */
+.type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font: 600 11.5px var(--font-mono);
+  white-space: nowrap;
+  border: 1px solid;
+}
+
+.type-chip.pk      { color: var(--c-pk);      background: rgba(56,189,248,0.10); border-color: rgba(56,189,248,0.35); }
+.type-chip.text    { color: var(--c-text);    background: rgba(16,185,129,0.10); border-color: rgba(16,185,129,0.35); }
+.type-chip.scalar  { color: var(--c-scalar);  background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.35); }
+.type-chip.boolean { color: var(--c-boolean); background: rgba(167,139,250,0.10); border-color: rgba(167,139,250,0.35); }
+.type-chip.enum    { color: var(--c-enum);    background: rgba(244,63,94,0.10);  border-color: rgba(244,63,94,0.35); }
+.type-chip.rel     { color: var(--c-rel);     background: rgba(255,158,27,0.10); border-color: rgba(255,158,27,0.35); }
+
+/* Slug & SQL cells */
+.td-slug {
+  font: 500 12px var(--font-mono);
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-sql {
+  font: 400 11.5px var(--font-mono);
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Action cell */
+.td-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  justify-content: flex-end;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.notion-table tbody tr:hover .td-actions { opacity: 1; }
+
+/* Add row strip */
+.row-add td {
+  padding: 0.5rem 0.75rem;
+  cursor: default;
+}
+
+.row-add:hover { background: transparent !important; }
+
+.add-field-strip {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 0.4rem 0;
+}
+
+.add-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.65rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  font: 500 12px var(--font-body);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.add-chip:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.table-empty {
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+/* Draggable Table Rows (FLIP reordering) */
+.notion-table tbody tr.draggable {
+  cursor: grab;
+  position: relative;
+  user-select: none;
+  touch-action: none;
+}
+
+.notion-table tbody tr.draggable:active {
+  cursor: grabbing;
+}
+
+.notion-table tbody tr.draggable.is-dragging {
+  position: fixed;
+  z-index: 9999;
+  cursor: grabbing !important;
+  opacity: 0.95;
+  background: var(--bg-card-hover);
+  border: 1px solid var(--accent);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 0 2px var(--accent);
+  pointer-events: none;
+  transform-origin: top left;
+}
+
+.row-placeholder {
+  background: var(--accent-bg);
+  border: 2px dashed var(--accent);
+  pointer-events: none;
+  height: 44px;
+}
+
+.row-placeholder td {
+  border: none;
+  background: transparent;
+}

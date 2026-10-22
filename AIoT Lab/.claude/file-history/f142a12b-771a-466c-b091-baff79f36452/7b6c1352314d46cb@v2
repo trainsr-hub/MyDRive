@@ -1,0 +1,210 @@
+# Plan: `.claude` Folder Reboot with Unified Memory & Rule Synchronization
+
+## Context
+
+The Manager wants to reboot the `.claude/` folder infrastructure that was previously deleted from the `D:\My Drive\Blue AI` project root. The current state shows:
+
+1. **Current Infrastructure**: `.agents` symlink exists → `/d/My Heraclitus/Backups/Faust/.agents` (external sovereign vault)
+2. **Migration History**: The codebase shows architectural migration from `.claude` (legacy modular skills) → `.agents` (Antigravity unified C2)
+3. **Request**: Use the same original `.agents` folder for both `.claude` and `.agents` to keep memories and rules synced
+4. **Technical Question**: Can we lazily use NTFS junction/symlink, or do structural differences require bidirectional sync?
+
+The Manager's CLAUDE.md (Core System Codex) expects `.claude/` structure, but GEMINI.md (Antigravity Edition) specifies `.agents/` structure. Both need to coexist for cross-system compatibility.
+
+---
+
+## Structural Analysis: `.claude` vs `.agents` Compatibility
+
+### Directory Mapping
+
+| `.claude/` (CLAUDE.md) | `.agents/` (GEMINI.md) | Compatibility |
+|------------------------|------------------------|---------------|
+| `.claude/memory/` | `.agents/memory/` | ✅ **Direct compatible** - Same purpose (shared cortex) |
+| `.claude/agents/` | N/A (agents defined in GEMINI.md inline) | ⚠️ **Structural difference** |
+| `.claude/skills/sound/` | `.agents/audio/` | ⚠️ **Architectural difference** (modular vs consolidated) |
+| `.claude/skills/telegram/` | `.agents/scripts/c2.py` (unified) | ⚠️ **Architectural difference** |
+| `.claude/skills/c2-dispatch/` | `.agents/scripts/` (dispatch, faust_runner) | ⚠️ **Architectural difference** |
+| `.claude/daemons/` | `.agents/scripts/daemon/` | ⚠️ **Structural difference** (flat vs tiered) |
+| `.claude/templates/ui/` | N/A | ✅ **Can coexist independently** |
+| `.claude/scripts/` | `.agents/scripts/` | ⚠️ **Namespace collision** |
+
+### Critical Findings
+
+1. **Memory & Rules**: ✅ **Directly compatible** - Both systems use the same memory structure
+2. **Execution Paths**: ⚠️ **Fundamentally different**:
+   - CLAUDE.md: `python .claude/skills/sound/scripts/cli.py "<text>"`
+   - GEMINI.md: `python .agents/scripts/c2.py "<text>"`
+3. **Daemon Architecture**: ⚠️ **Different organization**:
+   - `.claude/daemons/`: Flat watchdog + cortex_daemon
+   - `.agents/scripts/daemon/`: Tiered (domain/repository/tools/agent_service)
+
+---
+
+## Recommended Architecture: Dual-Root with Strategic Junction
+
+### Option 1: Lazy Junction (Recommended for Memory & Rules Only)
+
+**Strategy**: Use NTFS junction **only for memory and rules** that must stay synchronized, while keeping execution infrastructure separate.
+
+```
+D:\My Drive\Blue AI\
+├── .agents → /d/My Heraclitus/Backups/Faust/.agents (existing symlink)
+└── .claude\
+    ├── memory → D:\My Heraclitus\Backups\Faust\.agents\memory (JUNCTION)
+    ├── rules → D:\My Heraclitus\Backups\Faust\.agents\rules (JUNCTION)
+    ├── agents\ (native CLAUDE.md agent definitions)
+    ├── skills\ (native CLAUDE.md modular skills)
+    ├── daemons\ (native CLAUDE.md flat daemon structure)
+    ├── templates\ (native CLAUDE.md UI/UX templates)
+    └── scripts\ (native CLAUDE.md hooks & sync)
+```
+
+**Pros**:
+- ✅ Memory & rules automatically synced (single source of truth)
+- ✅ Both execution paths work independently (`.claude/skills/sound/` vs `.agents/scripts/c2.py`)
+- ✅ No namespace collision (execution infrastructure stays separate)
+- ✅ Clean backward compatibility for both CLAUDE.md and GEMINI.md
+
+**Cons**:
+- ⚠️ Execution infrastructure duplicated (but architecturally different anyway)
+
+---
+
+### Option 2: Full Junction (Not Recommended)
+
+**Strategy**: Make `.claude` a full junction to `.agents`
+
+```
+D:\My Drive\Blue AI\
+├── .agents → /d/My Heraclitus/Backups/Faust/.agents
+└── .claude → D:\My Heraclitus\Backups\Faust\.agents (JUNCTION)
+```
+
+**Fatal Issues**:
+- ❌ Path mismatches: `.claude/skills/sound/` doesn't exist in `.agents/` (it's `.agents/audio/`)
+- ❌ Script invocation breaks: `python .claude/skills/sound/scripts/cli.py` would fail
+- ❌ Daemon structure mismatch: Flat vs tiered architecture
+- ❌ Namespace collision: `.claude/scripts/` vs `.agents/scripts/` serve different purposes
+
+**Verdict**: **Not viable** due to fundamental architectural differences.
+
+---
+
+### Option 3: Bidirectional Sync Script (Overkill)
+
+**Strategy**: Write a sync daemon that mirrors changes between `.claude/memory/` ↔ `.agents/memory/`
+
+**Why Not**:
+- ❌ Unnecessary complexity when junctions solve this deterministically
+- ❌ Risk of sync conflicts, race conditions, duplicate writes
+- ❌ Violates "Deterministic Primacy" and "Crystal Clarity" engineering principles
+
+---
+
+## Final Recommendation: Hybrid Junction Strategy
+
+### Implementation Plan
+
+1. **Create `.claude/` root directory** at `D:\My Drive\Blue AI\.claude\`
+
+2. **Junction memory & rules to `.agents` sovereign vault**:
+   ```powershell
+   mklink /J "D:\My Drive\Blue AI\.claude\memory" "D:\My Heraclitus\Backups\Faust\.agents\memory"
+   mklink /J "D:\My Drive\Blue AI\.claude\rules" "D:\My Heraclitus\Backups\Faust\.agents\rules"
+   ```
+
+3. **Create native `.claude` execution infrastructure**:
+   - `.claude/agents/` - Restore from git history (faust-cortex.md, faust-theorist.md, etc.)
+   - `.claude/skills/` - Restore modular skill architecture (sound, telegram, c2-dispatch, dataviz, loop)
+   - `.claude/daemons/` - Restore flat daemon structure (watchdog.py, cortex_daemon.py, start/stop scripts)
+   - `.claude/templates/` - Restore UI/UX Design System Template
+   - `.claude/scripts/` - Restore turn hooks, memory sync, environment setup
+
+4. **Verify dual-path execution**:
+   - CLAUDE.md path: `python .claude/skills/sound/scripts/cli.py "Test"`
+   - GEMINI.md path: `python .agents/scripts/c2.py "Test"`
+   - Both should work independently with shared memory/rules via junction
+
+---
+
+## Critical Files to Restore (from git history)
+
+### Memory & Rules (Junctioned - No Restore Needed)
+- ✅ `.claude/memory/` → Junction to `.agents/memory/`
+- ✅ `.claude/rules/` → Junction to `.agents/rules/` (if exists in `.agents`)
+
+### Agents (Native - Restore from Git)
+- `.claude/agents/faust-cortex.md`
+- `.claude/agents/faust-theorist.md`
+- `.claude/agents/faust-critic.md`
+- `.claude/agents/faust-machinist-logic.md`
+- `.claude/agents/faust-machinist-ui.md`
+- `.claude/agents/faust-operator.md`
+
+### Skills (Native - Restore from Git)
+- `.claude/skills/sound/` (TTS acoustic presence)
+- `.claude/skills/telegram/` (Telegram C2 channel)
+- `.claude/skills/c2-dispatch/` (Deterministic dispatcher)
+- `.claude/skills/dataviz/` (Data visualization)
+- `.claude/skills/loop/` (Autonomous loop)
+
+### Daemons (Native - Restore from Git)
+- `.claude/daemons/watchdog.py`
+- `.claude/daemons/cortex_daemon.py`
+- `.claude/daemons/start_all_daemons.bat`
+- `.claude/daemons/stop_all_daemons.bat`
+
+### Templates (Native - Restore from Git)
+- `.claude/templates/ui/` (Master UI/UX Design System)
+
+### Configuration (Native - Restore from Git)
+- `.claude/faust_config.json` (ROM configuration)
+
+---
+
+## Verification Steps
+
+1. **Check junction health**:
+   ```powershell
+   dir /AL "D:\My Drive\Blue AI\.claude"
+   ```
+   Should show `memory` and `rules` as junctions pointing to `.agents`
+
+2. **Test memory write propagation**:
+   ```powershell
+   echo "test" > "D:\My Drive\Blue AI\.claude\memory\junction_test.txt"
+   cat "D:\My Heraclitus\Backups\Faust\.agents\memory\junction_test.txt"
+   ```
+   Should read "test" (proving junction works)
+
+3. **Test CLAUDE.md acoustic path**:
+   ```powershell
+   python .claude/skills/sound/scripts/cli.py "Claude path verification"
+   ```
+
+4. **Test GEMINI.md acoustic path**:
+   ```powershell
+   python .agents/scripts/c2.py "Agents path verification"
+   ```
+
+5. **Verify memory cortex accessibility**:
+   ```powershell
+   ls .claude/memory/
+   ls .agents/memory/
+   ```
+   Should show identical content (same physical directory)
+
+---
+
+## Answer to Manager's Question
+
+**Can we lazily use junction?**
+
+✅ **YES** - for **memory and rules only**. The two systems have fundamentally different execution architectures:
+
+- **Memory & Rules**: Identical structure → Perfect for junction (single source of truth)
+- **Execution Infrastructure**: Different architectures → Must remain separate (modular vs consolidated C2)
+
+**Strategy**: Junction the sync-critical directories (memory/rules), keep execution infrastructure separate. This respects both the CLAUDE.md modular skill architecture and the GEMINI.md unified C2 architecture while ensuring memories and rules stay perfectly synchronized across all Faust instances.
+
+**Result**: Both systems can coexist with zero sync overhead for shared state, while maintaining their architectural independence for execution.

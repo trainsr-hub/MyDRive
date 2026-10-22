@@ -1,0 +1,116 @@
+import asyncio
+import json
+import subprocess
+import time
+import urllib.request
+import websockets
+
+async def main():
+    chrome_path = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
+    proc = subprocess.Popen([
+        chrome_path,
+        '--headless=new',
+        '--remote-debugging-port=9222',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-default-browser-check',
+        'http://localhost:5173'
+    ])
+    await asyncio.sleep(2)
+
+    console_messages = []
+
+    try:
+        tabs = json.loads(urllib.request.urlopen('http://localhost:9222/json').read())
+        target_tab = None
+        for t in tabs:
+            if 'localhost:5173' in t.get('url', ''):
+                target_tab = t
+                break
+
+        if not target_tab:
+            print("ERROR: Target tab localhost:5173 not found!")
+            return
+
+        ws_url = target_tab['webSocketDebuggerUrl']
+        print(f"Connecting to CDP WebSocket: {ws_url}")
+
+        async with websockets.connect(ws_url) as ws:
+            # Enable logging and runtime events
+            await ws.send(json.dumps({'id': 1, 'method': 'Log.enable'}))
+            await ws.send(json.dumps({'id': 2, 'method': 'Runtime.enable'}))
+            await ws.send(json.dumps({'id': 3, 'method': 'Page.enable'}))
+
+            # Switch activeApp to 'heraclitus' via Zustand global store
+            js_code = """
+            if (window.__store || window.useGlobalStore) {
+                // store access
+            }
+            // Navigate via history / location
+            window.location.hash = '#/heraclitus';
+            // Also click on Heraclitus or set global store if available
+            const evt = new CustomEvent('nav-app', { detail: 'heraclitus' });
+            window.dispatchEvent(evt);
+            """
+            await ws.send(json.dumps({
+                'id': 4,
+                'method': 'Runtime.evaluate',
+                'params': {'expression': js_code}
+            }))
+
+            # Also directly navigate the iframe test or tab
+            nav_js = """
+            // Find heraclitus tab button or trigger navigation
+            const heraclitusBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent && b.textContent.includes('Heraclitus'));
+            if (heraclitusBtn) heraclitusBtn.click();
+            """
+            await ws.send(json.dumps({
+                'id': 5,
+                'method': 'Runtime.evaluate',
+                'params': {'expression': nav_js}
+            }))
+
+            # Collect events for 4 seconds
+            t_end = time.time() + 4
+            while time.time() < t_end:
+                try:
+                    raw = await asyncio.wait_for(ws.recv(), timeout=0.5)
+                    msg = json.loads(raw)
+                    method = msg.get('method', '')
+                    if method == 'Log.entryAdded':
+                        entry = msg.get('params', {}).get('entry', {})
+                        console_messages.append({
+                            'source': 'Log.entryAdded',
+                            'level': entry.get('level'),
+                            'text': entry.get('text'),
+                            'url': entry.get('url'),
+                        })
+                    elif method == 'Runtime.consoleAPICalled':
+                        params = msg.get('params', {})
+                        args = [a.get('value', str(a)) for a in params.get('args', [])]
+                        console_messages.append({
+                            'source': 'Runtime.consoleAPICalled',
+                            'type': params.get('type'),
+                            'text': ' '.join(str(x) for x in args),
+                        })
+                except asyncio.TimeoutError:
+                    pass
+
+        print("\n--- COLLECTED CONSOLE MESSAGES ---")
+        for m in console_messages:
+            print(f"[{m.get('level') or m.get('type')}] {m.get('text')} (from: {m.get('url', 'inline')})")
+
+        # Check specifically for sandbox escaping warning
+        sandbox_warnings = [m for m in console_messages if 'sandbox' in m.get('text', '').lower() or 'escape' in m.get('text', '').lower()]
+        if sandbox_warnings:
+            print("\n❌ FAILED: Sandbox warnings detected:")
+            for w in sandbox_warnings:
+                print("  ", w)
+        else:
+            print("\n✅ PASSED: Zero sandbox escape warnings detected!")
+
+    finally:
+        proc.terminate()
+
+if __name__ == '__main__':
+    asyncio.run(main())

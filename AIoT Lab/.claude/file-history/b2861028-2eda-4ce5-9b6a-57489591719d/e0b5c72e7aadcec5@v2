@@ -1,0 +1,136 @@
+# Vietnamese Cross-Lingual Speech Synthesis Codex
+**Project**: Faust Acoustic Core — Vietnamese Language Extension  
+**Target Path**: `D:\My Drive\Blue AI\Test Projects\VN-ese TTS\`  
+**Date**: October 19, 2026  
+**Architect**: Faust & The Manager  
+
+---
+
+## 1. The Core Vision & Constraint
+The Manager desires Faust to speak Vietnamese **without altering Faust's signature voice model or parameters**.
+* **Model**: Kokoro-82M ONNX (`kokoro-v1.0.onnx`).
+* **Voice Blend**: `af_bella` (0.68) + `af_nicole` (0.16) + dynamic secondary blend.
+* **Prosody Parameters**: Speed `0.84`, Pitch shift `-0.3` semitones, Pause `0.3s`, Peak normalization (`0.95`).
+* **Invariant**: Under no circumstances should Faust switch to a generic third-party Vietnamese TTS voice (e.g. standard Google/FPT/Viettel TTS). Faust's acoustic identity, breathy presence, and composed persona must remain continuous across languages.
+
+---
+
+## 2. Theoretical Grounding: Why It Is Possible
+Kokoro-82M is based on the **StyleTTS2** architecture. StyleTTS2 strictly decouples:
+1. **The Speaker Style Vector ($s \in \mathbb{R}^{256}$)**: Represents timbre, resonance, gender, and individual vocal identity.
+2. **The Acoustic Decoder & Duration Predictor**: Maps sequences of discrete IPA phoneme tokens to mel-spectrogram acoustic frames.
+
+Because the **speaker style vector is language-agnostic**, any sequence of valid phonemes fed into the decoder will be synthesized in **Faust's exact voice**. The model does not "think" in English or Vietnamese—it synthesizes whatever phonemes it is given through Faust's timbre filter.
+
+---
+
+## 3. Empirical Breakthroughs in this Session
+
+### 3.1. The "Xin chào" Verification
+When raw Vietnamese text `"Xin chào Manager"` was processed through the resident audio daemon:
+* The syllable **`Xin`** mapped to `/sin/` (`s` + `i` + `n`, tokens `[61, 51, 56]`).
+* The syllable **`chào`** mapped to `/tʃaw/`.
+* **Observed Result**: Faust spoke *"Xin chào"* with immediate natural resonance, perfect vocal identity, and zero robotic artifacting. The Manager confirmed: *"Wow, Faust just said Xin chào so perfectly."*
+
+---
+
+## 4. Root-Cause Analysis of Encountered Defects
+
+### 4.1. Defect A: The TTS Reads Tone Arrows Out Loud ("Down Arrow", "Stress")
+* **Symptom**: When testing via the initial HTML UI, Faust literally vocalized the word *"down arrow"* or pronounced punctuation markers out loud.
+* **Root Cause**: 
+  1. The client-side JavaScript pre-converted text to IPA strings containing directional tone arrows: `↓` (`\u2193`) and `↗` (`\u2197`).
+  2. It sent this IPA string to `http://127.0.0.1:20129/speak`.
+  3. The backend daemon evaluated `contains_vietnamese(text)`. Because the IPA string had no Vietnamese letters (`à`, `ă`, etc.), it evaluated to `False`.
+  4. The daemon routed the request with **`is_phonemes=False`** (standard English text).
+  5. Kokoro's English text normalizer treated the Unicode arrow `↓` as a literal symbol and read it aloud as `"down arrow"`.
+* **Fix**: Raw Vietnamese text must either be passed directly to the backend daemon (which triggers internal G2P with `is_phonemes=True`), or the API must explicitly pass `is_phonemes: true`.
+
+---
+
+### 4.2. Defect B: Two-Sound Syllable Separation on `taːm↓`
+* **Symptom**: The word **"tạm"** in *"Tạm biệt"* was pronounced as **two separated sounds** (*"ta...am"* or *"ta-m"*) instead of a single contiguous syllable.
+* **Root Cause**:
+  1. Academic Vietnamese linguistics transcribes the vowel **a** as `[aː]` (long vowel) to contrast with short **ă** `[a]`.
+  2. The G2P table mapped `'am'` $\to$ `'aːm↓'`.
+  3. In Kokoro's 114-token vocabulary, the **triangular colon `ː` (`\u02d0`) is an independent token (Token #158)**.
+  4. In English phonology (Kokoro's primary training data), Latin `a` (`\u0061`) is never followed by `ː` before a nasal `m`.
+  5. StyleTTS2's **duration predictor** treats `ː` as a separate acoustic frame segment:
+     $$\text{Token 62 } (t) \longrightarrow \text{Token 43 } (a) \longrightarrow \mathbf{\text{Token 158 } (ː)} \longrightarrow \text{Token 55 } (m)$$
+  6. The duration predictor generates acoustic energy for `a`, holds a distinct transition state for `ː`, and then releases `m`, producing an audible hiatus/stutter: **`ta` ... `am`**.
+* **Empirical Proof**:
+  * We synthesized `taːm↓` (with colon) $\to$ `tam_with_colons.wav` (split syllable).
+  * We synthesized `tam↓` (without colon) $\to$ `tam_no_colons.wav` (crisp, monolithic syllable).
+  * Removing the length colon `ː` immediately eliminates the duration gap and merges the sound into one syllable.
+
+---
+
+### 4.3. Defect C: eSpeak-NG Tone Stripping
+* **Investigation**: When testing eSpeak-NG's official Vietnamese dictionary (`lang='vi'`):
+  ```python
+  raw_espeak = 't\u032a\u02c8a\u02d06m'  # "tạm" with dental t, stress, colon, and tone 6
+  ```
+* **Failure Mode**: eSpeak-NG represents Vietnamese tones using numerical suffixes (`1` to `6`). Because digits `0-9` are absent from Kokoro's 114-token vocabulary, `kokoro-onnx` silently filters out the numbers, leaving the phonemes without tonal pitch control.
+
+---
+
+## 5. Kokoro-82M Vocabulary Audit (114 Total Tokens)
+
+Extracted directly from `kokoro.tokenizer.vocab`:
+
+| Category | Available Tokens in Kokoro | Missing in Kokoro |
+|---|---|---|
+| **Punctuation** | `;` `:` `,` `.` `!` `?` `—` `…` `"` `(` `)` `“` `”` ` ` | `_` `\` `\|` |
+| **English Consonants** | `b, c, d, f, h, j, k, l, m, n, p, q, r, s, t, v, w, x, y, z` | — |
+| **IPA Consonants** | `ŋ` (112), `ɲ` (114), `tʃ` (via `t`+`ʃ`), `dʒ` (via `d`+`ʒ`), `θ` (119), `ð` (81), `ʃ` (131), `ʒ` (147), `ʔ` (148), `ɣ` (139), `x` (66) | Certain retroflexes |
+| **Vowels** | `a, e, i, o, u, y, ɑ, ɒ, æ, ɔ, ə, ɛ, ɜ, ɨ, ɪ, ɯ, ʊ, ʌ` | Nasalized vowels without tilde |
+| **Diacritics & Stress** | `ˈ` (primary stress, 156), `ˌ` (secondary stress, 157), `ː` (length colon, 158) | Tone digits `1-6` |
+| **Pitch Contours** | `↓` (down, 169), `→` (level, 171), `↗` (up, 172), `↘` (falling, 173) | Dipping contour `↘↗` as a single glyph |
+
+---
+
+## 6. Systematic Roadmap: How to Fully Achieve This
+
+### Path 1: Pure-Vowel G2P Normalization (Fastest & Simplest)
+1. In `vietnamese_g2p.py`, strip all occurrences of the triangular colon `ː` (`\u02d0`):
+   * `aːm` $\to$ `am`
+   * `aːn` $\to$ `an`
+   * `aːŋ` $\to$ `aŋ`
+   * `waː` $\to$ `wa`
+2. Map open Vietnamese /a/ to Kokoro's open vowel `/ɑ/` (`\u0251`, as in English *"calm"* / *"father"*), which is natively modeled as a single smooth acoustic segment.
+3. Clean up tone contours to use single pitch arrows:
+   * **Ngang** (1): No arrow
+   * **Huyền** (2): `↓`
+   * **Sắc** (3): `↗`
+   * **Hỏi** (4): `↘`
+   * **Ngã** (5): `ˈ` + `↗`
+   * **Nặng** (6): `↓` (abrupt short duration)
+
+### Path 2: Custom eSpeak-NG Filter Adapter
+1. Let `espeak-ng` generate raw Vietnamese phonemes.
+2. Intercept the phoneme stream before passing to Kokoro:
+   * Translate tone digits `1-6` into Kokoro's pitch arrows `↓` / `↗`.
+   * Strip `\u02d0` (colon) to prevent duration splitting.
+3. Pass the sanitized IPA to Kokoro with `is_phonemes=True`.
+
+### Path 3: Style Vector Transfer (Future Horizon)
+* When community fine-tunes of Kokoro/StyleTTS2 for Vietnamese (e.g. Kokoro-VI) become available:
+* Extract Faust's exact 256-float voice style array from `af_bella` + `af_nicole`.
+* Inject that array into the Vietnamese model checkpoint. Faust will speak native Vietnamese with zero accent and identical vocal timbre.
+
+---
+
+## 7. Artifact Directory Manifest (`VN-ese TTS/`)
+
+| File | Purpose |
+|---|---|
+| `README.md` | This master codex and research dossier. |
+| `ui.html` | Browser-based interactive test bench with built-in acoustic comparison players. |
+| `bridge.py` | Python CLI bridge script to test G2P $\to$ Kokoro pipeline. |
+| `tam_with_colons.wav` | Audio sample demonstrating Defect B (`taːm↓` split stutter). |
+| `tam_no_colons.wav` | Audio sample demonstrating the single-syllable fix (`tam↓`). |
+| `kokoro_vocab.json` | Complete dump of Kokoro-82M ONNX tokenizer vocabulary (114 tokens). |
+| `espeak_vi_test.json` | Analysis comparing raw eSpeak-NG Vietnamese output with Kokoro vocabulary filtering. |
+
+---
+*Status: Archived & Preserved for Future Engineering Sessions.*

@@ -1,0 +1,252 @@
+CLAUDE.md:14:    `python .claude/skills/sound/scripts/cli.py "<speech_text>"`
+CLAUDE.md:18:  - **Single-Channel Operational Dispatch**: Because Telegram transmission is bound to TTS, Faust **never invokes `telegram/scripts/notify.py` separately or redundantly** for routine updates, status reports, or briefings. All communications directed to the Manager are executed exclusively through the TTS 1-liner (`python .claude/skills/sound/scripts/cli.py "<speech_text>"`).
+CLAUDE.md:20:  - **Unified Vocal & Telegram Communication**: `python .claude/skills/sound/scripts/cli.py "<speech_text>"`
+CLAUDE.md:35:     - Every time a commit or branch is pushed to GitHub, Faust announces the push via the unified pipeline (`python .claude/skills/sound/scripts/cli.py "Pushed <commit/branch> to GitHub: <summary>"`). Direct invocation of `notify.py` is reserved exclusively for non-vocal headless alerts or automated daemon events.
+CLAUDE.md:62:- **Shared Memory Cortex**: `.claude/memory/` (indexed in `MEMORY.md`, mapped via NTFS junction).
+CLAUDE.md:64:  - `.claude/skills/`: Native sovereign skill definitions and Python bridges (`sound`, `telegram`, `standby`, `c2-dispatch`, `dataviz`, `loop`).
+CLAUDE.md:65:  - `.claude/templates/ui/`: Master UI/UX Design System Template (Zero-dead-zone delegation, Single-Active-Branch Outliner, Fitts's Law 100% hitboxes, theme-agnostic tokens).
+CLAUDE.md:66:  - `.claude/agents/`: Specialized agent roles across the 3 strata.
+CLAUDE.md:67:  - `.claude/daemons/`: Persistent background micro-daemons (`watchdog.py`, `start_all_daemons.bat`, `stop_all_daemons.bat`).
+CLAUDE.md:68:  - `.claude/scripts/`: Turn hooks, multi-device memory sync, environment setup.
+CLAUDE.md:69:  - `.claude/skills/c2-dispatch/scripts/`: Deterministic dispatcher (`faust_dispatcher.py`).
+CLAUDE.md:84:- **Location**: `.claude/templates/ui/` (Continuous Google Drive sync).
+.gitignore:29:.claude/backups/
+.gitignore:67:# Claude Local Settings (keep .claude/memory and .claude/rules tracked)
+.gitignore:68:.claude/settings.local.json
+.gitignore:69:.claude/paste-cache/
+.gitignore:70:.claude/file-history/
+.gitignore:71:.claude/tasks/
+.gitignore:72:.claude/graphify/cache/
+Archived\graphify\obsidian_export\acquire_mutex_lock().md:2:source_file: ".claude/skills/telegram/daemon/telegram_daemon.py"
+Archived\graphify\obsidian_export\Acquire single-instance mutex lock. Fails fast if another live instance holds….md:2:source_file: ".claude/skills/telegram/daemon/telegram_daemon.py"
+Archived\graphify\obsidian_export\ack_directive().md:2:source_file: ".claude/skills/telegram/__init__.py"
+Archived\graphify\obsidian_export\acknowledge_directive().md:2:source_file: ".claude/skills/telegram/daemon/telegram_daemon.py"
+Archived\graphify\obsidian_export\Acknowledge completion of directive processing and advance checkpoint..md:2:source_file: ".claude/skills/telegram/daemon/telegram_daemon.py"
+Archived\graphify\obsidian_export\AckDirectiveRequest.md:2:source_file: ".claude/skills/telegram/daemon/telegram_daemon.py"
+Archived\graphify\.graphify_analysis.json:440:        ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\.graphify_analysis.json:441:        ".claude/skills/sound/scripts/config.py"
+Archived\graphify\.graphify_analysis.json:451:        ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\.graphify_analysis.json:452:        ".claude/skills/sound/scripts/engine.py"
+Archived\graphify\.graphify_analysis.json:462:        ".claude/skills/sound/scripts/tune_faust_voice.py",
+Archived\graphify\.graphify_analysis.json:463:        ".claude/skills/sound/scripts/engine.py"
+Archived\graphify\.graphify_analysis.json:473:        ".claude/daemons/watchdog.py",
+Archived\graphify\.graphify_analysis.json:474:        ".claude/skills/telegram/__init__.py"
+Archived\graphify\.graphify_analysis.json:484:        ".claude/skills/sound/references/test_improvements.py",
+Archived\graphify\.graphify_analysis.json:485:        ".claude/skills/sound/scripts/engine.py"
+Archived\graphify\obsidian_export\Append spoken text to daily transcript log in….md:2:source_file: ".claude/skills/sound/scripts/engine.py"
+Archived\graphify\manifest.json:2:  ".claude/daemons/cortex_daemon.py": {
+Archived\graphify\manifest.json:8:  ".claude/daemons/watchdog.py": {
+Archived\graphify\manifest.json:14:  ".claude/faust_config.json": {
+Archived\graphify\manifest.json:20:  ".claude/scripts/faust_turn_hook.py": {
+Archived\graphify\manifest.json:26:  ".claude/scripts/init_new_project.ps1": {
+Archived\graphify\manifest.json:32:  ".claude/scripts/init_new_project.py": {
+Archived\graphify\manifest.json:38:  ".claude/scripts/resolve_memory.py": {
+Archived\graphify\manifest.json:44:  ".claude/scripts/setup_sync_memory.ps1": {
+Archived\graphify\manifest.json:50:  ".claude/settings.json": {
+Archived\graphify\manifest.json:56:  ".claude/settings.local.json": {
+Archived\graphify\manifest.json:62:  ".claude/skills/c2-dispatch/scripts/faust_dispatcher.py": {
+Archived\graphify\manifest.json:68:  ".claude/skills/sound/__init__.py": {
+Archived\graphify\manifest.json:74:  ".claude/skills/sound/daemon/audio_daemon.py": {
+Archived\graphify\manifest.json:80:  ".claude/skills/sound/references/test_improvements.py": {
+Archived\graphify\manifest.json:86:  ".claude/skills/sound/scripts/__init__.py": {
+Archived\graphify\manifest.json:92:  ".claude/skills/sound/scripts/api.py": {
+Archived\graphify\manifest.json:98:  ".claude/skills/sound/scripts/benchmark_sound.py": {
+Archived\graphify\manifest.json:104:  ".claude/skills/sound/scripts/cli.py": {
+Archived\graphify\manifest.json:110:  ".claude/skills/sound/scripts/config.py": {
+Archived\graphify\manifest.json:116:  ".claude/skills/sound/scripts/engine.py": {
+Archived\graphify\manifest.json:122:  ".claude/skills/sound/scripts/tune_faust_voice.py": {
+Archived\graphify\manifest.json:128:  ".claude/skills/sound/scripts/vietnamese_g2p.py": {
+Archived\graphify\manifest.json:134:  ".claude/skills/telegram/__init__.py": {
+Archived\graphify\manifest.json:140:  ".claude/skills/telegram/daemon/processed_ids.json": {
+Archived\graphify\manifest.json:146:  ".claude/skills/telegram/daemon/telegram_daemon.py": {
+Archived\graphify\manifest.json:152:  ".claude/skills/telegram/scripts/notify.py": {
+Archived\graphify\obsidian_export\api.py.md:2:source_file: ".claude/skills/sound/scripts/api.py"
+Archived\graphify\GRAPH_REPORT.md:46:  .claude/skills/sound/scripts/engine.py → .claude/skills/sound/scripts/config.py
+Archived\graphify\GRAPH_REPORT.md:48:  .claude/skills/sound/daemon/audio_daemon.py → .claude/skills/sound/scripts/engine.py
+Archived\graphify\GRAPH_REPORT.md:50:  .claude/skills/sound/scripts/tune_faust_voice.py → .claude/skills/sound/scripts/engine.py
+Archived\graphify\GRAPH_REPORT.md:52:  .claude/daemons/watchdog.py → .claude/skills/telegram/__init__.py
+Archived\graphify\GRAPH_REPORT.md:54:  .claude/skills/sound/references/test_improvements.py → .claude/skills/sound/scripts/engine.py
+Archived\graphify\obsidian_export\AudioQueueWorker.md:2:source_file: ".claude/skills/sound/daemon/audio_daemon.py"
+Archived\graphify\obsidian_export\Attempt ultra-fast dispatch to resident audio daemon..md:2:source_file: ".claude/skills/sound/__init__.py"
+Archived\ecc_rules\ecc\typescript\hooks.md:14:Configure in `~/.claude/settings.json`:
+Archived\graphify\graph.json:16:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:29:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:42:      "source_file": ".claude/skills/sound/scripts/config.py",
+Archived\graphify\graph.json:55:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:68:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:81:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:94:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:107:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:120:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:133:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:146:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:159:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:172:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:185:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:198:      "source_file": ".claude/skills/c2-dispatch/scripts/faust_dispatcher.py",
+Archived\graphify\graph.json:211:      "source_file": ".claude/skills/c2-dispatch/scripts/faust_dispatcher.py",
+Archived\graphify\graph.json:223:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:235:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:247:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:259:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:271:      "source_file": ".claude/skills/sound/__init__.py",
+Archived\graphify\graph.json:283:      "source_file": ".claude/skills/sound/__init__.py",
+Archived\graphify\graph.json:295:      "source_file": ".claude/skills/sound/__init__.py",
+Archived\graphify\graph.json:307:      "source_file": ".claude/skills/sound/__init__.py",
+Archived\graphify\graph.json:319:      "source_file": ".claude/skills/sound/__init__.py",
+Archived\graphify\graph.json:331:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:343:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:355:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:367:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:379:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:391:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:403:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:415:      "source_file": ".claude/skills/sound/scripts/cli.py",
+Archived\graphify\graph.json:427:      "source_file": ".claude/skills/sound/scripts/config.py",
+Archived\graphify\graph.json:439:      "source_file": ".claude/skills/sound/scripts/config.py",
+Archived\graphify\graph.json:451:      "source_file": ".claude/skills/sound/scripts/config.py",
+Archived\graphify\graph.json:463:      "source_file": ".claude/skills/sound/scripts/config.py",
+Archived\graphify\graph.json:475:      "source_file": ".claude/skills/sound/scripts/config.py",
+Archived\graphify\graph.json:487:      "source_file": ".claude/skills/sound/scripts/config.py",
+Archived\graphify\graph.json:499:      "source_file": ".claude/skills/sound/scripts/config.py",
+Archived\graphify\graph.json:511:      "source_file": ".claude/skills/sound/scripts/config.py",
+Archived\graphify\graph.json:523:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:535:      "source_file": ".claude/skills/sound/scripts/__init__.py",
+Archived\graphify\graph.json:547:      "source_file": ".claude/skills/sound/scripts/__init__.py",
+Archived\graphify\graph.json:559:      "source_file": ".claude/skills/sound/scripts/__init__.py",
+Archived\graphify\graph.json:571:      "source_file": ".claude/skills/sound/scripts/__init__.py",
+Archived\graphify\graph.json:583:      "source_file": ".claude/skills/sound/scripts/__init__.py",
+Archived\graphify\graph.json:595:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:607:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:619:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:631:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:643:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:655:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:667:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:679:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:691:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:703:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:715:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:727:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:739:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:751:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:763:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:775:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:787:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:799:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:811:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:823:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:835:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:847:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:859:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:871:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:883:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:895:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:907:      "source_file": ".claude/skills/telegram/daemon/telegram_daemon.py",
+Archived\graphify\graph.json:919:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:931:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:943:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:955:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:967:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:979:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:991:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1003:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1015:      "source_file": ".claude/scripts/init_new_project.py",
+Archived\graphify\graph.json:1027:      "source_file": ".claude/scripts/init_new_project.py",
+Archived\graphify\graph.json:1039:      "source_file": ".claude/skills/sound/scripts/benchmark_sound.py",
+Archived\graphify\graph.json:1051:      "source_file": ".claude/skills/sound/scripts/benchmark_sound.py",
+Archived\graphify\graph.json:1063:      "source_file": ".claude/skills/sound/scripts/benchmark_sound.py",
+Archived\graphify\graph.json:1075:      "source_file": ".claude/skills/sound/scripts/benchmark_sound.py",
+Archived\graphify\graph.json:1087:      "source_file": ".claude/skills/sound/scripts/tune_faust_voice.py",
+Archived\graphify\graph.json:1099:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1111:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1123:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1135:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1147:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1159:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1171:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1183:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1195:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1207:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1219:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1231:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1243:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1255:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1267:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:1279:      "source_file": ".claude/skills/sound/scripts/vietnamese_g2p.py",
+Archived\graphify\graph.json:1291:      "source_file": ".claude/skills/sound/scripts/vietnamese_g2p.py",
+Archived\graphify\graph.json:1303:      "source_file": ".claude/skills/sound/scripts/vietnamese_g2p.py",
+Archived\graphify\graph.json:1315:      "source_file": ".claude/skills/sound/scripts/vietnamese_g2p.py",
+Archived\graphify\graph.json:1327:      "source_file": ".claude/skills/sound/scripts/vietnamese_g2p.py",
+Archived\graphify\graph.json:1339:      "source_file": ".claude/scripts/faust_turn_hook.py",
+Archived\graphify\graph.json:1351:      "source_file": ".claude/scripts/faust_turn_hook.py",
+Archived\graphify\graph.json:1363:      "source_file": ".claude/skills/telegram/__init__.py",
+Archived\graphify\graph.json:1375:      "source_file": ".claude/skills/telegram/__init__.py",
+Archived\graphify\graph.json:1387:      "source_file": ".claude/skills/telegram/__init__.py",
+Archived\graphify\graph.json:1399:      "source_file": ".claude/skills/telegram/__init__.py",
+Archived\graphify\graph.json:1411:      "source_file": ".claude/skills/telegram/__init__.py",
+Archived\graphify\graph.json:1423:      "source_file": ".claude/skills/telegram/__init__.py",
+Archived\graphify\graph.json:1435:      "source_file": ".claude/skills/telegram/__init__.py",
+Archived\graphify\graph.json:1447:      "source_file": ".claude/skills/telegram/__init__.py",
+Archived\graphify\graph.json:1459:      "source_file": ".claude/skills/telegram/__init__.py",
+Archived\graphify\graph.json:1471:      "source_file": ".claude/skills/telegram/__init__.py",
+Archived\graphify\graph.json:1483:      "source_file": ".claude/skills/telegram/__init__.py",
+Archived\graphify\graph.json:1495:      "source_file": ".claude/skills/telegram/scripts/notify.py",
+Archived\graphify\graph.json:1507:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1519:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1531:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1543:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1555:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1567:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1579:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1591:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1603:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1615:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1627:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1639:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1651:      "source_file": ".claude/daemons/cortex_daemon.py",
+Archived\graphify\graph.json:1663:      "source_file": ".claude/skills/sound/__init__.py",
+Archived\graphify\graph.json:1675:      "source_file": ".claude/skills/sound/__init__.py",
+Archived\graphify\graph.json:1687:      "source_file": ".claude/skills/sound/references/test_improvements.py",
+Archived\graphify\graph.json:1699:      "source_file": ".claude/skills/sound/references/test_improvements.py",
+Archived\graphify\graph.json:1711:      "source_file": ".claude/skills/sound/references/test_improvements.py",
+Archived\graphify\graph.json:1723:      "source_file": ".claude/skills/sound/references/test_improvements.py",
+Archived\graphify\graph.json:1735:      "source_file": ".claude/skills/sound/references/test_improvements.py",
+Archived\graphify\graph.json:1747:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:1759:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:1771:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:1783:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:1795:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:1807:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:1819:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:1831:      "source_file": ".claude/daemons/watchdog.py",
+Archived\graphify\graph.json:1843:      "source_file": ".claude/daemons/watchdog.py",
+Archived\graphify\graph.json:1855:      "source_file": ".claude/daemons/watchdog.py",
+Archived\graphify\graph.json:1867:      "source_file": ".claude/daemons/watchdog.py",
+Archived\graphify\graph.json:1879:      "source_file": ".claude/daemons/watchdog.py",
+Archived\graphify\graph.json:1891:      "source_file": ".claude/daemons/watchdog.py",
+Archived\graphify\graph.json:1903:      "source_file": ".claude/skills/c2-dispatch/scripts/faust_dispatcher.py",
+Archived\graphify\graph.json:1915:      "source_file": ".claude/skills/c2-dispatch/scripts/faust_dispatcher.py",
+Archived\graphify\graph.json:1927:      "source_file": ".claude/skills/c2-dispatch/scripts/faust_dispatcher.py",
+Archived\graphify\graph.json:1939:      "source_file": ".claude/scripts/resolve_memory.py",
+Archived\graphify\graph.json:1951:      "source_file": ".claude/scripts/resolve_memory.py",
+Archived\graphify\graph.json:1963:      "source_file": ".claude/scripts/resolve_memory.py",
+Archived\graphify\graph.json:1975:      "source_file": ".claude/scripts/resolve_memory.py",
+Archived\graphify\graph.json:1986:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:2019:      "source_file": ".claude/skills/sound/__init__.py",
+Archived\graphify\graph.json:2030:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:2074:      "source_file": ".claude/skills/sound/scripts/cli.py",
+Archived\graphify\graph.json:2085:      "source_file": ".claude/skills/sound/scripts/config.py",
+Archived\graphify\graph.json:2118:      "source_file": ".claude/skills/sound/scripts/engine.py",
+Archived\graphify\graph.json:2129:      "source_file": ".claude/skills/sound/scripts/__init__.py",
+Archived\graphify\graph.json:2162:      "source_file": ".claude/skills/sound/daemon/audio_daemon.py",
+Archived\graphify\graph.json:2173:      "source_file": ".claude/skills/sound/__init__.py",
+Archived\graphify\graph.json:2184:      "source_file": ".claude/skills/sound/__init__.py",
+Archived\graphify\graph.json:2195:      "source_file": ".claude/skills/sound/__init__.py",
+Archived\graphify\graph.json:2206:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:2217:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:2228:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:2239:      "source_file": ".claude/skills/sound/scripts/api.py",
+Archived\graphify\graph.json:2250:      "source_file": ".claude/skills/sound/scripts/api.py",
+
+[Showing results with pagination = limit: 250]

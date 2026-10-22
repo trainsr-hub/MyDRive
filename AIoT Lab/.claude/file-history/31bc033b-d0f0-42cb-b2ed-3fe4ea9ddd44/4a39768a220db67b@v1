@@ -1,0 +1,19 @@
+{
+  "model": "Faust-ST",
+  "effortLevel": "xhigh",
+  "modelSettings": {
+    "Faust-ST": {
+      "effortLevel": "high"
+    },
+    "Faust-ND": {
+      "effortLevel": "xhigh"
+    },
+    "Faust-RD": {
+      "effortLevel": "medium"
+    },
+    "Faust-TH": {
+      "effortLevel": "medium"
+    }
+  },
+  "autoUpdatesChannel": "latest"
+}

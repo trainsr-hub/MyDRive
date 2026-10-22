@@ -1,0 +1,16 @@
+{
+  "project_id": "music_app",
+  "name": "Music Data Lab",
+  "log_enabled": false,
+  "tiers": {
+    "1": { "filename": "_1_static.db", "format": "sqlite" },
+    "2": { "filename": "_2_events.jsonl", "format": "jsonl" },
+    "3": { "filename": "_3_state.db", "format": "sqlite" },
+    "channel_state": { "filename": "_3_state.db", "format": "sqlite", "table": "channel_state" },
+    "4": { "filename": "_4_display.db", "format": "sqlite" },
+    "5": { "filename": "_5_config.db", "format": "sqlite" },
+    "playlists": { "filename": "playlists.db", "format": "sqlite", "table": "playlists" },
+    "channel_meta": { "filename": "playlists.db", "format": "sqlite", "table": "channel_meta" },
+    "blocked": { "filename": "blocked.db", "format": "sqlite", "table": "blocked_tracks" }
+  }
+}

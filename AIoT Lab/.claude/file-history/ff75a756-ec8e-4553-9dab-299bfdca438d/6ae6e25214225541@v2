@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Firebase Task Board Guide</title>
+  <style>
+    /* Design system: Clean, functional guide for Firebase management */
+    /* Color: Neutral with Firebase accent (blue). Type: System sans for clarity */
+    /* Layout: Left sidebar nav + main content area, stacked at phone width */
+
+    :root {
+      --bg: #ffffff;
+      --fg: #1a1a1a;
+      --border: #e5e5e5;
+      --accent: #1f73e6;
+      --accent-light: #f0f7ff;
+      --success: #0d7c26;
+      --warning: #f57f17;
+      --code-bg: #f5f5f5;
+      --muted: #666666;
+      --sidebar-bg: #fafafa;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f0f0f;
+        --fg: #e8e8e8;
+        --border: #2a2a2a;
+        --accent: #5a9cff;
+        --accent-light: #1a2d47;
+        --success: #2da84f;
+        --warning: #ffb81c;
+        --code-bg: #1a1a1a;
+        --muted: #999999;
+        --sidebar-bg: #1a1a1a;
+        color-scheme: dark;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0f0f0f;
+      --fg: #e8e8e8;
+      --border: #2a2a2a;
+      --accent: #5a9cff;
+      --accent-light: #1a2d47;
+      --success: #2da84f;
+      --warning: #ffb81c;
+      --code-bg: #1a1a1a;
+      --muted: #999999;
+      --sidebar-bg: #1a1a1a;
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .nav-section {
+      margin-bottom: 32px;
+    }
+
+    .nav-label {
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+
+    .nav-link {
+      display: block;
+      padding: 10px 16px;
+      color: var(--fg);
+      text-decoration: none;
+      border-left: 3px solid transparent;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .nav-link:hover {
+      background: var(--accent-light);
+      border-left-color: var(--accent);
+    }
+
+    .nav-link.active {
+      background: var(--accent-light);
+      border-left-color: var(--accent);
+      font-weight: 500;
+    }
+
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      padding: 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .header h1 {
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+
+    .header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .content {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .section h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 24px 0 12px 0;
+      color: var(--fg);
+    }
+
+    .section p {
+      margin: 12px 0;
+      color: var(--fg);
+    }
+
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      overflow-x: auto;
+      font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 12px 0;
+      color: var(--fg);
+    }
+
+    .step-box {
+      background: var(--accent-light);
+      border-left: 4px solid var(--accent);
+      padding: 16px;
+      margin: 16px 0;
+      border-radius: 4px;
+    }
+
+    .step-box strong {
+      color: var(--accent);
+    }
+
+    .info-box {
+      background: var(--accent-light);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .success-box {
+      background: rgba(13, 124, 38, 0.1);
+      border: 1px solid var(--success);
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .warning-box {
+      background: rgba(245, 127, 23, 0.1);
+      border: 1px solid var(--warning);
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .data-grid {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .data-grid th {
+      background: var(--code-bg);
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .data-grid td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .data-grid tr:last-child td {
+      border-bottom: none;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 12px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 10px 16px;
+      background: var(--accent);
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+
+    .button:hover {
+      opacity: 0.9;
+    }
+
+    .button.secondary {
+      background: var(--code-bg);
+      color: var(--fg);
+      border: 1px solid var(--border);
+    }
+
+    .button.secondary:hover {
+      background: var(--border);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .project-badge {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 8px 0;
+    }
+
+    ul, ol {
+      margin: 12px 0;
+      padding-left: 24px;
+    }
+
+    li {
+      margin: 8px 0;
+    }
+
+    .field-list {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0;
+    }
+
+    .field-list li {
+      padding: 12px;
+      background: var(--code-bg);
+      border-left: 3px solid var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .field-list strong {
+      color: var(--accent);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 16px 0;
+        display: flex;
+        overflow-x: auto;
+      }
+
+      .nav-section {
+        margin-bottom: 0;
+        margin-right: 32px;
+        flex-shrink: 0;
+      }
+
+      .header {
+        padding: 24px;
+      }
+
+      .content {
+        padding: 24px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="sidebar">
+      <div class="nav-section">
+        <div class="nav-label">Getting Started</div>
+        <a class="nav-link active" onclick="showSection('overview')">Overview</a>
+        <a class="nav-link" onclick="showSection('credentials')">Credentials</a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Database Access</div>
+        <a class="nav-link" onclick="showSection('firestore')">Firestore Console</a>
+        <a class="nav-link" onclick="showSection('viewing-data')">Viewing Data</a>
+        <a class="nav-link" onclick="showSection('firestore-rules')">Security Rules</a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Public App</div>
+        <a class="nav-link" onclick="showSection('hosting')">Firebase Hosting</a>
+        <a class="nav-link" onclick="showSection('app-deploy')">Deploying App</a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Tools & CLI</div>
+        <a class="nav-link" onclick="showSection('firebase-cli')">Firebase CLI</a>
+        <a class="nav-link" onclick="showSection('commands')">Common Commands</a>
+      </div>
+    </nav>
+
+    <main class="main">
+      <div class="header">
+        <h1 id="section-title">Firebase Task Board Guide</h1>
+        <p id="section-subtitle">Complete guide to managing your Firebase project</p>
+      </div>
+
+      <div class="content">
+        <!-- Overview Section -->
+        <div id="overview" class="section">
+          <h2>Project Overview</h2>
+          <p>Your Firebase Task Board is a lightweight task management application built with:</p>
+          <ul>
+            <li><strong>Frontend:</strong> Vanilla JavaScript with Vite</li>
+            <li><strong>Authentication:</strong> Firebase Authentication (Email/Password)</li>
+            <li><strong>Database:</strong> Cloud Firestore</li>
+            <li><strong>Hosting:</strong> Firebase Hosting</li>
+          </ul>
+
+          <div class="info-box">
+            <strong>Project ID:</strong> <code>manhattan-cafe-9fe21</code><br>
+            <strong>Auth Domain:</strong> <code>manhattan-cafe-9fe21.firebaseapp.com</code>
+          </div>
+
+          <h3>Architecture</h3>
+          <p>Users authenticate with email/password, then see their own tasks stored in Firestore. Security rules enforce user-level isolation—each user only sees their own tasks.</p>
+        </div>
+
+        <!-- Credentials Section -->
+        <div id="credentials" class="section hidden">
+          <h2>Firebase Credentials</h2>
+          <p>Your project credentials are stored in <code>.env</code> file:</p>
+          <div class="code-block">
+VITE_FIREBASE_API_KEY=AIzaSyBxSEU6wc-5LuHAbAlXqF5s8PB2KJnP7pA
+VITE_FIREBASE_AUTH_DOMAIN=manhattan-cafe-9fe21.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=manhattan-cafe-9fe21
+VITE_FIREBASE_STORAGE_BUCKET=manhattan-cafe-9fe21.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=500889544128
+VITE_FIREBASE_APP_ID=1:500889544128:web:aefbe7c9068d1b3ac8d425
+          </div>
+
+          <div class="warning-box">
+            <strong>⚠️ Security Note:</strong> API keys in client-side code are public—they're meant to be. The real security comes from your Firestore rules, which restrict data access at the database level.
+          </div>
+
+          <h3>Using Credentials</h3>
+          <p>Vite loads these from <code>.env</code> at build time. The <code>src/firebase.js</code> file initializes the Firebase app:</p>
+          <div class="code-block">
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  // ... other config
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+          </div>
+        </div>
+
+        <!-- Firestore Console Section -->
+        <div id="firestore" class="section hidden">
+          <h2>Accessing Firestore Console</h2>
+          <p>The Firebase Console is your web interface to manage the database, users, and project settings.</p>
+
+          <div class="step-box">
+            <strong>Step 1: Open Firebase Console</strong><br>
+            Go to: <a href="https://console.firebase.google.com/project/manhattan-cafe-9fe21" target="_blank">https://console.firebase.google.com/project/manhattan-cafe-9fe21</a>
+          </div>
+
+          <div class="step-box">
+            <strong>Step 2: Navigate to Firestore Database</strong><br>
+            Left sidebar → <strong>Build</strong> → <strong>Firestore Database</strong>
+          </div>
+
+          <div class="step-box">
+            <strong>Step 3: View Collections</strong><br>
+            You'll see your <code>tasks</code> collection with all stored tasks
+          </div>
+
+          <h3>Console Features</h3>
+          <table class="data-grid">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th>Location</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Collections</strong></td>
+                <td>Left sidebar</td>
+                <td>Browse all data collections</td>
+              </tr>
+              <tr>
+                <td><strong>Documents</strong></td>
+                <td>Main panel</td>
+                <td>View individual documents</td>
+              </tr>
+              <tr>
+                <td><strong>Add Document</strong></td>
+                <td>Top of collection</td>
+                <td>Create test data</td>
+              </tr>
+              <tr>
+                <td><strong>Delete Document</strong></td>
+                <td>Document menu</td>
+                <td>Remove records</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Viewing Data Section -->
+        <div id="viewing-data" class="section hidden">
+          <h2>Viewing Your Data</h2>
+          <p>When viewing your Firestore database, here's what you'll find:</p>
+
+          <h3>Tasks Collection Structure</h3>
+          <ul class="field-list">
+            <li><strong>uid</strong> (String) — Firebase User ID who owns the task</li>
+            <li><strong>title</strong> (String) — Task description (max 120 chars)</li>
+            <li><strong>completed</strong> (Boolean) — Task completion status</li>
+            <li><strong>createdAt</strong> (Timestamp) — When the task was created</li>
+          </ul>
+
+          <h3>Example Task Document</h3>
+          <div class="code-block">
+{
+  uid: "user123abc456def789",
+  title: "Build Firebase integration",
+  completed: false,
+  createdAt: Timestamp(1696771200, 0)
+}
+          </div>
+
+          <h3>Reading Data</h3>
+          <p>All data access goes through <code>src/main.js</code>:</p>
+          <ul>
+            <li><strong>Query:</strong> Tasks filtered by user UID in security rules</li>
+            <li><strong>Real-time updates:</strong> Uses <code>onSnapshot()</code> listener</li>
+            <li><strong>User isolation:</strong> Each user only sees their own tasks</li>
+          </ul>
+
+          <div class="success-box">
+            <strong>✓ Tip:</strong> Click on any document in the console to see its full field details and edit values directly for testing.
+          </div>
+        </div>
+
+        <!-- Firestore Rules Section -->
+        <div id="firestore-rules" class="section hidden">
+          <h2>Firestore Security Rules</h2>
+          <p>Your app enforces strict security rules that ensure users can only access their own data.</p>
+
+          <h3>Current Rules</h3>
+          <div class="code-block">
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /tasks/{taskId} {
+      // Read: User must be authenticated AND own the task
+      allow read: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+
+      // Create: User must be authenticated AND set their own uid
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+
+      // Update: User must own the task
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+
+      // Delete: User must own the task
+      allow delete: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+    }
+  }
+}
+          </div>
+
+          <h3>Rule Explanation</h3>
+          <p><strong>Key principle:</strong> Every operation checks <code>resource.data.uid == request.auth.uid</code></p>
+          <ul>
+            <li><strong>Read:</strong> Fetch tasks where <code>uid</code> matches your user ID</li>
+            <li><strong>Create:</strong> New tasks must have your user ID as <code>uid</code></li>
+            <li><strong>Update:</strong> Can only modify tasks you created</li>
+            <li><strong>Delete:</strong> Can only remove tasks you created</li>
+          </ul>
+
+          <div class="info-box">
+            <strong>No cross-user access:</strong> Even if you know someone else's UID, you cannot read, modify, or delete their tasks. The database enforces this automatically.
+          </div>
+
+          <h3>Modifying Rules</h3>
+          <p>Rules are stored in <code>firestore.rules</code> at your project root.</p>
+          <ol>
+            <li>Edit the file locally</li>
+            <li>Deploy with: <code>firebase deploy --only firestore:rules</code></li>
+            <li>View/edit in console: Build → Firestore Database → Rules tab</li>
+          </ol>
+        </div>
+
+        <!-- Hosting Section -->
+        <div id="hosting" class="section hidden">
+          <h2>Firebase Hosting</h2>
+          <p>Your app is hosted on Firebase's global CDN, accessible via a public URL.</p>
+
+          <h3>Your Hosting URL</h3>
+          <p>Your hosted app is available at:</p>
+          <div class="code-block">
+https://manhattan-cafe-9fe21.web.app
+          </div>
+
+          <p>Or via the shorter alias:</p>
+          <div class="code-block">
+https://manhattan-cafe-9fe21.firebaseapp.com
+          </div>
+
+          <h3>Accessing the Console</h3>
+          <div class="step-box">
+            <strong>Step 1:</strong> Open <a href="https://console.firebase.google.com/project/manhattan-cafe-9fe21/hosting" target="_blank">Hosting in Firebase Console</a>
+          </div>
+
+          <div class="step-box">
+            <strong>Step 2:</strong> View deployment history and current version
+          </div>
+
+          <div class="step-box">
+            <strong>Step 3:</strong> Click the URL to visit your live app
+          </div>
+
+          <h3>Hosting Features</h3>
+          <ul>
+            <li><strong>HTTPS by default:</strong> All traffic is encrypted</li>
+            <li><strong>Global CDN:</strong> Fast delivery worldwide</li>
+            <li><strong>Automatic SSL:</strong> No certificate management needed</li>
+            <li><strong>Custom domains:</strong> Available in console settings</li>
+          </ul>
+        </div>
+
+        <!-- Deploy App Section -->
+        <div id="app-deploy" class="section hidden">
+          <h2>Deploying Your App</h2>
+          <p>Build and deploy new versions of your app to Firebase Hosting.</p>
+
+          <h3>Deployment Workflow</h3>
+          <div class="step-box">
+            <strong>Step 1: Build the app</strong>
+            <div class="code-block">npm run build</div>
+            This generates an optimized <code>dist/</code> folder.
+          </div>
+
+          <div class="step-box">
+            <strong>Step 2: Deploy to Firebase</strong>
+            <div class="code-block">firebase deploy</div>
+            This uploads your app and makes it live.
+          </div>
+
+          <div class="step-box">
+            <strong>Step 3: Verify deployment</strong><br>
+            Check the console at <a href="https://console.firebase.google.com/project/manhattan-cafe-9fe21/hosting" target="_blank">Hosting → Deployment History</a>
+          </div>
+
+          <h3>What Gets Deployed</h3>
+          <table class="data-grid">
+            <thead>
+              <tr>
+                <th>File/Folder</th>
+                <th>Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>dist/</code></td>
+                <td>Optimized app (from <code>npm run build</code>)</td>
+              </tr>
+              <tr>
+                <td><code>firebase.json</code></td>
+                <td>Hosting configuration</td>
+              </tr>
+              <tr>
+                <td><code>public/</code></td>
+                <td>Static assets (if configured)</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="success-box">
+            <strong>✓ Tip:</strong> Each deployment is timestamped. You can view all previous versions in the console and quickly revert if needed.
+          </div>
+        </div>
+
+        <!-- Firebase CLI Section -->
+        <div id="firebase-cli" class="section hidden">
+          <h2>Firebase CLI Setup</h2>
+          <p>The Firebase Command Line Interface (CLI) is your tool for local development and deployment.</p>
+
+          <h3>Installation</h3>
+          <p>Install Firebase CLI globally:</p>
+          <div class="code-block">
+npm install -g firebase-tools
+          </div>
+
+          <h3>Authentication</h3>
+          <p>Log in with your Google account:</p>
+          <div class="code-block">
+firebase login
+          </div>
+
+          <p>This opens a browser window to authenticate. After login, the CLI stores your credentials locally.</p>
+
+          <h3>Initialize Project</h3>
+          <p>If you need to reinitialize:</p>
+          <div class="code-block">
+firebase init
+          </div>
+
+          <p>This creates <code>firebase.json</code> and <code>.firebaserc</code> files (already done for your project).</p>
+
+          <h3>Link to Project</h3>
+          <p>The CLI knows your project via <code>.firebaserc</code>:</p>
+          <div class="code-block">
+{
+  "projects": {
+    "default": "manhattan-cafe-9fe21"
+  }
+}
+          </div>
+
+          <div class="success-box">
+            <strong>✓ Verified:</strong> Your project is already linked to <code>manhattan-cafe-9fe21</code>
+          </div>
+        </div>
+
+        <!-- Commands Section -->
+        <div id="commands" class="section hidden">
+          <h2>Common Firebase Commands</h2>
+          <p>Essential commands for development and deployment:</p>
+
+          <h3>Development</h3>
+          <ul class="field-list">
+            <li><strong><code>firebase serve</code></strong> — Run app locally with emulators</li>
+            <li><strong><code>npm run dev</code></strong> — Start Vite dev server (with hot reload)</li>
+            <li><strong><code>npm run build</code></strong> — Build optimized production bundle</li>
+          </ul>
+
+          <h3>Deployment</h3>
+          <ul class="field-list">
+            <li><strong><code>firebase deploy</code></strong> — Deploy everything (hosting + rules)</li>
+            <li><strong><code>firebase deploy --only hosting</code></strong> — Deploy only the app</li>
+            <li><strong><code>firebase deploy --only firestore:rules</code></strong> — Deploy only security rules</li>
+          </ul>
+
+          <h3>Inspection</h3>
+          <ul class="field-list">
+            <li><strong><code>firebase projects:list</code></strong> — List all your Firebase projects</li>
+            <li><strong><code>firebase status</code></strong> — Show deployment status</li>
+            <li><strong><code>firebase open hosting:site</code></strong> — Open your live site</li>
+          </ul>
+
+          <h3>Logs & Debugging</h3>
+          <ul class="field-list">
+            <li><strong><code>firebase functions:log</code></strong> — View function logs</li>
+            <li><strong><code>firebase debug</code></strong> — Run in debug mode</li>
+          </ul>
+
+          <h3>Quick Reference</h3>
+          <div class="code-block">
+# Local development
+npm run dev              # Vite dev server
+firebase serve          # Emulator suite
+
+# Build & deploy
+npm run build           # Create dist/ folder
+firebase deploy         # Deploy to production
+
+# Check project
+firebase projects:list  # See your projects
+firebase status         # Show current status
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function showSection(sectionId) {
+      // Hide all sections
+      document.querySelectorAll('.section').forEach(section => {
+        section.classList.add('hidden');
+      });
+
+      // Remove active state from all nav links
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+
+      // Show selected section
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.classList.remove('hidden');
+      }
+
+      // Mark nav link as active
+      event.target.classList.add('active');
+
+      // Update header
+      const titles = {
+        'overview': 'Project Overview',
+        'credentials': 'Firebase Credentials',
+        'firestore': 'Accessing Firestore Console',
+        'viewing-data': 'Viewing Your Data',
+        'firestore-rules': 'Firestore Security Rules',
+        'hosting': 'Firebase Hosting',
+        'app-deploy': 'Deploying Your App',
+        'firebase-cli': 'Firebase CLI Setup',
+        'commands': 'Common Firebase Commands'
+      };
+
+      const subtitles = {
+        'overview': 'Complete overview of your Firebase project',
+        'credentials': 'Understanding your API keys and configuration',
+        'firestore': 'Step-by-step guide to accessing the database console',
+        'viewing-data': 'Structure and content of your tasks collection',
+        'firestore-rules': 'How data access is restricted by user',
+        'hosting': 'Your live app URL and deployment settings',
+        'app-deploy': 'Build and deploy new versions',
+        'firebase-cli': 'Command line tools for Firebase',
+        'commands': 'Essential Firebase and npm commands'
+      };
+
+      document.getElementById('section-title').textContent = titles[sectionId] || 'Firebase Task Board Guide';
+      document.getElementById('section-subtitle').textContent = subtitles[sectionId] || 'Complete guide to managing your Firebase project';
+    }
+  </script>
+</body>
+</html>

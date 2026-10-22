@@ -1,0 +1,77 @@
+/**
+ * ============================================================================
+ * VGWD025K3 ~ Codex of Time (Varis Gear Walpurgis Driver Actuator)
+ * Faust Acoustic Field Speaker Firmware (ESP32-S3 + MAX98357A I2S Receiver)
+ * ============================================================================
+ * Hardware Pinout:
+ *   - I2S BCLK (Bit Clock)    : GPIO 5
+ *   - I2S LRC  (Word Select)   : GPIO 4
+ *   - I2S DOUT (Data to Amp)   : GPIO 6
+ *
+ * Audio Specification:
+ *   - Format      : 16-bit Stereo PCM @ 24,000 Hz
+ *   - UART Baud   : 2,000,000 baud
+ *   - Streaming   : Continuous DMA feed with 4-byte sample alignment
+ * ============================================================================
+ */
+
+#include <Arduino.h>
+#include <I2SSpeaker.h>
+
+#define I2S_BCLK_PIN       5
+#define I2S_LRC_PIN        4
+#define I2S_DOUT_PIN       6
+
+#define I2S_PORT           I2S_NUM_0
+#define SAMPLE_RATE        24000
+#define BUFFER_SAMPLES     256
+#define SERIAL_BAUD_RATE   2000000
+#define SERIAL_RX_BUF_SIZE 8192
+
+// 1024-byte chunk buffer (256 stereo samples)
+static uint8_t raw_audio_buffer[BUFFER_SAMPLES * 4];
+
+I2SSpeaker speaker(I2S_PORT);
+
+void setup() {
+    // 1. Expand Hardware Serial RX Buffer BEFORE Serial.begin()
+    Serial.setRxBufferSize(SERIAL_RX_BUF_SIZE);
+    Serial.begin(SERIAL_BAUD_RATE);
+
+    // 2. Initialize I2S Speaker Driver on Pins 5 (BCLK), 4 (LRC), 6 (DOUT) @ 24kHz
+    bool ok = speaker.begin(
+        I2S_BCLK_PIN,
+        I2S_LRC_PIN,
+        I2S_DOUT_PIN,
+        SAMPLE_RATE,
+        8,              // 8 DMA buffers
+        BUFFER_SAMPLES, // 256 samples per buffer
+        true            // Stereo duplicate
+    );
+
+    if (!ok) {
+        while (true) { delay(1000); }
+    }
+
+    // 3. Clear I2S buffer
+    speaker.clearBuffer();
+
+    // 4. Send ready signal to Serial
+    Serial.println();
+    Serial.println(F("FAUST_READY"));
+}
+
+void loop() {
+    int available = Serial.available();
+    if (available >= 4) {
+        // Read available data aligned to 4 bytes (16-bit Stereo frame = 2 bytes L + 2 bytes R)
+        int to_read = min(available, (int)sizeof(raw_audio_buffer));
+        to_read = to_read & (~3); // Align to 4-byte boundary
+
+        int bytes_read = Serial.readBytes((char*)raw_audio_buffer, to_read);
+        if (bytes_read > 0) {
+            size_t bytes_written = 0;
+            i2s_write(I2S_PORT, raw_audio_buffer, bytes_read, &bytes_written, portMAX_DELAY);
+        }
+    }
+}

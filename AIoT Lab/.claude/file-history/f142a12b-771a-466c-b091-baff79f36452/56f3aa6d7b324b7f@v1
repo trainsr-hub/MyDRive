@@ -1,0 +1,18 @@
+@echo off
+title Faust Sovereign Remote Daemon - Console Mode (Foreground)
+echo ============================================================
+echo   FAUST SOVEREIGN REMOTE DAEMON - CONSOLE MODE
+echo   Live Streaming Telegram Logs (Local Disk D:)
+echo ============================================================
+echo.
+
+set "PYTHON_EXE=D:\Program Files\Python\python.exe"
+if not exist "%PYTHON_EXE%" set "PYTHON_EXE=python"
+
+"%PYTHON_EXE%" "D:\My Drive\Blue AI\.agents\scripts\daemon\faust_remote.py" run-foreground
+
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo [!] Daemon terminated with error.
+    pause
+)

@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""
+Bridge script for Vietnamese TTS testing.
+Converts Vietnamese to IPA and calls existing Faust TTS CLI.
+Output encoded for Windows console compatibility.
+"""
+import sys
+import json
+import subprocess
+from pathlib import Path
+
+# Add archived skills to path
+ARCHIVED_SKILLS = Path(r"D:\My Drive\Blue AI\Archived\.claude\skills\sound\scripts")
+sys.path.insert(0, str(ARCHIVED_SKILLS))
+
+try:
+    from vietnamese_g2p import vi_text_to_ipa, contains_vietnamese
+    MODULE_AVAILABLE = True
+except ImportError as e:
+    # Use ASCII-safe error message
+    sys.stderr.write(f"ERROR: Could not import Vietnamese G2P module: {str(e).encode('ascii', 'ignore').decode('ascii')}\n")
+    MODULE_AVAILABLE = False
+
+def safe_print(text):
+    """Print text with ASCII encoding for Windows console compatibility."""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        # Fallback to ASCII-safe version
+        print(text.encode('ascii', 'ignore').decode('ascii'))
+
+def speak_vietnamese(text):
+    """Convert Vietnamese text to IPA and speak via existing TTS."""
+    if not MODULE_AVAILABLE:
+        return False, "Vietnamese G2P module not available"
+
+    # Detect and convert
+    has_vietnamese = contains_vietnamese(text)
+
+    if has_vietnamese:
+        # Convert to IPA for TTS
+        ipa_text = vi_text_to_ipa(text)
+        final_text = ipa_text
+        conversion_note = f"Vietnamese detected → converted to IPA: {ipa_text}"
+    else:
+        # Pass through as-is
+        final_text = text
+        conversion_note = "No Vietnamese detected → text passed through as-is"
+
+    # Call existing Faust TTS CLI
+    cli_path = Path(r"D:\My Drive\Blue AI\.claude\skills\sound\scripts\cli.py")
+
+    if not cli_path.exists():
+        return False, f"Faust TTS CLI not found at {cli_path}"
+
+    try:
+        result = subprocess.run(
+            [sys.executable, str(cli_path), final_text],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+
+        success = result.returncode == 0
+        message_lines = [
+            f"{conversion_note}",
+            f"TTS CLI exit code: {result.returncode}"
+        ]
+
+        if result.stdout:
+            stdout_safe = result.stdout.strip().encode('ascii', 'ignore').decode('ascii')
+            message_lines.append(f"TTS output: {stdout_safe}")
+        if result.stderr:
+            stderr_safe = result.stderr.strip().encode('ascii', 'ignore').decode('ascii')
+            message_lines.append(f"TTS stderr: {stderr_safe}")
+
+        return success, "\n".join(message_lines)
+
+    except subprocess.TimeoutExpired:
+        return False, "TTS CLI timed out"
+    except Exception as e:
+        error_safe = str(e).encode('ascii', 'ignore').decode('ascii')
+        return False, f"Error calling TTS CLI: {error_safe}"
+
+def main():
+    if len(sys.argv) < 2:
+        safe_print("Usage: python vietnamese_tts_bridge.py \"<vietnamese_text>\"")
+        safe_print("Example: python vietnamese_tts_bridge.py \"Xin chào Manager\"")
+        sys.exit(1)
+
+    text = " ".join(sys.argv[1:])
+    safe_print(f"Input: {text}")
+    safe_print("-" * 50)
+
+    success, message = speak_vietnamese(text)
+    safe_print(message)
+
+    if success:
+        safe_print("✓ Vietnamese TTS test completed successfully")
+    else:
+        safe_print("✗ Vietnamese TTS test failed")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

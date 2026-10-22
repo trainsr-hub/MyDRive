@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vinyl Angel Data Sync Architecture Analysis</title>
+    <style>
+        :root {
+            --bg: #fafafa;
+            --surface: #ffffff;
+            --surface-elevated: #f5f5f5;
+            --border: #e0e0e0;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --text-muted: #999999;
+            --accent: #d4af37;
+            --accent-bg: #fdf6e3;
+            --success: #22c55e;
+            --success-bg: #f0fdf4;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #0a0a0a;
+                --surface: #1a1a1a;
+                --surface-elevated: #262626;
+                --border: #333333;
+                --text-primary: #ffffff;
+                --text-secondary: #a3a3a3;
+                --text-muted: #737373;
+                --accent: #ffd86b;
+                --accent-bg: #2d2518;
+                --success: #16a34a;
+                --success-bg: #14532d;
+                --warning: #d97706;
+                --warning-bg: #451a03;
+                --danger: #dc2626;
+                --danger-bg: #450a0a;
+                color-scheme: dark;
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg: #0a0a0a;
+            --surface: #1a1a1a;
+            --surface-elevated: #262626;
+            --border: #333333;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --text-muted: #737373;
+            --accent: #ffd86b;
+            --accent-bg: #2d2518;
+            --success: #16a34a;
+            --success-bg: #14532d;
+            --warning: #d97706;
+            --warning-bg: #451a03;
+            --danger: #dc2626;
+            --danger-bg: #450a0a;
+            color-scheme: dark;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            background: var(--bg);
+            color: var(--text-primary);
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent), #f59e0b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-wrap: balance;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 2rem;
+        }
+
+        .problem-summary {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .problem-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--accent);
+        }
+
+        .comparison-table {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--surface-elevated);
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .option-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .option-desc {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .score {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.875rem;
+        }
+
+        .score-high {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .score-medium {
+            background: var(--warning-bg);
+            color: var(--warning);
+        }
+
+        .score-low {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+
+        .pros-cons {
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .pro, .con {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .pro {
+            color: var(--success);
+        }
+
+        .con {
+            color: var(--danger);
+        }
+
+        .pro-icon, .con-icon {
+            margin-top: 0.125rem;
+            flex-shrink: 0;
+        }
+
+        .recommendation {
+            background: var(--accent-bg);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .rec-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        .verification-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .verification-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .verification-steps {
+            list-style: none;
+            padding: 0;
+            counter-reset: step-counter;
+        }
+
+        .verification-steps li {
+            counter-increment: step-counter;
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+            position: relative;
+        }
+
+        .verification-steps li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: var(--accent);
+            color: var(--bg);
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .code-snippet {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 0.875rem;
+            margin: 0.5rem 0;
+            overflow-x: auto;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .title {
+                font-size: 2rem;
+            }
+
+            th, td {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .comparison-table {
+                overflow-x: auto;
+            }
+
+            table {
+                min-width: 600px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">Vinyl Angel Data Synchronization Architecture Analysis</h1>
+            <p class="subtitle">Evaluating three approaches to fix playlist status sync between tabs</p>
+        </header>
+
+        <div class="problem-summary">
+            <h2 class="problem-title">🎯 Problem Identified</h2>
+            <p>The <strong>VinylPlayer.tsx</strong> (Gameplay tab) and <strong>VinylPlaylists.tsx</strong> (Playlists tab) maintain separate local state for <code>channelList</code>, <code>customPlaylists</code>, and <code>channelMetaMap</code>. When playlist status changes in the Playlists tab, the Gameplay tab's Include dropdown options remain stale until manually reloaded.</p>
+        </div>
+
+        <div class="comparison-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Option</th>
+                        <th>Safety</th>
+                        <th>Effectiveness</th>
+                        <th>Implementation</th>
+                        <th>Maintenance</th>
+                        <th>Pros & Cons</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="option-name">Option A: Event Bus</div>
+                            <div class="option-desc">Add global event listeners to trigger loadData() across tabs</div>
+                        </td>
+                        <td><span class="score score-medium">6</span></td>
+                        <td><span class="score score-medium">7</span></td>
+                        <td><span class="score score-low">4</span></td>
+                        <td><span class="score score-low">3</span></td>
+                        <td>
+                            <div class="pros-cons">
+                                <div class="pro">
+                                    <span class="pro-icon">✓</span>
+                                    <span>Minimal refactoring required</span>
+                                </div>
+                                <div class="pro">
+                                    <span class="pro-icon">✓</span>
+                                    <span>Preserves existing component structure</span>
+                                </div>
+                                <div class="con">
+                                    <span class="con-icon">✗</span>
+                                    <span>Race conditions and timing issues</span>
+                                </div>
+                                <div class="con">
+                                    <span class="con-icon">✗</span>
+                                    <span>Memory leaks from uncleared listeners</span>
+                                </div>
+                                <div class="con">
+                                    <span class="con-icon">✗</span>
+                                    <span>Hard to debug async event chains</span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="option-name">Option B: Shared Zustand Store</div>
+                            <div class="option-desc">Move channelList, customPlaylists, channelMetaMap to useVinylStore with auto-reload</div>
+                        </td>
+                        <td><span class="score score-high">9</span></td>
+                        <td><span class="score score-high">9</span></td>
+                        <td><span class="score score-medium">7</span></td>
+                        <td><span class="score score-high">9</span></td>
+                        <td>
+                            <div class="pros-cons">
+                                <div class="pro">
+                                    <span class="pro-icon">✓</span>
+                                    <span>Single source of truth architecture</span>
+                                </div>
+                                <div class="pro">
+                                    <span class="pro-icon">✓</span>
+                                    <span>Automatic reactivity across all tabs</span>
+                                </div>
+                                <div class="pro">
+                                    <span class="pro-icon">✓</span>
+                                    <span>Zustand devtools for debugging</span>
+                                </div>
+                                <div class="pro">
+                                    <span class="pro-icon">✓</span>
+                                    <span>Persistent state across tab switches</span>
+                                </div>
+                                <div class="con">
+                                    <span class="con-icon">✗</span>
+                                    <span>Moderate refactoring of both components</span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="option-name">Option C: Tab Focus Reload</div>
+                            <div class="option-desc">Re-fetch data when entering Gameplay tab using focus effects</div>
+                        </td>
+                        <td><span class="score score-high">8</span></td>
+                        <td><span class="score score-medium">6</span></td>
+                        <td><span class="score score-high">9</span></td>
+                        <td><span class="score score-medium">6</span></td>
+                        <td>
+                            <div class="pros-cons">
+                                <div class="pro">
+                                    <span class="pro-icon">✓</span>
+                                    <span>Minimal code changes required</span>
+                                </div>
+                                <div class="pro">
+                                    <span class="pro-icon">✓</span>
+                                    <span>Very safe implementation</span>
+                                </div>
+                                <div class="pro">
+                                    <span class="pro-icon">✓</span>
+                                    <span>Always guarantees fresh data</span>
+                                </div>
+                                <div class="con">
+                                    <span class="con-icon">✗</span>
+                                    <span>Unnecessary API calls on every tab switch</span>
+                                </div>
+                                <div class="con">
+                                    <span class="con-icon">✗</span>
+                                    <span>Performance overhead</span>
+                                </div>
+                                <div class="con">
+                                    <span class="con-icon">✗</span>
+                                    <span>Loading states interrupt user experience</span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="recommendation">
+            <h2 class="rec-title">🏆 Faust's Recommendation: Option B (Shared Zustand Store)</h2>
+
+            <h3>Why Option B is Superior:</h3>
+            <ol>
+                <li><strong>Architectural Soundness</strong>: Establishes proper single source of truth pattern, eliminating the root cause rather than patching symptoms.</li>
+
+                <li><strong>Long-term Maintainability</strong>: Future components automatically inherit synchronization without additional setup. No manual event management.</li>
+
+                <li><strong>Performance Efficiency</strong>: Data loads once and propagates reactively. No redundant API calls or unnecessary re-fetches.</li>
+
+                <li><strong>Developer Experience</strong>: Zustand devtools provide excellent debugging capabilities. State mutations are traceable and predictable.</li>
+
+                <li><strong>Scalability</strong>: As vinyl-angel grows, new tabs/components seamlessly integrate with shared state without architectural changes.</li>
+            </ol>
+
+            <h3>Risk Mitigation:</h3>
+            <ul>
+                <li>Gradual migration: Move one data slice at a time (start with customPlaylists)</li>
+                <li>Preserve existing API calls, just change where data is stored</li>
+                <li>Add loading/error states to Zustand store for robust UX</li>
+                <li>Maintain backward compatibility during transition</li>
+            </ul>
+        </div>
+
+        <div class="verification-section">
+            <h2 class="verification-title">🔍 Verification Protocol</h2>
+
+            <h3>How to Verify the Problem Exists:</h3>
+            <ol class="verification-steps">
+                <li>
+                    <strong>Open Vinyl Angel in browser</strong>
+                    <div class="code-snippet">Navigate to Gameplay tab → Note current Include dropdown options</div>
+                </li>
+                <li>
+                    <strong>Switch to Playlists tab</strong>
+                    <div class="code-snippet">Find a channel with "Raw" status → Click status pill to cycle to "Cleaning"</div>
+                </li>
+                <li>
+                    <strong>Return to Gameplay tab</strong>
+                    <div class="code-snippet">Check Include dropdown → Status groupings should be stale (Raw still shown, Cleaning not updated)</div>
+                </li>
+                <li>
+                    <strong>Inspect Network Tab</strong>
+                    <div class="code-snippet">No API calls fired when switching tabs → Confirms local state staleness</div>
+                </li>
+            </ol>
+
+            <h3>How to Verify the Fix Works:</h3>
+            <ol class="verification-steps">
+                <li>
+                    <strong>Implement Option B (Shared Store)</strong>
+                    <div class="code-snippet">Move channelList, customPlaylists, channelMetaMap to useVinylStore</div>
+                </li>
+                <li>
+                    <strong>Add reactive selectors in both components</strong>
+                    <div class="code-snippet">const { channelList, customPlaylists, channelMetaMap } = useVinylStore()</div>
+                </li>
+                <li>
+                    <strong>Test the same workflow</strong>
+                    <div class="code-snippet">Change status in Playlists tab → Immediately visible in Gameplay dropdown</div>
+                </li>
+                <li>
+                    <strong>Monitor Zustand DevTools</strong>
+                    <div class="code-snippet">State mutations should be visible and traceable across components</div>
+                </li>
+                <li>
+                    <strong>Performance Check</strong>
+                    <div class="code-snippet">No duplicate API calls → Single fetch shared across tabs</div>
+                </li>
+            </ol>
+
+            <h3>Edge Cases to Test:</h3>
+            <ul class="verification-steps">
+                <li>
+                    <strong>Create/Delete Custom Playlists</strong>
+                    <div class="code-snippet">Changes should reflect immediately in Gameplay Include dropdown</div>
+                </li>
+                <li>
+                    <strong>Multiple rapid status changes</strong>
+                    <div class="code-snippet">No race conditions or stale intermediate states</div>
+                </li>
+                <li>
+                    <strong>Tab switching during API calls</strong>
+                    <div class="code-snippet">Loading states should be consistent across tabs</div>
+                </li>
+                <li>
+                    <strong>Error handling</strong>
+                    <div class="code-snippet">Failed API calls shouldn't corrupt shared state</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

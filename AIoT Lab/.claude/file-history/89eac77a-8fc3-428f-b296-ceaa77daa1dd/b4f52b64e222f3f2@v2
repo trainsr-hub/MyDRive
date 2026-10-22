@@ -1,0 +1,75 @@
+# Google Colab UI Integration Project
+
+## Project Overview
+- **Purpose**: Build a custom UI interface to interact with Google Colab AI-powered tools
+- **Target Notebook**: `1iYIe9pNcGO3nFYX2BOVtrLCJoF37PzP6`
+- **Project Folder**: `D:\My Drive\Blue AI\Test Projects\Google Collab`
+
+## Architecture
+
+```
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
+│   Custom UI     │ ──▶  │  FastAPI        │ ──▶  │  Google Colab   │
+│  (React/Tailwind)│      │  Backend        │      │  API / Runtime  │
+└─────────────────┘      └─────────────────┘      └─────────────────┘
+```
+
+## Access Methods
+
+### Method 1: Google Drive File Sharing (Recommended for Faust)
+1. Open the Colab notebook in your browser
+2. Click "Share" button in top-right
+3. Add service account email (see below)
+4. Set permission to "Editor" or "Viewer"
+
+### Method 2: Service Account Setup
+To give Faust autonomous access to Colab:
+
+1. **Create Google Cloud Service Account**
+   - Go to: https://console.cloud.google.com/iam-admin/serviceaccounts
+   - Create new service account: `faust-colab-access`
+   - Download JSON key file
+
+2. **Grant Colab Access**
+   - Share your notebook with the service account email
+   - Format: `faust-colab-access@PROJECT_ID.iam.gserviceaccount.com`
+
+3. **Store Credentials**
+   - Save JSON key to: `D:\My Drive\Blue AI\.secrets\colab-service-account.json`
+   - Add to `.gitignore` immediately
+
+### Method 3: OAuth 2.0 User Consent (Manager's Manual Access)
+- Manager logs in via OAuth popup
+- Session persists for Faust to use
+- Best for: Manager-directed operations only
+
+## Integration Options
+
+### Option A: Colab Connect Library
+```python
+from google.colab import drive
+drive.mount('/content/drive')
+# Access files directly
+```
+
+### Option B: Google Drive API
+- List files in shared Drive folder
+- Load .ipynb notebooks
+- Execute cells programmatically
+
+### Option C: Colab Runtime API (Enterprise)
+- Requires Colab Enterprise (paid)
+- Full notebook execution API
+
+## Next Steps
+1. [ ] Share notebook with Faust (Method 1 or 2)
+2. [ ] Export notebook content to local project
+3. [ ] Build API integration layer
+4. [ ] Create custom UI
+
+## Notebook Export
+Once access is granted, export notebook:
+```bash
+# In Colab, go to File > Download > Download .ipynb
+```
+Or use Drive API to fetch directly.

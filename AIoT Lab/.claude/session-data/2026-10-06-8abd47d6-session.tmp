@@ -1,0 +1,55 @@
+# Session: 2026-10-06
+**Date:** 2026-10-06
+**Started:** 17:56
+**Last Updated:** 23:49
+**Project:** Blue AI
+**Branch:** main
+**Worktree:** D:\My Drive\Blue AI
+**Repo:** D:\My Drive\Blue AI\.git
+
+---
+<!-- ECC:SUMMARY:START -->
+## Session Summary
+
+### Tasks
+- No Supabase or something SQL? I woundn't want to host the datas 24/7.
+- I choose Turso. Though I have nerver setup a Turso before
+- \`\`\` Database URL libsql://heraclitus-rien-bluerose.aws-ap-southeast-2.turso.io \`\`\`  \`\`\` token eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTEyOTgxMzUsImlkIjoiMDFhMTExYWYtNzAwMS03MDFkL
+- Perfect. Now. Did you make a markdown file to guide on how ESP32 can access this database to read (readonly) from? If you didn't then please create one. After that, we're gonna plan on how we operate 
+- The layout of E-Paper is rather up to my preference. Thou. There should be more adjustment, as well as more types to experientment with  \`\`\` Fix for E-Paper layout - delete the texts: " QUOTE", "TURSO
+- \`\`\` Fix - I didn't asked to remove the text "Date".  - I think we should place the "specific" right after the idx. Like "#6 ~ <specific>". then, Container and Tags should swap their positions - The co
+- Nearly perfect now. Just that there should be differences between our quotes. This is where the "Category" field get to shine: \`\`\` Category => How to handle content - writing: justify the contents. - 
+- Perfect. I think the layout is good so far. Though, its coloring is rather bad. We're need more color. I think 3 colors would be great. Black-ish + White + 1 more color. I suggest Blue or Gold
+- I should be able to select what can change color too
+- Do this new Vision \`\`\`Vision - idx & specific: ghost and should be smaller. - "Date: " & date value: ghost and should be smaller - each tag should have a random color - quotation mark & container: hav
+
+### Files Modified
+- D:\My Drive\Blue AI\Entropy\Rose\dev_server.py
+- D:\My Drive\Blue AI\Entropy\Rose\dev_server.bat
+- D:\My Drive\Blue AI\Entropy\Rose\run_rose.bat
+- D:\My Drive\Blue AI\Entropy\Rose\db.py
+- D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py
+- D:\My Drive\Blue AI\Entropy\Rose\server.py
+- D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html
+- D:\My Drive\Blue AI\Entropy\Rose\schemas\quote_schema.json
+- D:\My Drive\Blue AI\Entropy\Rose\README.md
+- D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py
+- D:\My Drive\Blue AI\Entropy\Rose\.env
+- D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py
+- D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md
+- D:\My Drive\Blue AI\Entropy\Rose\quote_presentation_test.html
+
+### Tools Used
+PowerShell, Read, Write, Grep, Bash, Edit, Glob
+
+### Stats
+- Total user messages: 22
+<!-- ECC:SUMMARY:END -->
+
+### Notes for Next Session
+-
+
+### Context to Load
+```
+[relevant files]
+```

@@ -1,0 +1,899 @@
+# core/reconciler.py
+"""
+Declarative Desired-State Reconciler for Arc-2-Neo-Drives.
+Continuously reconciles Google Drive folder structures against an ideal template schema:
+1. Missing Folders -> Provisioned with matching description.
+2. Description Drift -> Updated to match template metadata.
+3. Extraneous Empty Folders -> Safely pruned to Trash.
+4. Extraneous Populated Folders -> PRESERVED, marked in RED anomaly alert.
+"""
+
+from typing import Dict, List, Optional, Any, Callable, Tuple
+from dataclasses import dataclass, field
+from itertools import groupby
+from . import drive_ops
+from . import db
+
+
+# =====================================================================
+# SCHEMA EXTRACTION & NORMALIZATION
+# =====================================================================
+
+def extract_schema_from_drive_folder(folder_id: str, log_callback: Optional[Callable[[str], None]] = None) -> Dict[str, Any]:
+    """
+    Recursively scans an existing Google Drive folder to construct the canonical ideal schema.
+    Returns:
+    {
+        "name": "Folder Name",
+        "description": "Key: Value1, Value2",
+        "subfolders": {
+            "ChildA": { "name": "ChildA", "description": "...", "subfolders": {} }
+        }
+    }
+    """
+    meta = drive_ops.get_file_metadata(folder_id)
+    folder_name = meta.get("name", "Untitled")
+    folder_desc = meta.get("description", "") or ""
+
+    if log_callback:
+        log_callback(f"[Reading Template] Folder: {folder_name}")
+
+    sub_items = drive_ops.list_subfolders(folder_id)
+    subfolders_dict: Dict[str, Any] = {}
+
+    for item in sub_items:
+        child_id = item["id"]
+        child_name = item["name"]
+        subfolders_dict[child_name] = extract_schema_from_drive_folder(child_id, log_callback)
+
+    return {
+        "name": folder_name,
+        "description": folder_desc,
+        "subfolders": subfolders_dict,
+    }
+
+
+# =====================================================================
+# PLAN DATA STRUCTURES
+# =====================================================================
+
+@dataclass
+class ActionItem:
+    action_type: str  # "CREATE", "UPDATE_DESC", "PRUNE_EMPTY", "FLAG_RED", "MATCH"
+    relative_path: str
+    folder_name: str
+    target_id: Optional[str] = None
+    target_parent_id: Optional[str] = None
+    current_desc: str = ""
+    expected_desc: str = ""
+    subfolders_count: int = 0
+    files_count: int = 0
+    reason: str = ""
+
+
+@dataclass
+class ReconciliationPlan:
+    target_root_id: str
+    target_root_name: str
+    template_name: str
+    items: List[ActionItem] = field(default_factory=list)
+
+    @property
+    def missing_folders(self) -> List[ActionItem]:
+        return [i for i in self.items if i.action_type == "CREATE"]
+
+    @property
+    def description_mismatches(self) -> List[ActionItem]:
+        return [i for i in self.items if i.action_type == "UPDATE_DESC"]
+
+    @property
+    def extraneous_empty(self) -> List[ActionItem]:
+        return [i for i in self.items if i.action_type == "PRUNE_EMPTY"]
+
+    @property
+    def extraneous_populated(self) -> List[ActionItem]:
+        return [i for i in self.items if i.action_type == "FLAG_RED"]
+
+    @property
+    def compliant_folders(self) -> List[ActionItem]:
+        return [i for i in self.items if i.action_type == "MATCH"]
+
+    def summary(self) -> Dict[str, int]:
+        return {
+            "create_count": len(self.missing_folders),
+            "update_desc_count": len(self.description_mismatches),
+            "prune_empty_count": len(self.extraneous_empty),
+            "flagged_red_count": len(self.extraneous_populated),
+            "compliant_count": len(self.compliant_folders),
+            "total_evaluated": len(self.items),
+        }
+
+
+# =====================================================================
+# RECONCILIATION PLANNING ENGINE
+# =====================================================================
+
+def plan_reconciliation(
+    target_root_id: str,
+    template_schema: Dict[str, Any],
+    template_name: str = "Custom Template",
+    log_callback: Optional[Callable[[str], None]] = None,
+) -> ReconciliationPlan:
+    """
+    Compares the actual target directory tree against the template schema.
+    Generates a deterministic plan with categorized actions.
+    """
+    target_meta = drive_ops.get_file_metadata(target_root_id)
+    target_root_name = target_meta.get("name", "Target Root")
+    plan = ReconciliationPlan(
+        target_root_id=target_root_id,
+        target_root_name=target_root_name,
+        template_name=template_name,
+    )
+
+    # 1. Evaluate root description compliance
+    expected_root_desc = (template_schema.get("description", "") or "").strip()
+    actual_root_desc = (target_meta.get("description", "") or "").strip()
+
+    if expected_root_desc and expected_root_desc != actual_root_desc:
+        plan.items.append(ActionItem(
+            action_type="UPDATE_DESC",
+            relative_path="/",
+            folder_name=target_root_name,
+            target_id=target_root_id,
+            current_desc=actual_root_desc,
+            expected_desc=expected_root_desc,
+            reason="Root folder description deviates from template schema",
+        ))
+    else:
+        plan.items.append(ActionItem(
+            action_type="MATCH",
+            relative_path="/",
+            folder_name=target_root_name,
+            target_id=target_root_id,
+            current_desc=actual_root_desc,
+            expected_desc=expected_root_desc,
+            reason="Root folder compliant",
+        ))
+
+    # 2. Recursively evaluate subfolders
+    def _evaluate_level(curr_target_parent_id: str, current_path: str, expected_subfolders: Dict[str, Any]):
+        # List actual subfolders currently present in Google Drive
+        actual_subfolders = drive_ops.list_subfolders(curr_target_parent_id)
+        actual_by_name = {f["name"]: f for f in actual_subfolders}
+
+        if log_callback:
+            log_callback(f"[Evaluating] {current_path} ({len(actual_subfolders)} subfolders found)")
+
+        # Check all expected folders from template
+        for exp_name, exp_node in expected_subfolders.items():
+            child_rel_path = f"{current_path}/{exp_name}".replace("//", "/")
+            exp_desc = (exp_node.get("description", "") or "").strip()
+            exp_children = exp_node.get("subfolders", {})
+
+            if exp_name in actual_by_name:
+                # Folder EXISTS: Check description match
+                act_folder = actual_by_name[exp_name]
+                act_id = act_folder["id"]
+                act_desc = (act_folder.get("description", "") or "").strip()
+
+                if exp_desc and exp_desc != act_desc:
+                    plan.items.append(ActionItem(
+                        action_type="UPDATE_DESC",
+                        relative_path=child_rel_path,
+                        folder_name=exp_name,
+                        target_id=act_id,
+                        target_parent_id=curr_target_parent_id,
+                        current_desc=act_desc,
+                        expected_desc=exp_desc,
+                        reason="Description mismatch",
+                    ))
+                else:
+                    plan.items.append(ActionItem(
+                        action_type="MATCH",
+                        relative_path=child_rel_path,
+                        folder_name=exp_name,
+                        target_id=act_id,
+                        target_parent_id=curr_target_parent_id,
+                        current_desc=act_desc,
+                        expected_desc=exp_desc,
+                        reason="Folder and description fully compliant",
+                    ))
+
+                # Recurse into this matching folder
+                _evaluate_level(act_id, child_rel_path, exp_children)
+
+            else:
+                # Folder MISSING: Must be created
+                plan.items.append(ActionItem(
+                    action_type="CREATE",
+                    relative_path=child_rel_path,
+                    folder_name=exp_name,
+                    target_parent_id=curr_target_parent_id,
+                    expected_desc=exp_desc,
+                    reason="Required template folder does not yet exist",
+                ))
+
+                # Recursively plan creation of deeper nested subfolders
+                def _plan_missing_descendants(parent_rel_path: str, missing_node: Dict[str, Any]):
+                    for child_k, child_v in missing_node.get("subfolders", {}).items():
+                        desc_rel_path = f"{parent_rel_path}/{child_k}".replace("//", "/")
+                        plan.items.append(ActionItem(
+                            action_type="CREATE",
+                            relative_path=desc_rel_path,
+                            folder_name=child_k,
+                            expected_desc=(child_v.get("description", "") or "").strip(),
+                            reason="Nested folder inside missing parent",
+                        ))
+                        _plan_missing_descendants(desc_rel_path, child_v)
+
+                _plan_missing_descendants(child_rel_path, exp_node)
+
+        # Check for extraneous folders (in actual Drive but NOT in template)
+        for act_name, act_folder in actual_by_name.items():
+            if act_name not in expected_subfolders:
+                act_id = act_folder["id"]
+                child_rel_path = f"{current_path}/{act_name}".replace("//", "/")
+                folders_count, files_count = drive_ops.get_folder_child_count(act_id)
+
+                if folders_count == 0 and files_count == 0:
+                    # Empty extraneous folder: Safe to delete
+                    plan.items.append(ActionItem(
+                        action_type="PRUNE_EMPTY",
+                        relative_path=child_rel_path,
+                        folder_name=act_name,
+                        target_id=act_id,
+                        target_parent_id=curr_target_parent_id,
+                        subfolders_count=0,
+                        files_count=0,
+                        reason="Extraneous folder not in template; completely empty",
+                    ))
+                else:
+                    # Populated extraneous folder: MARK RED ANOMALY!
+                    plan.items.append(ActionItem(
+                        action_type="FLAG_RED",
+                        relative_path=child_rel_path,
+                        folder_name=act_name,
+                        target_id=act_id,
+                        target_parent_id=curr_target_parent_id,
+                        subfolders_count=folders_count,
+                        files_count=files_count,
+                        current_desc=act_folder.get("description", ""),
+                        reason=f"Extraneous folder contains {files_count} file(s) and {folders_count} subfolder(s). Must be preserved!",
+                    ))
+
+    _evaluate_level(target_root_id, "/", template_schema.get("subfolders", {}))
+    return plan
+
+
+# =====================================================================
+# RECONCILIATION EXECUTION ENGINE
+# =====================================================================
+
+def execute_reconciliation(
+    plan: ReconciliationPlan,
+    dry_run: bool = False,
+    log_callback: Optional[Callable[[str], None]] = None,
+) -> Dict[str, Any]:
+    """
+    Executes the reconciliation plan against Google Drive API:
+    - Creates missing folders.
+    - Updates mismatched descriptions.
+    - Moves extraneous empty folders to Trash.
+    - Skips populated anomalies (guaranteed zero data loss).
+    - Logs audit run in SQLite.
+    """
+    summary = plan.summary()
+    created_count = 0
+    updated_desc_count = 0
+    pruned_empty_count = 0
+    flagged_red_count = summary["flagged_red_count"]
+
+    if dry_run:
+        if log_callback:
+            log_callback(f"[DRY RUN] Plan evaluated: {summary}")
+        db.log_reconciliation_run(
+            target_folder_id=plan.target_root_id,
+            target_folder_name=plan.target_root_name,
+            template_name=plan.template_name,
+            created_count=summary["create_count"],
+            updated_desc_count=summary["update_desc_count"],
+            pruned_empty_count=summary["prune_empty_count"],
+            flagged_red_count=flagged_red_count,
+            dry_run=True,
+            details={"actions": [item.__dict__ for item in plan.items]},
+        )
+        return {
+            "dry_run": True,
+            "summary": summary,
+            "executed": False,
+        }
+
+    # 1. Update mismatched descriptions
+    for item in plan.description_mismatches:
+        if item.target_id:
+            if log_callback:
+                log_callback(f"[Updating Description] {item.relative_path} -> '{item.expected_desc}'")
+            drive_ops.update_description(item.target_id, item.expected_desc)
+            updated_desc_count += 1
+
+    # 2. Prune extraneous empty folders
+    # Sort descending by path length to delete nested empty folders before empty parents
+    for item in sorted(plan.extraneous_empty, key=lambda x: len(x.relative_path), reverse=True):
+        if item.target_id:
+            # Re-verify emptiness before trashing to ensure race-free safety
+            if drive_ops.is_folder_empty(item.target_id):
+                if log_callback:
+                    log_callback(f"[Pruning Empty Folder] Moving {item.relative_path} (ID: {item.target_id}) to Trash")
+                drive_ops.trash_file(item.target_id)
+                pruned_empty_count += 1
+            else:
+                if log_callback:
+                    log_callback(f"[Safety Warning] Folder {item.relative_path} gained items before pruning. Aborted deletion!")
+
+    # 3. Create missing folders (Path-aware map)
+    # Map relative paths to their newly created Google Drive IDs
+    path_to_id_map: Dict[str, str] = {"/": plan.target_root_id}
+
+    # Pre-populate map with existing matched folders
+    for item in plan.compliant_folders + plan.description_mismatches:
+        if item.target_id:
+            path_to_id_map[item.relative_path] = item.target_id
+
+    # Sort missing folders ascending by path depth so parents are created before children
+    missing_sorted = sorted(plan.missing_folders, key=lambda x: x.relative_path.count("/"))
+
+    for item in missing_sorted:
+        parts = item.relative_path.strip("/").split("/")
+        parent_rel_path = "/" + "/".join(parts[:-1]) if len(parts) > 1 else "/"
+        parent_id = path_to_id_map.get(parent_rel_path, item.target_parent_id or plan.target_root_id)
+
+        if log_callback:
+            log_callback(f"[Creating Folder] {item.relative_path} under parent {parent_id}")
+
+        created = drive_ops.create_folder(
+            name=item.folder_name,
+            parent_id=parent_id,
+            description=item.expected_desc,
+        )
+        new_id = created["id"]
+        path_to_id_map[item.relative_path] = new_id
+        created_count += 1
+
+    # 4. Warn about populated anomalies
+    for item in plan.extraneous_populated:
+        if log_callback:
+            log_callback(
+                f"[⚠️ MARKED RED - POPULATED ANOMALY] {item.relative_path} "
+                f"contains {item.files_count} file(s) and {item.subfolders_count} subfolder(s). PRESERVED UNTOUCHED."
+            )
+
+    # 5. Log reconciliation run in SQLite
+    db.log_reconciliation_run(
+        target_folder_id=plan.target_root_id,
+        target_folder_name=plan.target_root_name,
+        template_name=plan.template_name,
+        created_count=created_count,
+        updated_desc_count=updated_desc_count,
+        pruned_empty_count=pruned_empty_count,
+        flagged_red_count=flagged_red_count,
+        dry_run=False,
+        details={"summary": summary},
+    )
+
+    return {
+        "dry_run": False,
+        "created_count": created_count,
+        "updated_desc_count": updated_desc_count,
+        "pruned_empty_count": pruned_empty_count,
+        "flagged_red_count": flagged_red_count,
+        "summary": summary,
+        "executed": True,
+    }
+
+
+# =====================================================================
+# OPTION A: MULTI-ENTITY (TESTAMENT -> ENTITY) RECONCILER
+# =====================================================================
+
+@dataclass
+class EntityGroupPlan:
+    group_name: str  # e.g. "Testament 03"
+    group_id: str
+    entity_plans: List[ReconciliationPlan] = field(default_factory=list)
+    empty_note: str = ""
+
+
+@dataclass
+class MultiEntityReconciliationPlan:
+    data_root_id: str
+    data_root_name: str
+    template_name: str
+    template_schema: Dict[str, Any]
+    groups: List[EntityGroupPlan] = field(default_factory=list)
+
+    @property
+    def all_items(self) -> List[ActionItem]:
+        items = []
+        for g in self.groups:
+            for ep in g.entity_plans:
+                items.extend(ep.items)
+        return items
+
+    @property
+    def missing_folders(self) -> List[ActionItem]:
+        return [i for i in self.all_items if i.action_type == "CREATE"]
+
+    @property
+    def description_mismatches(self) -> List[ActionItem]:
+        return [i for i in self.all_items if i.action_type == "UPDATE_DESC"]
+
+    @property
+    def extraneous_empty(self) -> List[ActionItem]:
+        return [i for i in self.all_items if i.action_type == "PRUNE_EMPTY"]
+
+    @property
+    def extraneous_populated(self) -> List[ActionItem]:
+        return [i for i in self.all_items if i.action_type == "FLAG_RED"]
+
+    @property
+    def compliant_folders(self) -> List[ActionItem]:
+        return [i for i in self.all_items if i.action_type == "MATCH"]
+
+    def summary(self) -> Dict[str, int]:
+        return {
+            "total_groups": len(self.groups),
+            "total_entities": sum(len(g.entity_plans) for g in self.groups),
+            "create_count": len(self.missing_folders),
+            "update_desc_count": len(self.description_mismatches),
+            "prune_empty_count": len(self.extraneous_empty),
+            "flagged_red_count": len(self.extraneous_populated),
+            "compliant_count": len(self.compliant_folders),
+            "total_evaluated": len(self.all_items),
+        }
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "data_root_id": self.data_root_id,
+            "data_root_name": self.data_root_name,
+            "template_name": self.template_name,
+            "template_schema": self.template_schema,
+            "summary": self.summary(),
+            "groups": [
+                {
+                    "group_name": g.group_name,
+                    "group_id": g.group_id,
+                    "empty_note": g.empty_note,
+                    "entity_plans": [
+                        {
+                            "target_root_id": ep.target_root_id,
+                            "target_root_name": ep.target_root_name,
+                            "template_name": ep.template_name,
+                            "summary": ep.summary(),
+                            "items": [
+                                {
+                                    "action_type": item.action_type,
+                                    "relative_path": item.relative_path,
+                                    "folder_name": item.folder_name,
+                                    "target_id": item.target_id,
+                                    "target_parent_id": item.target_parent_id,
+                                    "current_desc": item.current_desc,
+                                    "expected_desc": item.expected_desc,
+                                    "subfolders_count": item.subfolders_count,
+                                    "files_count": item.files_count,
+                                    "reason": item.reason,
+                                }
+                                for item in ep.items
+                            ],
+                        }
+                        for ep in g.entity_plans
+                    ],
+                }
+                for g in self.groups
+            ],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "MultiEntityReconciliationPlan":
+        multi_plan = cls(
+            data_root_id=data.get("data_root_id", ""),
+            data_root_name=data.get("data_root_name", ""),
+            template_name=data.get("template_name", ""),
+            template_schema=data.get("template_schema", {}),
+        )
+        for g_data in data.get("groups", []):
+            group_plan = EntityGroupPlan(
+                group_name=g_data.get("group_name", ""),
+                group_id=g_data.get("group_id", ""),
+                empty_note=g_data.get("empty_note", ""),
+            )
+            for ep_data in g_data.get("entity_plans", []):
+                ep = ReconciliationPlan(
+                    target_root_id=ep_data.get("target_root_id", ""),
+                    target_root_name=ep_data.get("target_root_name", ""),
+                    template_name=ep_data.get("template_name", ""),
+                )
+                for it_data in ep_data.get("items", []):
+                    ep.items.append(
+                        ActionItem(
+                            action_type=it_data.get("action_type", "MATCH"),
+                            relative_path=it_data.get("relative_path", ""),
+                            folder_name=it_data.get("folder_name", ""),
+                            target_id=it_data.get("target_id"),
+                            target_parent_id=it_data.get("target_parent_id"),
+                            current_desc=it_data.get("current_desc", ""),
+                            expected_desc=it_data.get("expected_desc", ""),
+                            subfolders_count=it_data.get("subfolders_count", 0),
+                            files_count=it_data.get("files_count", 0),
+                            reason=it_data.get("reason", ""),
+                        )
+                    )
+                group_plan.entity_plans.append(ep)
+            multi_plan.groups.append(group_plan)
+        return multi_plan
+
+
+def plan_entity_level_reconciliation(
+    data_root_id: str,
+    template_schema: Dict[str, Any],
+    template_name: str = "Entity Archetype Template",
+    bypass_cache: bool = False,
+    log_callback: Optional[Callable[[str], None]] = None,
+) -> MultiEntityReconciliationPlan:
+    """
+    High-Performance Multi-Entity Reconciler with SQLite Cache Tier.
+    Executes in 3 phased parallel waves:
+    1. Phase 1: Level 1 Group Listing (Testament XX)
+    2. Phase 2: Concurrent Entity Discovery across all groups (ThreadPoolExecutor)
+    3. Phase 3: Concurrent Entity Subfolder Evaluation (ThreadPoolExecutor)
+    Total network round-trips: exactly 3 concurrent phases instead of hundreds of sequential calls!
+    """
+    cache_key = f"{data_root_id}:{template_name}"
+    if not bypass_cache:
+        cached = db.get_cached_folder_tree(cache_key)
+        if cached:
+            cached_data, synced_at = cached
+            if log_callback:
+                log_callback(f"[SQLite Cache Recall] Loaded plan from cache (Synced at {synced_at})")
+            return MultiEntityReconciliationPlan.from_dict(cached_data)
+
+    root_meta = drive_ops.get_file_metadata(data_root_id)
+    root_name = root_meta.get("name", "Data Root")
+
+    multi_plan = MultiEntityReconciliationPlan(
+        data_root_id=data_root_id,
+        data_root_name=root_name,
+        template_name=template_name,
+        template_schema=template_schema,
+    )
+
+    if log_callback:
+        log_callback(f"[Phase 1: Querying Groups] {root_name} (ID: {data_root_id})")
+
+    # Phase 1: List all Level 1 groups (Testament <number>)
+    group_folders = drive_ops.list_subfolders(data_root_id)
+    group_folders.sort(key=lambda x: x.get("name", ""))
+    group_ids = [g["id"] for g in group_folders]
+
+    if log_callback:
+        log_callback(f"[Phase 2: Concurrent Entity Discovery] Querying {len(group_ids)} groups in parallel...")
+
+    # Phase 2: Parallel fetch of entities across all groups
+    group_entities_map = drive_ops.parallel_list_subfolders(group_ids, max_workers=10)
+
+    # Collect all entities
+    all_entity_ids = []
+    for g_id in group_ids:
+        ent_list = group_entities_map.get(g_id, [])
+        all_entity_ids.extend([e["id"] for e in ent_list])
+
+    if log_callback:
+        log_callback(f"[Phase 3: Multi-Depth BFS Tree Discovery] Scanning entity folder trees in parallel waves...")
+
+    # Phase 3+: Full Multi-Depth BFS Tree Discovery across all entities
+    # Discovers all descendant folders down to arbitrary depth using parallel worker pools
+    all_children_by_parent: Dict[str, List[Dict[str, Any]]] = {}
+    current_frontier = list(all_entity_ids)
+    depth_wave = 1
+
+    while current_frontier:
+        if log_callback:
+            log_callback(f"[BFS Wave {depth_wave}] Fetching children for {len(current_frontier)} folder nodes in parallel...")
+
+        wave_results = drive_ops.parallel_list_subfolders(current_frontier, max_workers=15)
+        next_frontier = []
+        for parent_id, children in wave_results.items():
+            all_children_by_parent[parent_id] = children
+            for child in children:
+                next_frontier.append(child["id"])
+
+        current_frontier = next_frontier
+        depth_wave += 1
+        if depth_wave > 10:  # Safety safeguard against circular parent structures
+            break
+
+    # Recursive Tree Diffing Engine for Subtrees of Arbitrary Depth
+    def _compare_subtree(
+        curr_target_id: str,
+        curr_rel_path: str,
+        expected_subfolders: Dict[str, Any],
+        entity_plan: ReconciliationPlan,
+    ):
+        actual_children = all_children_by_parent.get(curr_target_id, [])
+        actual_by_name = {f["name"]: f for f in actual_children}
+
+        # 1. Compare all expected archetype folders at this tree depth
+        for exp_name, exp_node in expected_subfolders.items():
+            child_rel_path = f"{curr_rel_path}/{exp_name}"
+            exp_desc = (exp_node.get("description", "") or "").strip()
+            nested_expected = exp_node.get("subfolders", {})
+
+            if exp_name in actual_by_name:
+                act_child = actual_by_name[exp_name]
+                act_id = act_child["id"]
+                act_desc = (act_child.get("description", "") or "").strip()
+
+                if exp_desc and exp_desc != act_desc:
+                    entity_plan.items.append(ActionItem(
+                        action_type="UPDATE_DESC",
+                        relative_path=child_rel_path,
+                        folder_name=exp_name,
+                        target_id=act_id,
+                        target_parent_id=curr_target_id,
+                        current_desc=act_desc,
+                        expected_desc=exp_desc,
+                        reason="Subfolder description mismatch",
+                    ))
+                else:
+                    entity_plan.items.append(ActionItem(
+                        action_type="MATCH",
+                        relative_path=child_rel_path,
+                        folder_name=exp_name,
+                        target_id=act_id,
+                        target_parent_id=curr_target_id,
+                        current_desc=act_desc,
+                        expected_desc=exp_desc,
+                        reason="Subfolder compliant with archetype",
+                    ))
+
+                # RECURSIVELY COMPARE NEXT SUBTREE LEVEL
+                _compare_subtree(
+                    curr_target_id=act_id,
+                    curr_rel_path=child_rel_path,
+                    expected_subfolders=nested_expected,
+                    entity_plan=entity_plan,
+                )
+            else:
+                # Folder is missing at this branch
+                entity_plan.items.append(ActionItem(
+                    action_type="CREATE",
+                    relative_path=child_rel_path,
+                    folder_name=exp_name,
+                    target_parent_id=curr_target_id,
+                    expected_desc=exp_desc,
+                    reason="Missing required archetype folder",
+                ))
+
+                # Recursively plan creation of deeper missing descendants
+                def _plan_missing_descendants(parent_path: str, node: Dict[str, Any]):
+                    for c_name, c_node in node.get("subfolders", {}).items():
+                        c_path = f"{parent_path}/{c_name}"
+                        entity_plan.items.append(ActionItem(
+                            action_type="CREATE",
+                            relative_path=c_path,
+                            folder_name=c_name,
+                            target_parent_id=None,
+                            expected_desc=(c_node.get("description", "") or "").strip(),
+                            reason="Nested folder inside missing archetype branch",
+                        ))
+                        _plan_missing_descendants(c_path, c_node)
+
+                _plan_missing_descendants(child_rel_path, exp_node)
+
+        # 2. Check for extraneous folders not present in template archetype
+        for act_name, act_child in actual_by_name.items():
+            if act_name not in expected_subfolders:
+                child_rel_path = f"{curr_rel_path}/{act_name}"
+                act_id = act_child["id"]
+
+                # Check if this folder has any files or subfolders
+                folders_count, files_count = drive_ops.get_folder_child_count(act_id)
+                nested_children = all_children_by_parent.get(act_id, [])
+                total_folders = max(folders_count, len(nested_children))
+
+                if total_folders == 0 and files_count == 0:
+                    entity_plan.items.append(ActionItem(
+                        action_type="PRUNE_EMPTY",
+                        relative_path=child_rel_path,
+                        folder_name=act_name,
+                        target_id=act_id,
+                        target_parent_id=curr_target_id,
+                        subfolders_count=0,
+                        files_count=0,
+                        reason="Extraneous folder not in template; completely empty",
+                    ))
+                else:
+                    entity_plan.items.append(ActionItem(
+                        action_type="FLAG_RED",
+                        relative_path=child_rel_path,
+                        folder_name=act_name,
+                        target_id=act_id,
+                        target_parent_id=curr_target_id,
+                        files_count=files_count,
+                        subfolders_count=total_folders,
+                        current_desc=act_child.get("description", ""),
+                        reason=f"Extraneous folder contains {files_count} file(s) and {total_folders} subfolder(s). PRESERVED UNTOUCHED.",
+                    ))
+
+    # Assemble plans in memory (0ms RAM evaluation)
+    for g in group_folders:
+        g_id = g["id"]
+        g_name = g.get("name", "Untitled Group")
+        group_plan = EntityGroupPlan(group_name=g_name, group_id=g_id)
+        entities = group_entities_map.get(g_id, [])
+        entities.sort(key=lambda x: x.get("name", ""))
+
+        if not entities:
+            group_plan.empty_note = "Trống (Không có entity nào trong nhóm này)"
+        else:
+            for ent in entities:
+                ent_id = ent["id"]
+                ent_name = ent.get("name", "Untitled Entity")
+
+                entity_plan = ReconciliationPlan(
+                    target_root_id=ent_id,
+                    target_root_name=ent_name,
+                    template_name=f"{template_name} -> {ent_name}",
+                )
+
+                # Check root description of entity
+                exp_root_desc = (template_schema.get("description", "") or "").strip()
+                act_root_desc = (ent.get("description", "") or "").strip()
+                if exp_root_desc and exp_root_desc != act_root_desc:
+                    entity_plan.items.append(ActionItem(
+                        action_type="UPDATE_DESC",
+                        relative_path=f"{g_name}/{ent_name}",
+                        folder_name=ent_name,
+                        target_id=ent_id,
+                        current_desc=act_root_desc,
+                        expected_desc=exp_root_desc,
+                        reason="Entity root description mismatch",
+                    ))
+                else:
+                    entity_plan.items.append(ActionItem(
+                        action_type="MATCH",
+                        relative_path=f"{g_name}/{ent_name}",
+                        folder_name=ent_name,
+                        target_id=ent_id,
+                        current_desc=act_root_desc,
+                        expected_desc=exp_root_desc,
+                        reason="Entity root compliant",
+                    ))
+
+                # Recursively compare full entity tree against template archetype tree
+                _compare_subtree(
+                    curr_target_id=ent_id,
+                    curr_rel_path=f"{g_name}/{ent_name}",
+                    expected_subfolders=template_schema.get("subfolders", {}),
+                    entity_plan=entity_plan,
+                )
+
+                group_plan.entity_plans.append(entity_plan)
+
+        multi_plan.groups.append(group_plan)
+
+    # Save to SQLite cache for sub-second subsequent recalls
+    try:
+        db.cache_folder_tree(cache_key, multi_plan.to_dict())
+    except Exception:
+        pass
+
+    return multi_plan
+
+
+def execute_multi_entity_reconciliation(
+    multi_plan: MultiEntityReconciliationPlan,
+    dry_run: bool = False,
+    log_callback: Optional[Callable[[str], None]] = None,
+) -> Dict[str, Any]:
+    """
+    Executes reconciliation using Google Native Multipart Batch Requests (50 ops / HTTP call).
+    Combines creates, description updates, and safe pruning into high-throughput batch waves.
+    """
+    summary = multi_plan.summary()
+
+    if dry_run:
+        if log_callback:
+            log_callback(f"[DRY RUN COMPLETE] Multi-Entity Plan evaluated: {summary}")
+        return {
+            "dry_run": True,
+            "summary": summary,
+            "executed": False,
+        }
+
+    # 1. Batch Description Updates
+    desc_specs = [
+        {"file_id": item.target_id, "description": item.expected_desc}
+        for item in multi_plan.description_mismatches
+        if item.target_id
+    ]
+    if desc_specs:
+        if log_callback:
+            log_callback(f"[Batch HTTP] Updating {len(desc_specs)} descriptions in batch...")
+        updated_count = drive_ops.batch_update_descriptions(desc_specs)
+    else:
+        updated_count = 0
+
+    # 2. Batch Trashing Extraneous Empty Folders
+    # Sort descending by relative path depth so deepest leaf empty folders are trashed first
+    empty_sorted = sorted(multi_plan.extraneous_empty, key=lambda x: x.relative_path.count("/"), reverse=True)
+    trash_ids = [
+        item.target_id for item in empty_sorted
+        if item.target_id and drive_ops.is_folder_empty(item.target_id)
+    ]
+    if trash_ids:
+        if log_callback:
+            log_callback(f"[Batch HTTP] Trashing {len(trash_ids)} empty folders in batch...")
+        pruned_count = drive_ops.batch_trash_files(trash_ids)
+    else:
+        pruned_count = 0
+
+    # 3. Multi-Depth Folder Creations
+    # Populate path-to-ID lookup map with existing entities and matched folders
+    path_to_id: Dict[str, str] = {}
+    for g in multi_plan.groups:
+        path_to_id[g.group_name] = g.group_id
+        for ep in g.entity_plans:
+            path_to_id[f"{g.group_name}/{ep.target_root_name}"] = ep.target_root_id
+
+    for item in multi_plan.compliant_folders + multi_plan.description_mismatches + multi_plan.extraneous_populated:
+        if item.target_id:
+            path_to_id[item.relative_path] = item.target_id
+
+    # Sort missing folders ascending by depth so parents are provisioned before nested children
+    missing_sorted = sorted(multi_plan.missing_folders, key=lambda x: x.relative_path.count("/"))
+    created_count = 0
+
+    for depth, items_at_depth in groupby(missing_sorted, key=lambda x: x.relative_path.count("/")):
+        batch_specs = []
+        for item in items_at_depth:
+            parts = item.relative_path.strip("/").split("/")
+            parent_path = "/".join(parts[:-1])
+            parent_id = path_to_id.get(parent_path, item.target_parent_id)
+
+            if parent_id:
+                batch_specs.append({
+                    "name": item.folder_name,
+                    "parent_id": parent_id,
+                    "description": item.expected_desc,
+                    "relative_path": item.relative_path,
+                })
+
+        if batch_specs:
+            if log_callback:
+                log_callback(f"[Batch HTTP Wave] Creating {len(batch_specs)} missing folders at tree depth {depth}...")
+            created_results = drive_ops.batch_create_folders(batch_specs)
+            for res in created_results:
+                if res.get("relative_path") and res.get("id"):
+                    path_to_id[res["relative_path"]] = res["id"]
+            created_count += len(created_results)
+
+    # 4. Warn about populated anomalies
+    for item in multi_plan.extraneous_populated:
+        if log_callback:
+            log_callback(
+                f"[🚨 BÁO ĐỎ - GIỮ NGUYÊN AN TOÀN] {item.relative_path} "
+                f"chứa {item.files_count} file(s). KHÔNG XÓA."
+            )
+
+    return {
+        "dry_run": False,
+        "created_count": created_count,
+        "updated_desc_count": updated_count,
+        "pruned_empty_count": pruned_count,
+        "flagged_red_count": summary["flagged_red_count"],
+        "summary": summary,
+        "executed": True,
+    }
+
+

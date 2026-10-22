@@ -1,0 +1,5 @@
+#pragma once
+// Fill in your Wi-Fi. Leave WIFI_SSID empty to run offline on the embedded quotes.
+#define WIFI_SSID ""
+#define WIFI_PASS ""
+#define API_URL "https://rien-bluerose-backend.kha70929.workers.dev/api/quotes/list"

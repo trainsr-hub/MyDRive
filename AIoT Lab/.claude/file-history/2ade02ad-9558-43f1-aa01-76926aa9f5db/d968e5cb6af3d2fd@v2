@@ -1,0 +1,33 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        hazard: {
+          void: '#0a0e27',
+          card: '#1a1f3a',
+          cardHover: '#252d4d',
+          border: '#3d4563',
+          borderHover: '#4d5573',
+          textBright: '#e4e8f7',
+          textMuted: '#9ca3b5',
+          gold: '#d4af37',
+          goldGlow: '#ffd700',
+          crimson: '#dc2626',
+          amber: '#f59e0b',
+          cyan: '#06b6d4',
+          purple: '#a855f7',
+        },
+      },
+      shadows: {
+        'hazard-glow': '0 0 20px rgba(212, 175, 55, 0.4)',
+        'crimson-glow': '0 0 20px rgba(220, 38, 38, 0.4)',
+      },
+    },
+  },
+  plugins: [],
+};

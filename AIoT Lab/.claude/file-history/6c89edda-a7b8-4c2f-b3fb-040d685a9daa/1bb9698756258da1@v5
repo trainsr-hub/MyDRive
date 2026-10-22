@@ -1,0 +1,411 @@
+import React, { useState, useMemo } from 'react';
+import { EntityGroup } from '../types';
+import {
+  Folder,
+  FolderOpen,
+  ChevronRight,
+  ChevronDown,
+  Plus,
+  Zap,
+  CheckCircle2,
+  AlertCircle,
+  FolderTree,
+  Search,
+  X,
+  GripVertical,
+} from 'lucide-react';
+
+interface EntitySidebarProps {
+  groups: EntityGroup[];
+  selectedEntityId: string | null;
+  onSelectEntity: (entityId: string | null) => void;
+  onOpenNewCloneModal: (groupId?: string) => void;
+  onMoveEntity?: (entityId: string, targetGroupId: string) => Promise<void>;
+  totalExceptionsCount: number;
+  onSyncAll: () => void;
+  isExecuting: boolean;
+}
+
+export const EntitySidebar: React.FC<EntitySidebarProps> = ({
+  groups,
+  selectedEntityId,
+  onSelectEntity,
+  onOpenNewCloneModal,
+  onMoveEntity,
+  totalExceptionsCount,
+  onSyncAll,
+  isExecuting,
+}) => {
+  const [search, setSearch] = useState<string>('');
+  const [draggedEntityId, setDraggedEntityId] = useState<string | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    groups.forEach((g) => (init[g.group_id] = true));
+    return init;
+  });
+
+  const toggleGroup = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Filter groups and entities based on search
+  const filteredGroups = useMemo(() => {
+    if (!search.trim()) return groups;
+    const q = search.toLowerCase();
+    return groups
+      .map((g) => {
+        const matchesGroup = g.group_name.toLowerCase().includes(q);
+        const matchingEntities = g.entity_plans.filter((ep) =>
+          ep.target_root_name.toLowerCase().includes(q)
+        );
+        if (matchesGroup || matchingEntities.length > 0) {
+          return {
+            ...g,
+            entity_plans: matchesGroup ? g.entity_plans : matchingEntities,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean) as EntityGroup[];
+  }, [groups, search]);
+
+  return (
+    <aside
+      style={{
+        width: '280px',
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--bg-card)',
+        borderRight: '1px solid var(--border-light)',
+        height: 'calc(100vh - 75px)',
+        overflowY: 'auto',
+      }}
+    >
+      {/* 1. Header & Actions (PK Network Golden Standard) */}
+      <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)', letterSpacing: '0.05em' }}>
+            Entities Outliner
+          </span>
+          {totalExceptionsCount > 0 ? (
+            <span className="badge badge-update" style={{ fontSize: '10px', fontWeight: 700 }}>
+              {totalExceptionsCount} to fix
+            </span>
+          ) : (
+            <span className="badge badge-match" style={{ fontSize: '10px' }}>
+              All In Sync
+            </span>
+          )}
+        </div>
+
+        {/* Search Filter Input */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <Search size={13} style={{ position: 'absolute', left: '0.65rem', color: 'var(--text-dim)' }} />
+          <input
+            type="text"
+            placeholder="Filter entities..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              minHeight: '34px',
+              padding: '0.35rem 1.8rem 0.35rem 2rem',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg-canvas)',
+              border: '1px solid var(--border-light)',
+              color: 'var(--text-primary)',
+              fontSize: '12px',
+              outline: 'none',
+            }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              style={{
+                position: 'absolute',
+                right: '0.45rem',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-dim)',
+                cursor: 'pointer',
+                padding: '2px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
+        {/* Global Action Triggers */}
+        {totalExceptionsCount > 0 && (
+          <button
+            onClick={onSyncAll}
+            disabled={isExecuting}
+            className="btn primary"
+            style={{
+              width: '100%',
+              padding: '0.45rem',
+              fontSize: '12px',
+              fontWeight: 700,
+              background: 'var(--accent)',
+              color: '#000',
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.35rem',
+            }}
+          >
+            <Zap size={13} /> {isExecuting ? 'Syncing...' : `Sync All (${totalExceptionsCount})`}
+          </button>
+        )}
+
+        <button
+          onClick={() => onOpenNewCloneModal()}
+          className="btn secondary"
+          style={{
+            width: '100%',
+            padding: '0.45rem',
+            fontSize: '12px',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.35rem',
+          }}
+        >
+          <Plus size={14} /> New Entity from Template
+        </button>
+      </div>
+
+      {/* 2. Taxonomy Hierarchy */}
+      <div style={{ display: 'flex', flexDirection: 'column', padding: '0.5rem 0', flex: 1 }}>
+        {/* Bird's Eye View Master Button */}
+        <button
+          onClick={() => onSelectEntity(null)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0.55rem 0.85rem',
+            background: selectedEntityId === null ? 'var(--bg-canvas)' : 'transparent',
+            borderLeft: selectedEntityId === null ? '3px solid var(--accent)' : '3px solid transparent',
+            borderTop: 'none',
+            borderRight: 'none',
+            borderBottom: 'none',
+            textAlign: 'left',
+            cursor: 'pointer',
+            color: selectedEntityId === null ? 'var(--text-primary)' : 'var(--text-secondary)',
+            marginBottom: '0.4rem',
+            fontWeight: selectedEntityId === null ? 700 : 500,
+          }}
+          className="table-row-hover"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+            <FolderTree size={14} style={{ color: selectedEntityId === null ? 'var(--accent)' : 'var(--text-dim)' }} />
+            <span style={{ fontSize: '12.5px' }}>All Entities (Bird's Eye)</span>
+          </div>
+          {totalExceptionsCount > 0 ? (
+            <span className="badge badge-rename" style={{ fontSize: '10px', padding: '1px 5px' }}>
+              {totalExceptionsCount}
+            </span>
+          ) : (
+            <CheckCircle2 size={13} style={{ color: 'var(--success)' }} />
+          )}
+        </button>
+
+        {filteredGroups.map((group) => {
+          const isExpanded = Boolean(expandedGroups[group.group_id] || search);
+          const isDropTarget = dragOverTarget === group.group_id;
+
+          return (
+            <div key={group.group_id} style={{ display: 'flex', flexDirection: 'column', marginBottom: '0.35rem' }}>
+              {/* Group Node Header (with hover '+' button and drop target support) */}
+              <div
+                onClick={(e) => toggleGroup(group.group_id, e)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (dragOverTarget !== group.group_id) setDragOverTarget(group.group_id);
+                }}
+                onDragLeave={() => {
+                  if (dragOverTarget === group.group_id) setDragOverTarget(null);
+                }}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setDragOverTarget(null);
+                  const raw = e.dataTransfer.getData('application/json');
+                  if (!raw) return;
+                  try {
+                    const payload = JSON.parse(raw);
+                    if (payload.type === 'entity' && payload.id && payload.fromGroupId !== group.group_id) {
+                      await onMoveEntity?.(payload.id, group.group_id);
+                      setExpandedGroups((prev) => ({ ...prev, [group.group_id]: true }));
+                    }
+                  } catch {}
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.4rem 0.75rem',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  background: isDropTarget ? 'var(--accent-bg)' : 'transparent',
+                  border: isDropTarget ? '1px dashed var(--accent)' : '1px solid transparent',
+                  transition: 'all 0.12s ease',
+                }}
+                className="table-row-hover"
+                title={`Group: ${group.group_name} - Drag entities here to re-group`}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', overflow: 'hidden' }}>
+                  {isExpanded ? (
+                    <ChevronDown size={12} style={{ opacity: 0.6 }} />
+                  ) : (
+                    <ChevronRight size={12} style={{ opacity: 0.6 }} />
+                  )}
+                  {isExpanded ? (
+                    <FolderOpen size={14} style={{ color: 'var(--accent)' }} />
+                  ) : (
+                    <Folder size={14} style={{ color: 'var(--accent)' }} />
+                  )}
+                  <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                    {group.group_name}
+                  </span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-dim)', marginLeft: '2px' }}>
+                    ({group.entity_plans.length})
+                  </span>
+                </div>
+
+                {/* Inline Add Button on Group Row */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenNewCloneModal(group.group_id);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-dim)',
+                    cursor: 'pointer',
+                    padding: '2px 4px',
+                    borderRadius: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title={`Add entity inside ${group.group_name}`}
+                  className="btn-hover-accent"
+                >
+                  <Plus size={13} />
+                </button>
+              </div>
+
+              {/* Entity Children */}
+              {isExpanded && (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {group.entity_plans.length === 0 ? (
+                    <div style={{ padding: '0.25rem 1.6rem', fontSize: '11px', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+                      No entities
+                    </div>
+                  ) : (
+                    group.entity_plans.map((ep) => {
+                      const isSelected = selectedEntityId === ep.target_root_id;
+                      const exceptionCount = ep.items.filter((i) => i.action_type !== 'MATCH').length;
+                      const isBeingDragged = draggedEntityId === ep.target_root_id;
+
+                      return (
+                        <div
+                          key={ep.target_root_id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData(
+                              'application/json',
+                              JSON.stringify({ type: 'entity', id: ep.target_root_id, fromGroupId: group.group_id })
+                            );
+                            e.dataTransfer.effectAllowed = 'move';
+                            setDraggedEntityId(ep.target_root_id);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedEntityId(null);
+                            setDragOverTarget(null);
+                          }}
+                          onClick={() => onSelectEntity(ep.target_root_id)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.45rem 0.75rem 0.45rem 1.25rem',
+                            background: isSelected ? 'var(--accent-bg)' : 'transparent',
+                            borderLeft: isSelected ? '2px solid var(--accent)' : '2px solid transparent',
+                            cursor: 'grab',
+                            color: isSelected ? 'var(--accent)' : 'var(--text-secondary)',
+                            opacity: isBeingDragged ? 0.4 : 1,
+                            transition: 'all 0.12s ease',
+                            userSelect: 'none',
+                          }}
+                          className="table-row-hover"
+                          title={`Entity: ${ep.target_root_name} - Drag to move to another group`}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', overflow: 'hidden' }}>
+                            <GripVertical size={11} style={{ opacity: 0.35, flexShrink: 0 }} />
+                            <Folder
+                              size={13}
+                              style={{
+                                color: isSelected ? 'var(--accent)' : 'var(--text-dim)',
+                                flexShrink: 0,
+                              }}
+                            />
+                            <span
+                              style={{
+                                fontSize: '12.5px',
+                                fontWeight: isSelected ? 600 : 400,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
+                              {ep.target_root_name}
+                            </span>
+                          </div>
+
+                          {exceptionCount > 0 ? (
+                            <span
+                              className="badge badge-rename"
+                              style={{
+                                fontSize: '9.5px',
+                                padding: '1px 5px',
+                                flexShrink: 0,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.2rem',
+                              }}
+                            >
+                              <AlertCircle size={9} /> {exceptionCount}
+                            </span>
+                          ) : (
+                            <CheckCircle2 size={12} style={{ color: 'var(--success)', flexShrink: 0 }} />
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </aside>
+  );
+};

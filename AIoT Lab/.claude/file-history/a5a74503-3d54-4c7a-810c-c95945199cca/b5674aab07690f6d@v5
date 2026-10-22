@@ -1,0 +1,151 @@
+#include <Arduino.h>
+#include "pins.h"
+#include "lgfx_config.h"
+#include "Jq8900Player.h"
+
+static LGFX tft;
+static Jq8900Player audio(Serial1);
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PIN_BTN_ROLL, INPUT_PULLUP);
+  pinMode(PIN_BTN_SCROLL, INPUT_PULLUP);
+
+  delay(800);
+  Serial.println("\n==========================================");
+  Serial.println("  ST7789V 1.9\" IPS (170x320) LCD Diagnostic");
+  Serial.println("==========================================");
+
+  // 1. Initialize Audio
+  Serial.printf("[Audio] Initializing JQ8900 on GPIO %d...\n", PIN_JQ_TX);
+  audio.begin(PIN_JQ_TX);
+  audio.setVolume(22);
+  delay(100);
+
+  // Play startup sound (Track 6 / 0003.wav)
+  Serial.println("[Audio] Playing Track 6 (0003.wav)...");
+  audio.playTrack(TRACK_DRAW);
+
+  // 2. Hardware reset pulse on LCD RST pin
+  Serial.printf("[LCD] Hardware reset on GPIO %d...\n", PIN_LCD_RST);
+  pinMode(PIN_LCD_RST, OUTPUT);
+  digitalWrite(PIN_LCD_RST, HIGH);
+  delay(50);
+  digitalWrite(PIN_LCD_RST, LOW);
+  delay(100);
+  digitalWrite(PIN_LCD_RST, HIGH);
+  delay(150);
+
+  // 3. Initialize LovyanGFX
+  Serial.println("[LCD] Initializing LovyanGFX...");
+  tft.init();
+  tft.setRotation(1); // Landscape: 320 x 170
+  tft.setBrightness(255);
+  Serial.printf("[LCD] Dimensions: %d x %d\n", tft.width(), tft.height());
+
+  // 4. Color test cycle
+  Serial.println("[LCD] Cycling colors: RED -> GREEN -> BLUE -> WHITE -> BLACK");
+
+  tft.fillScreen(TFT_RED);
+  delay(700);
+
+  tft.fillScreen(TFT_GREEN);
+  delay(700);
+
+  tft.fillScreen(TFT_BLUE);
+  delay(700);
+
+  tft.fillScreen(TFT_WHITE);
+  delay(700);
+
+  tft.fillScreen(TFT_BLACK);
+  delay(200);
+
+  // 5. Draw UI elements
+  // Outer border
+  tft.drawRect(0, 0, tft.width(), tft.height(), TFT_DARKCYAN);
+  tft.drawRect(2, 2, tft.width() - 4, tft.height() - 4, TFT_CYAN);
+
+  // Header
+  tft.fillRect(4, 4, tft.width() - 8, 22, 0x18E3); // Dark slate
+  tft.setTextColor(TFT_CYAN, 0x18E3);
+  tft.setTextSize(1);
+  tft.setCursor(12, 10);
+  tft.print("RIEN-PRESCRIPT-BEEPER // MODEL 01-ORACLE");
+
+  // Info text in center
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setCursor(16, 40);
+  tft.setTextSize(2);
+  tft.print("ST7789V 1.9\" IPS");
+
+  tft.setTextSize(1);
+  tft.setTextColor(TFT_GREEN, TFT_BLACK);
+  tft.setCursor(16, 70);
+  tft.printf("Resolution: %d x %d (35px Offset OK)", tft.width(), tft.height());
+
+  tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+  tft.setCursor(16, 90);
+  tft.print("SPI: 4-Wire (SCK:4, MOSI:6, DC:5, RST:3)");
+
+  tft.setTextColor(TFT_MAGENTA, TFT_BLACK);
+  tft.setCursor(16, 110);
+  tft.print("Audio: JQ8900 Track 6 (0003) & Track 7 (0004)");
+
+  // Status footer
+  tft.fillRect(4, tft.height() - 26, tft.width() - 8, 22, 0x10A2);
+  tft.setTextColor(TFT_GREENYELLOW, 0x10A2);
+  tft.setCursor(12, tft.height() - 20);
+  tft.print("[STATUS: ONLINE // HARDWARE READY]");
+
+  // Play completion sound (Track 7 / 0004.wav)
+  Serial.println("[Audio] Playing Track 7 (0004.wav)...");
+  delay(500);
+  audio.playTrack(TRACK_COMPLETE);
+  Serial.println("[Setup Complete] Entering diagnostic loop.");
+}
+
+static uint32_t lastBlink = 0;
+static bool blinkState = false;
+static int animX = 16;
+static int animDir = 2;
+
+void loop() {
+  uint32_t now = millis();
+
+  // Heartbeat indicator on bottom right
+  if (now - lastBlink > 500) {
+    lastBlink = now;
+    blinkState = !blinkState;
+    tft.fillCircle(tft.width() - 16, tft.height() - 15, 4, blinkState ? TFT_GREEN : TFT_BLACK);
+  }
+
+  // Animated small progress line
+  tft.drawFastHLine(animX, 132, 20, TFT_BLACK);
+  animX += animDir;
+  if (animX > 280 || animX < 16) animDir = -animDir;
+  tft.drawFastHLine(animX, 132, 20, TFT_CYAN);
+
+  // Check buttons
+  if (!digitalRead(PIN_BTN_ROLL)) {
+    Serial.println("[BTN] BOOT pressed -> Re-playing Track 6");
+    audio.playTrack(TRACK_DRAW);
+    tft.fillRect(16, 140, 150, 16, TFT_NAVY);
+    tft.setTextColor(TFT_WHITE, TFT_NAVY);
+    tft.setCursor(20, 144);
+    tft.print("BOOT: Track 6");
+    delay(250);
+  }
+
+  if (!digitalRead(PIN_BTN_SCROLL)) {
+    Serial.println("[BTN] SCROLL pressed -> Re-playing Track 7");
+    audio.playTrack(TRACK_COMPLETE);
+    tft.fillRect(170, 140, 140, 16, TFT_MAROON);
+    tft.setTextColor(TFT_WHITE, TFT_MAROON);
+    tft.setCursor(174, 144);
+    tft.print("SCROLL: Track 7");
+    delay(250);
+  }
+
+  delay(20);
+}

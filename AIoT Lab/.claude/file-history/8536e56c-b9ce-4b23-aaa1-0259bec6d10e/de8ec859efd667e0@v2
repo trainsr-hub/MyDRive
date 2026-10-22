@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Clock of the Long Now · 10,000h Epoch Orrery</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #040509; font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #f1f5f9; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+.hud {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 24px; z-index: 10;
+}
+.header { text-align: center; }
+.sub-title { font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: #38bdf8; font-weight: 700; margin-bottom: 2px; }
+.main-title { font-size: 20px; font-weight: 800; letter-spacing: .12em; color: #fff; text-shadow: 0 0 16px rgba(56,189,248,0.5); }
+.orrery-readout {
+  position: absolute; left: 30px; top: 50%; transform: translateY(-50%);
+  background: rgba(6, 12, 22, 0.85); border: 1.5px solid rgba(56,189,248,0.35);
+  border-radius: 14px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;
+  pointer-events: auto; min-width: 210px; box-shadow: 0 0 24px rgba(0,0,0,0.6);
+}
+.readout-lbl { font-size: 10px; letter-spacing: .2em; color: #7dd3fc; text-transform: uppercase; }
+.readout-hrs { font-size: 32px; font-weight: 900; font-family: monospace; color: #e0f2fe; text-shadow: 0 0 14px rgba(56,189,248,0.7); }
+.readout-tier { font-size: 11px; font-weight: 700; color: #38bdf8; letter-spacing: .08em; }
+.controls { pointer-events: auto; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+.btn {
+  min-height: 52px; padding: 0 22px; background: rgba(8, 18, 32, 0.85);
+  border: 1.5px solid rgba(56,189,248,0.35); border-radius: 12px; color: #bae6fd;
+  font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  cursor: pointer; transition: all .15s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:hover { background: #0c2b4d; border-color: #38bdf8; color: #fff; box-shadow: 0 0 24px rgba(56,189,248,0.5); transform: translateY(-2px); }
+.btn:active { transform: translateY(1px); }
+.btn.active { background: #0284c7; border-color: #e0f2fe; color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="header">
+    <div class="sub-title">Mechanical Escapement & Astronomical Cycles</div>
+    <div class="main-title">The Celestial Chronometer of Epochs</div>
+  </div>
+  <div class="orrery-readout">
+    <span class="readout-lbl">Accumulated Focus</span>
+    <span class="readout-hrs" id="hoursDisplay">0 h</span>
+    <span class="readout-tier" id="tierDisplay">Initiate Orbit</span>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="bankHours(4)">⚙ Focus Block (+4h)</button>
+    <button class="btn" onclick="bankHours(40)">⚡ Deep Week (+40h)</button>
+    <button class="btn" onclick="bankHours(500)">🏛 Epoch Leap (+500h)</button>
+    <button class="btn" id="runBtn" onclick="toggleClock()">⏱ Live Chronometer</button>
+    <button class="btn" onclick="resetHours()">🔄 Recalibrate</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const hoursDisplayEl = document.getElementById('hoursDisplay'), tierDisplayEl = document.getElementById('tierDisplay');
+let W, H, cx, cy, hours = 0, targetHours = 0, isRunning = false, clockTimer = null, audioCtx = null;
+const MAX_HOURS = 10000;
+
+function playMechanicalTick(isMajor = false) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = isMajor ? 'sine' : 'triangle';
+    osc.frequency.setValueAtTime(isMajor ? 220 : 800, t);
+    osc.frequency.exponentialRampToValueAtTime(isMajor ? 440 : 120, t + (isMajor ? 0.35 : 0.04));
+    gain.gain.setValueAtTime(isMajor ? 0.15 : 0.08, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + (isMajor ? 0.35 : 0.04));
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + (isMajor ? 0.35 : 0.04));
+  } catch(e) {}
+}
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; cx = W / 2; cy = H / 2; }
+window.addEventListener('resize', resize);
+resize();
+
+function bankHours(n) {
+  targetHours = Math.min(MAX_HOURS, targetHours + n);
+  playMechanicalTick(n >= 500);
+}
+function toggleClock() {
+  isRunning = !isRunning;
+  document.getElementById('runBtn').classList.toggle('active', isRunning);
+  if (isRunning) clockTimer = setInterval(() => bankHours(2), 120);
+  else clearInterval(clockTimer);
+}
+function resetHours() { targetHours = 0; hours = 0; }
+
+function drawGear(x, y, radius, teeth, rot, color) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Draw teeth
+  for (let i = 0; i < teeth; i++) {
+    const a = (i / teeth) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * radius, Math.sin(a) * radius);
+    ctx.lineTo(Math.cos(a) * (radius + 6), Math.sin(a) * (radius + 6));
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function draw() {
+  ctx.fillStyle = 'rgba(4, 5, 9, 0.25)';
+  ctx.fillRect(0, 0, W, H);
+  hours += (targetHours - hours) * 0.08;
+  const rounded = Math.round(hours);
+  hoursDisplayEl.textContent = `${rounded.toLocaleString()} h`;
+
+  // Tier classification
+  if (hours >= 10000) tierDisplayEl.textContent = '👑 TRANSCENDENT MASTER (10,000h)';
+  else if (hours >= 7500) tierDisplayEl.textContent = '🌟 Apex Virtuoso (7,500h+)';
+  else if (hours >= 5000) tierDisplayEl.textContent = '⚔️ Senior Craftsman (5,000h+)';
+  else if (hours >= 2500) tierDisplayEl.textContent = '📜 Disciplined Adept (2,500h+)';
+  else if (hours >= 1000) tierDisplayEl.textContent = '🔨 Century Journeyman (1,000h+)';
+  else tierDisplayEl.textContent = '🌱 Neophyte Orbit';
+
+  const t = Date.now() * 0.001;
+  const progressRatio = hours / MAX_HOURS;
+
+  // 1. Outer Escapement Ring (Minutes / Kinetic Ticks)
+  drawGear(cx, cy, 210, 60, t * 0.2, 'rgba(56,189,248,0.25)');
+
+  // 2. Middle Planetary Orbit (Hours Century Ring)
+  drawGear(cx, cy, 150, 36, -t * 0.08 + progressRatio * Math.PI * 4, 'rgba(125,211,252,0.4)');
+
+  // 3. Inner 10,000 Hour Astrolabe Dial
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 95, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Progress Arc of Lifetime
+  ctx.beginPath();
+  ctx.arc(cx, cy, 95, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * progressRatio));
+  ctx.strokeStyle = progressRatio > 0.75 ? '#f59e0b' : '#38bdf8';
+  ctx.lineWidth = 5;
+  ctx.shadowColor = ctx.strokeStyle;
+  ctx.shadowBlur = 16;
+  ctx.stroke();
+
+  // 10 Millennium Node Seals (Each 1,000h)
+  for (let i = 0; i < 10; i++) {
+    const na = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    const nx = cx + Math.cos(na) * 95, ny = cy + Math.sin(na) * 95;
+    const isUnlocked = hours >= (i + 1) * 1000;
+    ctx.beginPath();
+    ctx.arc(nx, ny, isUnlocked ? 6 : 3, 0, Math.PI * 2);
+    ctx.fillStyle = isUnlocked ? '#fbbf24' : '#1e293b';
+    ctx.shadowColor = isUnlocked ? '#fbbf24' : 'transparent';
+    ctx.shadowBlur = isUnlocked ? 12 : 0;
+    ctx.fill();
+  }
+
+  // Central Sun Escapement Core
+  const corePulse = Math.sin(t * 3) * 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 32 + corePulse, 0, Math.PI * 2);
+  ctx.fillStyle = progressRatio > 0.5 ? '#fef08a' : '#bae6fd';
+  ctx.shadowColor = '#38bdf8';
+  ctx.shadowBlur = 24;
+  ctx.fill();
+
+  // Mechanical Pendulum Arm
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  const armAngle = -Math.PI / 2 + (Math.PI * 2 * progressRatio);
+  ctx.lineTo(cx + Math.cos(armAngle) * 92, cy + Math.sin(armAngle) * 92);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

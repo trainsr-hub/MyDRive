@@ -1,0 +1,139 @@
+/* ============================================================================ */
+/* CELESTIAL ALTAR REVELATION STAGE STYLES                                      */
+/* ============================================================================ */
+
+/* Sacred Geometry Rotating Leylines Background */
+.celestial-sacred-rings {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 900px;
+  height: 900px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0.15;
+  animation: rotateSacredRings 90s linear infinite;
+}
+
+@keyframes rotateSacredRings {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* 3D Card Flip Perspective Container */
+.card-perspective-container {
+  perspective: 1200px;
+}
+
+.revelation-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
+}
+
+.revelation-card-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* Card Back Design (Sacred Babylonian Runes) */
+.card-face-back {
+  background: radial-gradient(circle at center, #231936 0%, #0e0a16 100%);
+  border: 2px solid #d4af37;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(212, 175, 55, 0.25);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-face-back:hover {
+  transform: scale(1.04);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 216, 107, 0.4);
+}
+
+/* Card Front Design */
+.card-face-front {
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px;
+}
+
+/* Holographic Sheen Animation */
+.holo-sheen {
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 30%,
+    rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.03) 70%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+  animation: holoSweep 4s ease-in-out infinite;
+}
+
+@keyframes holoSweep {
+  0% { left: -150%; }
+  30%, 100% { left: 150%; }
+}
+
+/* Rarity Supernova Flare Animations */
+.rarity-glow-legendary {
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.5), inset 0 0 15px rgba(251, 191, 36, 0.3);
+  animation: legendaryPulse 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes legendaryPulse {
+  0% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.4), inset 0 0 10px rgba(251, 191, 36, 0.2); }
+  100% { box-shadow: 0 0 40px rgba(251, 191, 36, 0.75), inset 0 0 25px rgba(251, 191, 36, 0.5); }
+}
+
+.rarity-glow-epic {
+  box-shadow: 0 0 25px rgba(192, 132, 252, 0.4), inset 0 0 12px rgba(192, 132, 252, 0.2);
+}
+
+.rarity-glow-rare {
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.35), inset 0 0 10px rgba(56, 189, 248, 0.15);
+}
+
+/* Conduits Transmutation Bar Pill Glow */
+.transmute-pill {
+  background: rgba(18, 15, 24, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.transmute-pill:hover {
+  transform: translateY(-2px);
+  border-color: #ffd86b;
+}

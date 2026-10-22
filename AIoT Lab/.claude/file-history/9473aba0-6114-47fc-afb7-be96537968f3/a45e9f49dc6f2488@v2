@@ -1,0 +1,70 @@
+// path: src/apps/golden-hour/components/gacha/GachaAnimationStage.tsx
+
+import React, { useEffect, useRef } from 'react';
+import { FastForward } from 'lucide-react';
+
+interface GachaAnimationStageProps {
+  animationSrc?: string;
+  onComplete: () => void;
+  packTitle?: string;
+}
+
+/**
+ * GachaAnimationStage
+ * Recycled universal HTML animation player from ARC Jurassic.
+ * Embeds /animations/black-hole.html seamlessly without box borders.
+ */
+export const GachaAnimationStage: React.FC<GachaAnimationStageProps> = ({
+  animationSrc = '/animations/black-hole.html',
+  onComplete,
+  packTitle = 'Dimensional Genesis',
+}) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (
+        event.data?.type === 'GACHA_ANIMATION_COMPLETE' ||
+        event.data === 'GACHA_ANIMATION_COMPLETE'
+      ) {
+        onComplete();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [onComplete]);
+
+  return (
+    <div className="relative w-full min-h-[580px] flex flex-col items-center justify-center overflow-visible bg-transparent animate-in fade-in duration-300">
+      {/* Top Banner Status */}
+      <div className="absolute top-4 z-20 flex items-center gap-3 px-4 py-2 rounded-full bg-[#120f18]/80 border border-[#d4af37]/40 backdrop-blur-md text-xs font-mono text-[#ffd86b] shadow-xl">
+        <span className="w-2 h-2 rounded-full bg-[#ffd86b] animate-ping" />
+        <span className="font-cinzel font-bold">{packTitle} — Channeling Leylines...</span>
+      </div>
+
+      {/* Skip Button */}
+      <button
+        onClick={onComplete}
+        className="absolute bottom-6 right-6 z-30 px-4 py-2 rounded-xl bg-[#1c1424]/90 hover:bg-[#2b1f3b] border border-[#d4af37]/40 text-[#ffd86b] text-xs font-mono font-bold flex items-center gap-2 cursor-pointer shadow-lg hover:scale-105 active:scale-95 transition-all"
+      >
+        <FastForward className="w-4 h-4" />
+        <span>Skip Genesis</span>
+      </button>
+
+      {/* Standalone Animation Iframe Player */}
+      <iframe
+        ref={iframeRef}
+        src={animationSrc}
+        title="Gacha Animation Stage"
+        className="w-full h-[580px] border-0 outline-none bg-transparent block overflow-visible pointer-events-none"
+        sandbox="allow-scripts allow-same-origin"
+        allowTransparency={true}
+      />
+    </div>
+  );
+};
+
+export default GachaAnimationStage;

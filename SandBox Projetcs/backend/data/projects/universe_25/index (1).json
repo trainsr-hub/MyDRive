@@ -1,0 +1,14 @@
+{
+  "project_id": "universe_25",
+  "name": "Universe 25 Core Engine",
+  "log_enabled": true,
+  "tiers": {
+    "inventory": { "filename": "golden_hour/inventory.db", "format": "sqlite" },
+    "tasks": { "filename": "golden_hour/tasks.db", "format": "sqlite" },
+    "events": { "filename": "golden_hour/events.jsonl", "format": "jsonl" },
+    "vault": { "filename": "golden_hour/vault.json", "format": "json" },
+    "farms": { "filename": "golden_hour/farms.json", "format": "json" },
+    "arc_resources": { "filename": "arc_jurassic/resources.db", "format": "sqlite" },
+    "arc_progress": { "filename": "arc_jurassic/progress.db", "format": "sqlite" }
+  }
+}

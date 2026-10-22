@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animation Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap">
+<style>
+/* ── Tokens ─────────────────────────────────────────────────
+   Two near-identical darks. Everything recedes; content is
+   the room. Obsidian-register palette.
+────────────────────────────────────────────────────────── */
+:root {
+  --bg:       #1e1e1e;
+  --sidebar:  #161616;
+  --hover:    rgba(255,255,255,0.052);
+  --active:   rgba(255,255,255,0.088);
+  --fg:       rgba(218,218,218,0.82);
+  --fg-dim:   rgba(180,180,180,0.36);
+  --accent:   #7c6fcd;
+  --panel-w:  228px;
+  --radius:   4px;
+  --font:     'Inter', system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 13px; display: flex; }
+
+/* ── Sidebar ──────────────────────────────────────────────── */
+#sidebar {
+  width: var(--panel-w);
+  min-width: var(--panel-w);
+  height: 100%;
+  background: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+#vault-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 15px 12px 11px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-dim);
+  user-select: none;
+  flex-shrink: 0;
+  letter-spacing: 0.01em;
+}
+#vault-title svg { flex-shrink: 0; opacity: 0.5; }
+
+.tree-section-label {
+  padding: 8px 12px 3px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+#file-tree {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+}
+#file-tree::-webkit-scrollbar { display: none; }
+
+/* ── Tree rows ─────────────────────────────────────────────── */
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding-right: 8px;
+  padding-left: calc(10px + var(--depth, 0) * 14px);
+  border-radius: var(--radius);
+  margin: 1px 5px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 0.08s;
+  color: var(--fg-dim);
+}
+.tree-row:hover  { background: var(--hover);  color: var(--fg); }
+.tree-row.active { background: var(--active); color: var(--fg); }
+.tree-row .row-label { flex: 1; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+
+.chevron {
+  width: 14px; height: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; opacity: 0.4;
+  transition: transform 0.15s, opacity 0.1s;
+}
+.chevron.open { transform: rotate(90deg); }
+.tree-row:hover .chevron { opacity: 0.65; }
+
+.tree-children.collapsed { display: none; }
+
+/* ── Status bar ────────────────────────────────────────────── */
+#status-bar {
+  flex-shrink: 0;
+  padding: 7px 12px 10px;
+  font-size: 10px;
+  color: var(--fg-dim);
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Main pane ─────────────────────────────────────────────── */
+#main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+/* Tab bar */
+#tab-bar {
+  display: flex;
+  align-items: stretch;
+  height: 35px;
+  background: var(--sidebar);
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+#tab-bar::-webkit-scrollbar { display: none; }
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 13px 0 11px;
+  min-width: 110px;
+  max-width: 190px;
+  height: 100%;
+  font-size: 12px;
+  color: var(--fg-dim);
+  cursor: pointer;
+  border-right: 1px solid rgba(255,255,255,0.04);
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 0.08s, color 0.08s;
+  flex-shrink: 0;
+  position: relative;
+}
+.tab:hover  { background: var(--hover); color: var(--fg); }
+.tab.active { background: var(--bg);    color: var(--fg); }
+.tab.active::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.55;
+}
+.tab-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+
+.tab-close {
+  width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 3px; flex-shrink: 0;
+  opacity: 0; transition: opacity 0.1s, background 0.1s;
+}
+.tab:hover  .tab-close { opacity: 0.45; }
+.tab.active .tab-close { opacity: 0.4;  }
+.tab-close:hover        { opacity: 1 !important; background: rgba(255,255,255,0.1); }
+
+/* Content */
+#content { flex: 1; position: relative; overflow: hidden; }
+
+.pane {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  border: none; display: block;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.1s;
+}
+.pane.visible { opacity: 1; pointer-events: all; }
+
+/* Welcome */
+#welcome {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; text-align: center; padding: 32px;
+  pointer-events: none;
+}
+#welcome svg { opacity: 0.1; }
+#welcome p { font-size: 13px; color: var(--fg-dim); max-width: 220px; line-height: 1.7; }
+
+/* KB hint */
+#kb-hint {
+  position: absolute; bottom: 10px; right: 12px;
+  font-size: 10px; color: var(--fg-dim); opacity: 0.28;
+  pointer-events: none; line-height: 1.9; text-align: right; z-index: 5;
+}
+kbd {
+  display: inline-block; padding: 0 4px;
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 3px;
+  font-size: 9px; background: rgba(255,255,255,0.04); font-family: inherit;
+}
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ───────────────────────────────────────────── -->
+<div id="sidebar">
+  <div id="vault-title">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.1"/>
+      <path d="M4.5 5h5M4.5 7.5h3" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    </svg>
+    System Design Sandbox
+  </div>
+  <div class="tree-section-label">Animations</div>
+  <div id="file-tree"></div>
+  <div id="status-bar">—</div>
+</div>
+
+<!-- ── Main ─────────────────────────────────────────────── -->
+<div id="main">
+  <div id="tab-bar"></div>
+  <div id="content">
+    <div id="welcome">
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+        <rect x="5" y="7" width="34" height="30" rx="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M13 17h18M13 23h12M13 29h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <p>Select a file from the sidebar to open it.</p>
+    </div>
+  </div>
+</div>
+
+<div id="kb-hint">
+  <kbd>W</kbd> close &nbsp;·&nbsp; <kbd>←</kbd><kbd>→</kbd> switch &nbsp;·&nbsp; <kbd>R</kbd> reload &nbsp;·&nbsp; <kbd>F</kbd> fullscreen
+</div>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MANIFEST — add one entry per file as you create them.
+//
+// `folder` groups files visually in the sidebar.
+// Leave `folder` empty ("") for files at the root of Animations/.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const MANIFEST = [
+  { name: "Aurora Waves",    path: "Animations/anim_002_aurora_waves.html",          folder: "" },
+  { name: "Yellow Pool",     path: "Animations/yellow-pool-design.html",             folder: "" },
+  { name: "Particle Field",  path: "Animations/Type 1/anim_001_particle_field.html", folder: "Type 1" },
+  { name: "Geometry Morph",  path: "Animations/Type 1/anim_003_geometry_morph.html", folder: "Type 1" },
+  { name: "Ember Drift",     path: "Animations/Roll/roll_001_ember_drift.html",      folder: "Roll" },
+  { name: "Void Tendrils",   path: "Animations/Roll/roll_002_void_tendrils.html",    folder: "Roll" },
+  { name: "Crystal Rain",    path: "Animations/Roll/roll_003_crystal_rain.html",     folder: "Roll" },
+  { name: "Mycelium Pulse",  path: "Animations/Roll/roll_004_mycelium_pulse.html",   folder: "Roll" },
+  { name: "Gravity Well",    path: "Animations/Roll/roll_005_gravity_well.html",     folder: "Roll" },
+];
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ── State ──────────────────────────────────────────────────
+const tabs    = [];  // { name, path, el, pane }
+let activeIdx = -1;
+
+// ── DOM ────────────────────────────────────────────────────
+const treeEl  = document.getElementById('file-tree');
+const tabBar  = document.getElementById('tab-bar');
+const content = document.getElementById('content');
+const welcome = document.getElementById('welcome');
+const status  = document.getElementById('status-bar');
+
+// ── Build tree from manifest ───────────────────────────────
+function buildTree() {
+  // Group by folder
+  const folders = {};   // folderName → [entry]
+  const roots   = [];   // entries with no folder
+
+  MANIFEST.forEach(entry => {
+    if (!entry.folder) { roots.push(entry); return; }
+    (folders[entry.folder] ??= []).push(entry);
+  });
+
+  // Root-level files first
+  roots.forEach(e => treeEl.appendChild(makeFileRow(e, 0)));
+
+  // Then named folders
+  Object.entries(folders).forEach(([folderName, entries]) => {
+    const { row, kids } = makeFolderRow(folderName, 0);
+    entries.forEach(e => kids.appendChild(makeFileRow(e, 1)));
+    treeEl.appendChild(row);
+    treeEl.appendChild(kids);
+  });
+
+  const total = MANIFEST.length;
+  status.textContent = `${total} animation${total !== 1 ? 's' : ''}`;
+}
+
+function makeFolderRow(name, depth) {
+  const row = document.createElement('div');
+  row.className = 'tree-row';
+  row.style.setProperty('--depth', depth);
+  row.innerHTML = `
+    <span class="chevron open">
+      <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+        <path d="M1.5 1.5L5.5 3.5L1.5 5.5" stroke="currentColor" stroke-width="1.2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="opacity:.42;flex-shrink:0">
+      <path d="M1.5 3C1.5 2.448 1.948 2 2.5 2H5L6 3.5H10.5C11.052 3.5 11.5 3.948 11.5 4.5V10C11.5 10.552 11.052 11 10.5 11H2.5C1.948 11 1.5 10.552 1.5 10V3Z"
+            fill="currentColor"/>
+    </svg>
+    <span class="row-label">${name}</span>`;
+
+  const kids = document.createElement('div');
+  kids.className = 'tree-children';
+
+  const chevron = row.querySelector('.chevron');
+  row.addEventListener('click', () => {
+    const isOpen = !kids.classList.contains('collapsed');
+    kids.classList.toggle('collapsed', isOpen);
+    chevron.classList.toggle('open', !isOpen);
+  });
+
+  return { row, kids };
+}
+
+function makeFileRow(entry, depth) {
+  const row = document.createElement('div');
+  row.className = 'tree-row';
+  row.style.setProperty('--depth', depth);
+  row.dataset.path = entry.path;
+  row.innerHTML = `
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"
+         style="opacity:.35;flex-shrink:0;margin-left:14px">
+      <path d="M2.5 1.5H7.5L10.5 4.5V11.5H2.5V1.5Z"
+            stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+      <path d="M7.5 1.5V4.5H10.5"
+            stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+    </svg>
+    <span class="row-label">${entry.name}</span>`;
+
+  row.addEventListener('click', () => openFile(entry));
+  return row;
+}
+
+function setTreeActive(path) {
+  treeEl.querySelectorAll('.tree-row[data-path]').forEach(r =>
+    r.classList.toggle('active', r.dataset.path === path)
+  );
+}
+
+// ── Tab management ─────────────────────────────────────────
+function openFile(entry) {
+  const existing = tabs.findIndex(t => t.path === entry.path);
+  if (existing !== -1) { activateTab(existing); return; }
+
+  const pane = document.createElement('iframe');
+  pane.className = 'pane';
+  pane.title = entry.name;
+  pane.src   = entry.path;
+  content.appendChild(pane);
+
+  const tabEl = document.createElement('div');
+  tabEl.className = 'tab';
+  tabEl.innerHTML = `
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none"
+         style="opacity:.38;flex-shrink:0">
+      <path d="M1.5 1H7L9.5 3.5V10H1.5V1Z"
+            stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+      <path d="M7 1V3.5H9.5"
+            stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+    </svg>
+    <span class="tab-name">${entry.name}</span>
+    <span class="tab-close" title="Close  W">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M2 2l6 6M8 2L2 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </span>`;
+
+  tabEl.querySelector('.tab-close').addEventListener('click', e => {
+    e.stopPropagation();
+    closeTab(tabs.findIndex(t => t.path === entry.path));
+  });
+  tabEl.addEventListener('click', () =>
+    activateTab(tabs.findIndex(t => t.path === entry.path))
+  );
+  tabBar.appendChild(tabEl);
+
+  tabs.push({ name: entry.name, path: entry.path, el: tabEl, pane });
+  activateTab(tabs.length - 1);
+}
+
+function activateTab(idx) {
+  if (idx < 0 || idx >= tabs.length) return;
+  activeIdx = idx;
+
+  tabs.forEach((t, i) => {
+    t.el.classList.toggle('active', i === idx);
+    t.pane.classList.toggle('visible', i === idx);
+  });
+
+  welcome.style.display = 'none';
+  setTreeActive(tabs[idx].path);
+  status.textContent = tabs[idx].path.replace('Animations/', '').replace(/\//g, ' / ');
+  tabs[idx].el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+function closeTab(idx) {
+  if (idx < 0 || idx >= tabs.length) return;
+  tabs[idx].el.remove();
+  tabs[idx].pane.remove();
+  tabs.splice(idx, 1);
+
+  if (!tabs.length) {
+    activeIdx = -1;
+    welcome.style.display = '';
+    status.textContent = `${MANIFEST.length} animation${MANIFEST.length !== 1 ? 's' : ''}`;
+    treeEl.querySelectorAll('.tree-row.active').forEach(r => r.classList.remove('active'));
+    return;
+  }
+  activeIdx = -1;
+  activateTab(Math.min(idx, tabs.length - 1));
+}
+
+// ── Keyboard ───────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.target.closest('iframe')) return;
+  if (e.key === 'w' || e.key === 'W') {
+    if (activeIdx >= 0) closeTab(activeIdx);
+  }
+  if (e.key === 'ArrowLeft'  && !e.ctrlKey) { e.preventDefault(); if (activeIdx > 0) activateTab(activeIdx - 1); }
+  if (e.key === 'ArrowRight' && !e.ctrlKey) { e.preventDefault(); if (activeIdx < tabs.length - 1) activateTab(activeIdx + 1); }
+  if (e.key === 'r' || e.key === 'R') {
+    if (activeIdx >= 0) {
+      try { tabs[activeIdx].pane.contentWindow.location.reload(); } catch (_) {
+        // cross-origin fallback: re-set src
+        const src = tabs[activeIdx].pane.src;
+        tabs[activeIdx].pane.src = '';
+        requestAnimationFrame(() => { tabs[activeIdx].pane.src = src; });
+      }
+    }
+  }
+  if (e.key === 'f' || e.key === 'F') {
+    if (activeIdx >= 0) window.open(tabs[activeIdx].path, '_blank');
+  }
+});
+
+// ── Boot ───────────────────────────────────────────────────
+buildTree();
+</script>
+</body>
+</html>

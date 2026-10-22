@@ -1,0 +1,720 @@
+warning: in the working copy of 'Entropy/Rose/esp32_19_display_mock.html', LF will be replaced by CRLF the next time Git touches it
+diff --git a/Entropy/Rose/esp32_19_display_mock.html b/Entropy/Rose/esp32_19_display_mock.html
+index 9670b96..b7667fe 100644
+--- a/Entropy/Rose/esp32_19_display_mock.html
++++ b/Entropy/Rose/esp32_19_display_mock.html
+@@ -3,11 +3,11 @@
+ <head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+-  <title>Rien-Prescript-Beeper — Hardware Screen &amp; Ratio Studio</title>
++  <title>Rien-Prescript-Beeper // Model 01-Oracle</title>
+   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📟</text></svg>">
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Fira+Code:wght@400;600&family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Share+Tech+Mono&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=VT323&display=swap">
++  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap">
+   <style>
+     :root {
+       --bg-canvas:        #060606;
+@@ -23,7 +23,8 @@
+       --accent-gold:      #f59e0b;
+       --radius-sm:        5px;
+       --radius-md:        9px;
+-      font-family: "JetBrains Mono", monospace;
++      --screen-font:      "IBM Plex Mono", monospace;
++      font-family: "IBM Plex Mono", monospace;
+       color-scheme: dark;
+     }
+ 
+@@ -108,114 +109,10 @@
+       font-size: 0.75rem;
+       outline: none;
+       cursor: pointer;
+-      font-family: "JetBrains Mono", monospace;
++      font-family: inherit;
+       max-width: 320px;
+     }
+ 
+-    /* Speed Slider Widget */
+-    .speed-slider-wrap {
+-      display: inline-flex;
+-      align-items: center;
+-      gap: 0.45rem;
+-      background: var(--bg-card);
+-      border: 1px solid var(--border-mid);
+-      border-radius: var(--radius-sm);
+-      padding: 0.22rem 0.65rem;
+-      font-size: 0.72rem;
+-    }
+-    .speed-slider-wrap input[type=range] {
+-      -webkit-appearance: none;
+-      appearance: none;
+-      width: 95px;
+-      height: 4px;
+-      background: #262626;
+-      border-radius: 2px;
+-      outline: none;
+-      cursor: pointer;
+-    }
+-    .speed-slider-wrap input[type=range]::-webkit-slider-thumb {
+-      -webkit-appearance: none;
+-      appearance: none;
+-      width: 12px;
+-      height: 12px;
+-      border-radius: 50%;
+-      background: var(--accent-cyan);
+-      box-shadow: 0 0 6px var(--accent-cyan);
+-      cursor: pointer;
+-      transition: transform 0.1s ease;
+-    }
+-    .speed-slider-wrap input[type=range]::-webkit-slider-thumb:hover {
+-      transform: scale(1.2);
+-    }
+-    .speed-slider-wrap input[type=range]::-moz-range-thumb {
+-      width: 12px;
+-      height: 12px;
+-      border: none;
+-      border-radius: 50%;
+-      background: var(--accent-cyan);
+-      box-shadow: 0 0 6px var(--accent-cyan);
+-      cursor: pointer;
+-    }
+-    .control-panel {
+-      background: var(--bg-card);
+-      border: 1px solid var(--border-dim);
+-      border-radius: var(--radius-md);
+-      padding: 0.85rem 1rem;
+-      display: flex;
+-      flex-direction: column;
+-      gap: 0.75rem;
+-      font-size: 0.75rem;
+-    }
+-
+-    .control-section {
+-      display: flex;
+-      flex-direction: column;
+-      gap: 0.4rem;
+-    }
+-
+-    .section-label {
+-      color: var(--text-muted);
+-      font-size: 0.7rem;
+-      font-weight: 700;
+-      text-transform: uppercase;
+-      letter-spacing: 0.05em;
+-      display: flex;
+-      justify-content: space-between;
+-      align-items: center;
+-    }
+-
+-    .ratio-grid {
+-      display: flex;
+-      flex-wrap: wrap;
+-      gap: 0.35rem;
+-    }
+-
+-    .ratio-btn {
+-      padding: 0.3rem 0.55rem;
+-      border-radius: 4px;
+-      border: 1px solid var(--border-mid);
+-      background: var(--bg-input);
+-      color: #999;
+-      font-size: 0.72rem;
+-      font-weight: 600;
+-      cursor: pointer;
+-      font-family: "JetBrains Mono", monospace;
+-      transition: all 0.12s ease;
+-      white-space: nowrap;
+-    }
+-    .ratio-btn:hover { color: #fff; border-color: #555; }
+-    .ratio-btn.active { background: #ffffff; color: #000000; border-color: #ffffff; font-weight: 700; }
+-
+-    /* Clarification Callout */
+-    .clarification-box {
+-      font-size: 0.72rem;
+-      color: #888;
+-      background: rgba(255, 255, 255, 0.02);
+-      border-left: 2px solid var(--accent-cyan);
+-      padding: 0.4rem 0.65rem;
+-      line-height: 1.45;
+-    }
+-
+     /* ==========================================================================
+        HARDWARE CHASSIS: RIEN-PRESCRIPT-BEEPER
+        ========================================================================== */
+@@ -331,9 +228,12 @@
+     }
+ 
+     /* ==========================================================================
+-       THE SCREEN FRAMEBUFFER (LOCKED ASPECT RATIO & RESOLUTION)
++       THE SCREEN FRAMEBUFFER (LOCKED 1:1 NATIVE 320x170 ST7789)
+        ========================================================================== */
+     .epaper-screen {
++      width: 320px !important;
++      height: 170px !important;
++      aspect-ratio: 320 / 170 !important;
+       position: relative;
+       overflow: hidden;
+       display: flex;
+@@ -342,63 +242,9 @@
+       border-radius: 4px;
+       border: 2px solid #000000;
+       box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.8), 0 0 0 1px #222;
+-      transition: width 0.2s ease, height 0.2s ease, background 0.2s ease;
+-      user-select: text;
+-    }
+-
+-    /* Display Color Profiles */
+-    .theme-obsidian {
+       background: #000000 !important;
+       color: #ffffff !important;
+-    }
+-    .theme-obsidian .ep-status-bar, .theme-obsidian .ep-footer {
+-      border-color: #1e1e1e !important;
+-      color: #666666 !important;
+-    }
+-
+-    .theme-eink {
+-      background: #f4f3ef !important;
+-      color: #111111 !important;
+-    }
+-    .theme-eink .ep-status-bar, .theme-eink .ep-footer {
+-      border-color: #d0cfcb !important;
+-      color: #666666 !important;
+-    }
+-    .theme-eink .ep-content em { color: #111111 !important; }
+-    .theme-eink .ep-context {
+-      background: #e9e8e3 !important;
+-      border-left-color: #888888 !important;
+-      color: #444444 !important;
+-    }
+-
+-    .theme-amber {
+-      background: #0d0a00 !important;
+-      color: #ffb000 !important;
+-    }
+-    .theme-amber .ep-status-bar, .theme-amber .ep-footer {
+-      border-color: #332400 !important;
+-      color: #996a00 !important;
+-    }
+-    .theme-amber .ep-content em { color: #ffb000 !important; }
+-    .theme-amber .ep-context {
+-      background: #1a1400 !important;
+-      border-left-color: #ffb000 !important;
+-      color: #cc8d00 !important;
+-    }
+-
+-    .theme-matrix {
+-      background: #020f04 !important;
+-      color: #00ff66 !important;
+-    }
+-    .theme-matrix .ep-status-bar, .theme-matrix .ep-footer {
+-      border-color: #07380f !important;
+-      color: #00993d !important;
+-    }
+-    .theme-matrix .ep-content em { color: #00ff66 !important; }
+-    .theme-matrix .ep-context {
+-      background: #041f09 !important;
+-      border-left-color: #00ff66 !important;
+-      color: #00b347 !important;
++      user-select: text;
+     }
+ 
+     /* Fixed Header Bar (Pinned) */
+@@ -693,8 +539,8 @@
+     <!-- Top Control Bar -->
+     <header class="top-bar">
+       <div class="title-group">
+-        <h1><span>📟</span> Rien-Prescript-Beeper Studio</h1>
+-        <p>Personal Prescripts &amp; Wisdom Beeper // ESP32 Hardware Screen &amp; Ratio Explorer</p>
++        <h1><span>📟</span> Rien-Prescript-Beeper</h1>
++        <p>Model 01-Oracle // ST7789 1.9" IPS · 320×170 Native · IBM Plex Mono</p>
+       </div>
+ 
+       <div class="controls-row">
+@@ -709,87 +555,6 @@
+       </div>
+     </header>
+ 
+-    <!-- Ratio & Screen Selection Studio -->
+-    <section class="control-panel">
+-      <!-- Row 1: Hardware Screen Presets -->
+-      <div class="control-section">
+-        <div class="section-label">
+-          <span>ESP32 Hardware Display Presets</span>
+-          <span id="active-screen-spec" style="color:var(--accent-cyan); font-weight:700;">1.9" IPS Bar · 320×170 px · Ratio 1.88:1</span>
+-        </div>
+-        <div class="ratio-grid">
+-          <button class="ratio-btn active" id="rb-19" onclick="applyPreset('19')">1.9" IPS Bar (320×170, 1.88:1)</button>
+-          <button class="ratio-btn" id="rb-24" onclick="applyPreset('24')">2.4" Cyberdeck Pager (320×240, 4:3)</button>
+-          <button class="ratio-btn" id="rb-28" onclick="applyPreset('28')">2.8" / 3.2" Console (480×320, 3:2)</button>
+-          <button class="ratio-btn" id="rb-35" onclick="applyPreset('35')">3.5" Desk Terminal (480×320, 3:2)</button>
+-          <button class="ratio-btn" id="rb-213" onclick="applyPreset('213')">2.13" E-Paper (250×122, 2.05:1)</button>
+-          <button class="ratio-btn" id="rb-29" onclick="applyPreset('29')">2.9" Panoramic E-Ink (296×128, 2.31:1)</button>
+-          <button class="ratio-btn" id="rb-42" onclick="applyPreset('42')">4.2" Desktop E-Ink (400×300, 4:3)</button>
+-          <button class="ratio-btn" id="rb-169" onclick="applyPreset('169')">1.69" Wrist Beeper (280×240, 1.17:1)</button>
+-          <button class="ratio-btn" id="rb-154" onclick="applyPreset('154')">1.54" Square Matrix (240×240, 1:1)</button>
+-          <button class="ratio-btn" id="rb-096" onclick="applyPreset('096')">0.96" Micro OLED (128×64, 2:1)</button>
+-        </div>
+-      </div>
+-
+-      <!-- Clarification Note on 1.9" vs Aspect Ratio -->
+-      <div class="clarification-box">
+-        💡 <strong>Note on 1.9" Display Ratio:</strong> "1.9 inches" is the physical diagonal glass size. The native resolution on ST7789 is <strong>320 × 170 pixels</strong>, which produces an aspect ratio of <strong>1.882 : 1</strong> (~16:8.5 horizontal bar). You can toggle between widescreen, classic 4:3 pager, or square 1:1 above!
+-      </div>
+-
+-      <!-- Row 2: Custom Ratio, Orientation & Theme Controls -->
+-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem; border-top:1px solid var(--border-dim); padding-top:0.6rem;">
+-        <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+-          <span style="color:var(--text-muted); font-weight:700;">DISPLAY THEME:</span>
+-          <button class="btn active" id="btn-theme-obsidian" onclick="setTheme('obsidian')">Obsidian OLED</button>
+-          <button class="btn" id="btn-theme-eink" onclick="setTheme('eink')">E-Ink Paper</button>
+-          <button class="btn" id="btn-theme-amber" onclick="setTheme('amber')">Amber CRT</button>
+-          <button class="btn" id="btn-theme-matrix" onclick="setTheme('matrix')">Matrix Green</button>
+-        </div>
+-
+-        <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+-          <button class="btn active" id="btn-anim" onclick="toggleAnimation()">📜 Anim: ON</button>
+-          <div class="speed-slider-wrap">
+-            <span style="color:var(--text-muted); font-size:0.7rem; font-weight:700;">ENTROPY SPEED:</span>
+-            <input type="range" id="entropy-speed-slider" min="15" max="95" step="2" value="40" oninput="updateEntropySpeed(this.value)">
+-            <span id="speed-label" style="color:var(--accent-cyan); font-weight:700; font-size:0.72rem; min-width:38px;">40ms</span>
+-          </div>
+-          <button class="btn" id="btn-toggle-context" onclick="toggleContext()">Context: ON</button>
+-          <button class="btn" id="btn-autoscroll" onclick="toggleAutoScroll()">Auto-Page: OFF</button>
+-          <button class="btn" id="btn-scale" onclick="toggleNativeScale()">Scale: Studio 2x</button>
+-          <button class="btn" onclick="reRollColors()">🎨 Re-roll Accents</button>
+-        </div>
+-      </div>
+-
+-      <!-- Row 2.5: Prescript Dual Acoustic Delay Sliders -->
+-      <div style="display:flex; justify-content:flex-start; align-items:center; flex-wrap:wrap; gap:0.6rem; border-top:1px solid var(--border-dim); padding-top:0.6rem;">
+-        <div class="speed-slider-wrap">
+-          <span style="color:var(--text-muted); font-size:0.7rem; font-weight:700;">DRAW ➔ CHIME DELAY:</span>
+-          <input type="range" id="draw-delay-slider" min="150" max="1800" step="25" value="650" oninput="updateDrawDelay(this.value)">
+-          <span id="draw-delay-label" style="color:var(--accent-gold); font-weight:700; font-size:0.72rem; min-width:44px;">650ms</span>
+-        </div>
+-        <div class="speed-slider-wrap">
+-          <span style="color:var(--text-muted); font-size:0.7rem; font-weight:700;">CHIME INTERVAL:</span>
+-          <input type="range" id="interval-delay-slider" min="150" max="1200" step="25" value="450" oninput="updateChimeInterval(this.value)">
+-          <span id="interval-delay-label" style="color:var(--accent-gold); font-weight:700; font-size:0.72rem; min-width:44px;">450ms</span>
+-        </div>
+-        <span style="font-size:0.7rem; color:var(--text-muted); font-style:italic;">Chimes repeat to fill the gap until text resolves</span>
+-      </div>
+-
+-      <!-- Row 3: Hardware Typography & Font Family Picker -->
+-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem; border-top:1px solid var(--border-dim); padding-top:0.6rem;">
+-        <div style="display:flex; align-items:center; gap:0.35rem; flex-wrap:wrap;">
+-          <span style="color:var(--text-muted); font-weight:700;">TEXT FONT:</span>
+-          <button class="btn active" id="btn-font-jetbrains" onclick="setFontFamily('jetbrains')">JetBrains Mono</button>
+-          <button class="btn" id="btn-font-ibmplex" onclick="setFontFamily('ibmplex')">IBM Plex Mono</button>
+-          <button class="btn" id="btn-font-spacemono" onclick="setFontFamily('spacemono')">Space Mono</button>
+-          <button class="btn" id="btn-font-firacode" onclick="setFontFamily('firacode')">Fira Code</button>
+-          <button class="btn" id="btn-font-vt323" onclick="setFontFamily('vt323')">VT323 (Matrix Pager)</button>
+-          <button class="btn" id="btn-font-crimson" onclick="setFontFamily('crimson')">Crimson Pro (E-Ink Serif)</button>
+-          <button class="btn" id="btn-font-sharetech" onclick="setFontFamily('sharetech')">Share Tech</button>
+-        </div>
+-      </div>
+-    </section>
+-
+     <!-- MAIN HARDWARE CANVAS: RIEN-PRESCRIPT-BEEPER -->
+     <main class="beeper-housing">
+       <!-- Beeper Silkscreen Header -->
+@@ -831,7 +596,7 @@
+           </div>
+ 
+           <div class="scroll-indicator-pill">
+-            <span>Tactile Prescript Engine</span>
++            <span id="auto-page-status">Auto: 7s/line</span>
+           </div>
+ 
+           <div style="display:flex; gap:0.35rem;">
+@@ -898,19 +663,6 @@
+       }
+     ];
+ 
+-    const HARDWARE_PRESETS = {
+-      "19":  { name: '1.9" IPS Bar (ST7789)', w: 320, h: 170, scale: 2.1, ratio: "1.88:1", desc: 'LilyGO T-Display-S3 standard ultra-wide bar' },
+-      "24":  { name: '2.4" Cyberdeck Pager',  w: 320, h: 240, scale: 2.0, ratio: "4:3 (1.33:1)", desc: 'Classic 90s pager / cyberdeck, ample vertical prose space' },
+-      "28":  { name: '2.8" Handheld Console', w: 480, h: 320, scale: 1.45, ratio: "3:2 (1.50:1)", desc: 'Handheld terminal landscape format' },
+-      "35":  { name: '3.5" Desk Terminal',    w: 480, h: 320, scale: 1.5, ratio: "3:2 (1.50:1)", desc: 'Spacious high-res morning journal monitor' },
+-      "213": { name: '2.13" Pocket E-Paper',  w: 250, h: 122, scale: 2.5, ratio: "2.05:1", desc: 'Waveshare reflective e-ink pocket talisman' },
+-      "29":  { name: '2.9" Panoramic E-Ink',  w: 296, h: 128, scale: 2.3, ratio: "2.31:1", desc: 'Ultra-wide panoramic letterbox book-quote spread' },
+-      "42":  { name: '4.2" Desktop E-Ink',    w: 400, h: 300, scale: 1.6, ratio: "4:3 (1.33:1)", desc: 'Waveshare 4.2" classic book page' },
+-      "169": { name: '1.69" Wrist Beeper',    w: 280, h: 240, scale: 2.0, ratio: "7:6 (1.17:1)", desc: 'Ultra-compact smart-beeper format' },
+-      "154": { name: '1.54" Square Matrix',   w: 240, h: 240, scale: 2.2, ratio: "1:1", desc: 'Perfect square talisman display' },
+-      "096": { name: '0.96" Micro OLED',      w: 128, h: 64,  scale: 4.0, ratio: "2:1", desc: 'SSD1306 hacker terminal display' }
+-    };
+-
+     // Shared Accent Pool for Quote Marks & Container
+     const ACCENT_POOL = [
+       { name: "Sapphire Blue", hex: "#38bdf8" },
+@@ -920,7 +672,7 @@
+     ];
+ 
+     // ==============================================================================
+-    // 2. STATE REPOSITORY
++    // 2. STATE & LOCKED HARDWARE PARAMETERS
+     // ==============================================================================
+     const API_BASE = window.location.origin.startsWith('http') ? window.location.origin : 'http://127.0.0.1:20137';
+     let quotesList = [];
+@@ -928,15 +680,29 @@
+     let availableSpecifics = [];
+     let availableThemes = [];
+ 
+-    let currentPresetKey = '19';
+-    let currentTheme = 'obsidian';
+-    let currentFontKey = 'jetbrains';
+-    let showContext = true;
+-    let isNative1x = false;
+-    let reRollSeed = 0;
+-    let autoScrollInterval = null;
++    // Permanent Locked Hardware Profile:
++    // - 1.9" IPS Bar (ST7789): 320x170 px (1:1 Native Scale)
++    // - Font: IBM Plex Mono
++    // - Display Theme: Obsidian OLED
++    // - Animation: Always ON
++    // - Context: Always ON
++    // - Entropy Speed: 45ms
++    // - Draw -> Chime Delay: 1250ms
++    // - Chime Interval: 150ms
++    // - Auto-Page: Always ON (7s * number of lines of content)
++    const currentPresetKey = '19';
++    const SCREEN_WIDTH = 320;
++    const SCREEN_HEIGHT = 170;
++    const MAX_CHARS_PER_LINE = 36;
++    const ENTROPY_SPEED_MS = 45;
++    const DELAY_DRAW_TO_COMPLETE_MS = 1250;
++    const DELAY_BETWEEN_COMPLETES_MS = 150;
++
++    const showContext = true;
++    const animationEnabled = true;
+     let soundEnabled = true;
+     let activeAccentColor = '#38bdf8';
++    let autoPageTimer = null;
+ 
+     const FONT_PRESETS = {
+       "jetbrains": { name: "JetBrains Mono", css: '"JetBrains Mono", monospace', charRatio: 7.9, size: "13px" },
+@@ -1031,11 +797,12 @@
+       if (label) label.textContent = `${delayDrawToCompleteMs}ms`;
+     }
+ 
+-    function updateChimeInterval(val) {
+-      delayBetweenCompletesMs = parseInt(val, 10) || 450;
+-      const label = document.getElementById('interval-delay-label');
+-      if (label) label.textContent = `${delayBetweenCompletesMs}ms`;
+-    }
++    // Prescript Dual Audio Delays (Locked to Vision: 1250ms & 150ms)
++    const DELAY_DRAW_TO_COMPLETE_MS = 1250;
++    const DELAY_BETWEEN_COMPLETES_MS = 150;
++    const ENTROPY_SPEED_MS = 45;
++    let gapChimeTimer = null;
++    let autoPageTimer = null;
+ 
+     function stopGapChimeScheduler() {
+       if (gapChimeTimer) {
+@@ -1049,14 +816,39 @@
+       stopGapChimeScheduler();
+       if (!soundEnabled || !userHasInteracted) return;
+ 
+-      // 1. Initial delay between draw_sound.wav and the first complete_sound chime
++      // 1. Initial delay of 1250ms between draw_sound.wav and the first complete_sound chime
+       gapChimeTimer = setTimeout(function chimeLoop() {
+         if (!isDrawing) return;
+         playSoundEffect('complete');
+ 
+-        // 2. Subsequent delay between complete_sound chimes to fill the gap
+-        gapChimeTimer = setTimeout(chimeLoop, delayBetweenCompletesMs);
+-      }, delayDrawToCompleteMs);
++        // 2. Subsequent 150ms delay between complete_sound chimes to fill the gap
++        gapChimeTimer = setTimeout(chimeLoop, DELAY_BETWEEN_COMPLETES_MS);
++      }, DELAY_DRAW_TO_COMPLETE_MS);
++    }
++
++    // Auto-Page Engine (Always ON): 7s * number of lines of content
++    function resetAutoPageTimer(activePage) {
++      if (autoPageTimer) {
++        clearTimeout(autoPageTimer);
++        autoPageTimer = null;
++      }
++      if (!activePage || !activePage.lines) return;
++
++      const lineCount = activePage.lines.filter(l => !l.isBlank && l.text && l.text.trim()).length || 1;
++      const dwellMs = lineCount * 7000; // 7s * number of lines of content
++
++      const statusEl = document.getElementById('auto-page-status');
++      if (statusEl) {
++        statusEl.textContent = `Auto: ${lineCount * 7}s (${lineCount}L)`;
++      }
++
++      autoPageTimer = setTimeout(() => {
++        if (currentPage < totalPages) {
++          changePage(1);
++        } else {
++          navQuote(1); // loop to next prescript
++        }
++      }, dwellMs);
+     }
+ 
+     // ==============================================================================
+@@ -1069,32 +861,13 @@
+       return SCRAMBLE_CHARS[Math.floor(Math.random() * NUM_SCRAMBLE_CHARS)];
+     }
+ 
+-    let animationEnabled = true;
++    const animationEnabled = true;
+     let isDrawing = false;
+     let typingTimer = null;
+     let lastRenderedPageData = null;
+     let lastRenderedAlignClass = 'content-left';
+     let lastFinalHeaderTitleHTML = '';
+ 
+-    // Speed slider controls average entropy step duration in milliseconds
+-    let entropySpeedMs = 40;
+-
+-    function updateEntropySpeed(val) {
+-      entropySpeedMs = parseInt(val, 10) || 40;
+-      const label = document.getElementById('speed-label');
+-      if (label) label.textContent = `${entropySpeedMs}ms`;
+-    }
+-
+-    function toggleAnimation() {
+-      animationEnabled = !animationEnabled;
+-      const btn = document.getElementById('btn-anim');
+-      if (btn) {
+-        btn.textContent = animationEnabled ? '📜 Anim: ON' : '⚡ Anim: OFF';
+-        btn.classList.toggle('active', animationEnabled);
+-      }
+-      playSoundEffect('complete');
+-    }
+-
+     function stopDrawingAnimation() {
+       if (typingTimer) {
+         cancelAnimationFrame(typingTimer);
+@@ -1177,14 +950,14 @@
+       // Map lines to fixed 4 physical rows:
+       // 1 line => row 2; 2 lines => row 2 & 3; 3 lines => row 1, 2, 3; 4+ => row 1, 2, 3, 4
+       const fourRows = mapLinesToFourRows(activePage.lines);
+-      const maxChars = getCharsPerLine(currentPresetKey);
++      const maxChars = getCharsPerLine();
+       const MAX_LINES = 4;
+       const accentColor = (typeof activeAccentColor !== 'undefined' && activeAccentColor) ? activeAccentColor : '#38bdf8';
+ 
+       // 2. Initialize Prescript Unboxing Placeholder Grid:
+       // Chaos characters ONLY appear where content characters (including <space>) exist!
+       // If content has 2 lines, chaos only appears on those 2 lines, matching their exact character lengths.
+-      const totalDurationMs = Math.max(900, entropySpeedMs * 35);
++      const totalDurationMs = Math.max(900, ENTROPY_SPEED_MS * 35);
+       const startTime = performance.now();
+       const grid = [];
+ 
+@@ -1319,6 +1092,9 @@
+ 
+           // Final decree seal: play complete_sound.wav once when text is fully displayed!
+           playSoundEffect('complete');
++
++          // Always-on Auto-Page: Schedule next advance (7s * number of lines of content)
++          resetAutoPageTimer(activePage);
+           return;
+         }
+ 
+@@ -1356,6 +1132,7 @@
+             }).join('')}
+           </div>
+         `;
++        resetAutoPageTimer(lastRenderedPageData);
+       }
+       playSoundEffect('complete');
+     }
+@@ -1364,8 +1141,6 @@
+     // 3. INITIALIZATION & DATA FETCHING
+     // ==============================================================================
+     async function init() {
+-      applyPreset('19', false);
+-
+       try {
+         const [taxRes, qRes] = await Promise.all([
+           fetch(`${API_BASE}/api/taxonomy`).then(r => r.json()).catch(() => null),
+@@ -1436,98 +1211,8 @@
+       drawNewPrescript();
+     }
+ 
+-    function reRollColors() {
+-      reRollSeed = Math.floor(Math.random() * 1000);
+-      if (userHasInteracted) playBeeperChirp('click');
+-      renderActivePrescript(false);
+-    }
+-
+-    function toggleContext() {
+-      showContext = !showContext;
+-      currentPage = 1;
+-      const btn = document.getElementById('btn-toggle-context');
+-      btn.textContent = `Context: ${showContext ? 'ON' : 'OFF'}`;
+-      btn.classList.toggle('active', showContext);
+-      if (userHasInteracted) playBeeperChirp('click');
+-      renderActivePrescript(false);
+-    }
+-
+-    function setTheme(tName) {
+-      currentTheme = tName;
+-      ['obsidian', 'eink', 'amber', 'matrix'].forEach(t => {
+-        const b = document.getElementById(`btn-theme-` + t);
+-        if (b) b.classList.toggle('active', t === tName);
+-      });
+-      const sc = document.getElementById('epaper-screen');
+-      if (sc) sc.className = `epaper-screen theme-${tName}`;
+-      if (userHasInteracted) playBeeperChirp('click');
+-    }
+-
+-    // ==============================================================================
+-    // 4. SCREEN PRESET & RATIO APPLICATION
+-    // ==============================================================================
+-    function applyPreset(key, playSound = true) {
+-      currentPresetKey = key;
+-      const p = HARDWARE_PRESETS[key] || HARDWARE_PRESETS['19'];
+-
+-      document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
+-      const activeBtn = document.getElementById(`rb-${key}`);
+-      if (activeBtn) activeBtn.classList.add('active');
+-
+-      document.getElementById('active-screen-spec').textContent = `${p.name} · ${p.w}×${p.h} px · Ratio ${p.ratio}`;
+-      document.getElementById('bezel-dim-label').textContent = `${p.w} × ${p.h} NATIVE (4-LINE MATRIX)`;
+-
+-      const screen = document.getElementById('epaper-screen');
+-      const scaleMultiplier = isNative1x ? 1.0 : p.scale;
+-
+-      const targetW = Math.round(p.w * scaleMultiplier);
+-      const targetH = Math.round(p.h * scaleMultiplier);
+-
+-      screen.style.width = `${targetW}px`;
+-      screen.style.height = `${targetH}px`;
+-      screen.style.aspectRatio = `${p.w} / ${p.h}`;
+-
+-      currentPage = 1;
+-      renderActivePrescript(false);
+-      if (playSound && userHasInteracted) playBeeperChirp('click');
+-    }
+-
+-    function toggleNativeScale() {
+-      isNative1x = !isNative1x;
+-      const btn = document.getElementById('btn-scale');
+-      btn.textContent = isNative1x ? 'Scale: 1:1 Native' : 'Scale: Studio 2x';
+-      btn.classList.toggle('active', isNative1x);
+-      applyPreset(currentPresetKey, true);
+-    }
+-
+-    function setFontFamily(key) {
+-      if (!FONT_PRESETS[key]) return;
+-      currentFontKey = key;
+-      const f = FONT_PRESETS[key];
+-      document.querySelectorAll('[id^="btn-font-"]').forEach(b => b.classList.remove('active'));
+-      const activeBtn = document.getElementById(`btn-font-${key}`);
+-      if (activeBtn) activeBtn.classList.add('active');
+-
+-      document.documentElement.style.setProperty('--screen-font', f.css);
+-      document.documentElement.style.setProperty('--screen-font-size', f.size);
+-
+-      currentPage = 1;
+-      if (userHasInteracted) playBeeperChirp('click');
+-      renderActivePrescript(false);
+-    }
+-
+-    // ==============================================================================
+-    // 5. VIEWPORT 4-LINE DISCRETE PAGINATION ENGINE (ZERO SCROLLBAR // 4 LINES MAX)
+-    // ==============================================================================
+-    let currentPage = 1;
+-    let totalPages = 1;
+-    let wheelDebounceTimer = null;
+-
+-    function getCharsPerLine(key) {
+-      const p = HARDWARE_PRESETS[key] || HARDWARE_PRESETS['19'];
+-      const f = FONT_PRESETS[currentFontKey] || FONT_PRESETS['jetbrains'];
+-      // Target width minus 28px padding divided by font character ratio
+-      return Math.max(16, Math.floor((p.w - 28) / (f.charRatio || 7.9)));
++    function getCharsPerLine() {
++      return MAX_CHARS_PER_LINE;
+     }
+ 
+     function wrapTextToLines(text, maxChars) {
+@@ -1718,6 +1403,7 @@
+     }
+ 
+     function changePage(direction) {
++      if (autoPageTimer) { clearTimeout(autoPageTimer); autoPageTimer = null; }
+       const target = currentPage + direction;
+       if (target >= 1 && target <= totalPages) {
+         currentPage = target;
+@@ -1727,6 +1413,7 @@
+     }
+ 
+     function goToPage(pageNum) {
++      if (autoPageTimer) { clearTimeout(autoPageTimer); autoPageTimer = null; }
+       if (pageNum === 999) pageNum = totalPages;
+       if (pageNum >= 1 && pageNum <= totalPages) {
+         currentPage = pageNum;
+@@ -1735,28 +1422,6 @@
+       }
+     }
+ 
+-    function toggleAutoScroll() {
+-      const btn = document.getElementById('btn-autoscroll');
+-      if (autoScrollInterval) {
+-        clearInterval(autoScrollInterval);
+-        autoScrollInterval = null;
+-        btn.textContent = 'Auto-Page: OFF';
+-        btn.classList.remove('active');
+-      } else {
+-        btn.textContent = 'Auto-Page: ON';
+-        btn.classList.add('active');
+-        autoScrollInterval = setInterval(() => {
+-          if (currentPage < totalPages) {
+-            changePage(1);
+-          } else {
+-            currentPage = 1;
+-            playBeeperChirp('click');
+-            renderActivePrescript();
+-          }
+-        }, 4200);
+-      }
+-    }
+-
+     // ==============================================================================
+     // 6. METADATA NORMALIZATION & COLOR GENERATOR
+     // ==============================================================================
+@@ -1816,6 +1481,10 @@
+     // 7. RENDER COMPONENT
+     // ==============================================================================
+     function renderActivePrescript(shouldAnimate = false) {
++      if (autoPageTimer) {
++        clearTimeout(autoPageTimer);
++        autoPageTimer = null;
++      }
+       const b = resolveBundle(activeQuote);
+       if (!b) return;
+ 
+@@ -1828,13 +1497,14 @@
+       const alignClass = isWriting ? "content-justify" : "content-left";
+ 
+       // Quotation Mark & Container Accent (Synchronized)
+-      const quoteSeed = (typeof b.idx === 'number' ? b.idx : (parseInt(String(b.idx).replace(/\D/g, ''), 10) || 1)) + reRollSeed;
++      const quoteSeed = typeof b.idx === 'number' ? b.idx : (parseInt(String(b.idx).replace(/\D/g, ''), 10) || 1);
+       const accentIndex = Math.abs(quoteSeed % ACCENT_POOL.length);
+       const activeAccent = ACCENT_POOL[accentIndex];
+       const sharedAccentColor = activeAccent.hex;
++      activeAccentColor = sharedAccentColor;
+ 
+       // Calculate dynamic character width & compile 4-line pages
+-      const maxChars = getCharsPerLine(currentPresetKey);
++      const maxChars = getCharsPerLine();
+       const prescriptPages = buildPrescriptPages(b, maxChars, sharedAccentColor);
+       totalPages = prescriptPages.length;
+ 
+@@ -1917,6 +1587,7 @@
+         runPrescriptTypewriter(activePage, alignClass);
+       } else {
+         stopDrawingAnimation();
++        resetAutoPageTimer(activePage);
+       }
+ 
+       // Attach debounced wheel listener for discrete page flipping

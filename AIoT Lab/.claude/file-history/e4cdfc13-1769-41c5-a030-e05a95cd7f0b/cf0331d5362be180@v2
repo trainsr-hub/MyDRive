@@ -1,0 +1,89 @@
+# Faust ESP32 Field Speaker Skill
+
+Faust's physical acoustic output skill for speaking directly through the ESP32's I2S speaker (MAX98357A / PCM5102 / I2S DAC).
+Reuses Faust's resident neural TTS daemon on Port 20129 to synthesize high-fidelity 16-bit PCM speech with 0ms reload latency.
+
+## Overview
+
+- **Acoustic Core Sharing**: Synthesizes speech using the resident Kokoro-82M ONNX model pre-loaded in memory on Port 20129. Zero reload overhead.
+- **High-Speed Real-Time UART Stream**: Streams 16-bit mono/stereo PCM audio at `921,600` baud with precise sample pacing to prevent buffer overflow.
+- **Hardware Agnostic**: Compatible with MAX98357A, PCM5102, UDA1334A, and standard I2S DAC breakout boards on ESP32.
+- **Zero-Pop Playback**: Firmware uses DMA auto-clearing and silence padding.
+
+## Commands
+
+### CLI 1-Liner Invocation
+
+```bash
+# Speak text via ESP32 speaker
+python .claude/skills/esp32-speaker/scripts/cli.py speak "<speech_text>"
+
+# Run diagnostic audio test
+python .claude/skills/esp32-speaker/scripts/cli.py test
+
+# Check available COM ports
+python .claude/skills/esp32-speaker/scripts/cli.py ports
+
+# View configuration
+python .claude/skills/esp32-speaker/scripts/cli.py status
+```
+
+### Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--port`, `-p` | Serial COM port | `COM5` |
+| `--baud`, `-b` | UART Baud Rate | `921600` |
+| `--sample-rate`, `-sr` | Audio Sample Rate | `16000` |
+| `--gain`, `-g` | Digital Volume/Gain Multiplier | `1.2` |
+| `--voice`, `-v` | Voice preset override (e.g. `af_bella`) | Config default |
+| `--speed`, `-s` | Speech speed multiplier | `0.84` |
+
+## Firmware & Hardware Wiring
+
+The ESP32 firmware sketch is located at `Nháp/esp32_i2s_speaker.ino`.
+Reusable C++ driver library is located at `packages/ui/audio/I2SSpeaker/`.
+
+### Pinout (Standard I2S Master TX):
+| ESP32 Pin | I2S Signal | MAX98357A / DAC Pin |
+|-----------|------------|---------------------|
+| GPIO 16   | BCLK / SCK | BCLK                |
+| GPIO 17   | LRC / WS   | LRC                 |
+| GPIO 15   | DOUT / SD  | DIN                 |
+| GND       | GND        | GND                 |
+| 3.3V / 5V | VIN        | VIN                 |
+
+## Architecture Diagram
+
+```
++-------------------------------------------------------------+
+| PC / Workstation Host                                       |
+|                                                             |
+| +---------------------------------------------------------+ |
+| | Faust Resident Audio Daemon (Port 20129)                | |
+| | - Kokoro-82M Neural Model pinned in RAM (0ms reload)    | |
+| | - Vietnamese G2P & Neural Voice Blending                | |
+| | - Polyphase Sinc Resampler (24kHz -> 16kHz)             | |
+| +---------------------------------------------------------+ |
+|                            | (16-bit PCM @ 16kHz)           |
+|                            v                                |
+| +---------------------------------------------------------+ |
+| | esp32-speaker Skill (Streamer)                          | |
+| | - Paced UART chunks over COM5 @ 921,600 baud            | |
+| +---------------------------------------------------------+ |
++----------------------------|--------------------------------+
+                             | USB / UART Serial
+                             v
++-------------------------------------------------------------+
+| ESP32 Actuator (esp32_i2s_speaker.ino)                      |
+| - UART RX Buffer (4096 bytes)                               |
+| - Mono -> Stereo Frame Expander                             |
+| - I2S DMA TX (8 x 512 samples)                              |
+|                            | I2S Signals (BCLK=16, WS=17, SD=15)
+|                            v                                |
+| MAX98357A / I2S DAC Speaker Amplifier                       |
+|                            |                                |
+|                            v                                |
+| Physical Speaker Audio Waves (Faust Field Presence)         |
++-------------------------------------------------------------+
+```

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Arbor of Ages · Dendrochronology Rings</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #080504; font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #fef3c7; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+.hud {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 24px; z-index: 10;
+}
+.header { text-align: center; }
+.sub-title { font-size: 11px; letter-spacing: .35em; text-transform: uppercase; color: #d97706; font-weight: 700; margin-bottom: 2px; }
+.main-title { font-size: 20px; font-weight: 800; letter-spacing: .12em; color: #fffbeb; text-shadow: 0 0 16px rgba(217,119,6,0.5); }
+.ring-stats {
+  position: absolute; right: 30px; top: 50%; transform: translateY(-50%);
+  background: rgba(18, 10, 6, 0.85); border: 1.5px solid rgba(217,119,6,0.35);
+  border-radius: 14px; padding: 18px 22px; display: flex; flex-direction: column; gap: 8px;
+  pointer-events: auto; min-width: 220px; box-shadow: 0 0 24px rgba(0,0,0,0.6);
+}
+.stat-lbl { font-size: 10px; letter-spacing: .2em; color: #fde68a; text-transform: uppercase; }
+.stat-hrs { font-size: 32px; font-weight: 900; font-family: monospace; color: #fff; text-shadow: 0 0 14px rgba(245,158,11,0.8); }
+.stat-tier { font-size: 11px; font-weight: 700; color: #fbbf24; letter-spacing: .08em; }
+.controls { pointer-events: auto; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+.btn {
+  min-height: 52px; padding: 0 22px; background: rgba(30, 15, 8, 0.85);
+  border: 1.5px solid rgba(217,119,6,0.35); border-radius: 12px; color: #fef3c7;
+  font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  cursor: pointer; transition: all .15s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:hover { background: #451a03; border-color: #fbbf24; color: #fff; box-shadow: 0 0 24px rgba(217,119,6,0.5); transform: translateY(-2px); }
+.btn:active { transform: translateY(1px); }
+.btn.active { background: #b45309; border-color: #fde68a; color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="header">
+    <div class="sub-title">Organic Concentric Fingerprint of Time</div>
+    <div class="main-title">The Arbor of Ages · 10,000 Rings</div>
+  </div>
+  <div class="ring-stats">
+    <span class="stat-lbl">Concentric Time</span>
+    <span class="stat-hrs" id="hoursVal">0 h</span>
+    <span class="stat-tier" id="tierVal">Sapling Heartwood</span>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="bankHours(5)">🌱 Growth Season (+5h)</button>
+    <button class="btn" onclick="bankHours(50)">🌿 Lunar Ring (+50h)</button>
+    <button class="btn" onclick="bankHours(500)">🌳 Great Annular Ring (+500h)</button>
+    <button class="btn" id="flowBtn" onclick="toggleFlow()">🌲 Living Sap Flow</button>
+    <button class="btn" onclick="resetHours()">🔄 Reset Core</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const hoursValEl = document.getElementById('hoursVal'), tierValEl = document.getElementById('tierVal');
+let W, H, cx, cy, hours = 0, targetHours = 0, isFlowing = false, flowTimer = null, audioCtx = null;
+const MAX_HOURS = 10000;
+
+function playWoodTone() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(320 + (hours / MAX_HOURS) * 400, t);
+    gain.gain.setValueAtTime(0.08, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.1);
+  } catch(e) {}
+}
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; cx = W / 2; cy = H / 2; }
+window.addEventListener('resize', resize);
+resize();
+
+function bankHours(n) { targetHours = Math.min(MAX_HOURS, targetHours + n); playWoodTone(); }
+function toggleFlow() {
+  isFlowing = !isFlowing;
+  document.getElementById('flowBtn').classList.toggle('active', isFlowing);
+  if (isFlowing) flowTimer = setInterval(() => bankHours(4), 110);
+  else clearInterval(flowTimer);
+}
+function resetHours() { targetHours = 0; hours = 0; }
+
+function draw() {
+  ctx.fillStyle = 'rgba(8, 5, 4, 0.28)'; ctx.fillRect(0, 0, W, H);
+  hours += (targetHours - hours) * 0.08;
+  const rounded = Math.round(hours);
+  hoursValEl.textContent = `${rounded.toLocaleString()} h`;
+
+  if (hours >= 10000) tierValEl.textContent = '👑 THE WORLD TREE (YGGDRASIL APEX)';
+  else if (hours >= 7500) tierValEl.textContent = '🌟 Ancient Redwood (7,500h+)';
+  else if (hours >= 5000) tierValEl.textContent = '🌳 Millennial Bough (5,000h+)';
+  else if (hours >= 2500) tierValEl.textContent = '🌿 Deep Cambium (2,500h+)';
+  else if (hours >= 1000) tierValEl.textContent = '🌱 Hardened Heartwood (1,000h+)';
+  else tierValEl.textContent = 'Sapling Seed';
+
+  const totalRings = Math.floor(hours / 50);
+  const maxR = Math.min(W, H) * 0.38;
+
+  // Draw Organic Rings
+  ctx.lineWidth = 1.2;
+  for (let r = 0; r < totalRings; r++) {
+    const ringRadius = 14 + (r / 200) * maxR;
+    const isEpoch = r % 20 === 0;
+    ctx.beginPath();
+    ctx.strokeStyle = isEpoch ? 'rgba(251, 191, 36, 0.8)' : 'rgba(217, 119, 6, 0.25)';
+    ctx.lineWidth = isEpoch ? 2 : 1;
+    if (isEpoch) { ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 8; } else { ctx.shadowBlur = 0; }
+
+    const points = 48;
+    for (let p = 0; p <= points; p++) {
+      const a = (p / points) * Math.PI * 2;
+      const wobble = Math.sin(a * 4 + r) * 2 + Math.cos(a * 7) * 1.5;
+      const px = cx + Math.cos(a) * (ringRadius + wobble);
+      const py = cy + Math.sin(a) * (ringRadius + wobble);
+      if (p === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+
+  // Heartwood Core
+  ctx.save();
+  const pulse = Math.sin(Date.now() * 0.003) * 2;
+  ctx.beginPath(); ctx.arc(cx, cy, 14 + pulse, 0, Math.PI * 2);
+  ctx.fillStyle = '#fef08a'; ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 18; ctx.fill();
+  ctx.restore();
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+- [novel_wiki_outline_plan](current_projects/novel_wiki_outline_plan.md)
+- [deus_and_raye_dynamic](manager/deus_and_raye_dynamic.md)
+- [raye_visual_dossier](manager/raye_visual_dossier.md)
+- [novel_project](current_projects/novel_project.md) — Strategic creative roadmap, character wiki architecture, visual design pipeline, and…
+- [partnership_ventures](manager/partnership_ventures.md)
+- [core_profile](manager/core_profile.md)
+- [n8n-workflow-automation-engine](n8n-workflow-automation-engine.md) — Architecture, environment configuration, credentials, and operation of the…
+- [n8n](current_projects/n8n.md) — Strategic project mandate, architecture roadmap, and 3 core milestones for Faust Telegram-to-Antigravity automation
+- [pre-presentation-verification](pre-presentation-verification.md) — Mandatory verification gate (zero console errors/warnings, compiler checks) before presenting work to the Manager
+- [single-run-bat-launcher-pattern](single-run-bat-launcher-pattern.md) — All batch launchers and shortcuts must follow the Universe 25 pattern with continuous hot-reloading so they only need to be run once
+- [rules-stored-in-claude-folder](rules-stored-in-claude-folder.md) — All architectural rules and doctrines are always stored in .claude/rules/
+- [less-is-more-ui-doctrine](manager/less_is_more_ui_doctrine.md) — Core UI/UX law: Less is more. Surface only exceptions/mismatches, hide compliant states, highlight only what requires action.
+- [pk-network-outliner-sidebar-doctrine](manager/pk_network_outliner_sidebar_doctrine.md) — The PK Network Left Sidebar and Creation Modal is the permanent golden standard for folder structures, outliners, and taxonomy navigation.
+- [live-data-interaction-golden-standard](manager/live_data_interaction_golden_standard.md) — PK Network Golden Standard for zero-lag live data and drag-drop UX (optimistic UI, decoupled background persistence, throttled hover targets).
+- [authoritative-local-state-doctrine](manager/authoritative_local_state_doctrine.md) — Anti-continuous-resync: Local SQLite is authoritative persistent state (0ms load). Remote Google Drive scanning is strictly manual on-demand.
+- [drive-is-slave-mirror-doctrine](manager/drive_is_slave_mirror_doctrine.md) — Master-Slave Doctrine: Local SQLite on Disk D is sovereign Master; Google Drive is merely a slave mirror. Mutations occur locally first, pushing to Drive on command.
+- [tts-progress-and-escalation](tts-progress-and-escalation.md) — Provide English TTS work-progress updates and immediately vocalize blockers, errors, approvals, or required Manager actions.

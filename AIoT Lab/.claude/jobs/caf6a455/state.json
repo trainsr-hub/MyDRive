@@ -1,0 +1,32 @@
+{
+  "state": "done",
+  "detail": "(idle — send a prompt to start)",
+  "tempo": "idle",
+  "output": null,
+  "children": null,
+  "linkScanOffset": 0,
+  "template": "bg",
+  "respawnFlags": [
+    "--permission-mode",
+    "auto",
+    "--model",
+    "Faust-ST"
+  ],
+  "bgIsolation": "none",
+  "providerEnv": {
+    "ANTHROPIC_MODEL": "Faust-ST"
+  },
+  "interactiveLineage": true,
+  "intent": "",
+  "name": "clear-conversation",
+  "nameSource": "auto",
+  "sessionId": "caf6a455-840b-4b4e-b8f2-7ece9899d531",
+  "resumeSessionId": "caf6a455-840b-4b4e-b8f2-7ece9899d531",
+  "daemonShort": "caf6a455",
+  "cwd": "D:\\My Drive\\Blue AI",
+  "createdAt": "2026-10-12T09:08:56.516Z",
+  "updatedAt": "2026-10-12T10:09:59.336Z",
+  "firstTerminalAt": "2026-10-12T10:09:59.336Z",
+  "backend": "daemon",
+  "lastTerminalAt": "2026-10-12T10:09:59.336Z"
+}

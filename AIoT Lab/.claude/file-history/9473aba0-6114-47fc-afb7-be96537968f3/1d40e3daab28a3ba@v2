@@ -1,0 +1,308 @@
+// path: src/apps/golden-hour/mock/mockGachaData.ts
+
+import type { TicketType, GachaRarity, ElementalAttribute } from '../types';
+
+export interface RawDeckPack {
+  id: string;
+  Title: string;
+  Note: string;
+  Cards: number;                // Number of pulls per pack open
+  ticketType: TicketType;
+  ticketCost: number;
+  Cover: string;                // Static cover image / visual
+  Animation: string;            // Hover animated visual / effect
+  Button: string;               // Button trim styling / label
+  color: string;
+  borderColor: string;
+  bgGradient: string;
+  Unpack: string[];             // Drop table rules (e.g., "Babylonian Scepter ~ 1%", "Aether Residue ...")
+  Guarantee?: string[];         // Guaranteed slot drops
+}
+
+export interface ItemVisualMeta {
+  cover: string;                // Icon / cover image
+  background: string;           // Background card art / gradient
+  category: 'relic' | 'collectible' | 'energy-core';
+  rarity: GachaRarity;
+  description: string;
+  energyAttribute?: ElementalAttribute;
+  energyAmount?: number;
+}
+
+// =============================================================================
+// MOCK CARD PACKS DEFINITIONS (CardPacks Schema + Golden Hour Dimensions)
+// =============================================================================
+
+export const MOCK_DECKS: RawDeckPack[] = [
+  {
+    id: 'deck_celestial_empyrean',
+    Title: 'Celestial Empyrean Pack',
+    Note: 'Harmonic Lab • 432Hz Resonant Relics',
+    Cards: 5,
+    ticketType: 'angel-roll',
+    ticketCost: 1,
+    Cover: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80',
+    Animation: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80',
+    Button: '#ffd86b',
+    color: '#ffd86b',
+    borderColor: '#d4af37',
+    bgGradient: 'from-[#291e07] via-[#1a1424] to-[#120f18]',
+    Unpack: [
+      'Babylonian Star Scepter ~ 2%',
+      'Celestial Harmonica ~ 5%',
+      'Angelic Sine Vinyl ~ 15%',
+      'Aether Cyber Core 30...60 ~ 25%',
+      'Harmonic Resonance Catalyst ~ 20%',
+      'Celestial Stardust Residue', // remainder
+    ],
+    Guarantee: ['Angelic Sine Vinyl | Harmonic Resonance Catalyst'],
+  },
+  {
+    id: 'deck_solar_corona',
+    Title: 'Solar Corona Pack',
+    Note: 'Bio-Agrarian • Stellar Plasma Forged',
+    Cards: 4,
+    ticketType: 'solar-roll',
+    ticketCost: 1,
+    Cover: 'https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=500&auto=format&fit=crop&q=80',
+    Animation: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500&auto=format&fit=crop&q=80',
+    Button: '#f97316',
+    color: '#f97316',
+    borderColor: '#ea580c',
+    bgGradient: 'from-[#2c1305] via-[#1a1424] to-[#120f18]',
+    Unpack: [
+      'Sunforged Aegis ~ 2%',
+      'Solar Plasma Greatsword ~ 4%',
+      'Bio-Agrarian Battery ~ 20%',
+      'Solar Thermal Core 20...50 ~ 30%',
+      'Chlorophyll Matrix ~ 20%',
+      'Solar Ash Fragment', // remainder
+    ],
+    Guarantee: ['Solar Thermal Core 40...50'],
+  },
+  {
+    id: 'deck_void_codex',
+    Title: 'Void Codex Pack',
+    Note: 'Hazard Visualizer • Ancient Mesolithic Runes',
+    Cards: 3,
+    ticketType: 'codex-roll',
+    ticketCost: 1,
+    Cover: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop&q=80',
+    Animation: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80',
+    Button: '#38bdf8',
+    color: '#38bdf8',
+    borderColor: '#0284c7',
+    bgGradient: 'from-[#082f49] via-[#1a1424] to-[#120f18]',
+    Unpack: [
+      'Void Codex Prime ~ 2%',
+      'Enuma Elish Tablet Fragment ~ 8%',
+      'Voidbound Aegis ~ 10%',
+      'Void Kinetic Core 30...50 ~ 25%',
+      'Zero-Point Matrix Crystal ~ 25%',
+      'Abyssal Rune Dust', // remainder
+    ],
+    Guarantee: ['Zero-Point Matrix Crystal | Enuma Elish Tablet Fragment'],
+  },
+  {
+    id: 'deck_black_hole_genesis',
+    Title: 'Black Hole Genesis Pack',
+    Note: 'Singularity Forge • High-Density Tactical Relics',
+    Cards: 7,
+    ticketType: 'codex-roll',
+    ticketCost: 2,
+    Cover: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=500&auto=format&fit=crop&q=80',
+    Animation: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&auto=format&fit=crop&q=80',
+    Button: '#a855f7',
+    color: '#a855f7',
+    borderColor: '#9333ea',
+    bgGradient: 'from-[#3b0764] via-[#1a1424] to-[#120f18]',
+    Unpack: [
+      'Singularity Core Scepter ~ 3%',
+      'Chronos Hourglass ~ 6%',
+      'Event Horizon Aegis ~ 12%',
+      'Verdant Bio Core 40...80 ~ 20%',
+      'Void Kinetic Core 50...100 ~ 25%',
+      'Dark Matter Shard', // remainder
+    ],
+    Guarantee: ['Event Horizon Aegis | Singularity Core Scepter'],
+  },
+];
+
+// =============================================================================
+// MOCK ITEM METADATA & VISUAL ASSET MAPPINGS (Replaces Card_Cover.json)
+// =============================================================================
+
+export const MOCK_CARD_COVERS: Record<string, ItemVisualMeta> = {
+  // --- Relics ---
+  'Babylonian Star Scepter': {
+    cover: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #451a03 0%, #1e1302 50%, #000 100%)',
+    category: 'relic',
+    rarity: 'legendary',
+    description: 'Forged from the primordial core of Babylon. Bestows supreme cosmic authority with moderate agility drain.',
+  },
+  'Celestial Harmonica': {
+    cover: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #3b0764 0%, #180929 50%, #000 100%)',
+    category: 'relic',
+    rarity: 'epic',
+    description: 'Resonates with celestial sine waves, amplifying all tactical buffs.',
+  },
+  'Sunforged Aegis': {
+    cover: 'https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #431407 0%, #220902 50%, #000 100%)',
+    category: 'relic',
+    rarity: 'legendary',
+    description: 'Blazing defensive shield forged inside the solar plasma mantle.',
+  },
+  'Solar Plasma Greatsword': {
+    cover: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #3b0764 0%, #1f0b24 50%, #000 100%)',
+    category: 'relic',
+    rarity: 'epic',
+    description: 'Heavy plasma broadsword with immense kinetic damage.',
+  },
+  'Void Codex Prime': {
+    cover: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #082f49 0%, #031726 50%, #000 100%)',
+    category: 'relic',
+    rarity: 'legendary',
+    description: 'Ancient stone tablet inscribed with singularity equations.',
+  },
+  'Voidbound Aegis': {
+    cover: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #082f49 0%, #041b2c 50%, #000 100%)',
+    category: 'relic',
+    rarity: 'rare',
+    description: 'Absorbs hostile shockwaves and converts kinetic impact into shield charge.',
+  },
+  'Singularity Core Scepter': {
+    cover: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #451a03 0%, #200d02 50%, #000 100%)',
+    category: 'relic',
+    rarity: 'legendary',
+    description: 'Harnesses miniature gravitational wells to pull enemy trajectories off course.',
+  },
+  'Chronos Hourglass': {
+    cover: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #3b0764 0%, #1a082e 50%, #000 100%)',
+    category: 'relic',
+    rarity: 'epic',
+    description: 'Bends local time seconds to yield additional productive hours.',
+  },
+  'Event Horizon Aegis': {
+    cover: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #082f49 0%, #051a2e 50%, #000 100%)',
+    category: 'relic',
+    rarity: 'rare',
+    description: 'Curvature shield dissipating high-energy physical assaults.',
+  },
+
+  // --- Collectibles ---
+  'Angelic Sine Vinyl': {
+    cover: 'https://images.unsplash.com/photo-1539185441755-769473a23570?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #2e1065 0%, #170733 50%, #000 100%)',
+    category: 'collectible',
+    rarity: 'rare',
+    description: 'First pressing archival vinyl record containing pure harmonic frequencies.',
+  },
+  'Harmonic Resonance Catalyst': {
+    cover: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)',
+    category: 'collectible',
+    rarity: 'uncommon',
+    description: 'A tuned acoustic prism that vibrates whenever high quality music plays.',
+  },
+  'Bio-Agrarian Battery': {
+    cover: 'https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #14532d 0%, #052e16 50%, #000 100%)',
+    category: 'collectible',
+    rarity: 'rare',
+    description: 'A biological cell preserving harvested solar energy in chlorophyll matrix.',
+  },
+  'Chlorophyll Matrix': {
+    cover: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)',
+    category: 'collectible',
+    rarity: 'uncommon',
+    description: 'Dense crystalline structure grown in automated bio-farms.',
+  },
+  'Enuma Elish Tablet Fragment': {
+    cover: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #3b0764 0%, #1f0838 50%, #000 100%)',
+    category: 'collectible',
+    rarity: 'epic',
+    description: 'Ancient Babylonian creation epic inscribed in cuneiform clay.',
+  },
+  'Zero-Point Matrix Crystal': {
+    cover: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #082f49 0%, #031e33 50%, #000 100%)',
+    category: 'collectible',
+    rarity: 'rare',
+    description: 'Flawless refractive crystal that channels zero-point electromagnetic energy.',
+  },
+
+  // --- Energy Cores (IoT Fuel) ---
+  'Aether Cyber Core': {
+    cover: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #0369a1 0%, #082f49 50%, #000 100%)',
+    category: 'energy-core',
+    rarity: 'rare',
+    description: 'High-frequency cyber energy cell powering sensory telemetry.',
+    energyAttribute: 'aether',
+  },
+  'Solar Thermal Core': {
+    cover: 'https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #c2410c 0%, #431407 50%, #000 100%)',
+    category: 'energy-core',
+    rarity: 'rare',
+    description: 'Thermal core storing concentrated solar plasma.',
+    energyAttribute: 'solar',
+  },
+  'Void Kinetic Core': {
+    cover: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #7e22ce 0%, #3b0764 50%, #000 100%)',
+    category: 'energy-core',
+    rarity: 'rare',
+    description: 'Kinetic energy fuel condensed from dimensional voids.',
+    energyAttribute: 'void',
+  },
+  'Verdant Bio Core': {
+    cover: 'https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #15803d 0%, #052e16 50%, #000 100%)',
+    category: 'energy-core',
+    rarity: 'rare',
+    description: 'Biological nutrients fueling automated hydroponic hardware.',
+    energyAttribute: 'verdant',
+  },
+
+  // --- Common Residues ---
+  'Celestial Stardust Residue': {
+    cover: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)',
+    category: 'collectible',
+    rarity: 'common',
+    description: 'Fine cosmic stardust gathered from the periphery of harmonic gates.',
+  },
+  'Solar Ash Fragment': {
+    cover: 'https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)',
+    category: 'collectible',
+    rarity: 'common',
+    description: 'Cooling cinder particles harvested from the solar flare collector.',
+  },
+  'Abyssal Rune Dust': {
+    cover: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)',
+    category: 'collectible',
+    rarity: 'common',
+    description: 'Pulverized ancient rune stones with faint residual magnetic fields.',
+  },
+  'Dark Matter Shard': {
+    cover: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=200&auto=format&fit=crop&q=80',
+    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)',
+    category: 'collectible',
+    rarity: 'common',
+    description: 'Microscopic crystalline shard of compressed dark matter.',
+  },
+};

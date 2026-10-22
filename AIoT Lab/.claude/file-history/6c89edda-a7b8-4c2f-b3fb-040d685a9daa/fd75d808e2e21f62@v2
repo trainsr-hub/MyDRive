@@ -1,0 +1,194 @@
+import React, { useState } from 'react';
+import { MultiEntityPlan, EntityPlan } from '../types';
+import { EntitySidebar } from './EntitySidebar';
+import { EntityDetailView } from './EntityDetailView';
+import { Zap, Plus, X } from 'lucide-react';
+
+interface EntityWorkspaceProps {
+  plan: MultiEntityPlan;
+  onRefresh: () => void;
+  onExecutePlan: (customPlan?: any) => Promise<void>;
+  isExecuting: boolean;
+  addToast: (type: 'success' | 'error' | 'info', title: string, message?: string) => void;
+}
+
+export const EntityWorkspace: React.FC<EntityWorkspaceProps> = ({
+  plan,
+  onRefresh,
+  onExecutePlan,
+  isExecuting,
+  addToast,
+}) => {
+  // Collect all entities across all groups
+  const allEntities: { groupName: string; plan: EntityPlan }[] = [];
+  plan.groups.forEach((g) => {
+    g.entity_plans.forEach((ep) => {
+      allEntities.push({ groupName: g.group_name, plan: ep });
+    });
+  });
+
+  // Default selection to first entity
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(() => {
+    return allEntities.length > 0 ? allEntities[0].plan.target_root_id : null;
+  });
+
+  // Modal State for New Clone
+  const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
+  const [newCloneName, setNewCloneName] = useState('');
+  const [targetGroupId, setTargetGroupId] = useState(plan.groups[0]?.group_id || 'mock_grp_t01');
+  const [isSpawning, setIsSpawning] = useState(false);
+
+  // Find currently selected entity
+  const selectedEntity = allEntities.find((e) => e.plan.target_root_id === selectedEntityId) || allEntities[0];
+
+  // Calculate total exceptions across the entire workspace
+  const totalExceptionsCount = allEntities.reduce((acc, curr) => {
+    return acc + curr.plan.items.filter((i) => i.action_type !== 'MATCH').length;
+  }, 0);
+
+  // Sync specific entity
+  const handleSyncSingleEntity = async (singleEntityPlan: EntityPlan) => {
+    // Construct single-entity plan payload
+    const customPlan = {
+      ...plan,
+      groups: plan.groups.map((g) => ({
+        ...g,
+        entity_plans: g.entity_plans.filter((ep) => ep.target_root_id === singleEntityPlan.target_root_id),
+      })).filter((g) => g.entity_plans.length > 0),
+    };
+    await onExecutePlan(customPlan);
+  };
+
+  // Sync All
+  const handleSyncAll = async () => {
+    await onExecutePlan(plan);
+  };
+
+  // Spawn New Clone
+  const handleSpawnClone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCloneName.trim()) return;
+    setIsSpawning(true);
+    try {
+      const res = await fetch('/api/drive/clone_template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parent_id: targetGroupId,
+          clone_name: newCloneName.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to spawn clone');
+
+      addToast(
+        'success',
+        'Entity Clone Created!',
+        `Spawned '${newCloneName}' with ${data.total_folders_created} stamped subfolders`
+      );
+      setIsCloneModalOpen(false);
+      setNewCloneName('');
+      onRefresh();
+    } catch (err: any) {
+      addToast('error', 'Spawning Error', err.message);
+    } finally {
+      setIsSpawning(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        height: 'calc(100vh - 75px)',
+        margin: '-2rem -2rem', // Bleed edge-to-edge
+        overflow: 'hidden',
+        background: 'var(--bg-canvas)',
+      }}
+    >
+      {/* 1. Left Sidebar: Entities List */}
+      <EntitySidebar
+        groups={plan.groups}
+        selectedEntityId={selectedEntity?.plan.target_root_id || null}
+        onSelectEntity={setSelectedEntityId}
+        onOpenNewCloneModal={() => setIsCloneModalOpen(true)}
+        totalExceptionsCount={totalExceptionsCount}
+        onSyncAll={handleSyncAll}
+        isExecuting={isExecuting}
+      />
+
+      {/* 2. Right Panel: Selected Entity's Dedicated Space */}
+      {selectedEntity ? (
+        <EntityDetailView
+          entityPlan={selectedEntity.plan}
+          groupName={selectedEntity.groupName}
+          onSyncEntity={handleSyncSingleEntity}
+          isExecuting={isExecuting}
+        />
+      ) : (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
+          No entity selected. Click "+ New Clone" on the left to spawn one.
+        </div>
+      )}
+
+      {/* ================= MODAL: NEW CLONE FROM TEMPLATE ================= */}
+      {isCloneModalOpen && (
+        <div className="modal-backdrop">
+          <div className="modal-box" style={{ maxWidth: '440px' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 0.75rem 0' }}>
+              <Zap size={18} style={{ color: '#c084fc' }} />
+              Create New Entity from Template
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+              Creates a brand new sovereign entity folder, stamps all subfolders with archetype metadata, and establishes tracking.
+            </p>
+
+            <form onSubmit={handleSpawnClone} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '0.35rem' }}>
+                  New Entity Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="e.g. C25_Elena or Project_Orion..."
+                  value={newCloneName}
+                  onChange={(e) => setNewCloneName(e.target.value)}
+                  className="input-base"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '0.35rem' }}>
+                  Destination Group
+                </label>
+                <select
+                  value={targetGroupId}
+                  onChange={(e) => setTargetGroupId(e.target.value)}
+                  className="input-base"
+                  style={{ cursor: 'pointer' }}
+                >
+                  {plan.groups.map((g) => (
+                    <option key={g.group_id} value={g.group_id}>
+                      {g.group_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setIsCloneModalOpen(false)} className="btn subtle" disabled={isSpawning}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn primary" style={{ background: '#9333ea', borderColor: '#a855f7' }} disabled={isSpawning}>
+                  {isSpawning ? 'Spawning...' : 'Create Entity'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

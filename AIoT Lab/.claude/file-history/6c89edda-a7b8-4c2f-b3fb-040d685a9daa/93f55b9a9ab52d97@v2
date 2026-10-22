@@ -1,0 +1,318 @@
+import React, { useState } from 'react';
+import { EntityPlan, ActionItem } from '../types';
+import {
+  Folder,
+  ExternalLink,
+  Zap,
+  CheckCircle2,
+  ChevronRight,
+  ChevronDown,
+  FileEdit,
+  FolderPlus,
+  RefreshCw,
+  Trash2,
+  ShieldAlert,
+  ArrowRight,
+} from 'lucide-react';
+
+interface EntityFolderCardProps {
+  entityPlan: EntityPlan;
+  onFixEntity: (entityPlan: EntityPlan) => void;
+  isExecuting: boolean;
+}
+
+interface TreeNode {
+  item: ActionItem;
+  path: string;
+  name: string;
+  children: TreeNode[];
+}
+
+function buildEntityTree(items: ActionItem[]): TreeNode[] {
+  // Filter out the entity root itself (first 2 segments: Group / Entity)
+  const subItems = items.filter((i) => {
+    const parts = i.relative_path.split('/').filter(Boolean);
+    return parts.length > 2;
+  });
+
+  const nodeMap = new Map<string, TreeNode>();
+  const rootNodes: TreeNode[] = [];
+
+  // Sort by depth ascending so parents are processed before children
+  const sorted = [...subItems].sort(
+    (a, b) => a.relative_path.split('/').length - b.relative_path.split('/').length
+  );
+
+  for (const item of sorted) {
+    const parts = item.relative_path.split('/').filter(Boolean);
+    const node: TreeNode = {
+      item,
+      path: item.relative_path,
+      name: item.folder_name,
+      children: [],
+    };
+    nodeMap.set(item.relative_path, node);
+
+    const parentPath = parts.slice(0, -1).join('/');
+    const parentNode = nodeMap.get(parentPath);
+
+    if (parentNode) {
+      parentNode.children.push(node);
+    } else {
+      rootNodes.push(node);
+    }
+  }
+
+  return rootNodes;
+}
+
+export const EntityFolderCard: React.FC<EntityFolderCardProps> = ({
+  entityPlan,
+  onFixEntity,
+  isExecuting,
+}) => {
+  const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>({});
+
+  const toggleFolder = (path: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedPaths((prev) => ({
+      ...prev,
+      [path]: !prev[path],
+    }));
+  };
+
+  const tree = buildEntityTree(entityPlan.items);
+  const mismatches = entityPlan.items.filter((i) => i.action_type !== 'MATCH');
+  const hasMismatches = mismatches.length > 0;
+
+  const getStatusBadge = (item: ActionItem) => {
+    switch (item.action_type) {
+      case 'RENAME':
+        return (
+          <span className="badge badge-rename" style={{ fontSize: '10px', padding: '1px 6px' }}>
+            <FileEdit size={10} style={{ marginRight: '2px' }} /> Rename
+          </span>
+        );
+      case 'CREATE':
+        return (
+          <span className="badge badge-create" style={{ fontSize: '10px', padding: '1px 6px' }}>
+            <FolderPlus size={10} style={{ marginRight: '2px' }} /> Missing
+          </span>
+        );
+      case 'UPDATE_DESC':
+        return (
+          <span className="badge badge-update" style={{ fontSize: '10px', padding: '1px 6px' }}>
+            <RefreshCw size={10} style={{ marginRight: '2px' }} /> Metadata
+          </span>
+        );
+      case 'PRUNE_EMPTY':
+        return (
+          <span className="badge badge-prune" style={{ fontSize: '10px', padding: '1px 6px' }}>
+            <Trash2 size={10} style={{ marginRight: '2px' }} /> Unwanted
+          </span>
+        );
+      case 'FLAG_RED':
+        return (
+          <span className="badge badge-anomaly" style={{ fontSize: '10px', padding: '1px 6px' }}>
+            <ShieldAlert size={10} style={{ marginRight: '2px' }} /> Protected
+          </span>
+        );
+      case 'MATCH':
+      default:
+        return (
+          <span style={{ fontSize: '10.5px', color: 'var(--success)', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+            <CheckCircle2 size={11} /> In sync
+          </span>
+        );
+    }
+  };
+
+  const renderNode = (node: TreeNode, depth = 0) => {
+    const hasChildren = node.children.length > 0;
+    const isExpanded = !!expandedPaths[node.path];
+    const isMismatch = node.item.action_type !== 'MATCH';
+
+    return (
+      <React.Fragment key={node.path}>
+        <div
+          onClick={(e) => hasChildren && toggleFolder(node.path, e)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0.55rem 0.85rem',
+            paddingLeft: `${14 + depth * 22}px`,
+            borderBottom: '1px solid var(--border-table)',
+            background: isMismatch
+              ? node.item.action_type === 'FLAG_RED'
+                ? 'var(--danger-bg)'
+                : 'var(--bg-canvas)'
+              : 'transparent',
+            cursor: hasChildren ? 'pointer' : 'default',
+            transition: 'background 0.15s ease',
+          }}
+          className={hasChildren ? 'table-row-hover' : ''}
+        >
+          {/* Left: Caret + Folder Icon + Name */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', overflow: 'hidden' }}>
+            {hasChildren ? (
+              <span style={{ color: 'var(--text-dim)', display: 'inline-flex', alignItems: 'center' }}>
+                {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+              </span>
+            ) : (
+              <span style={{ width: 13, height: 13, display: 'inline-block' }} />
+            )}
+
+            <Folder
+              size={15}
+              style={{
+                color:
+                  node.item.action_type === 'RENAME'
+                    ? '#c084fc'
+                    : node.item.action_type === 'CREATE'
+                    ? 'var(--success)'
+                    : node.item.action_type === 'FLAG_RED'
+                    ? 'var(--danger)'
+                    : isMismatch
+                    ? 'var(--warning)'
+                    : 'var(--accent)',
+                flexShrink: 0,
+              }}
+            />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', overflow: 'hidden' }}>
+              {node.item.action_type === 'RENAME' ? (
+                <span style={{ fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <span style={{ textDecoration: 'line-through', opacity: 0.5 }}>{node.item.current_name}</span>
+                  <ArrowRight size={11} style={{ color: '#c084fc' }} />
+                  <span style={{ color: '#c084fc' }}>{node.item.folder_name}</span>
+                </span>
+              ) : (
+                <span
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: isMismatch ? 700 : 500,
+                    color: isMismatch ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {node.item.folder_name}
+                </span>
+              )}
+
+              {hasChildren && (
+                <span style={{ fontSize: '10.5px', color: 'var(--text-dim)', marginLeft: '0.2rem' }}>
+                  ({node.children.length})
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Status Badge & Target Link */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+            {getStatusBadge(node.item)}
+
+            {node.item.target_id && (
+              <a
+                href={`https://drive.google.com/drive/folders/${node.item.target_id}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: 'var(--text-dim)', padding: '2px' }}
+                title="Open in Google Drive"
+              >
+                <ExternalLink size={12} />
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Nested Subfolders Rendered Upon Clicking */}
+        {hasChildren && isExpanded && (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {node.children.map((child) => renderNode(child, depth + 1))}
+          </div>
+        )}
+      </React.Fragment>
+    );
+  };
+
+  return (
+    <div
+      className="card"
+      style={{
+        padding: '0',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        borderColor: hasMismatches ? 'rgba(245, 158, 11, 0.4)' : 'var(--border-light)',
+        background: 'var(--bg-card)',
+        boxShadow: hasMismatches ? '0 4px 16px rgba(0, 0, 0, 0.25)' : 'none',
+      }}
+    >
+      {/* Entity Header Bar */}
+      <div
+        style={{
+          padding: '0.85rem 1.15rem',
+          borderBottom: '1px solid var(--border-light)',
+          background: 'var(--bg-card-hover)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.5rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Folder size={17} style={{ color: hasMismatches ? 'var(--warning)' : 'var(--success)' }} />
+          <span style={{ fontWeight: 700, fontSize: '14.5px', color: 'var(--text-primary)' }}>
+            {entityPlan.target_root_name}
+          </span>
+          <a
+            href={`https://drive.google.com/drive/folders/${entityPlan.target_root_id}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: 'var(--text-dim)' }}
+            title="Open folder in Google Drive"
+          >
+            <ExternalLink size={13} />
+          </a>
+        </div>
+
+        {hasMismatches ? (
+          <button
+            onClick={() => onFixEntity(entityPlan)}
+            disabled={isExecuting}
+            className="btn primary"
+            style={{
+              padding: '0.3rem 0.75rem',
+              fontSize: '11.5px',
+              fontWeight: 700,
+              background: 'var(--warning)',
+              color: '#000',
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+            }}
+          >
+            <Zap size={12} /> Fix ({mismatches.length})
+          </button>
+        ) : (
+          <div style={{ fontSize: '11px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 700 }}>
+            <CheckCircle2 size={13} /> In Sync
+          </div>
+        )}
+      </div>
+
+      {/* Subfolders Tree List */}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {tree.length === 0 ? (
+          <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-dim)', fontSize: '12px' }}>
+            No subfolders
+          </div>
+        ) : (
+          tree.map((node) => renderNode(node, 0))
+        )}
+      </div>
+    </div>
+  );
+};

@@ -1,0 +1,24 @@
+@echo off
+setlocal enabledelayedexpansion
+
+echo [Rebased] Starting development stack...
+echo.
+
+:: Backend startup
+echo [1/2] Starting FastAPI backend on port 20140...
+cd /d "D:\My Drive\Blue AI\Rebased\backend"
+start "Rebased Backend" cmd /k "python -m uvicorn main:app --host 0.0.0.0 --port 20140 --reload"
+
+timeout /t 3 /nobreak
+
+:: Frontend startup
+echo [2/2] Starting Vite frontend on port 5173...
+cd /d "D:\My Drive\Blue AI\Rebased\frontend"
+start "Rebased Frontend" cmd /k "npm run dev"
+
+echo.
+echo [OK] Rebased development stack started!
+echo Backend: http://localhost:20140
+echo Frontend: http://localhost:5173
+echo.
+pause

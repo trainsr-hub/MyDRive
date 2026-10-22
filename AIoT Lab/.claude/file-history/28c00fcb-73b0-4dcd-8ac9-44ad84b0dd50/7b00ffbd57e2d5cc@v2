@@ -1,0 +1,195 @@
+// path: src/apps/dino-pomodoro/DinoPomodoro.tsx
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useGlobalStore } from '../../store/useGlobalStore';
+import { GameLayout } from '../../components/GameLayout';
+import { Timer, List, Sliders, Dna, Flame, Clock } from 'lucide-react';
+
+import { useDinoPomodoroStore } from './store/useDinoPomodoroStore';
+import { PomodoroTab } from './components/tabs/pomodoro/PomodoroTab';
+import { GalleryTab } from './components/tabs/gallery/GalleryTab';
+import { PomodoroSettingsTab } from './components/tabs/settings/PomodoroSettingsTab';
+import { Clean2HTab } from './components/tabs/clean2h/Clean2HTab';
+import { rutGonTime } from '../arc-jurassic/core/rutGonTime';
+import { calcDinoActiveStats } from '../arc-jurassic/core/evolutionEngine';
+
+// Authentic styles and animations from Arc Jurassic & Dino Pomodoro
+import '../arc-jurassic/styles/juraGlobal.css';
+import './styles/dinoPomodoro.css';
+
+// Re-use raw dinosaur data from arc-jurassic
+import dinoRawData from '../arc-jurassic/data/dino.json';
+import lookupRawData from '../arc-jurassic/data/lookup.json';
+
+export const DinoPomodoro: React.FC = () => {
+  const setActiveApp = useGlobalStore((s) => s.setActiveApp);
+  const [activeTab, setActiveTab] = useState<'pomodoro' | 'gallery' | 'settings' | 'clean2h'>('pomodoro');
+
+  const {
+    currentDino,
+    chancePercent,
+    timeCalc,
+    isRunning,
+    timeRemaining,
+    userProgress,
+    tick,
+    initializeOrRollDino,
+    syncWithBackend,
+  } = useDinoPomodoroStore();
+
+  // Convert raw dictionary to array
+  const dinoLibrary = useMemo(() => {
+    return Object.entries(dinoRawData).map(([key, val]: [string, any]) => ({
+      uuid: key,
+      ...val,
+    }));
+  }, []);
+
+  // Sync with backend on mount & initialize random dino
+  useEffect(() => {
+    syncWithBackend().then(() => {
+      initializeOrRollDino(dinoLibrary);
+    });
+  }, [syncWithBackend, initializeOrRollDino, dinoLibrary]);
+
+  // Keep library in ref to avoid stale closures
+  const libraryRef = useRef(dinoLibrary);
+  libraryRef.current = dinoLibrary;
+
+  // ── INTERVAL TIMER ENGINE (1Hz) ───────────────────────────
+  useEffect(() => {
+    let interval: any = null;
+    if (isRunning) {
+      interval = setInterval(() => {
+        tick();
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRunning, tick]);
+
+  // ── DYNAMIC DOCUMENT TITLE SYNCHRONIZATION ─────────────────
+  useEffect(() => {
+    const originalTitle = document.title;
+    let flashInterval: any = null;
+
+    if (currentDino) {
+      const name = currentDino.name || 'DINO';
+      const rank = timeCalc?.nextRank || 1;
+
+      if (timeRemaining <= 0) {
+        let flag = false;
+        document.title = `🦖 [READY TO CLAIM] ${name}! • Dino Pomodoro`;
+        flashInterval = setInterval(() => {
+          flag = !flag;
+          document.title = flag
+            ? `🦖 [READY TO CLAIM] ${name}! • Dino Pomodoro`
+            : `⚡ INCUBATION COMPLETE! • Dino Pomodoro`;
+        }, 1200);
+      } else if (isRunning) {
+        const formatted = rutGonTime(timeRemaining, 'seconds');
+        document.title = `[${formatted}] Incubating ${name} (EVO ${rank}) • Dino Pomodoro`;
+      } else {
+        const formatted = rutGonTime(timeRemaining, 'seconds');
+        document.title = `[${formatted}] ${name} • Dino Pomodoro`;
+      }
+    } else {
+      document.title = 'Dino Pomodoro • Universe 25';
+    }
+
+    return () => {
+      if (flashInterval) clearInterval(flashInterval);
+      document.title = originalTitle;
+    };
+  }, [isRunning, timeRemaining, currentDino, timeCalc]);
+
+  // Calculate owned species count & total active ferocity across all specimens
+  const { ownedSpeciesCount, totalActiveFerocity } = useMemo(() => {
+    const owned = userProgress.owned_dinos || {};
+    let totalFerocity = 0;
+    let count = 0;
+
+    for (const item of dinoLibrary) {
+      const uuid = item.uuid || item.id || item.name;
+      const userDino = owned[uuid];
+      if (userDino && Number(userDino.number) > 0) {
+        count++;
+        const stats = calcDinoActiveStats(item, Number(userDino.number));
+        totalFerocity += stats.ferocity || 0;
+      }
+    }
+
+    return {
+      ownedSpeciesCount: count,
+      totalActiveFerocity: totalFerocity,
+    };
+  }, [dinoLibrary, userProgress.owned_dinos]);
+
+  return (
+    <GameLayout
+      title="Dino Pomodoro"
+      gameTitleIcon={<Timer className="w-5 h-5 text-amber-400" />}
+      gameTitleBadge="FOCUS HATCHERY"
+      gameTitleSubtitle="Prehistoric Pomodoro Nexus • Focus to Unlock Dinosaurs"
+      showBackButton={true}
+      backButton="Golden Hour"
+      onBackClick={() => setActiveApp('golden-hour')}
+      headerRight={
+        <div className="flex items-center gap-3 text-xs font-mono flex-wrap">
+          {/* Total Active Menagerie Ferocity */}
+          <div className="flex items-center gap-2 bg-[#140e1f] px-3.5 py-1.5 rounded-xl border border-amber-500/40 text-xs font-mono font-bold text-amber-300 shadow-sm">
+            <Flame className="w-4 h-4 text-amber-400" />
+            <span>
+              {totalActiveFerocity.toLocaleString()} Total Ferocity
+            </span>
+          </div>
+
+          {/* Current Target Specimen & Chance */}
+          {currentDino && (
+            <div className="flex items-center gap-2 bg-[#140e1f] px-3.5 py-1.5 rounded-xl border border-amber-500/30 text-xs font-mono font-medium text-amber-200/90 shadow-sm">
+              <span>
+                {currentDino.name} ({chancePercent.toFixed(2)}%)
+              </span>
+            </div>
+          )}
+
+          {/* Unlocked Species in Roster */}
+          <div className="flex items-center gap-2 bg-[#140e1f] px-3.5 py-1.5 rounded-xl border border-emerald-500/40 text-xs font-mono font-bold text-emerald-300 shadow-sm">
+            <Dna className="w-4 h-4 text-emerald-400" />
+            <span>
+              {ownedSpeciesCount} / {dinoLibrary.length} Species
+            </span>
+          </div>
+        </div>
+      }
+      tabs={[
+        { id: 'pomodoro', label: 'Pomodoro', icon: <Timer className="w-4 h-4" /> },
+        { id: 'gallery', label: 'Gallery', icon: <List className="w-4 h-4" /> },
+        { id: 'settings', label: 'Setting', icon: <Sliders className="w-4 h-4" /> },
+        { id: 'clean2h', label: 'Clean 2H', icon: <Clock className="w-4 h-4" /> },
+      ]}
+      activeTab={activeTab}
+      onTabChange={(id) => setActiveTab(id as 'pomodoro' | 'gallery' | 'settings' | 'clean2h')}
+    >
+      {/* TAB 1: POMODORO */}
+      <div className={activeTab === 'pomodoro' ? 'block' : 'hidden'}>
+        <PomodoroTab dinoLibrary={dinoLibrary} />
+      </div>
+
+      {/* TAB 2: GALLERY */}
+      <div className={activeTab === 'gallery' ? 'block' : 'hidden'}>
+        <GalleryTab objects={dinoLibrary} lookup={lookupRawData} />
+      </div>
+
+      {/* TAB 3: SETTING */}
+      <div className={activeTab === 'settings' ? 'block' : 'hidden'}>
+        <PomodoroSettingsTab dinoLibrary={dinoLibrary} />
+      </div>
+
+      {/* TAB 4: CLEAN 2H POMODORO */}
+      <div className={activeTab === 'clean2h' ? 'block' : 'hidden'}>
+        <Clean2HTab />
+      </div>
+    </GameLayout>
+  );
+};

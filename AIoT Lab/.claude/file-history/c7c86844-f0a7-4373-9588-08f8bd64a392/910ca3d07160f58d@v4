@@ -1,0 +1,88 @@
+# Plan: Reverse Engineering Tab - Set-Difference Workflow Rebuild
+
+## Context
+The Manager wants to rebuild the Reverse Engineering tab with a clear **set-difference workflow**:
+1. Text area → paste "wild completed prompt" → `split(',')` + `strip()` → `wild_prompt_set`
+2. Load all existing component prompts → `components_set`
+3. Compute `filtered_set = wild_prompt_set - components_set` (set difference)
+4. Convert `filtered_set` back to a regular prompt string
+
+This replaces the current token-by-token decompiler with a cleaner set-based approach.
+
+## Current Architecture
+- `promptDecompiler.ts` - Token-level decompiler with fuzzy matching (exact/strong/partial/keyword)
+- `ReverseEngineeringView.tsx` - UI with matched sections grid, token map, unmatched tokens
+- Uses `sanitizeToken()`, `extractRawTokens()` from `promptDecompiler.ts`
+
+## Implementation Plan
+
+### 1. Update `promptDecompiler.ts` - Core Set-Difference Logic
+**New function: `decomposePromptWithSetDifference(prompt, folders, matrixDomains)`**
+- Accepts raw prompt string and component libraries
+- Returns structured result with:
+  - `wildPromptSet: string[]` - All stripped tokens from input
+  - `componentsSet: Map<string, string[]>` - Per-component-file token sets (key = relPath, value = token array)
+  - `matchedTokens: string[]` - Intersection (wild ∩ components)
+  - `unmatchedTokens: string[]` - Difference (wild - components)  
+  - `matchedComponents: Array<{relPath, matchedTokens, entry}>` - Which components matched what
+  - `reconstructedPrompt: string` - Unmatched tokens rejoined with commas
+
+**Reuse existing utilities:**
+- `sanitizeToken()` - Strip weights, parens, normalize
+- `extractRawTokens()` - Split on comma/newline/BREAK
+
+### 2. Rewrite `ReverseEngineeringView.tsx` - New UI
+**Three-panel layout:**
+
+**Panel A: Wild Prompt Input**
+- Textarea (expandable) + Paste/Load Studio buttons
+- Live token count display
+- "Components Database" stats badge (total components, total tokens)
+
+**Panel B: Matched Components Breakdown**
+- List of component files that contributed tokens
+- For each: file name, display name, count of matched tokens, confidence
+- Toggle to show/hide matched tokens per component
+- "Adopt to Studio" button per component (sets selection)
+
+**Panel C: Residual / Unmatched Tokens (The Difference)**
+- Clean token cloud of `filtered_set = wild - components`
+- "Copy Residual Prompt" button (ready for new component creation)
+- "Create New Component from Residual" button (opens OptionEditorModal with prefilled prompt)
+
+### 3. Component Prompt Extraction
+**New helper: `getAllComponentPromptTokens(folders, matrixDomains)`**
+- Returns `Map<string, {tokens: string[], entry: ComponentEntry, file: ComponentFileNode}>`
+- Key = file relPath
+- Pre-processes all component prompts into deduplicated token sets
+- Includes matrix domain base state prompts
+
+### 4. Set Difference Algorithm
+```
+wildTokens = extractRawTokens(prompt).map(sanitizeToken).map(t => t.clean)
+wildSet = new Set(wildTokens)
+
+componentTokensMap = buildComponentTokensMap(folders, matrixDomains)
+allComponentTokens = new Set(componentTokensMap.flatMap(v => v.tokens))
+
+matched = wildTokens.filter(t => allComponentTokens.has(t))
+unmatched = wildTokens.filter(t => !allComponentTokens.has(t))
+filteredPrompt = unmatched.join(', ')
+```
+
+### 5. Quick Actions
+- **Copy Residual** → clipboard filtered prompt
+- **Create Component** → opens modal with residual prefilled
+- **Adopt Matched** → applies matched component selections to studio state
+
+## Files to Modify
+1. `src/utils/promptDecompiler.ts` - Add set-difference function + component token extractor
+2. `src/app/components/ReverseEngineeringView.tsx` - Rewrite UI to three-panel workflow
+3. Keep existing `sanitizeToken`, `extractRawTokens` as shared utilities
+
+## Verification
+1. `npm run build` → 0 errors
+2. Paste prompt with known components → see matched breakdown
+3. Residual shows only truly novel tokens
+4. Adopt buttons set studio selections correctly
+4. Create Component from residual works

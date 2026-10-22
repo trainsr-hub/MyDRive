@@ -1,0 +1,188 @@
+/* path: src/apps/heraclitus/animations/twoPhaseStyles.css */
+/* Tier 4: Transport/UI — Shared CSS keyframes and theme variables */
+
+/* ========================================================================== */
+/* TWO-PHASE KINETIC ANIMATION KEYFRAMES                                      */
+/* Canonical paradigm: Phase 1 (Spool/Charge) → Phase 2 (Shatter/Dissolve)   */
+/* Extracted from System Design Sandbox / Animations / Accumulating / 2 Phases */
+/* ========================================================================== */
+
+/* --- Phase 1: Spool/Charge --- */
+
+/* Non-linear spool progression: Math.pow(t, 1.3) */
+@keyframes tp-spool-progress {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.2); }
+}
+
+/* Screen shake during spool */
+@keyframes tp-spool-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(2px, 2px) rotate(1deg); }
+  50% { transform: translate(-2px, -2px) rotate(-1deg); }
+  75% { transform: translate(2px, -2px) rotate(1deg); }
+}
+
+/* Inward lightning arcs (conceptual - implemented via JS) */
+@keyframes tp-spool-lightning-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+/* Core compression/expansion */
+@keyframes tp-spool-core-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* --- Phase 2: Shatter/Dissolve --- */
+
+/* Shockwave explosion */
+@keyframes tp-shockwave-expand {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(20);
+    opacity: 0;
+  }
+}
+
+/* Binary/Voxel/Particle stream ingestion */
+@keyframes tp-ingest-stream {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tp-target-x, 0px), var(--tp-target-y, 0px)) scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* Smooth sink dissolve: cubic-bezier(0.22, 1, 0.36, 1) downward fade */
+@keyframes tp-smooth-sink-fade {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.05);
+    filter: drop-shadow(0 0 20px var(--tp-text-glow));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 24px) scale(0.95);
+    filter: drop-shadow(0 0 2px var(--tp-text-glow));
+  }
+}
+
+/* Particle/fragment burst */
+@keyframes tp-particle-burst {
+  0% {
+    transform: translate(0, 0) scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(var(--tp-burst-x, 0px), var(--tp-burst-y, 0px)) scale(1) rotate(180deg);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--tp-burst-x, 0px), var(--tp-burst-y, 0px)) scale(0) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* --- Theme-Specific Variations --- */
+
+/* Chrono Spool (Thermal Blast) */
+.tp-theme-chrono {
+  --tp-primary: #fbbf24;
+  --tp-secondary: #f97316;
+  --tp-glow: rgba(251, 191, 36, 0.7);
+  --tp-particle-a: #facc15;
+  --tp-particle-b: #38bdf8;
+  --tp-text: #fef08a;
+  --tp-text-glow: rgba(254, 240, 138, 0.8);
+}
+
+/* Prism Crystal (Hexagonal Fracture) */
+.tp-theme-prism {
+  --tp-primary: #c084fc;
+  --tp-secondary: #d946ef;
+  --tp-glow: rgba(192, 132, 252, 0.7);
+  --tp-particle-a: #e879f9;
+  --tp-particle-b: #38bdf8;
+  --tp-text: #f5d0fe;
+  --tp-text-glow: rgba(216, 180, 254, 0.8);
+}
+
+/* Cyber Voxel (Isometric Defrag) */
+.tp-theme-cyber {
+  --tp-primary: #00f0ff;
+  --tp-secondary: #06b6d4;
+  --tp-glow: rgba(0, 240, 255, 0.7);
+  --tp-particle-a: #5eead4;
+  --tp-particle-b: #22d3ee;
+  --tp-text: #5eead4;
+  --tp-text-glow: rgba(94, 234, 212, 0.8);
+}
+
+/* Supernova Collapse (Stellar Flare) */
+.tp-theme-supernova {
+  --tp-primary: #fb923c;
+  --tp-secondary: #f97316;
+  --tp-glow: rgba(251, 146, 60, 0.8);
+  --tp-particle-a: #ffd700;
+  --tp-particle-b: #ffffff;
+  --tp-text: #fff7ed;
+  --tp-text-glow: rgba(255, 247, 237, 0.9);
+}
+
+/* --- Utility Classes --- */
+
+/* Container for animated elements */
+.tp-animate {
+  position: relative;
+  overflow: visible;
+  will-change: transform, opacity;
+}
+
+/* Animated element base */
+.tp-animated-element {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* Phase state modifiers */
+.tp-phase-spooling { animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+.tp-phase-shattering { animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+.tp-phase-dissolving { animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .tp-animate,
+  .tp-animated-element {
+    animation-duration: 0.001s !important;
+    transition-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    background-image: none !important;
+  }
+}
+
+/* --- Component-Specific Overrides (extended in heraclitusAnimations.css) --- */
+
+/* Button spool effect */
+.tp-button-spool {
+  transform-origin: center;
+}
+
+/* Result panel dissolve-in */
+.tp-panel-dissolve-in {
+  animation: tp-smooth-sink-fade var(--tp-dissolve-duration, 1000ms) forwards;
+}
+
+/* Vault absorb pulse */
+.tp-vault-absorb {
+  animation: tp-spool-core-pulse 150ms ease-in-out 2;
+}

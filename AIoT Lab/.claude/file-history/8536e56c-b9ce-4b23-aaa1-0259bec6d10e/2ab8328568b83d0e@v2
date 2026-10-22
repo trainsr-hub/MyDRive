@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Celestial Nexus · Astral Rune Accumulator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #020208; font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #f1f5f9; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+.hud {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 24px; z-index: 10;
+}
+.header { text-align: center; }
+.sub-title { font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: #c084fc; font-weight: 700; margin-bottom: 4px; }
+.main-title { font-size: 20px; font-weight: 800; letter-spacing: .12em; color: #faf5ff; text-shadow: 0 0 20px rgba(192,132,252,0.5); }
+.ascension-badge {
+  position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none;
+}
+.tier-text { font-size: 13px; letter-spacing: .25em; text-transform: uppercase; color: #e9d5ff; font-weight: 700; }
+.tier-resonance { font-size: 26px; font-weight: 900; font-family: monospace; color: #f3e8ff; text-shadow: 0 0 16px rgba(192,132,252,0.8); }
+.controls { pointer-events: auto; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+.btn {
+  min-height: 52px; padding: 0 24px; background: rgba(18, 12, 33, 0.85);
+  border: 1.5px solid rgba(192,132,252,0.35); border-radius: 12px; color: #e9d5ff;
+  font-size: 12px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase;
+  cursor: pointer; transition: all .15s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:hover { background: #2e1a53; border-color: #d8b4fe; color: #fff; box-shadow: 0 0 24px rgba(192,132,252,0.45); transform: translateY(-2px); }
+.btn:active { transform: translateY(1px); }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="header">
+    <div class="sub-title">Sacred Geometric Grid</div>
+    <div class="main-title">Celestial Nexus & Rune Weave</div>
+  </div>
+  <div class="ascension-badge">
+    <span class="tier-text" id="tierName">Ascension Tier I</span>
+    <span class="tier-resonance" id="resonanceVal">0 / 7 Synced</span>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="chargeNextStar()">⭐ Attune Next Star</button>
+    <button class="btn" onclick="fireStellarCascade()">✨ Stellar Cascade</button>
+    <button class="btn" onclick="triggerAlignment()">🔯 Zodiac Alignment</button>
+    <button class="btn" onclick="resetConstellation()">🔄 Recalibrate</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const resonanceValEl = document.getElementById('resonanceVal'), tierNameEl = document.getElementById('tierName');
+let W, H, cx, cy, stars = [], pulses = [], tier = 1, audioCtx = null;
+const STAR_COUNT = 7, PENTATONIC = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66];
+
+function playChime(freq) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.12, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.6);
+  } catch(e) {}
+}
+
+function resize() {
+  W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight;
+  cx = W / 2; cy = H / 2; initStars();
+}
+function initStars() {
+  stars = []; const radius = Math.min(W, H) * 0.32;
+  for (let i = 0; i < STAR_COUNT; i++) {
+    const angle = (i / STAR_COUNT) * Math.PI * 2 - Math.PI / 2;
+    stars.push({ x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius, charge: 0, targetCharge: 0, freq: PENTATONIC[i] });
+  }
+}
+window.addEventListener('resize', resize);
+resize();
+
+function chargeNextStar() {
+  const s = stars.find(node => node.targetCharge < 1);
+  if (s) { s.targetCharge = 1; sendPulse(cx, cy, s.x, s.y, '#c084fc'); playChime(s.freq); }
+  else triggerAlignment();
+}
+
+function fireStellarCascade() {
+  stars.forEach((s, idx) => {
+    s.targetCharge = 1;
+    setTimeout(() => { sendPulse(cx, cy, s.x, s.y, '#f472b6'); playChime(s.freq); }, idx * 90);
+  });
+}
+
+function triggerAlignment() {
+  tier++; tierNameEl.textContent = `Ascension Tier ${tier}`;
+  stars.forEach(s => { s.targetCharge = 0; s.charge = 0; sendPulse(s.x, s.y, cx, cy, '#38bdf8'); });
+  playChime(1318.51);
+}
+
+function resetConstellation() {
+  stars.forEach(s => { s.targetCharge = 0; s.charge = 0; });
+  resonanceValEl.textContent = '0 / 7 Synced';
+}
+
+function sendPulse(x1, y1, x2, y2, color) { pulses.push({ x1, y1, x2, y2, progress: 0, color, speed: 0.04 }); }
+
+function draw() {
+  ctx.fillStyle = 'rgba(2, 2, 8, 0.25)'; ctx.fillRect(0, 0, W, H);
+  ctx.lineWidth = 1.2;
+  for (let i = 0; i < stars.length; i++) {
+    for (let j = i + 1; j < stars.length; j++) {
+      const a = stars[i], b = stars[j], avg = (a.charge + b.charge) / 2;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = `rgba(192, 132, 252, ${0.12 + avg * 0.45})`;
+      ctx.shadowBlur = avg > 0.8 ? 8 : 0; ctx.shadowColor = '#c084fc'; ctx.stroke();
+    }
+  }
+
+  const time = Date.now() * 0.002;
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, 26 + Math.sin(time * 2) * 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#faf5ff'; ctx.shadowColor = '#c084fc'; ctx.shadowBlur = 24; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, 48, time, time + Math.PI * 1.5);
+  ctx.strokeStyle = 'rgba(216, 180, 254, 0.5)'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+
+  for (let i = pulses.length - 1; i >= 0; i--) {
+    const p = pulses[i]; p.progress += p.speed;
+    const px = p.x1 + (p.x2 - p.x1) * p.progress, py = p.y1 + (p.y2 - p.y1) * p.progress;
+    ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2);
+    ctx.fillStyle = p.color; ctx.shadowColor = p.color; ctx.shadowBlur = 12; ctx.fill();
+    if (p.progress >= 1) pulses.splice(i, 1);
+  }
+
+  let synced = 0;
+  for (const s of stars) {
+    s.charge += (s.targetCharge - s.charge) * 0.08;
+    if (s.charge > 0.95) synced++;
+    ctx.save(); ctx.beginPath(); ctx.arc(s.x, s.y, 10 + s.charge * 6, 0, Math.PI * 2);
+    ctx.fillStyle = s.charge > 0.5 ? '#f5d0fe' : '#6b21a8';
+    ctx.shadowColor = s.charge > 0.5 ? '#d946ef' : '#7e22ce'; ctx.shadowBlur = 10 + s.charge * 18; ctx.fill();
+    ctx.beginPath(); ctx.arc(s.x, s.y, 22, 0, Math.PI * 2 * s.charge);
+    ctx.strokeStyle = '#e879f9'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
+  }
+
+  resonanceValEl.textContent = `${synced} / 7 Synced`;
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+import sqlite3
+from pathlib import Path
+
+app_data = Path(r"D:\My Drive\SandBox Projetcs\backend\data\projects\music_app\app_data")
+t1_path = app_data / "_1_static.db"
+
+with sqlite3.connect(t1_path) as c1:
+    cur = c1.cursor()
+    cur.execute("SELECT DISTINCT channel_name, count(*) FROM layer1_static WHERE lower(channel_name) LIKE '%xomu%' OR lower(channel_name) LIKE '%fatrat%' GROUP BY channel_name")
+    rows = cur.fetchall()
+    print("Found matching channels:")
+    for r in rows:
+        print(f"  Channel: '{r[0]}' -> {r[1]} songs")

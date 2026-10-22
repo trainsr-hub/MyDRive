@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Colab GPU Avatar Studio</title>
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <style>
+    /* Theme Tokens & Design Doctrine */
+    :root {
+      --bg: #0f1115;
+      --surface: #181b21;
+      --surface-hover: #222630;
+      --surface-active: #2a303c;
+      --border: #2d333f;
+      --text: #f0f3f6;
+      --text-secondary: #9da7b7;
+      --text-tertiary: #6b7586;
+      --accent: #f97316;
+      --accent-hover: #ea580c;
+      --accent-surface: rgba(249, 115, 22, 0.12);
+      --success: #22c55e;
+      --success-surface: rgba(34, 197, 94, 0.12);
+      --warning: #eab308;
+      --warning-surface: rgba(234, 179, 8, 0.12);
+      --error: #ef4444;
+      --error-surface: rgba(239, 68, 68, 0.12);
+      --code-bg: #111318;
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      padding-left: max(16px, env(safe-area-inset-left, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px));
+      padding-block: 1.5rem;
+    }
+
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-group h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo-group p {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    .telemetry-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.85rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+    }
+
+    .badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-tertiary);
+    }
+
+    .badge .dot.online {
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    .badge .dot.warning {
+      background: var(--warning);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.15); }
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+
+    .tab-btn {
+      padding: 0.6rem 1.1rem;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      background: var(--accent-surface);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Layout Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+      font-size: 0.875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Form Inputs */
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .label-hint {
+      font-size: 0.775rem;
+      color: var(--text-tertiary);
+      font-weight: normal;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.875rem;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-surface);
+    }
+
+    /* Sliders */
+    .slider-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (min-width: 640px) {
+      .slider-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    .range-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .slider-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: monospace;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.8rem 1.5rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.925rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-height: 48px;
+    }
+
+    .btn:hover { background: var(--accent-hover); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-success { background: var(--success); }
+    .btn-success:hover { background: #16a34a; }
+
+    .btn-secondary {
+      background: var(--surface-hover);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover { background: var(--surface-active); }
+
+    /* Progress & Live Telemetry */
+    .progress-bar-wrap {
+      width: 100%;
+      height: 10px;
+      background: var(--code-bg);
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 1rem 0;
+      border: 1px solid var(--border);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), #fbbf24);
+      transition: width 0.3s ease;
+    }
+
+    .live-status-box {
+      padding: 1rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.825rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .terminal-feed {
+      height: 220px;
+      overflow-y: auto;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8125rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      line-height: 1.6;
+    }
+
+    .terminal-line { margin-bottom: 0.25rem; }
+    .terminal-line.error { color: var(--error); }
+    .terminal-line.success { color: var(--success); }
+    .terminal-line.warn { color: var(--warning); }
+
+    /* Alerts */
+    .notice {
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .notice.info { background: var(--accent-surface); border: 1px solid var(--accent); }
+    .notice.warn { background: var(--warning-surface); border: 1px solid var(--warning); }
+    .notice.success { background: var(--success-surface); border: 1px solid var(--success); }
+
+    .notice code {
+      background: rgba(0,0,0,0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Top Navigation & Global Telemetry -->
+  <header>
+    <div class="logo-group">
+      <h1>⚡ Colab GPU Avatar Studio</h1>
+      <p>High-Throughput Deep Learning Face Detection & Automatic Framing</p>
+    </div>
+    <div class="telemetry-badges">
+      <div class="badge" id="gpuBadge">
+        <span class="dot" id="gpuDot"></span>
+        <span id="gpuStatusText">Colab GPU: Connecting...</span>
+      </div>
+      <div class="badge" id="backendBadge">
+        <span class="dot online"></span>
+        <span>Local C2: 127.0.0.1:8000</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('studio')">🎨 Avatar Studio</button>
+    <button class="tab-btn" onclick="switchTab('terminal')">⚡ Python Code Terminal</button>
+    <button class="tab-btn" onclick="switchTab('config')">⚙️ Colab Tunnel & Credentials</button>
+  </div>
+
+  <!-- TAB 1: AVATAR STUDIO -->
+  <div id="tab-studio">
+    <!-- GPU Warning Banner when Offline -->
+    <div id="gpuWarningNotice" class="notice warn" style="display:none;">
+      <span>⚠️</span>
+      <div>
+        <strong>Colab GPU Worker Not Connected Yet</strong><br>
+        Open your Colab notebook (<a href="https://colab.research.google.com/drive/1iYIe9pNcGO3nFYX2BOVtrLCJoF37PzP6" target="_blank" style="color:var(--accent); text-decoration:underline;">Click Here</a>) and execute <strong>Cell 0 & Cell 1</strong>. The worker will spin up on Tesla T4/A100 and pair with this dashboard automatically!
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span>Deep Learning Model Configuration</span>
+        <span id="modelTag" style="font-size: 0.75rem; color: var(--accent);">Model: anime-face-detector (YOLOv3 + HRNetV2)</span>
+      </div>
+
+      <div class="form-group">
+        <label for="folderUrl">
+          <span>Google Drive Folder URL (Character Images)</span>
+          <span class="label-hint">Must be shared or accessible via link</span>
+        </label>
+        <input type="text" id="folderUrl" value="https://drive.google.com/drive/folders/1v_dJrlDve97sNU_bIM1a7kl7zHLRhaLy?usp=drive_link" placeholder="https://drive.google.com/drive/folders/...">
+      </div>
+
+      <div class="slider-row">
+        <div class="range-wrap">
+          <label for="zoomSlider">
+            <span>Crop Zoom Factor</span>
+            <span class="slider-val" id="zoomVal">1.6x</span>
+          </label>
+          <input type="range" id="zoomSlider" min="1.0" max="2.4" step="0.1" value="1.6" oninput="document.getElementById('zoomVal').textContent = this.value + 'x'">
+          <div class="label-hint">1.0x = Tight face crop · 1.6x = Standard portrait · 2.2x = Bust crop</div>
+        </div>
+
+        <div class="range-wrap">
+          <label for="threshSlider">
+            <span>Detection Confidence Threshold</span>
+            <span class="slider-val" id="threshVal">0.50</span>
+          </label>
+          <input type="range" id="threshSlider" min="0.30" max="0.90" step="0.05" value="0.50" oninput="document.getElementById('threshVal').textContent = parseFloat(this.value).toFixed(2)">
+          <div class="label-hint">Lower = Catches stylized / occluded faces · Higher = Strict</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-top: 1.5rem;">
+        <button class="btn" id="runCropBtn" onclick="startGpuCrop()">
+          <span id="btnIcon">🚀</span>
+          <span id="btnText">Execute GPU Detection & Crop</span>
+        </button>
+        <button class="btn btn-secondary" onclick="checkGpuStatus(true)">Refresh GPU Status</button>
+      </div>
+    </div>
+
+    <!-- Live Telemetry Card -->
+    <div class="card" id="telemetryCard" style="display:none;">
+      <div class="card-header">
+        <span>Execution Telemetry & Progress</span>
+        <span id="activeJobStatus" style="color:var(--accent);">Processing</span>
+      </div>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="live-status-box">
+        <div><strong>Status:</strong> <span id="telemetryStatus">Idle</span></div>
+        <div><strong>Active File:</strong> <span id="telemetryFile">-</span></div>
+        <div><strong>Processed:</strong> <span id="telemetryCount">0 / 0</span></div>
+      </div>
+
+      <!-- Finished Result Download -->
+      <div id="downloadBox" style="margin-top: 1.25rem; display:none;" class="notice success">
+        <span>🎉</span>
+        <div style="flex:1;">
+          <strong>Avatars Finished & Packaged!</strong><br>
+          <span id="downloadSummary">Cropped avatars are ready for download.</span>
+          <div style="margin-top:0.75rem;">
+            <a href="/api/v1/gpu/download-result" class="btn btn-success" style="text-decoration:none; display:inline-flex;">
+              📥 Download Finished Avatars (.zip)
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: GENERAL CODE TERMINAL -->
+  <div id="tab-terminal" style="display:none;">
+    <div class="card">
+      <div class="card-header">Ad-hoc Python Execution</div>
+      <div class="form-group">
+        <label for="codeInput">Python Code</label>
+        <textarea id="codeInput" rows="8" style="font-family:monospace;" placeholder="# Execute arbitrary Python in Colab environment...
+import torch
+print('CUDA Available:', torch.cuda.is_available())
+if torch.cuda.is_available():
+    print('Device Name:', torch.cuda.get_device_name(0))"></textarea>
+      </div>
+      <div style="display:flex; gap:0.75rem;">
+        <button class="btn" onclick="executeAdHocCode()">Run Code</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('terminalOutput').textContent = ''">Clear</button>
+      </div>
+      <div style="margin-top:1.25rem;">
+        <label>Execution Output</label>
+        <div class="terminal-feed" id="terminalOutput"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: CONFIGURATION -->
+  <div id="tab-config" style="display:none;">
+    <div class="card">
+      <div class="card-header">Google Colab & Cloudflare Tunnel Settings</div>
+
+      <div class="notice info">
+        <span>ℹ️</span>
+        <div>
+          <strong>Automatic Sync Active</strong>: When you run Cell 1 in Colab, the tunnel URL is automatically written to Google Drive and synced to <code>colab_tunnel_url.txt</code>. You rarely need to enter it manually.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="tunnelInput">Cloudflare Tunnel URL</label>
+        <input type="text" id="tunnelInput" placeholder="https://xxxx-xxxx.trycloudflare.com">
+      </div>
+
+      <div style="display:flex; gap:0.75rem;">
+        <button class="btn btn-secondary" onclick="saveManualTunnel()">Save & Pair Tunnel</button>
+        <a href="https://colab.research.google.com/drive/1iYIe9pNcGO3nFYX2BOVtrLCJoF37PzP6" target="_blank" class="btn" style="text-decoration:none;">
+          ↗️ Open Colab Notebook
+        </a>
+      </div>
+
+      <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.25rem;">
+        <label>Service Account Email</label>
+        <input type="text" readonly value="trainjr@affable-doodad-461713-f6.iam.gserviceaccount.com" style="cursor:text; user-select:all;">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.location.protocol === 'file:'
+  ? 'http://127.0.0.1:8000/api/v1'
+  : window.location.origin + '/api/v1';
+
+let gpuOnline = false;
+let pollingTimer = null;
+
+// Tab switcher
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  document.getElementById('tab-studio').style.display = tabId === 'studio' ? 'block' : 'none';
+  document.getElementById('tab-terminal').style.display = tabId === 'terminal' ? 'block' : 'none';
+  document.getElementById('tab-config').style.display = tabId === 'config' ? 'block' : 'none';
+}
+
+// Check remote GPU compute node health
+async function checkGpuStatus(manual = false) {
+  const gpuBadge = document.getElementById('gpuBadge');
+  const gpuDot = document.getElementById('gpuDot');
+  const gpuStatusText = document.getElementById('gpuStatusText');
+  const warnNotice = document.getElementById('gpuWarningNotice');
+  const runBtn = document.getElementById('runCropBtn');
+
+  try {
+    const res = await fetch(`${API_BASE}/gpu/status`);
+    const data = await res.json();
+
+    if (data.connected) {
+      gpuOnline = true;
+      gpuDot.className = 'dot online';
+      gpuStatusText.textContent = `Colab GPU: ${data.gpu_name || 'Tesla T4'} (Online)`;
+      warnNotice.style.display = 'none';
+      runBtn.disabled = false;
+      if (data.tunnel_url) {
+        document.getElementById('tunnelInput').value = data.tunnel_url;
+      }
+    } else {
+      gpuOnline = false;
+      gpuDot.className = 'dot warning';
+      gpuStatusText.textContent = 'Colab GPU: Offline';
+      warnNotice.style.display = 'flex';
+      runBtn.disabled = true;
+      if (manual) {
+        alert(data.message || 'Colab GPU worker not reachable.');
+      }
+    }
+  } catch (err) {
+    gpuOnline = false;
+    gpuDot.className = 'dot';
+    gpuStatusText.textContent = 'Colab GPU: Offline';
+    warnNotice.style.display = 'flex';
+    runBtn.disabled = true;
+  }
+}
+
+// Start GPU Avatar Cropping Pipeline
+async function startGpuCrop() {
+  const folderUrl = document.getElementById('folderUrl').value.trim();
+  const zoomFactor = parseFloat(document.getElementById('zoomSlider').value);
+  const scoreThresh = parseFloat(document.getElementById('threshSlider').value);
+
+  if (!folderUrl) {
+    alert('Please provide a Google Drive folder link containing character images.');
+    return;
+  }
+
+  const runBtn = document.getElementById('runCropBtn');
+  const btnIcon = document.getElementById('btnIcon');
+  const btnText = document.getElementById('btnText');
+
+  runBtn.disabled = true;
+  btnIcon.innerHTML = '<span class="spinner"></span>';
+  btnText.textContent = 'Initiating GPU Compute...';
+
+  document.getElementById('telemetryCard').style.display = 'block';
+  document.getElementById('downloadBox').style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_BASE}/gpu/crop-folder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        folder_url: folderUrl,
+        zoom_factor: zoomFactor,
+        score_thresh: scoreThresh
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      startJobPolling();
+    } else {
+      alert(`Error starting job: ${data.detail || 'Unknown error'}`);
+      resetRunButton();
+    }
+  } catch (err) {
+    alert(`Network error communicating with local backend: ${err.message}`);
+    resetRunButton();
+  }
+}
+
+// Poll Job Status in Realtime
+function startJobPolling() {
+  if (pollingTimer) clearInterval(pollingTimer);
+
+  pollingTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/gpu/job-status`);
+      const job = await res.json();
+
+      const fill = document.getElementById('progressFill');
+      const statusSpan = document.getElementById('telemetryStatus');
+      const fileSpan = document.getElementById('telemetryFile');
+      const countSpan = document.getElementById('telemetryCount');
+      const activeStatus = document.getElementById('activeJobStatus');
+
+      statusSpan.textContent = job.status.toUpperCase();
+      fileSpan.textContent = job.current_file || '-';
+      activeStatus.textContent = job.status.toUpperCase();
+
+      if (job.total > 0) {
+        const pct = Math.round((job.processed / job.total) * 100);
+        fill.style.width = pct + '%';
+        countSpan.textContent = `${job.processed} / ${job.total} (${pct}%)`;
+      }
+
+      if (job.status === 'completed') {
+        clearInterval(pollingTimer);
+        fill.style.width = '100%';
+        resetRunButton();
+        document.getElementById('downloadBox').style.display = 'flex';
+        document.getElementById('downloadSummary').textContent = `Total Avatars Generated: ${job.total_avatars || 0}`;
+      } else if (job.status === 'error') {
+        clearInterval(pollingTimer);
+        resetRunButton();
+        alert(`Colab Pipeline Error: ${job.error}`);
+      }
+    } catch (err) {
+      console.warn('Polling error:', err);
+    }
+  }, 1000);
+}
+
+function resetRunButton() {
+  const runBtn = document.getElementById('runCropBtn');
+  document.getElementById('btnIcon').textContent = '🚀';
+  document.getElementById('btnText').textContent = 'Execute GPU Detection & Crop';
+  runBtn.disabled = !gpuOnline;
+}
+
+// Save manual tunnel URL
+async function saveManualTunnel() {
+  const url = document.getElementById('tunnelInput').value.trim();
+  if (!url) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/gpu/set-tunnel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tunnel_url: url })
+    });
+    if (res.ok) {
+      await checkGpuStatus(true);
+    }
+  } catch (err) {
+    alert('Failed to set tunnel: ' + err.message);
+  }
+}
+
+// Ad-hoc execution
+async function executeAdHocCode() {
+  const code = document.getElementById('codeInput').value.trim();
+  if (!code) return;
+
+  const output = document.getElementById('terminalOutput');
+  output.textContent = 'Executing...\n';
+
+  try {
+    const res = await fetch(`${API_BASE}/execute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, timeout_seconds: 60 })
+    });
+    const data = await res.json();
+    output.textContent = data.success ? data.output : `Error: ${data.error}`;
+  } catch (err) {
+    output.textContent = `Network error: ${err.message}`;
+  }
+}
+
+// Auto-check on boot and poll every 8 seconds
+checkGpuStatus();
+setInterval(() => {
+  if (!pollingTimer) checkGpuStatus();
+}, 8000);
+</script>
+
+</body>
+</html>

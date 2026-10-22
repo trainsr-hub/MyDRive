@@ -1,0 +1,255 @@
+"""Local Disk D: template storage with immutable folder identities."""
+
+from __future__ import annotations
+
+import json
+import shutil
+from pathlib import Path, PurePosixPath
+from typing import Any, Dict, List, Optional
+from uuid import uuid4
+
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates" / "Entropy 0"
+METADATA_FILE = TEMPLATES_DIR / ".template_metadata.json"
+ROOT_ID = "tpl_entropy_0_local"
+
+
+MetadataEntry = Dict[str, str]
+
+
+def _ensure_template_root() -> None:
+    TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _validate_folder_name(name: str) -> str:
+    clean_name = name.strip()
+    if not clean_name or clean_name in {".", ".."}:
+        raise ValueError("Folder name cannot be empty or a relative-path token")
+    if Path(clean_name).name != clean_name:
+        raise ValueError("Folder name cannot contain path separators")
+    return clean_name
+
+
+def _validate_relative_path(relative_path: str) -> str:
+    clean_path = relative_path.strip().replace("\\", "/").strip("/")
+    if not clean_path:
+        return ""
+    path = PurePosixPath(clean_path)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError("Template path must stay inside the local template root")
+    return path.as_posix()
+
+
+def _directory_for(relative_path: str) -> Path:
+    root = TEMPLATES_DIR.resolve()
+    directory = (root / _validate_relative_path(relative_path)).resolve()
+    if directory != root and root not in directory.parents:
+        raise ValueError("Template path resolves outside the local template root")
+    return directory
+
+
+def _legacy_folder_id(path: str) -> str:
+    return f"tpl_{PurePosixPath(path).name.lower()}"
+
+
+def _new_folder_id() -> str:
+    return f"tpl_{uuid4().hex}"
+
+
+def _default_description(folder_id: str) -> str:
+    return f"src:{folder_id}"
+
+
+def _load_metadata() -> Dict[str, MetadataEntry]:
+    if not METADATA_FILE.exists():
+        return {}
+    try:
+        raw = json.loads(METADATA_FILE.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError("Template metadata file is invalid JSON") from exc
+    if not isinstance(raw, dict):
+        raise ValueError("Template metadata must be a JSON object")
+
+    metadata: Dict[str, MetadataEntry] = {}
+    for raw_path, raw_entry in raw.items():
+        path = _validate_relative_path(str(raw_path))
+        if isinstance(raw_entry, dict):
+            folder_id = str(raw_entry.get("id") or _legacy_folder_id(path))
+            description = str(raw_entry.get("description") or _default_description(folder_id))
+        elif isinstance(raw_entry, str):
+            # Legacy entries stored only descriptions. Freeze the ID derived from the
+            # current folder name once, so later renames cannot change identity.
+            folder_id = _legacy_folder_id(path)
+            description = raw_entry
+        else:
+            continue
+        metadata[path] = {"id": folder_id, "description": description}
+    return metadata
+
+
+def _write_metadata(metadata: Dict[str, MetadataEntry]) -> None:
+    METADATA_FILE.write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _ensure_metadata_for_tree(metadata: Dict[str, MetadataEntry]) -> bool:
+    changed = False
+    for directory in sorted(TEMPLATES_DIR.rglob("*")):
+        if not directory.is_dir():
+            continue
+        path = directory.relative_to(TEMPLATES_DIR).as_posix()
+        if path not in metadata:
+            folder_id = _legacy_folder_id(path)
+            metadata[path] = {
+                "id": folder_id,
+                "description": _default_description(folder_id),
+            }
+            changed = True
+    return changed
+
+
+def _move_metadata_prefix(
+    metadata: Dict[str, MetadataEntry], old_path: str, new_path: str
+) -> Dict[str, MetadataEntry]:
+    updated: Dict[str, MetadataEntry] = {}
+    prefix = f"{old_path}/" if old_path else ""
+    for key, value in metadata.items():
+        if key == old_path:
+            updated[new_path] = value
+        elif prefix and key.startswith(prefix):
+            updated[f"{new_path}/{key[len(prefix):]}"] = value
+        else:
+            updated[key] = value
+    return updated
+
+
+def _remove_metadata_prefix(
+    metadata: Dict[str, MetadataEntry], relative_path: str
+) -> Dict[str, MetadataEntry]:
+    prefix = f"{relative_path}/" if relative_path else ""
+    return {
+        key: value
+        for key, value in metadata.items()
+        if key != relative_path and not (prefix and key.startswith(prefix))
+    }
+
+
+def scan_physical_template_tree() -> Dict[str, Any]:
+    """Build the canonical template tree from physical folders and stable local IDs."""
+    _ensure_template_root()
+    metadata = _load_metadata()
+    if _ensure_metadata_for_tree(metadata):
+        _write_metadata(metadata)
+
+    def scan_directory(directory: Path, relative_path: str, parent_id: Optional[str]) -> List[Dict[str, Any]]:
+        children: List[Dict[str, Any]] = []
+        for item in sorted(directory.iterdir(), key=lambda entry: entry.name.casefold()):
+            if not item.is_dir():
+                continue
+            child_path = f"{relative_path}/{item.name}".strip("/")
+            entry = metadata[child_path]
+            children.append(
+                {
+                    "id": entry["id"],
+                    "name": item.name,
+                    "description": entry["description"],
+                    "parentId": parent_id or ROOT_ID,
+                    "relativePath": child_path,
+                    "children": scan_directory(item, child_path, entry["id"]),
+                }
+            )
+        return children
+
+    root_entry = metadata.get("", {"id": ROOT_ID, "description": "Physical Local Template on Local Disk D:"})
+    return {
+        "id": ROOT_ID,
+        "name": "Entropy 0 (Local Master)",
+        "description": root_entry["description"],
+        "parentId": None,
+        "relativePath": "",
+        "children": scan_directory(TEMPLATES_DIR, "", ROOT_ID),
+    }
+
+
+def get_local_template_tree() -> Dict[str, Any]:
+    """Return the current local template tree."""
+    return scan_physical_template_tree()
+
+
+def mutate_local_template(
+    action: str,
+    relative_path: str,
+    name: str = "",
+    description: str = "",
+    parent_path: str = "",
+) -> Dict[str, Any]:
+    """Apply one validated mutation while preserving existing template IDs."""
+    _ensure_template_root()
+    metadata = _load_metadata()
+    _ensure_metadata_for_tree(metadata)
+    clean_path = _validate_relative_path(relative_path)
+
+    if action == "create":
+        clean_name = _validate_folder_name(name)
+        clean_parent_path = _validate_relative_path(parent_path)
+        parent_directory = _directory_for(clean_parent_path)
+        if not parent_directory.is_dir():
+            raise ValueError("Parent template folder does not exist")
+        new_directory = parent_directory / clean_name
+        if new_directory.exists():
+            raise ValueError(f"A folder named '{clean_name}' already exists here")
+        new_directory.mkdir()
+        new_path = f"{clean_parent_path}/{clean_name}".strip("/")
+        folder_id = _new_folder_id()
+        metadata[new_path] = {"id": folder_id, "description": description or _default_description(folder_id)}
+    elif action == "update":
+        directory = _directory_for(clean_path)
+        if clean_path and not directory.is_dir():
+            raise ValueError("Template folder no longer exists")
+        if clean_path == "":
+            metadata[""] = {"id": ROOT_ID, "description": description}
+        else:
+            clean_name = _validate_folder_name(name)
+            new_path = clean_path
+            if directory.name != clean_name:
+                destination = directory.with_name(clean_name)
+                if destination.exists():
+                    raise ValueError(f"A sibling folder named '{clean_name}' already exists")
+                directory.rename(destination)
+                parent_path_value = str(PurePosixPath(clean_path).parent)
+                new_path = f"{'' if parent_path_value == '.' else parent_path_value + '/'}{clean_name}"
+                metadata = _move_metadata_prefix(metadata, clean_path, new_path)
+            metadata[new_path]["description"] = description
+    elif action == "delete":
+        if not clean_path:
+            raise ValueError("The local template root cannot be deleted")
+        directory = _directory_for(clean_path)
+        if not directory.is_dir():
+            raise ValueError("Template folder no longer exists")
+        shutil.rmtree(directory)
+        metadata = _remove_metadata_prefix(metadata, clean_path)
+    else:
+        raise ValueError("Unsupported local template mutation")
+
+    _write_metadata(metadata)
+    return {"success": True, "tree": scan_physical_template_tree(), "vault_tags": {}, "master": "local_disk_d"}
+
+
+def get_template_expected_subfolders() -> Dict[str, Any]:
+    """Return the local hierarchy in reconciler schema form with immutable IDs."""
+    tree = scan_physical_template_tree()
+
+    def convert(children: List[Dict[str, Any]]) -> Dict[str, Any]:
+        return {
+            child["name"]: {
+                "id": child["id"],
+                "name": child["name"],
+                "description": child["description"],
+                "aliases": [child["id"], child["name"].lower()],
+                "subfolders": convert(child["children"]),
+            }
+            for child in children
+        }
+
+    return convert(tree["children"])

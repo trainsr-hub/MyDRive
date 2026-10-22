@@ -1,0 +1,198 @@
+// path: src/apps/vinyl-angel/types.ts
+
+// =============================================================================
+// [VINYL ANGEL SPECIFIC TYPES]
+// =============================================================================
+
+export interface Tier3StateRecord {
+  id: string;
+  score_3_count: string[];
+  score_4_count: string[];
+  score_5_count: string[];
+  score_6_count: string[];
+  score_7_count: string[];
+  timeblock_arc0: number;
+  timeblock_arc1: number;
+  timeblock_arc2: number;
+  timeblock_arc3: number;
+  timeblock_arc4: number;
+  unlock_date: string | null;
+  hazard_rank?: number | null;
+}
+
+export interface ChannelStateRecord {
+  channel_id: string;
+  channel_name: string;
+  score_3_count: string[];
+  score_4_count: string[];
+  score_5_count: string[];
+  score_6_count: string[];
+  score_7_count: string[];
+  timeblock_arc0: number;
+  timeblock_arc1: number;
+  timeblock_arc2: number;
+  timeblock_arc3: number;
+  timeblock_arc4: number;
+  unlock_date: string | null;
+  updated_at?: string;
+}
+
+export interface Tier2EventEntry {
+  id: string;
+  action: string;
+  timestamp: string;
+  timeblock?: string | string[];
+  target_type?: 'track' | 'channel';
+  channel_id?: string;
+  channel_name?: string;
+  hazard_rank?: number | null;
+}
+
+export interface VinylDisplayCard {
+  id: string;
+  dbIndex: number;
+  title: string;
+  channel: string;
+  channel_id?: string;
+  duration?: number | string | null;
+  hazard_level: number;
+  played: number;
+  timeblock: string | null;
+  unlock_date: string | null;
+  rankCategory: string;
+  hazard_rank?: number | null;
+}
+
+export interface TrackDisplayMeta {
+  played: number;
+  hazard_level: number;
+  timeblock?: string | null;
+  unlock_date?: string | null;
+  hazard_rank?: number | null;
+}
+
+export interface PlaylistItem {
+  id: string;
+  title: string;
+  channel: string;
+  channel_id?: string;
+  duration?: number | string | null;
+  hazard_level?: number;
+  played?: number;
+  timeblock?: string | null;
+  hazard_rank?: number | null;
+}
+
+export interface ChannelOriginItem {
+  name: string;
+  count: number;
+}
+
+export type ScoreTier = '3+' | '4+' | '5+' | '6+' | '7+' | 'block';
+
+export type VinylAction = ScoreTier | 'pass' | 'spin' | 'block' | 'cancel';
+
+export type VinylLocalTheme =
+  | 'celestial-gold'
+  | 'crimson-void'
+  | 'emerald-sanctuary'
+  | 'cyber-neon'
+  | 'obsidian-abyss';
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  category: 'ticket' | 'cosmetic' | 'booster' | 'utility' | 'theme';
+  priceDiscs?: number;
+  priceTime?: number;
+  rewardTicket?: string;
+  isLocked?: boolean;
+  lockReason?: string;
+  iconName: string;
+  color: string;
+  perkEffect?: string;
+  consumable?: boolean;
+}
+
+export interface VinylPlayerSettings {
+  autoplay: boolean;
+  defaultPassScore: ScoreTier;
+  soundEffects: boolean;
+  autoSync: boolean;
+}
+
+export interface PlaylistReportItem {
+  playlist_id: string;
+  url: string;
+  total_in_playlist: number;
+  in_db_count?: number;
+  new_added: number;
+  unavailable_count?: number;
+  category?: 'green' | 'yellow' | 'red';
+  status: 'all_taken' | 'curled_new' | 'unavailable' | 'failed' | string;
+  message?: string;
+  error?: string;
+}
+
+export interface CurlerResult {
+  status: string;
+  total_playlists: number;
+  total_green?: number;
+  total_yellow?: number;
+  total_red?: number;
+  total_scanned_videos: number;
+  total_new_added: number;
+  total_catalog_now: number;
+  target_db?: string;
+  reports: PlaylistReportItem[];
+}
+
+export interface CurlerStreamEvent {
+  type:
+    | 'init'
+    | 'playlist_start'
+    | 'playlist_scan'
+    | 'playlist_fetching_meta'
+    | 'playlist_inserted'
+    | 'playlist_done'
+    | 'playlist_error'
+    | 'complete'
+    | 'error'
+    | 'log';
+  category?: 'green' | 'yellow' | 'red' | 'info';
+  timestamp?: string;
+  message?: string;
+  index?: number;
+  total?: number;
+  total_playlists?: number;
+  total_green?: number;
+  total_yellow?: number;
+  total_red?: number;
+  playlist_id?: string;
+  url?: string;
+  scanned_in_list?: number;
+  new_needed?: number;
+  count?: number;
+  inserted?: number;
+  total_new_cumulative?: number;
+  new_added?: number;
+  total_in_playlist?: number;
+  in_db_count?: number;
+  unavailable_count?: number;
+  status?: string;
+  error?: string;
+  initial_catalog_count?: number;
+  final_catalog_count?: number;
+  total_scanned_videos?: number;
+  total_new_added?: number;
+  target_db?: string;
+  target_path?: string;
+  reports?: PlaylistReportItem[];
+}
+
+export interface VinylSessionStats {
+  sessionRatingsCount: number;
+  totalDiscsEarned: number;
+  lastSyncTimestamp: string | null;
+}

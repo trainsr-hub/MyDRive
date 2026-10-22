@@ -1,0 +1,306 @@
+/* ========================================================================
+   APP SHELL, HEADER, TOOLBAR, BUTTONS & COMMON LAYOUT
+   ======================================================================== */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Header */
+.app-header {
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-light);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.app-title {
+  font: 700 1.35rem var(--font-display);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  white-space: nowrap;
+}
+
+.badge {
+  font: 600 0.72rem var(--font-mono);
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent);
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.header-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-mid);
+  flex-shrink: 0;
+}
+
+/* View Mode Switcher */
+.mode-switch {
+  display: flex;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.mode-btn {
+  padding: 0.35rem 0.85rem;
+  font: 600 12px var(--font-body);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-md) - 2px);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.mode-btn:hover {
+  color: var(--text-primary);
+}
+
+.mode-btn.active {
+  background: var(--bg-card);
+  border-color: var(--border-mid);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Table tabs */
+.table-tabs {
+  display: flex;
+  gap: 0.25rem;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  padding: 0.4rem 0.9rem;
+  font: 500 13px var(--font-body);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  outline: none;
+}
+
+.tab-btn:hover {
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border-color: var(--border-light);
+}
+
+.tab-btn.active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tab-btn.new-table {
+  border-style: dashed;
+  border-color: var(--border-mid);
+  color: var(--text-dim);
+}
+
+.tab-btn.new-table:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+/* Header actions */
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Buttons */
+button { font: inherit; cursor: pointer; border: none; outline: none; transition: all 0.12s ease; border-radius: var(--radius-md); }
+
+.btn {
+  height: 36px;
+  padding: 0 1rem;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+}
+
+.btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-mid);
+  color: var(--text-primary);
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0a0908;
+  font-weight: 700;
+}
+
+.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+.btn.danger {
+  background: rgba(244, 63, 94, 0.1);
+  border-color: rgba(244, 63, 94, 0.4);
+  color: var(--danger);
+}
+
+.btn.danger:hover {
+  background: rgba(244, 63, 94, 0.2);
+  border-color: var(--danger);
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-tertiary);
+}
+
+.btn.ghost:hover { background: var(--bg-input); color: var(--text-secondary); }
+
+.btn.sm { height: 30px; padding: 0 0.7rem; font-size: 12px; }
+.btn.icon-only { width: 36px; padding: 0; justify-content: center; }
+.btn.icon-only.sm { width: 30px; }
+
+/* Server Status Indicator */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font: 500 11.5px var(--font-mono);
+  color: var(--text-tertiary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-sm);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+  flex-shrink: 0;
+}
+
+.status-dot.offline {
+  background: var(--danger);
+  box-shadow: 0 0 6px var(--danger);
+}
+
+/* Toolbar */
+.toolbar {
+  flex-shrink: 0;
+  background: var(--bg-canvas);
+  border-bottom: 1px solid var(--border-table);
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar-row {
+  padding: 0.45rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toolbar-label {
+  font: 600 10px var(--font-mono);
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--border-light);
+  flex-shrink: 0;
+}
+
+.filter-btn {
+  padding: 0.3rem 0.7rem;
+  font: 500 12px var(--font-body);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.filter-btn:hover {
+  background: var(--bg-input);
+  color: var(--text-secondary);
+}
+
+.filter-btn.active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background: var(--accent);
+  color: #0a0908;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 0.7rem 1.25rem;
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 99999;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: all 0.22s ease;
+}
+
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* Workspace container */
+.workspace {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}

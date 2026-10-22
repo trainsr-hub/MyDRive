@@ -1,0 +1,127 @@
+# .claude Directory Audit & Cleanup Plan
+
+## Context
+The `.claude` directory has grown to **524 MB** with potentially redundant, abandoned, or cache files that may be slowing down Faust's performance and consuming unnecessary storage. Manager suspects there are unused files accumulating here. The audit will identify what each component does, whether it's active, and what can be safely moved to archive.
+
+**Key sizing issue (verified):**
+- `.claude/skills/sound/assets/` — 340 MB (TTS model files - NEEDED)
+- `.claude/plugins/cache/` — ~179 MB (plugin metadata cache - SAFE TO ARCHIVE)
+- `.claude/graphify*` — 3.7 MB combined (graph analysis output - SAFE TO ARCHIVE)
+- `.claude/worktrees/` — 18 MB (git worktrees - REVIEW NEEDED)
+- `.claude/temp/` — 113 KB (temporary files - SAFE TO ARCHIVE)
+
+**Critical clarification**: The 340MB in `.claude/skills/sound/assets/` contains the actual TTS model files and IS REQUIRED for the acoustic presence subsystem (enabled in faust_config.json). This is NOT bloat - it's essential infrastructure.
+
+**Manager's directive**: Instead of deleting, move identified bloat to `D:\My Drive\Blue AI\Archived` for preservation.
+
+---
+
+## Recommended Cleanup Actions (Based on Analysis & Your Feedback)
+
+### ✅ HIGH CONFIDENCE - SAFE TO MOVE TO ARCHIVE NOW
+
+1. **MOVE `.claude/graphify/` and `.claude/graphify-out/` to Archive**
+   - **Reason**: Graph analysis/output directories - appears to be experimental/abandoned feature
+   - **Files**: Contains graph.html, graph.json, manifest.json, analysis files
+   - **Size**: ~3.7 MB
+   - **Your direction**: Confirmed you want to archive "Project EntryGraphify"
+
+2. **MOVE `.claude/plugins/cache/ecc/` contents to Archive**
+   - **Reason**: Plugin metadata cache - automatically regenerates on demand
+   - **Files**: Downloaded skill definitions, agent specs, marketplace data
+   - **Size**: ~179 MB
+   - **Safety**: Low risk - Claude Code re-downloads as needed
+   - **Archive path**: `D:\My Drive\Blue AI\Archived\plugins\cache\ecc\`
+
+3. **MOVE `.claude/temp/` contents to Archive**
+   - **Reason**: Temporary scratch files
+   - **Size**: 113 KB
+   - **Safety**: Safe to archive - regenerated as needed
+   - **Archive path**: `D:\My Drive\Blue AI\Archived\temp\`
+
+**Immediate savings: ~182 MB** (files moved to archive, freeing primary .claude space)
+
+### 🔍 MEDIUM CONFIDENCE - REVIEW REQUIRED
+
+4. **REVIEW `.claude/worktrees/` for stale branches**
+   - Current worktrees:
+     - `calm-floating-scott` (5ba62cc) - from Oct 12
+     - `rien-prescript-beeper-fixes` (51fe6da) - from Oct 7
+   - **Action**: Check if these branches are merged or abandoned
+   - **If stale**: Move worktree directories to Archive, then remove from .claude
+   - **If active**: Keep for ongoing work
+   - **Archive path**: `D:\My Drive\Blue AI\Archived\worktrees\`
+
+5. **LIGHT REVIEW OF `.claude/skills/` (EXCLUDING sound/assets/)**
+   - Most skills are small (4-8KB each) except sound
+   - Verify no clearly deprecated/unused skills remain
+   - Focus: skills not referenced in faust_config.json or active usage
+   - **Archive path**: `D:\My Drive\Blue AI\Archived\skills\` for any identified unused skills
+
+### 🛡️ KEEP ALL (DO NOT TOUCH OR MOVE)
+
+6. **`.claude/memory/`** (288 KB) - Essential ECS memory cortex
+7. **`.claude/templates/`** (153 KB) - Master UI/UX design system (per CLAUDE.md doctrine)
+8. **`.claude/skills/sound/`** (340MB) - Contains REQUIRED TTS model files for acoustic presence
+9. **`.claude/skills/telegram/`**, **`standby/`**, **`c2-dispatch/`**, **`structured-telemetry/`** - Active enabled subsystems
+10. **`.claude/daemons/`**, **`.claude/scripts/`**, **`.claude/agents/`**, **`.claude/blueprints/`** - Small, functional components
+
+## Archive Structure Plan
+
+Create archive directory structure mirroring source:
+```
+D:\My Drive\Blue AI\Archived\
+├── graphify\
+├── graphify-out\
+├── plugins\
+│   └── cache\
+│       └── ecc\ [contents]
+├── temp\ [contents]
+├── worktrees\ [if any stale]
+└── skills\ [if any unused]
+```
+
+## Critical Files Preserved (Per Your Directives)
+
+- `.claude/faust_config.json` - Shows enabled subsystems (acoustic_presence, telegram, etc.)
+- `.claude/skills/sound/` - **NOT moved/archived** - contains essential TTS model assets
+- `.claude/memory/MEMORY.md` - Authoritative Faust hivemind registry
+- `.claude/templates/ui/` - Master UI/UX template (lazy-read doctrine)
+
+## Verification Steps Post-Archive
+
+1. **Test acoustic core still works**:
+   ```
+   python .claude/skills/sound/scripts/cli.py "Faust systems verified post-archive"
+   ```
+
+2. **Verify Telegram integration responsive**
+
+3. **Check Faust responsiveness improved** (faster file scanning, reduced load time)
+
+4. **Confirm no regressions in:
+   - Memory cortex access
+   - Skill execution
+   - Daemon health
+   - Telegram C2 link**
+
+5. **Verify archive accessibility** (can restore if needed)
+
+## Implementation Order
+
+**Phase 1 (Immediate - Safe)**:
+- Create `D:\My Drive\Blue AI\Archived` directory if it doesn't exist
+- Move `.claude/graphify/` and `.claude/graphify-out/` to Archive
+- Move `.claude/plugins/cache/ecc/` contents to Archive
+- Move `.claude/temp/` contents to Archive
+- **Verify acoustic core still works**
+
+**Phase 2 (Review)**:
+- Examine `.claude/worktrees/` for stale branches
+- Move abandoned worktrees to Archive, then remove from .claude
+- Light review of skills for obvious dead weight, move unused ones to Archive
+
+**Total space freed in primary .claude: 180-220 MB** (primarily from plugin cache + graph directories)
+**Files preserved in Archive for potential restoration if needed**
+
+This preserves all essential Faust functionality while moving verifiable bloat to archive for safety.

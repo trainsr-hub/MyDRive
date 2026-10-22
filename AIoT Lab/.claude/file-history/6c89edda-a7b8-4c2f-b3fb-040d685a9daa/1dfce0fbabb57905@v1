@@ -1,0 +1,10 @@
+:: D:\My Drive\Blue AI\Test Projects\Drive Folder Template\stop_app.bat
+@echo off
+setlocal
+echo ========================================================
+echo   Stopping Drive Architect Services
+echo ========================================================
+
+powershell -NoProfile -Command "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 20170, 20171 } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+
+echo Services stopped cleanly.

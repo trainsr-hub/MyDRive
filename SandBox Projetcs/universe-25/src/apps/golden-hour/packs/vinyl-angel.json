@@ -1,0 +1,80 @@
+{
+  "id": "vinyl_angel",
+  "title": "Vinyl Angel Pack",
+  "subtitle": "Koi no Koe • 432Hz Harmonic Stems & Temporal DNA",
+  "cards_per_pull": 10,
+  "cost": {
+    "currency": "discs",
+    "amount": 300
+  },
+  "visuals": {
+    "cover_url": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80",
+    "preview_url": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=80",
+    "accent_color": "#ffffff",
+    "border_color": "#d4af37",
+    "bg_gradient": "from-[#1a1424] via-[#0d0a12] to-[#000000]",
+    "button_text": "Engage (100 Discs)"
+  },
+  "pools": [
+    {
+      "item_id": "vinyl_stem",
+      "weight": 3,
+      "amount_range": [1, 1]
+    },
+    {
+      "item_id": "red_dna",
+      "weight": 50,
+      "amount_range": [1, 2]
+    },
+    {
+      "item_id": "game_time",
+      "weight": 400,
+      "amount_seconds_range": [200000, 9999999]
+    },
+    {
+      "item_id": "purple_dna",
+      "weight": 700,
+      "amount_range": [10000, 999999],
+      "step": 50
+    }
+  ],
+  "guarantees": [
+    "red_dna",
+    "game_time"
+  ],
+  "items": {
+    "vinyl_stem": {
+      "name": "Vinyl Stem",
+      "category": "collectible",
+      "rarity": "legendary",
+      "stem_count": 1,
+      "icon_url": "https://images.unsplash.com/photo-1539185441755-769473a23570?w=200&auto=format&fit=crop&q=80",
+      "bg_gradient": "linear-gradient(135deg, #451a03 0%, #1e1302 50%, #000 100%)",
+      "description": "Pure 432Hz master stem audio channel from Vinyl Angel Koi no Koe. Sacred archival collectible (0.3% apex drop rate)."
+    },
+    "red_dna": {
+      "name": "Red DNA",
+      "category": "red-orbs",
+      "rarity": "rare",
+      "icon_url": "https://cdn.paleo.gg/games/jwtg/images/hybrid-type/super-hybrid.png",
+      "bg_gradient": "linear-gradient(135deg, #7f1d1d 0%, #450a0a 50%, #000 100%)",
+      "description": "Apex celestial red genetic orb. Equivalent to 1,000 Purple DNA each for Super-Hybrids (10% drop rate)."
+    },
+    "game_time": {
+      "name": "Game Time",
+      "category": "time",
+      "rarity": "rare",
+      "icon_url": "https://cdn.paleo.gg/games/jwtg/images/stats/speed.png",
+      "bg_gradient": "linear-gradient(135deg, #0369a1 0%, #082f49 50%, #000 100%)",
+      "description": "Temporal incubation and acceleration energy ranging from 1 Hour to 3 Days (30% drop rate)."
+    },
+    "purple_dna": {
+      "name": "Purple DNA",
+      "category": "dna",
+      "rarity": "uncommon",
+      "icon_url": "https://cdn.paleo.gg/games/jwtg/images/resource/dna.png",
+      "bg_gradient": "linear-gradient(135deg, #3b0764 0%, #1e0538 50%, #000 100%)",
+      "description": "Biological genetic units ranging from 300 to 3,000 DNA synthesized from 432Hz harmonic vinyl waveforms (70% drop rate)."
+    }
+  }
+}

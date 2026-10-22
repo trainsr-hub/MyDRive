@@ -1,0 +1,366 @@
+"""
+Robust Google Drive Downloader using Service Account API with ID-based tracking.
+- Uses immutable Google Drive File IDs as canonical identity.
+- Resumable with checkpoint manifest for large folders.
+- Built-in deduplication via Drive File IDs.
+"""
+
+import os
+import io
+import re
+import json
+import hashlib
+import traceback
+from pathlib import Path
+from typing import Optional, Callable, Dict, Set
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.errors import HttpError
+
+CREDS_FILE = Path("D:/My Drive/Blue AI/Test Projects/Google Collab/.secrets/colab-service-account.json")
+MANIFEST_FILE = Path("D:/Temp/FaustAvatarStudio/download_manifest.json")
+
+class DriveFile:
+    """Immutable Google Drive file reference with ID-based identity."""
+    def __init__(self, file_id: str, name: str, mime_type: str, size: int = 0):
+        self.id = file_id
+        self.name = name
+        self.mime_type = mime_type
+        self.size = size
+
+    @property
+    def is_folder(self) -> bool:
+        return self.mime_type == "application/vnd.google-apps.folder"
+
+    @property
+    def is_image(self) -> bool:
+        return self.mime_type.startswith("image/") and not self.is_folder
+
+    def manifest_key(self) -> str:
+        """Unique key for manifest tracking: id:size:mime."""
+        return f"{self.id}:{self.size}:{self.mime_type}"
+
+
+class DriveManifest:
+    """Persistent manifest of downloaded files using Drive File IDs."""
+    def __init__(self, manifest_path: Path):
+        self.path = manifest_path
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.data: Dict[str, Dict] = {}
+        self._load()
+
+    def _load(self):
+        if self.path.exists():
+            try:
+                with open(self.path, "r", encoding="utf-8") as f:
+                    self.data = json.load(f)
+            except Exception:
+                self.data = {}
+
+    def save(self):
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump(self.data, f, ensure_ascii=False, indent=2)
+
+    def is_downloaded(self, file: DriveFile) -> bool:
+        key = file.manifest_key()
+        return key in self.data
+
+    def mark_downloaded(self, file: DriveFile, local_path: Path):
+        self.data[file.manifest_key()] = {
+            "id": file.id,
+            "name": file.name,
+            "mime": file.mime_type,
+            "size": file.size,
+            "local_path": str(local_path),
+            "downloaded_at": __import__("time").time()
+        }
+        self.save()
+
+    def get_completion_stats(self, total_files: int) -> tuple[int, int]:
+        downloaded = len(self.data)
+        return downloaded, max(0, total_files - downloaded)
+
+
+def extract_folder_id(url_or_id: str) -> str:
+    """Extract folder ID from Google Drive URL or return raw ID."""
+    url = url_or_id.strip()
+    match = re.search(r"/folders/([a-zA-Z0-9_-]+)", url)
+    if match:
+        return match.group(1)
+    if re.fullmatch(r"[a-zA-Z0-9_-]{15,60}", url):
+        return url
+    return url
+
+
+class DriveDownloader:
+    """
+    Robust Google Drive folder downloader with:
+    - ID-based identity tracking
+    - Resumable downloads via manifest
+    - Concurrent file downloads for large folders
+    - Service Account primary, gdown fallback
+    """
+
+    def __init__(self,
+                 creds_file: Path = CREDS_FILE,
+                 manifest_file: Path = MANIFEST_FILE,
+                 max_workers: int = 4):
+        self.creds_file = creds_file
+        self.manifest = DriveManifest(manifest_file)
+        self.max_workers = max_workers
+        self.service = None
+        self._init_service()
+
+    def _init_service(self):
+        if self.creds_file.exists():
+            creds = service_account.Credentials.from_service_account_file(
+                str(self.creds_file),
+                scopes=["https://www.googleapis.com/auth/drive"]
+            )
+            self.service = build("drive", "v3", credentials=creds, cache_discovery=False)
+
+    def list_folder_tree(self, folder_id: str) -> list[tuple[DriveFile, str]]:
+        """Recursively list all files with their relative subfolder paths."""
+        if not self.service:
+            return []
+
+        tree: list[tuple[DriveFile, str]] = []
+
+        def traverse(curr_id: str, rel_path: str = ""):
+            page_token = None
+            while True:
+                q = f"'{curr_id}' in parents and trashed = false"
+                res = self.service.files().list(
+                    q=q,
+                    fields="nextPageToken, files(id, name, mimeType, size)",
+                    pageToken=page_token,
+                    pageSize=1000,
+                    supportsAllDrives=True,
+                    includeItemsFromAllDrives=True
+                ).execute()
+
+                files = res.get("files", [])
+                for f in files:
+                    size = int(f.get("size", 0)) if f.get("size") else 0
+                    df = DriveFile(f["id"], f["name"], f.get("mimeType", ""), size)
+                    if df.is_folder:
+                        sub_rel = f"{rel_path}/{f['name']}" if rel_path else f['name']
+                        traverse(f["id"], sub_rel)
+                    else:
+                        tree.append((df, rel_path))
+
+                page_token = res.get("nextPageToken")
+                if not page_token:
+                    break
+
+        traverse(folder_id)
+        return tree
+
+    def download_file_bytes(self, file_id: str) -> Optional[bytes]:
+        """Download file directly into in-memory bytes without saving to disk."""
+        if not self.service:
+            print("[ERROR] Google Drive service not initialized. Service account credentials missing or invalid.")
+            return None
+        try:
+            req = self.service.files().get_media(fileId=file_id, supportsAllDrives=True)
+            buf = io.BytesIO()
+            downloader = MediaIoBaseDownload(buf, req)
+            done = False
+            while not done:
+                _, done = downloader.next_chunk()
+            return buf.getvalue()
+        except HttpError as e:
+            error_details = e.content.decode("utf-8", errors="replace") if hasattr(e, "content") else str(e)
+            print(f"\n[GOOGLE DRIVE API HTTP ERROR {e.resp.status}] Failed on File ID {file_id}:")
+            print(f"Details: {error_details}")
+            traceback.print_exc()
+            return None
+        except Exception as e:
+            print(f"\n[DOWNLOAD FAILURE] {type(e).__name__} on File ID {file_id}: {e}")
+            traceback.print_exc()
+            return None
+
+    def list_folder_recursive(self, folder_id: str) -> list[DriveFile]:
+        """Recursively list all files in folder, returning DriveFile objects with IDs."""
+        if not self.service:
+            return []
+
+        all_files: list[DriveFile] = []
+
+        def traverse(curr_id: str, depth: int = 0):
+            page_token = None
+            while True:
+                q = f"'{curr_id}' in parents and trashed = false"
+                res = self.service.files().list(
+                    q=q,
+                    fields="nextPageToken, files(id, name, mimeType, size)",
+                    pageToken=page_token,
+                    pageSize=1000,
+                    supportsAllDrives=True,
+                    includeItemsFromAllDrives=True
+                ).execute()
+
+                files = res.get("files", [])
+                for f in files:
+                    size = int(f.get("size", 0)) if f.get("size") else 0
+                    df = DriveFile(f["id"], f["name"], f.get("mimeType", ""), size)
+                    if df.is_folder:
+                        traverse(f["id"], depth + 1)
+                    else:
+                        all_files.append(df)
+
+                page_token = res.get("nextPageToken")
+                if not page_token:
+                    break
+
+        traverse(folder_id)
+        return all_files
+
+    def download_file(self, file: DriveFile, dest_dir: Path, progress_cb=None) -> bool:
+        """Download a single file by its immutable Drive ID."""
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+        # Check manifest first - skip if already downloaded
+        if self.manifest.is_downloaded(file):
+            if progress_cb:
+                progress_cb(f"[SKIP] Already downloaded: {file.name} (ID: {file.id[:8]}...)")
+            return True
+
+        try:
+            local_path = dest_dir / file.name
+
+            # Handle name collision by prepending short ID
+            if local_path.exists():
+                stem, suffix = local_path.stem, local_path.suffix
+                local_path = dest_dir / f"{stem}_{file.id[:8]}{suffix}"
+
+            if progress_cb:
+                progress_cb(f"Downloading: {file.name} ({file.size/1024:.1f} KB)")
+
+            request = self.service.files().get_media(fileId=file.id, supportsAllDrives=True)
+            with open(local_path, "wb") as fh:
+                downloader = MediaIoBaseDownload(fh, request)
+                done = False
+                while not done:
+                    _, done = downloader.next_chunk()
+
+            # Mark in manifest with immutable ID
+            self.manifest.mark_downloaded(file, local_path)
+            return True
+
+        except Exception as e:
+            print(f"[!] Failed to download {file.name} (ID: {file.id}): {e}")
+            return False
+
+    def download_folder(self,
+                        folder_url_or_id: str,
+                        dest_dir: Path,
+                        progress_cb: Optional[Callable] = None,
+                        resume: bool = True) -> tuple[int, int]:
+        """
+        Download entire folder with ID-based deduplication.
+        Returns (success_count, skipped_count).
+        """
+        if not self.service:
+            return 0, 0
+
+        folder_id = extract_folder_id(folder_url_or_id)
+        dest_dir = Path(dest_dir)
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+        if progress_cb:
+            progress_cb("Scanning Google Drive folder structure via API...")
+
+        # 1. Build complete file tree with immutable IDs
+        all_files = self.list_folder_recursive(folder_id)
+        image_files = [f for f in all_files if f.is_image]
+
+        if progress_cb:
+            progress_cb(f"Found {len(image_files)} image files in Drive. Checking manifest...")
+
+        # 2. Resume from manifest if enabled
+        downloaded, remaining = self.manifest.get_completion_stats(len(image_files))
+        if resume and downloaded > 0:
+            if progress_cb:
+                progress_cb(f"Resuming: {downloaded} already tracked, {remaining} remaining...")
+
+        # 3. Download missing files
+        success = 0
+        skipped = 0
+
+        # Filter to only files not in manifest
+        to_download = [f for f in image_files if not self.manifest.is_downloaded(f)]
+
+        if not to_download:
+            if progress_cb:
+                progress_cb("All files already downloaded per manifest!")
+            return 0, len(image_files)
+
+        # Download concurrently for speed
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            future_to_file = {
+                executor.submit(self.download_file, f, dest_dir, progress_cb): f
+                for f in to_download
+            }
+
+            for future in as_completed(future_to_file):
+                f = future_to_file[future]
+                try:
+                    if future.result():
+                        success += 1
+                    else:
+                        skipped += 1
+                except Exception as e:
+                    print(f"[!] Error downloading {f.name}: {e}")
+                    skipped += 1
+
+        return success, skipped
+
+
+def download_drive_folder(url_or_id: str,
+                          dest_dir: Path,
+                          progress_cb: Optional[Callable] = None,
+                          resume: bool = True,
+                          max_workers: int = 4) -> tuple[int, int]:
+    """
+    Main entry point for downloading Google Drive folders.
+    Returns (success_count, skipped_count).
+    """
+    dest_dir = Path(dest_dir)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    # Try ID-based Service Account downloader
+    downloader = DriveDownloader(max_workers=max_workers)
+    if downloader.service:
+        if progress_cb:
+            progress_cb("Using Service Account Drive API (ID-based, resumable)...")
+        try:
+            return downloader.download_folder(url_or_id, dest_dir, progress_cb, resume)
+        except Exception as e:
+            print(f"[*] Service Account download failed: {e}")
+
+    # Fallback to gdown (no ID tracking, no resume)
+    if progress_cb:
+        progress_cb("Falling back to gdown (no ID tracking)...")
+    import gdown
+    gdown.download_folder(url=url_or_id, output=str(dest_dir), quiet=False, use_cookies=False)
+
+    # Try to count results
+    try:
+        count = len(list(dest_dir.rglob("*.png")) + list(dest_dir.rglob("*.jpg")) + list(dest_dir.rglob("*.jpeg")))
+        return count, 0
+    except Exception:
+        return 0, 0
+
+
+# =============================================================================
+# Backward Compatibility Wrapper
+# =============================================================================
+
+def download_with_service_account(folder_id: str, dest_dir: Path, progress_cb=None) -> bool:
+    """Legacy wrapper for backward compatibility."""
+    success, skipped = download_drive_folder(folder_id, dest_dir, progress_cb, resume=True)
+    return success > 0

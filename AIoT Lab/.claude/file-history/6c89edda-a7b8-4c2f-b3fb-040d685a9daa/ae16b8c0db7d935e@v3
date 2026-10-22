@@ -1,0 +1,323 @@
+# core/logic.py
+"""
+Core business logic module for Arc-2-Neo-Drives.
+Handles:
+1. Recursive folder tree cloning & tag harvesting.
+2. Key-Value Description extraction and reconstruction.
+3. Recursive JSON tree generation with image thumbnail formatting.
+"""
+
+from typing import Dict, List, Optional, Tuple, Callable, Any
+from . import drive_ops
+from . import db
+
+
+def extract_source_id(folder_or_desc: Any) -> Optional[str]:
+    """
+    Extracts the immutable template origin folder ID from a folder dict or description text.
+    Checks:
+    1. Native Google Drive API custom properties: folder.get("properties", {}).get("src") or "oid"
+    2. Parsed description string prefix: 'src:<id>', 'oid:<id>', or 'origin_id:<id>'
+    """
+    if isinstance(folder_or_desc, dict):
+        props = folder_or_desc.get("properties") or {}
+        if isinstance(props, dict):
+            src = props.get("src") or props.get("oid")
+            if src:
+                return str(src).strip()
+        desc = folder_or_desc.get("description") or ""
+    else:
+        desc = str(folder_or_desc or "")
+
+    if not desc:
+        return None
+
+    for raw_line in desc.splitlines():
+        line = raw_line.strip()
+        if line.startswith("src:"):
+            return line[4:].strip()
+        if line.startswith("oid:"):
+            return line[4:].strip()
+        if line.startswith("origin_id:"):
+            return line[10:].strip()
+    return None
+
+
+def format_source_description(source_id: Optional[str], existing_desc: str = "") -> str:
+    """
+    Returns description string with 'src:<source_id>' as machine-first header,
+    preserving all subsequent user notes, tags, or description lines.
+    """
+    lines: List[str] = []
+    if source_id and source_id.strip():
+        lines.append(f"src:{source_id.strip()}")
+    if existing_desc:
+        for raw_line in existing_desc.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith(("src:", "oid:", "origin_id:")):
+                continue
+            lines.append(raw_line)
+    return "\n".join(lines)
+
+
+def spawn_clone_from_template(
+    target_parent_id: str,
+    clone_name: str,
+    template_id: str,
+    log_callback: Optional[Callable[[str], None]] = None,
+) -> Dict[str, Any]:
+    """
+    Creates a new entity clone with a custom specific name under target_parent_id,
+    recursively duplicating the template folder tree and stamping every node
+    with immutable 'src:<id>' Google Drive properties and description headers.
+    """
+    clean_name = clone_name.strip()
+    if not clean_name:
+        raise ValueError("Clone folder name cannot be empty")
+
+    # 1. Fetch template root metadata
+    tpl_meta = drive_ops.get_file_metadata(template_id)
+    tpl_desc = tpl_meta.get("description", "") or ""
+
+    # 2. Create the custom-named root folder
+    root_desc = format_source_description(template_id, tpl_desc)
+    root_res = drive_ops.create_folder(
+        name=clean_name,
+        parent_id=target_parent_id,
+        description=root_desc,
+        properties={"src": template_id},
+    )
+    cloned_root_id = root_res["id"]
+    total_cloned = 1
+
+    if log_callback:
+        log_callback(f"[Spawn] Created entity root '{clean_name}' (ID: {cloned_root_id})")
+
+    # 3. Recursively duplicate subfolder tree
+    def _clone_subfolders(src_parent_id: str, dest_parent_id: str):
+        nonlocal total_cloned
+        sub_items = drive_ops.list_subfolders(src_parent_id)
+        for child in sub_items:
+            c_id = child["id"]
+            c_name = child["name"]
+            c_desc = child.get("description", "") or ""
+            stamped_desc = format_source_description(c_id, c_desc)
+
+            created_child = drive_ops.create_folder(
+                name=c_name,
+                parent_id=dest_parent_id,
+                description=stamped_desc,
+                properties={"src": c_id},
+            )
+            total_cloned += 1
+            _clone_subfolders(c_id, created_child["id"])
+
+    _clone_subfolders(template_id, cloned_root_id)
+
+    # Invalidate cache so reconciler sees the new entity immediately
+    db.clear_folder_tree_cache()
+
+    return {
+        "success": True,
+        "cloned_root_id": cloned_root_id,
+        "clone_name": clean_name,
+        "template_id": template_id,
+        "total_folders_created": total_cloned,
+    }
+
+
+
+
+def parse_description_key_values(desc_text: str) -> Tuple[Dict[str, List[str]], List[str]]:
+    """
+    Parses a folder/file description string into:
+    1. A dictionary of key -> list of string values.
+    2. A list of raw non-key-value lines (preserving notes, comments, hashtags).
+    """
+    kv_dict: Dict[str, List[str]] = {}
+    other_lines: List[str] = []
+
+    if not desc_text:
+        return kv_dict, other_lines
+
+    for raw_line in desc_text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if ":" in line:
+            parts = line.split(":", 1)
+            k = parts[0].strip()
+            v_str = parts[1].strip()
+            vals = [x.strip() for x in v_str.split(",") if x.strip()]
+            if k:
+                if k not in kv_dict:
+                    kv_dict[k] = []
+                for val in vals:
+                    if val not in kv_dict[k]:
+                        kv_dict[k].append(val)
+                continue
+        other_lines.append(raw_line)
+
+    return kv_dict, other_lines
+
+
+def format_key_values_to_description(
+    kv_dict: Dict[str, List[str]], 
+    other_lines: Optional[List[str]] = None
+) -> str:
+    """
+    Formats key-value dictionary and optional remaining lines back into a clean description string.
+    """
+    output_lines: List[str] = []
+    for k, vals in kv_dict.items():
+        clean_k = str(k).strip()
+        val_str = ", ".join(str(v).strip() for v in vals if str(v).strip())
+        output_lines.append(f"{clean_k}: {val_str}")
+
+    if other_lines:
+        for ol in other_lines:
+            if ol.strip():
+                output_lines.append(ol.strip())
+
+    return "\n".join(output_lines)
+
+
+def clone_folder_structure_templated(
+    source_id: str,
+    target_parent_id: str,
+    is_root: bool = True,
+    log_callback: Optional[Callable[[str], None]] = None,
+    collected_metadata: Optional[Dict[str, List[str]]] = None,
+) -> Tuple[str, Dict[str, List[str]], int]:
+    """
+    Recursively clones a folder structure (empty folders only), preserving descriptions.
+    - Renames the root folder to 'Z ~ <source_name>'.
+    - Harvests all Key: Value pairs from folder descriptions into collected_metadata.
+    - Synchronizes newly discovered metadata tags directly into local SQLite.
+    
+    Returns:
+    (cloned_root_id, collected_metadata, total_folders_cloned)
+    """
+    if collected_metadata is None:
+        collected_metadata = {}
+
+    total_cloned = 0
+
+    def _clone_recursive(curr_source_id: str, curr_target_parent_id: str, root_flag: bool) -> str:
+        nonlocal total_cloned
+
+        # 1. Fetch metadata of the current source folder
+        meta = drive_ops.get_file_metadata(curr_source_id)
+        folder_name = meta.get("name", "Untitled Folder")
+        folder_desc = meta.get("description", "") or ""
+
+        # Root folder receives 'Z ~ ' prefix
+        if root_flag:
+            target_name = f"Z ~ {folder_name}"
+        else:
+            target_name = folder_name
+
+        # Harvest metadata tags from description
+        parsed_kv, _ = parse_description_key_values(folder_desc)
+        for k, v_list in parsed_kv.items():
+            if k not in collected_metadata:
+                collected_metadata[k] = []
+            for v in v_list:
+                if v not in collected_metadata[k]:
+                    collected_metadata[k].append(v)
+
+        # 2. Create the cloned folder under destination parent
+        cloned = drive_ops.create_folder(
+            name=target_name,
+            parent_id=curr_target_parent_id,
+            description=folder_desc,
+        )
+        cloned_id = cloned["id"]
+        total_cloned += 1
+
+        if log_callback:
+            log_callback(f"[Cloned] {target_name} (ID: {cloned_id}) | Description: '{folder_desc}'")
+
+        # 3. Recursively clone child folders
+        sub_items = drive_ops.list_folder_contents(curr_source_id)
+        for item in sub_items:
+            if item.get("mimeType") == "application/vnd.google-apps.folder":
+                _clone_recursive(
+                    curr_source_id=item["id"],
+                    curr_target_parent_id=cloned_id,
+                    root_flag=False,
+                )
+
+        return cloned_id
+
+    root_cloned_id = _clone_recursive(source_id, target_parent_id, is_root)
+
+    # Persist harvested tags to SQLite
+    if collected_metadata:
+        db.merge_harvested_tags(collected_metadata, source_folder_id=source_id)
+
+    # Log clone operation
+    try:
+        source_meta = drive_ops.get_file_metadata(source_id)
+        source_name = source_meta.get("name", "Unknown")
+        target_meta = drive_ops.get_file_metadata(root_cloned_id)
+        target_name = target_meta.get("name", "Unknown")
+        db.log_cloned_tree(
+            source_id=source_id,
+            source_name=source_name,
+            target_id=root_cloned_id,
+            target_name=target_name,
+            folders_cloned=total_cloned,
+            tags_harvested=sum(len(v) for v in collected_metadata.values()),
+        )
+    except Exception:
+        pass
+
+    return root_cloned_id, collected_metadata, total_cloned
+
+
+def build_json_tree_with_images(
+    folder_id: str,
+    log_callback: Optional[Callable[[str], None]] = None,
+) -> Dict[str, Any]:
+    """
+    Recursively scans the folder tree:
+    - Parses description into key-value metatags: { "metatag": { "Key": ["Val1", ...] } }
+    - Extracts thumbnail links for all non-folder items: { "image": [ "https://drive.google.com/thumbnail?id=...&sz=s1648", ... ] }
+    - Attaches subfolders recursively under "child": { "<child_id>": { ... } }
+    """
+    meta = drive_ops.get_file_metadata(folder_id)
+    folder_name = meta.get("name", "Untitled Folder")
+    folder_desc = meta.get("description", "") or ""
+
+    if log_callback:
+        log_callback(f"[Scanning Tree] Folder: {folder_name} (ID: {folder_id})")
+
+    # 1. Parse metatag from description
+    metatags, _ = parse_description_key_values(folder_desc)
+
+    # 2. List items inside folder
+    sub_items = drive_ops.list_folder_contents(folder_id)
+
+    images_list: List[str] = []
+    child_dict: Dict[str, Any] = {}
+
+    for item in sub_items:
+        item_id = item.get("id")
+        mime = item.get("mimeType", "")
+
+        if mime == "application/vnd.google-apps.folder":
+            # Recursively process child folder
+            child_dict[item_id] = build_json_tree_with_images(item_id, log_callback)
+        else:
+            # Format image thumbnail link
+            img_url = drive_ops.format_thumbnail_url(item_id, size=1648)
+            images_list.append(img_url)
+
+    return {
+        "metatag": metatags,
+        "image": images_list,
+        "child": child_dict,
+    }

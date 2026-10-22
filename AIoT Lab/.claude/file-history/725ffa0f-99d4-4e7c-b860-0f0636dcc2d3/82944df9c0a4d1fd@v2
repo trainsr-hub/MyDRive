@@ -1,0 +1,200 @@
+# core/drive_sync_push.py
+"""
+Sovereign Master-to-Slave Google Drive Mirroring Engine.
+Takes the authoritative local state from SQLite 'folders' table on Disk D:
+and forces Google Drive to be an exact slave mirror.
+"""
+
+import time
+from typing import Dict, List, Any, Optional, Callable
+from . import db, drive_ops, logic, local_template
+
+
+def push_local_master_to_drive(log_callback: Optional[Callable[[str], None]] = None) -> Dict[str, Any]:
+    """
+    Pushes local SQLite folder state onto Google Drive as a slave mirror:
+    1. Ensures remote groups and entities exist on Drive.
+    2. Provisions any missing subfolders on Drive with stamped 'src' metadata.
+    3. Renames any folders on Drive whose names drifted from local SQLite master.
+    4. Records sync execution in sync_log table.
+    """
+    t0 = time.time()
+    root_id = db.get_config("root_id", "14J8QBCqdSQOPerLBIaR2jLyYhZ4WbJUA")
+    template_id = db.get_config("template_id", "1qPYOlZ3-LlnfiBRorXUnNa_0yVZcILvM")
+
+    created_count = 0
+    renamed_count = 0
+    trashed_count = 0
+    updated_count = 0
+
+    if log_callback:
+        log_callback(f"[Master -> Slave Push] Mirroring local SQLite to Google Drive (Root: {root_id})...")
+
+    # 1. Fetch remote Google Drive contents
+    try:
+        remote_root = drive_ops.get_file_metadata(root_id)
+    except Exception as e:
+        raise RuntimeError(f"Cannot connect to Google Drive root folder: {e}")
+
+    # Fetch all local folders from SQLite
+    all_local_folders = db.list_children(None) + db.list_children(root_id)
+    for f in db.list_children(root_id):
+        all_local_folders.extend(db.list_children(f["drive_id"]))
+        for ent in db.list_children(f["drive_id"]):
+            all_local_folders.extend(db.list_children(ent["drive_id"]))
+
+    # Map local folders by drive_id and by (child_of, name)
+    id_mapping: Dict[str, str] = {root_id: root_id, template_id: template_id}
+
+    # Recursive sync starting from root
+    def _mirror_level(parent_local_id: str, parent_remote_id: str):
+        nonlocal created_count, renamed_count, updated_count
+
+        local_children = db.list_children(parent_local_id)
+        if not local_children:
+            return
+
+        # Fetch actual remote subfolders on Google Drive
+        try:
+            remote_subfolders = drive_ops.list_subfolders(parent_remote_id)
+        except Exception:
+            remote_subfolders = []
+
+        remote_by_src = {logic.extract_source_id(f): f for f in remote_subfolders if logic.extract_source_id(f)}
+        remote_by_name = {f["name"]: f for f in remote_subfolders}
+        matched_remote_ids = set()
+
+        for loc_f in local_children:
+            loc_id = loc_f["drive_id"]
+            loc_name = loc_f["name"]
+            loc_src_id = (loc_f.get("src_id") or logic.extract_source_id(loc_f) or "").lower()
+            loc_desc = loc_f.get("description", "") or ""
+            loc_sync_drive_id = loc_f.get("sync_drive_id")
+
+            # Check if remote folder exists:
+            # 1. First priority: sync_drive_id (deterministic tracking field)
+            # 2. Fallback: src_id or name matching
+            rem_f = None
+
+            # Priority 1: Check sync_drive_id first (definitive mapping)
+            if loc_sync_drive_id:
+                for rem in remote_subfolders:
+                    if rem["id"] == loc_sync_drive_id and rem["id"] not in matched_remote_ids:
+                        rem_f = rem
+                        break
+
+            # Priority 2: Fallback to src_id or name matching if sync_drive_id didn't match
+            if not rem_f:
+                for rem in remote_subfolders:
+                    if rem["id"] in matched_remote_ids:
+                        continue
+                    rem_src = (logic.extract_source_id(rem) or "").lower()
+                    rem_name = rem["name"].lower()
+                    if (loc_src_id and rem_src == loc_src_id) or rem["name"] == loc_name or rem_name == loc_name.lower():
+                        rem_f = rem
+                        break
+
+            if rem_f:
+                rem_id = rem_f["id"]
+                matched_remote_ids.add(rem_id)
+                id_mapping[loc_id] = rem_id
+
+                # Update SQLite drive_id if it was a temporary local ID
+                if loc_id != rem_id:
+                    db.rekey_folder_id(loc_id, rem_id)
+
+                # Update sync_drive_id to establish deterministic mapping
+                if loc_sync_drive_id != rem_id:
+                    db.update_folder_fields(loc_id if loc_id == rem_id else rem_id, sync_drive_id=rem_id)
+                    if log_callback:
+                        log_callback(f"[Sync Mapping] Recorded sync_drive_id={rem_id} for '{loc_name}'")
+
+                # Check if name drifted on Drive
+                if rem_f["name"] != loc_name:
+                    if log_callback:
+                        log_callback(f"[Drive Slave Rename] '{rem_f['name']}' -> '{loc_name}' (ID: {rem_id})")
+                    drive_ops.update_folder_meta(rem_id, name=loc_name, properties={"src": loc_src_id} if loc_src_id else None)
+                    renamed_count += 1
+                    db.log_sync_action(rem_id, "RENAME", loc_name, f"Renamed on Drive to match local master")
+
+                # Recurse down
+                _mirror_level(rem_id, rem_id)
+            else:
+                # Folder is missing on Google Drive: Provision it as slave!
+                if log_callback:
+                    log_callback(f"[Drive Slave Provision] Creating '{loc_name}' under parent {parent_remote_id}")
+
+                created = drive_ops.create_folder(
+                    name=loc_name,
+                    parent_id=parent_remote_id,
+                    description=loc_desc,
+                    properties={"src": loc_src_id} if loc_src_id else None,
+                )
+                new_remote_id = created["id"]
+                id_mapping[loc_id] = new_remote_id
+                created_count += 1
+
+                # Update SQLite drive_id if it was a local temporary ID
+                if loc_id != new_remote_id:
+                    db.rekey_folder_id(loc_id, new_remote_id)
+
+                # Record sync_drive_id for this newly created folder
+                db.update_folder_fields(new_remote_id, sync_drive_id=new_remote_id)
+                if log_callback:
+                    log_callback(f"[Sync Mapping] Recorded sync_drive_id={new_remote_id} for new folder '{loc_name}'")
+
+                db.log_sync_action(new_remote_id, "CREATE", loc_name, f"Created on Drive to mirror local master")
+
+                # Recurse down
+                _mirror_level(new_remote_id, new_remote_id)
+
+        # Trash remote folders that exist on Drive but NOT in local SQLite (orphaned)
+        # Note: Folders that exist on both but have different names are RENAMED (not trashed)
+        for rem in remote_subfolders:
+            if rem["id"] not in matched_remote_ids:
+                # Check if this remote folder exists locally but with a different name
+                # If so, we should RENAME it instead of TRASHING
+                local_match_by_src = None
+                for loc_f in local_children:
+                    loc_src = (loc_f.get("src_id") or logic.extract_source_id(loc_f) or "").lower()
+                    rem_src = (logic.extract_source_id(rem) or "").lower()
+                    if loc_src and rem_src and loc_src == rem_src:
+                        local_match_by_src = loc_f
+                        break
+
+                if local_match_by_src:
+                    # Folder exists locally with different name - RENAME in place
+                    if log_callback:
+                        log_callback(f"[Drive Slave Rename] '{rem['name']}' -> '{local_match_by_src['name']}' (ID: {rem['id']})")
+                    drive_ops.update_folder_meta(
+                        rem["id"],
+                        name=local_match_by_src["name"],
+                        properties={"src": local_match_by_src.get("src_id")} if local_match_by_src.get("src_id") else None
+                    )
+                    renamed_count += 1
+                    db.log_sync_action(rem["id"], "RENAME", local_match_by_src["name"], "Renamed on Drive to match local master")
+                else:
+                    # Truly orphaned folder - trash it
+                    if log_callback:
+                        log_callback(f"[Drive Slave Trash] Moving '{rem['name']}' (ID: {rem['id']}) to Trash on Drive")
+                    try:
+                        drive_ops.trash_file(rem["id"])
+                        trashed_count += 1
+                        db.log_sync_action(rem["id"], "TRASH", rem["name"], "Trashed on Drive (removed from local master)")
+                    except Exception as e:
+                        if log_callback:
+                            log_callback(f"[Drive Slave Warning] Could not trash {rem['id']}: {e}")
+
+    # Execute mirroring recursively starting from root
+    _mirror_level(root_id, root_id)
+
+    duration_ms = round((time.time() - t0) * 1000, 1)
+
+    return {
+        "success": True,
+        "created_on_drive": created_count,
+        "renamed_on_drive": renamed_count,
+        "trashed_on_drive": trashed_count,
+        "duration_ms": duration_ms,
+        "message": f"Google Drive mirrored successfully: {created_count} created, {renamed_count} renamed, {trashed_count} trashed in {duration_ms} ms",
+    }

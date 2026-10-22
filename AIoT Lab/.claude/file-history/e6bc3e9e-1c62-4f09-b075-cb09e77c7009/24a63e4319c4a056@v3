@@ -1,0 +1,182 @@
+// path: src/apps/heraclitus/components/ChronoGachaRollPanel.tsx
+// Tier 4 Presentation Component: Golden Standard Chrono Gacha Button (Arc Jurassic Pattern)
+
+import React, { useState } from 'react'
+import { Sparkles, Ticket, ChevronDown, ShoppingCart, Gift, Trophy } from 'lucide-react'
+import { useInventoryStore } from '../../../store/useInventoryStore'
+import { rollChronoDuration } from '../core/chronoGachaEngine'
+import type { GachaRollResult } from '../core/chronoGachaEngine'
+
+interface ChronoGachaRollPanelProps {
+  isDepositing: boolean
+  onRoll: (result: GachaRollResult, wagerMultiplier: number) => void
+}
+
+const WAGER_OPTIONS = [1, 2, 4, 8, 16]
+
+export const ChronoGachaRollPanel: React.FC<ChronoGachaRollPanelProps> = ({
+  isDepositing,
+  onRoll,
+}) => {
+  const chronoTickets = useInventoryStore((s) => s.chronoTickets ?? 15)
+  const discs = useInventoryStore((s) => s.discs)
+  const addChronoTickets = useInventoryStore((s) => s.addChronoTickets)
+  const spendChronoTickets = useInventoryStore((s) => s.spendChronoTickets)
+  const spendDiscs = useInventoryStore((s) => s.spendDiscs)
+
+  const [wager, setWager] = useState<number>(1)
+  const [lastPull, setLastPull] = useState<GachaRollResult | null>(null)
+  const [ticketNotice, setTicketNotice] = useState<string | null>(null)
+
+  const handleRoll = () => {
+    if (isDepositing) return
+
+    if (chronoTickets < wager) {
+      setTicketNotice(`Need ${wager} Chrono Tickets to roll with ${wager}x wager! Claim tickets below.`)
+      setTimeout(() => setTicketNotice(null), 3500)
+      return
+    }
+
+    const success = spendChronoTickets(wager)
+    if (!success) return
+
+    // Roll duration and apply wager multiplier
+    const baseResult = rollChronoDuration()
+    const multipliedSeconds = baseResult.seconds * wager
+    const finalResult: GachaRollResult = {
+      ...baseResult,
+      seconds: multipliedSeconds,
+    }
+
+    setLastPull(finalResult)
+    onRoll(finalResult, wager)
+  }
+
+  const handleBuyTickets = () => {
+    if (discs < 50) {
+      setTicketNotice('Need at least 50 Discs to forge 5 Chrono Tickets. Use the free refill!')
+      setTimeout(() => setTicketNotice(null), 3500)
+      return
+    }
+    spendDiscs(50)
+    addChronoTickets(5)
+    setTicketNotice('Forged 5 Chrono Tickets from 50 Discs!')
+    setTimeout(() => setTicketNotice(null), 3000)
+  }
+
+  const handleFreeRefill = () => {
+    addChronoTickets(10)
+    setTicketNotice('Claimed +10 Free Chrono Tickets!')
+    setTimeout(() => setTicketNotice(null), 3000)
+  }
+
+  return (
+    <div className="chrono-gacha-container">
+      {/* ── 1. PRIMARY SUMMON BUTTON (Arc Jurassic Golden Standard) ───────── */}
+      <button
+        type="button"
+        onClick={handleRoll}
+        disabled={isDepositing || chronoTickets < 1}
+        className={`chrono-summon-button ${
+          isDepositing ? 'is-spooling' : wager > 1 ? 'is-high-wager' : ''
+        }`}
+      >
+        {isDepositing ? (
+          <span className="flex items-center justify-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#ffd86b] animate-spin" />
+            <span>Spooling Chrono Kinetic Stream...</span>
+          </span>
+        ) : (
+          <span className="flex items-center justify-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#ffd86b] animate-pulse" />
+            <span>
+              {wager > 1
+                ? `Summon ${wager}x Chrono Duration (Gacha Gamble)`
+                : 'Summon Chrono Duration (Gacha)'}
+            </span>
+          </span>
+        )}
+      </button>
+
+      {/* ── 2. PRE-ROLL MULTIPLIER / WAGER BAR (Arc Jurassic Golden Standard) ── */}
+      <div className="chrono-wager-bar">
+        <span className="chrono-wager-label">Roll Wager:</span>
+        <div className="chrono-wager-select-wrapper">
+          <select
+            value={wager}
+            onChange={(e) => setWager(Number(e.target.value))}
+            className="chrono-wager-select"
+            disabled={isDepositing}
+          >
+            {WAGER_OPTIONS.map((opt) => (
+              <option key={opt} value={opt} className="bg-[#120f18] text-[#ffd86b]">
+                {opt}x Ticket Wager ({opt} 🎟️)
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="chrono-select-chevron" />
+        </div>
+
+        {/* Ticket Counter Badge */}
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#140d21] border border-[#3b2b4f] text-[11px] font-mono text-[#ffd86b]">
+          <Ticket className="w-3.5 h-3.5" />
+          <span>{chronoTickets} Left</span>
+        </div>
+      </div>
+
+      {/* ── 3. Quick Refill Strip ────────────────────────────────────────── */}
+      <div className="flex items-center justify-center gap-2 text-xs font-mono">
+        <button
+          type="button"
+          onClick={handleBuyTickets}
+          disabled={isDepositing}
+          className="px-3 py-1 rounded-lg bg-[#140e21] hover:bg-[#201633] border border-[#332545] hover:border-[#ffd86b] text-[#cbd5e1] hover:text-white transition flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+        >
+          <ShoppingCart className="w-3 h-3 text-amber-400" />
+          <span>Buy 5 (50 💿)</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleFreeRefill}
+          disabled={isDepositing}
+          className="px-3 py-1 rounded-lg bg-[#140e21] hover:bg-[#201633] border border-[#332545] hover:border-emerald-500 text-emerald-400 hover:text-emerald-300 transition flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+        >
+          <Gift className="w-3 h-3" />
+          <span>+10 Free Refill</span>
+        </button>
+      </div>
+
+      {/* Ticket Notice if triggered */}
+      {ticketNotice && (
+        <div className="text-xs font-mono text-[#ffd86b] bg-[#ffd86b]/10 border border-[#ffd86b]/30 px-4 py-1.5 rounded-xl text-center animate-in fade-in max-w-md">
+          {ticketNotice}
+        </div>
+      )}
+
+      {/* ── 4. Celebratory Last Pull Outcome Banner ─────────────────────── */}
+      {lastPull && (
+        <div
+          className="w-full max-w-md p-3 rounded-xl border flex items-center justify-between text-xs font-mono animate-in fade-in slide-in-from-top-2 duration-300 mt-1 shadow-lg"
+          style={{
+            borderColor: lastPull.color,
+            background: `linear-gradient(90deg, ${lastPull.bgGlow} 0%, rgba(15,11,23,0.95) 100%)`,
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <Trophy className="w-4 h-4 flex-shrink-0" style={{ color: lastPull.color }} />
+            <span className="font-bold uppercase tracking-wider" style={{ color: lastPull.color }}>
+              [{lastPull.tier}]
+            </span>
+            <span className="text-white font-medium truncate">{lastPull.label}:</span>
+            <span className="font-bold text-white text-sm" style={{ textShadow: `0 0 10px ${lastPull.color}` }}>
+              +{lastPull.formatted}
+            </span>
+          </div>
+          <span className="text-[10px] text-[#cbd5e1] hidden sm:inline flex-shrink-0 ml-2">
+            Channeled to Stage
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}

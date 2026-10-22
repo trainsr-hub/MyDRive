@@ -1,0 +1,20 @@
+#pragma once
+// ESP32-C3 Supermini pin map (LCD CS tied to GND, BLK tied to 3V3)
+#define PIN_LCD_SCK   4
+#define PIN_LCD_MOSI  6
+#define PIN_LCD_DC    5
+#define PIN_LCD_RST   3
+
+#define PIN_JQ_TX     1   // ESP TX -> (1k) -> JQ8900 RX
+
+// Dedicated, Non-Strapping Physical Button Pins
+#define PIN_BTN_ROLL       7   // Primary Roll button: GPIO 7 to GND (Clean, non-strapping)
+#define PIN_BTN_SCROLL     10  // Primary Scroll/Page button: GPIO 10 to GND (Clean, non-strapping)
+
+// Legacy / Secondary Pin Fallbacks
+#define PIN_BTN_ROLL_LEGACY   0   // Legacy Roll button (GPIO 0, RTC/ADC rail)
+#define PIN_BTN_SCROLL_LEGACY 2   // Legacy Scroll button (GPIO 2, Strapping pin)
+
+#define JQ_VOLUME     20  // 0..30
+#define TRACK_DRAW    6   // 0003.wav
+#define TRACK_COMPLETE 7  // 0004.wav

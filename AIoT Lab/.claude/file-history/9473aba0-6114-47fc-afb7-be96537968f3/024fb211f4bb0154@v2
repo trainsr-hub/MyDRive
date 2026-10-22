@@ -1,0 +1,71 @@
+{
+  "id": "void-codex",
+  "Title": "Void Codex Pack",
+  "Note": "Hazard Visualizer • Ancient Mesolithic Runes",
+  "Cards": 3,
+  "ticketType": "codex-roll",
+  "ticketCost": 1,
+  "Cover": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop&q=80",
+  "Animation": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80",
+  "Button": "#38bdf8",
+  "ButtonText": "Engage",
+  "color": "#38bdf8",
+  "borderColor": "#0284c7",
+  "bgGradient": "from-[#082f49] via-[#1a1424] to-[#120f18]",
+  "Unpack": [
+    "Void Codex Prime ~ 2%",
+    "Enuma Elish Tablet Fragment ~ 8%",
+    "Voidbound Aegis ~ 10%",
+    "Void Kinetic Core 30...50 ~ 25%",
+    "Zero-Point Matrix Crystal ~ 25%",
+    "Abyssal Rune Dust"
+  ],
+  "Guarantee": [
+    "Zero-Point Matrix Crystal | Enuma Elish Tablet Fragment"
+  ],
+  "Items": {
+    "Void Codex Prime": {
+      "cover": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #082f49 0%, #031726 50%, #000 100%)",
+      "category": "relic",
+      "rarity": "legendary",
+      "description": "Ancient stone tablet inscribed with singularity equations."
+    },
+    "Voidbound Aegis": {
+      "cover": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #082f49 0%, #041b2c 50%, #000 100%)",
+      "category": "relic",
+      "rarity": "rare",
+      "description": "Absorbs hostile shockwaves and converts kinetic impact into shield charge."
+    },
+    "Enuma Elish Tablet Fragment": {
+      "cover": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #3b0764 0%, #1f0838 50%, #000 100%)",
+      "category": "collectible",
+      "rarity": "epic",
+      "description": "Ancient Babylonian creation epic inscribed in cuneiform clay."
+    },
+    "Zero-Point Matrix Crystal": {
+      "cover": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #082f49 0%, #031e33 50%, #000 100%)",
+      "category": "collectible",
+      "rarity": "rare",
+      "description": "Flawless refractive crystal that channels zero-point electromagnetic energy."
+    },
+    "Void Kinetic Core": {
+      "cover": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #7e22ce 0%, #3b0764 50%, #000 100%)",
+      "category": "energy-core",
+      "rarity": "rare",
+      "description": "Kinetic energy fuel condensed from dimensional voids.",
+      "energyAttribute": "void"
+    },
+    "Abyssal Rune Dust": {
+      "cover": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=200&auto=format&fit=crop&q=80",
+      "background": "linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #000 100%)",
+      "category": "collectible",
+      "rarity": "common",
+      "description": "Pulverized ancient rune stones with faint residual magnetic fields."
+    }
+  }
+}

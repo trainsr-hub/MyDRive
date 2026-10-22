@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quote Presentation Studio — E-Paper &amp; Color Testbed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap">
+  <style>
+    :root {
+      --bg-canvas:        #060606;
+      --bg-card:          #111111;
+      --bg-card-hover:    #181818;
+      --bg-input:         #1c1c1c;
+      --text-vivid:       #ffffff;
+      --text-main:        #e0e0e0;
+      --text-muted:       #888888;
+      --text-dim:         #555555;
+      --border-dim:       #222222;
+      --border-mid:       #333333;
+      --border-bright:    #555555;
+      --accent:           #ff9e1b;
+      --radius-sm:        6px;
+      --radius-md:        10px;
+      --radius-lg:        14px;
+      font-family: "IBM Plex Sans", -apple-system, sans-serif;
+      color-scheme: dark;
+    }
+
+    :root[data-theme="light"] {
+      --bg-canvas:        #f4f3ef;
+      --bg-card:          #ffffff;
+      --bg-card-hover:    #faf8f5;
+      --bg-input:         #eae7e1;
+      --text-vivid:       #111111;
+      --text-main:        #2a2a2a;
+      --text-muted:       #666666;
+      --text-dim:         #999999;
+      --border-dim:       #dedcd6;
+      --border-mid:       #c8c5bc;
+      --border-bright:    #8e8a7f;
+      --accent:           #d97706;
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      padding: 2rem 1.5rem 5rem;
+      display: flex;
+      justify-content: center;
+      line-height: 1.6;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 980px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Top Control Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-dim);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .title-group h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .title-group p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .btn:hover { background: var(--bg-card-hover); border-color: var(--border-bright); }
+    .btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+
+    select.select-picker {
+      padding: 0.45rem 0.8rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      color: var(--text-vivid);
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* ==========================================================================
+       COLOR STUDIO & TWEAKER PANELS
+       ========================================================================== */
+    .tweaker-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .tweaker-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.85rem;
+    }
+
+    .tweak-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+    }
+    .tweak-label {
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .segmented-control {
+      display: inline-flex;
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+      gap: 2px;
+    }
+    .seg-btn {
+      padding: 0.28rem 0.65rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .seg-btn:hover { color: var(--text-vivid); }
+    .seg-btn.active {
+      background: #ffffff;
+      color: #000000;
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Color Swatch Buttons */
+    .color-swatch-bar {
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .color-swatch-btn {
+      padding: 0.3rem 0.65rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-input);
+      color: var(--text-main);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.12s ease;
+    }
+    .color-swatch-btn .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 4px rgba(0,0,0,0.4);
+    }
+    .color-swatch-btn:hover { border-color: var(--border-bright); background: var(--bg-card-hover); }
+    .color-swatch-btn.active {
+      border-color: #ffffff;
+      background: #222222;
+      color: #ffffff;
+      box-shadow: 0 0 0 1px #ffffff;
+    }
+
+    .color-picker-input {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+      outline: none;
+    }
+
+    /* Accent Target Selection Pills */
+    .accent-target-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.22rem 0.55rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-muted);
+      user-select: none;
+      transition: all 0.12s ease;
+    }
+    .accent-target-pill:hover {
+      border-color: var(--border-bright);
+      color: var(--text-vivid);
+    }
+    .accent-target-pill:has(input:checked) {
+      border-color: var(--accent);
+      color: var(--text-vivid);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .accent-target-pill input {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* ==========================================================================
+       E-PAPER HARDWARE CHASSIS — 3-COLOR SYSTEM ARCHITECTURE
+       ========================================================================== */
+    .epaper-chassis {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      border-radius: 12px;
+      padding: 2.25rem 2.5rem;
+      position: relative;
+      transition: all 0.2s ease;
+      font-feature-settings: "liga" 0;
+      background: var(--ep-bg, #07090e) !important;
+      color: var(--ep-text, #ffffff) !important;
+      border: 8px solid var(--ep-border, #1a2233);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 0 1px var(--ep-border, #1a2233);
+    }
+
+    /* Compact 2.9" aspect ratio simulation */
+    .epaper-chassis.compact {
+      max-width: 540px;
+      padding: 1.5rem 1.75rem;
+    }
+
+    /* Typography Scales */
+    .font-scale-sm .ep-content { font-size: 1.05rem; line-height: 1.55; }
+    .font-scale-md .ep-content { font-size: 1.25rem; line-height: 1.65; }
+    .font-scale-lg .ep-content { font-size: 1.45rem; line-height: 1.75; }
+    .font-scale-xl .ep-content { font-size: 1.75rem; line-height: 1.75; }
+
+    /* Typefaces */
+    .ep-font-mono  .ep-content { font-family: "JetBrains Mono", monospace; }
+    .ep-font-serif .ep-content { font-family: "Lora", "IBM Plex Serif", Georgia, serif; }
+    .ep-font-sans  .ep-content { font-family: "IBM Plex Sans", -apple-system, sans-serif; }
+
+    /* Category-Driven Content Alignment */
+    .ep-content.content-justify {
+      text-align: justify !important;
+      text-justify: inter-word !important;
+      hyphens: auto;
+    }
+    .ep-content.content-left {
+      text-align: left !important;
+    }
+
+    /* ==========================================================================
+       ARCHITECTURAL QUOTATION MARKS (FRAMING ELEMENTS IN ACCENT COLOR)
+       ========================================================================== */
+    .ep-qmark {
+      font-family: "IBM Plex Serif", Georgia, serif !important;
+      font-style: normal !important;
+      font-weight: 700;
+      font-size: 1.65em;
+      line-height: 0;
+      display: inline-block;
+      user-select: none;
+      color: var(--ep-qmark, var(--ep-accent, #38bdf8)) !important;
+      transition: all 0.15s ease;
+    }
+    .ep-qmark-open {
+      margin-right: 0.35rem;
+      vertical-align: -0.1em;
+    }
+    .ep-qmark-close {
+      margin-left: 0.35rem;
+      vertical-align: -0.22em;
+    }
+
+    /* ==========================================================================
+       SUBTLE LOW-CONTRAST TAG BLOCKS
+       ========================================================================== */
+    .ep-tag-block {
+      display: inline-block;
+      padding: 0.14rem 0.52rem;
+      border-radius: 4px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.3;
+      user-select: none;
+      margin-right: 0.35rem;
+      margin-bottom: 0.2rem;
+      background: var(--ep-tag-bg, #0c1424);
+      border: 1px solid var(--ep-tag-border, #1e3a5f);
+      color: var(--ep-tag-text, #7dd3fc);
+      transition: all 0.15s ease;
+    }
+
+    /* ==========================================================================
+       SUB-LAYOUT 1: CLASSIC MINIMAL (THE MANAGER'S VISION)
+       ========================================================================== */
+    .ep-type-minimal .ep-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.6rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.74rem; /* Smaller */
+      font-weight: 500;
+      border-bottom: 1px solid var(--ep-border, #1a2233);
+      color: #666666; /* Ghost */
+      letter-spacing: 0.02em;
+    }
+
+    .ep-status-bar .ep-header-left {
+      color: #666666; /* Ghost */
+      font-size: 0.74rem;
+    }
+    .ep-status-bar .ep-idx-num {
+      color: #777777; /* Ghost */
+      font-weight: 600;
+    }
+    .ep-status-bar .ep-sep {
+      color: #444444; /* Ghost */
+      margin: 0 0.35rem;
+    }
+    .ep-status-bar .ep-specific-title {
+      color: #777777; /* Ghost */
+      font-weight: 500;
+    }
+    .ep-status-bar .ep-header-right {
+      color: #666666; /* Ghost */
+      font-size: 0.74rem;
+    }
+    .ep-status-bar .ep-date-label {
+      color: #555555; /* Ghost */
+    }
+    .ep-status-bar .ep-date-val {
+      color: #777777; /* Ghost */
+      font-weight: 500;
+    }
+
+    .ep-type-minimal .ep-content {
+      font-style: italic;
+      margin-bottom: 1.6rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: #ffffff; /* Crisp white focus */
+    }
+
+    .ep-type-minimal .ep-context {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.8rem;
+      padding: 0.65rem 0.9rem;
+      margin-bottom: 1.6rem;
+      line-height: 1.55;
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 2px solid #444444;
+      color: #777777;
+    }
+
+    .ep-type-minimal .ep-footer {
+      padding-top: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border-top: 1px solid var(--ep-border, #1a2233);
+      color: var(--ep-text, #ffffff);
+    }
+
+    .ep-type-minimal .ep-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      align-items: center;
+    }
+
+    .ep-type-minimal .ep-attribution {
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      text-align: right;
+    }
+    .ep-type-minimal .ep-attribution .ep-container-name {
+      font-weight: 700;
+    }
+
+    /* Sub-Layout 2: Card Plate */
+    .ep-type-cardplate {
+      border: 2px solid var(--ep-border, #1a2233);
+      padding: 1.75rem 2rem;
+      position: relative;
+    }
+    .ep-type-cardplate .ep-card-header {
+      display: flex;
+      justify-content: space-between;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-bottom: 1px solid var(--ep-border, #1a2233);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.35rem;
+    }
+    .ep-type-cardplate .ep-content {
+      font-style: italic;
+      margin-bottom: 1.5rem;
+      color: var(--ep-text, #ffffff);
+    }
+    .ep-type-cardplate .ep-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-top: 1px dashed var(--ep-border, #1a2233);
+      padding-top: 0.75rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    /* Sub-Layout 3: Typographic Poster */
+    .ep-type-poster .ep-idx-huge {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1;
+      opacity: 0.25;
+      margin-bottom: -0.65rem;
+      color: var(--ep-accent, #38bdf8);
+    }
+    .ep-type-poster .ep-status-bar {
+      display: flex;
+      justify-content: space-between;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-bottom: 2px solid var(--ep-border, #1a2233);
+      padding-bottom: 0.4rem;
+      margin-bottom: 1.5rem;
+    }
+    .ep-type-poster .ep-content {
+      font-style: italic;
+      margin-bottom: 1.5rem;
+      color: var(--ep-text, #ffffff);
+    }
+    .ep-type-poster .ep-poster-meta {
+      display: flex;
+      justify-content: space-between;
+      border-top: 2px solid var(--ep-border, #1a2233);
+      padding-top: 0.75rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Top Control Bar -->
+    <header class="top-bar">
+      <div class="title-group">
+        <h1><span>📟</span> Quote Presentation Studio</h1>
+        <p>Interactive 3-Color Testbed: <strong>Black-ish</strong> (Canvas) + <strong>White</strong> (Content) + <strong>3rd Accent Color</strong></p>
+      </div>
+
+      <div class="controls-row">
+        <!-- Quote Picker -->
+        <select class="select-picker" id="quote-select" onchange="loadSelectedQuote(this.value)">
+          <option value="">Loading quotes...</option>
+        </select>
+        <button class="btn" onclick="pickRandomQuote()">🎲 Random</button>
+        <button class="btn" onclick="toggleTheme()">🌓 UI Mode</button>
+      </div>
+    </header>
+
+    <!-- LIVE TWEAKER & COLOR STUDIO PANEL -->
+    <section class="tweaker-panel">
+      <!-- ROW 1: 3RD COLOR SWITCHER PANEL -->
+      <div class="tweaker-row">
+        <div class="tweak-group">
+          <span class="tweak-label">🎨 3rd Accent:</span>
+          <div class="color-swatch-bar">
+            <button class="color-swatch-btn active" id="swatch-blue" onclick="setAccentPreset('blue')">
+              <span class="dot" style="background:#38bdf8;"></span> Blue (Sapphire)
+            </button>
+            <button class="color-swatch-btn" id="swatch-gold" onclick="setAccentPreset('gold')">
+              <span class="dot" style="background:#f59e0b;"></span> Gold (Imperial)
+            </button>
+            <button class="color-swatch-btn" id="swatch-cyan" onclick="setAccentPreset('cyan')">
+              <span class="dot" style="background:#06b6d4;"></span> Cyan (Ice)
+            </button>
+            <button class="color-swatch-btn" id="swatch-emerald" onclick="setAccentPreset('emerald')">
+              <span class="dot" style="background:#10b981;"></span> Emerald (Sage)
+            </button>
+            <button class="color-swatch-btn" id="swatch-rose" onclick="setAccentPreset('rose')">
+              <span class="dot" style="background:#f43f5e;"></span> Rose (Crimson)
+            </button>
+            <button class="color-swatch-btn" id="swatch-mono" onclick="setAccentPreset('mono')">
+              <span class="dot" style="background:#ffffff;"></span> Pure B/W
+            </button>
+          </div>
+        </div>
+
+        <div class="tweak-group">
+          <span class="tweak-label">Custom:</span>
+          <input type="color" class="color-picker-input" id="custom-color-picker" value="#38bdf8" oninput="setCustomAccent(this.value)">
+          <span id="custom-hex-label" style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--text-muted);">#38bdf8</span>
+        </div>
+      </div>
+
+      <!-- ROW 2: SHARED QUOTE MARKS & CONTAINER COLOR MODE -->
+      <div class="tweaker-row" style="background:var(--bg-input); padding:0.5rem 0.85rem; border-radius:var(--radius-sm); border:1px solid var(--border-dim);">
+        <div class="tweak-group">
+          <span class="tweak-label" title="Controls the shared color of quotation marks and container">✨ Quotes &amp; Container Color Pool:</span>
+          <div class="segmented-control">
+            <button class="seg-btn active" id="shared-pool-random" onclick="setSharedColorMode('random')">🎲 Random (Gold / Blue)</button>
+            <button class="seg-btn" id="shared-pool-blue" onclick="setSharedColorMode('blue')">💙 Force Blue</button>
+            <button class="seg-btn" id="shared-pool-gold" onclick="setSharedColorMode('gold')">💛 Force Gold</button>
+          </div>
+        </div>
+
+        <div class="tweak-group">
+          <span class="tweak-label">🏷️ Tags:</span>
+          <span style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--text-muted);">Dynamic Multi-Color Blocks</span>
+          <button class="btn" style="padding:0.25rem 0.55rem; font-size:0.75rem;" onclick="reRollColors()">🎲 Re-roll Colors</button>
+        </div>
+      </div>
+
+      <!-- ROW 3: BLACK-ISH CANVAS BASE & MARKS TWEAK -->
+      <div class="tweaker-row">
+        <div class="tweak-group">
+          <span class="tweak-label">Black-ish Base:</span>
+          <div class="segmented-control">
+            <button class="seg-btn active" id="base-btn-obsidian" onclick="setCanvasBase('obsidian')">Obsidian Noir (#000)</button>
+            <button class="seg-btn" id="base-btn-carbon" onclick="setCanvasBase('carbon')">Carbon (#07090e)</button>
+            <button class="seg-btn" id="base-btn-charcoal" onclick="setCanvasBase('charcoal')">Charcoal (#080705)</button>
+          </div>
+        </div>
+
+        <div class="tweak-group">
+          <span class="tweak-label">Marks Focus:</span>
+          <div class="segmented-control">
+            <button class="seg-btn active" id="mark-btn-accent" onclick="setMarkStyle('accent')" title="Accent colored bookends">Accent</button>
+            <button class="seg-btn" id="mark-btn-ghost" onclick="setMarkStyle('ghost')" title="Subtle muted framing">Ghost</button>
+            <button class="seg-btn" id="mark-btn-stark" onclick="setMarkStyle('stark')" title="Solid white">White</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 3: TYPOGRAPHY, SCALE & MODE -->
+      <div class="tweaker-row">
+        <!-- Layout Variant -->
+        <div class="tweak-group">
+          <span class="tweak-label">Type:</span>
+          <div class="segmented-control">
+            <button class="seg-btn active" id="type-btn-minimal" onclick="setSubLayout('minimal')">1. Classic Minimal</button>
+            <button class="seg-btn" id="type-btn-cardplate" onclick="setSubLayout('cardplate')">2. Book Plate</button>
+            <button class="seg-btn" id="type-btn-poster" onclick="setSubLayout('poster')">3. Typographic</button>
+          </div>
+        </div>
+
+        <!-- Typeface -->
+        <div class="tweak-group">
+          <span class="tweak-label">Font:</span>
+          <div class="segmented-control">
+            <button class="seg-btn active" id="font-btn-mono" onclick="setFontFamily('mono')">Mono</button>
+            <button class="seg-btn" id="font-btn-serif" onclick="setFontFamily('serif')">Serif</button>
+            <button class="seg-btn" id="font-btn-sans" onclick="setFontFamily('sans')">Sans</button>
+          </div>
+        </div>
+
+        <!-- Size Scale -->
+        <div class="tweak-group">
+          <span class="tweak-label">Size:</span>
+          <div class="segmented-control">
+            <button class="seg-btn" id="scale-btn-sm" onclick="setFontScale('sm')">S</button>
+            <button class="seg-btn" id="scale-btn-md" onclick="setFontScale('md')">M</button>
+            <button class="seg-btn active" id="scale-btn-lg" onclick="setFontScale('lg')">L</button>
+            <button class="seg-btn" id="scale-btn-xl" onclick="setFontScale('xl')">XL</button>
+          </div>
+        </div>
+
+        <!-- Mode Toggles -->
+        <div class="tweak-group">
+          <button class="btn active" id="toggle-context-btn" onclick="toggleContext()">Context</button>
+          <button class="btn" id="toggle-compact-btn" onclick="toggleCompactMode()">2.9" / 4.2"</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN RENDER STAGE (CHASSIS) -->
+    <main>
+      <div class="epaper-chassis ep-font-mono font-scale-lg" id="epaper-stage">
+        <!-- Rendered dynamically via JavaScript -->
+      </div>
+    </main>
+
+    <!-- Raw Payload Drawer -->
+    <details style="background:var(--bg-card); border:1px solid var(--border-dim); border-radius:var(--radius-md); padding:1rem; cursor:pointer;">
+      <summary style="font-size:0.85rem; font-weight:600; color:var(--text-muted); outline:none;">
+        🔍 Inspect Active Quote Data Bundle
+      </summary>
+      <pre id="raw-payload-json" style="font-family:'JetBrains Mono'; font-size:0.8rem; color:var(--accent); margin-top:1rem; overflow-x:auto;"></pre>
+    </details>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin.startsWith('http') ? window.location.origin : 'http://127.0.0.1:20137';
+    let quotesList = [];
+    let activeQuote = null;
+    let availableSpecifics = [];
+    let availableThemes = [];
+
+    // State Variables for Live Tweaker — DEFAULTED TO 3-COLOR SYSTEM (BLACK + WHITE + BLUE):
+    let currentSubLayout = 'minimal'; // 'Classic Minimal'
+    let currentFontFamily = 'mono';   // 'Mono' (JetBrains Mono)
+    let currentFontScale = 'lg';       // 'Size L'
+    let currentMarkStyle = 'accent';   // 'Accent'
+    let currentCanvasBase = 'obsidian';// 'Obsidian Noir (#000)'
+    let currentAccentColor = '#38bdf8';// Sapphire Blue (#38bdf8)
+    let currentAccentKey = 'blue';     // 'blue'
+    let showContext = true;
+    let isCompact = false;
+    let sharedColorMode = 'random';     // 'random' | 'blue' | 'gold'
+    let reRollSeed = 0;
+
+    function setSharedColorMode(mode) {
+      sharedColorMode = mode;
+      document.querySelectorAll('[id^="shared-pool-"]').forEach(b => b.classList.remove('active'));
+      const btn = document.getElementById(`shared-pool-${mode}`);
+      if (btn) btn.classList.add('active');
+      renderActiveEpaper();
+    }
+
+    function reRollColors() {
+      reRollSeed = Math.floor(Math.random() * 1000);
+      renderActiveEpaper();
+    }
+
+    // Curated Presets Dictionary
+    const ACCENT_PRESETS = {
+      blue:    { hex: '#38bdf8', dim: '#64748b', tagBg: '#091322', tagBorder: '#163152', tagText: '#7dd3fc' },
+      gold:    { hex: '#f59e0b', dim: '#78716c', tagBg: '#14110a', tagBorder: '#3d3215', tagText: '#fcd34d' },
+      cyan:    { hex: '#06b6d4', dim: '#64748b', tagBg: '#08171f', tagBorder: '#114154', tagText: '#67e8f9' },
+      emerald: { hex: '#10b981', dim: '#6b7280', tagBg: '#071611', tagBorder: '#124131', tagText: '#6ee7b7' },
+      rose:    { hex: '#f43f5e', dim: '#71717a', tagBg: '#1c080d', tagBorder: '#4a1522', tagText: '#fda4af' },
+      mono:    { hex: '#ffffff', dim: '#555555', tagBg: '#111111', tagBorder: '#282828', tagText: '#888888' }
+    };
+
+    const CANVAS_BASES = {
+      obsidian: { bg: '#000000', border: '#1e1e1e' },
+      carbon:   { bg: '#07090e', border: '#162032' },
+      charcoal: { bg: '#080705', border: '#262015' }
+    };
+
+    async function init() {
+      try {
+        const [taxRes, qRes] = await Promise.all([
+          fetch(`${API_BASE}/api/taxonomy`).then(r => r.json()).catch(() => ({})),
+          fetch(`${API_BASE}/api/quotes/list`).then(r => r.json()).catch(() => [])
+        ]);
+
+        availableSpecifics = taxRes.specifics || [];
+        availableThemes = taxRes.themes || [];
+        quotesList = qRes || [];
+
+        populateSelect();
+
+        // Default to Quote #6 (or first available)
+        const target = quotesList.find(q => q.idx === 6) || quotesList[0];
+        if (target) loadSelectedQuote(target.id);
+      } catch (err) {
+        document.getElementById('epaper-stage').innerHTML = `<div style="padding:2rem; text-align:center;">Failed to connect to local server at ${API_BASE}.</div>`;
+      }
+    }
+
+    function populateSelect() {
+      const select = document.getElementById('quote-select');
+      if (quotesList.length === 0) {
+        select.innerHTML = `<option>No quotes in database</option>`;
+        return;
+      }
+      select.innerHTML = quotesList.map(q => {
+        const snippet = q.main_content.split('\n')[0].substring(0, 34);
+        return `<option value="${q.id}">#${q.idx ?? q.index} — "${snippet}..."</option>`;
+      }).join('');
+    }
+
+    function loadSelectedQuote(qid) {
+      activeQuote = quotesList.find(q => q.id === qid) || quotesList[0];
+      if (!activeQuote) return;
+
+      document.getElementById('quote-select').value = activeQuote.id;
+      renderActiveEpaper();
+    }
+
+    function pickRandomQuote() {
+      if (quotesList.length === 0) return;
+      const rnd = quotesList[Math.floor(Math.random() * quotesList.length)];
+      loadSelectedQuote(rnd.id);
+    }
+
+    // ==============================================================================
+    // COLOR STUDIO CONTROLS
+    // ==============================================================================
+    function setAccentPreset(key) {
+      currentAccentKey = key;
+      const p = ACCENT_PRESETS[key];
+      currentAccentColor = p.hex;
+
+      document.getElementById('custom-color-picker').value = p.hex;
+      document.getElementById('custom-hex-label').textContent = p.hex;
+
+      document.querySelectorAll('.color-swatch-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`swatch-${key}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      applyColorVariables();
+    }
+
+    function setCustomAccent(hex) {
+      currentAccentKey = 'custom';
+      currentAccentColor = hex;
+      document.getElementById('custom-hex-label').textContent = hex;
+
+      document.querySelectorAll('.color-swatch-btn').forEach(b => b.classList.remove('active'));
+
+      applyColorVariables();
+    }
+
+    function setCanvasBase(baseKey) {
+      currentCanvasBase = baseKey;
+      document.querySelectorAll('[id^="base-btn-"]').forEach(b => b.classList.remove('active'));
+      document.getElementById(`base-btn-${baseKey}`).classList.add('active');
+      applyColorVariables();
+    }
+
+    function setMarkStyle(style) {
+      currentMarkStyle = style;
+      document.querySelectorAll('[id^="mark-btn-"]').forEach(b => b.classList.remove('active'));
+      document.getElementById(`mark-btn-${style}`).classList.add('active');
+      applyColorVariables();
+    }
+
+    function applyColorVariables() {
+      const chassis = document.getElementById('epaper-stage');
+      const base = CANVAS_BASES[currentCanvasBase] || CANVAS_BASES.obsidian;
+
+      let p = ACCENT_PRESETS[currentAccentKey];
+      if (!p) {
+        // Compute dynamic tag and dim colors for custom hex
+        p = {
+          hex: currentAccentColor,
+          dim: '#6b7280',
+          tagBg: 'rgba(255, 255, 255, 0.05)',
+          tagBorder: 'rgba(255, 255, 255, 0.12)',
+          tagText: currentAccentColor
+        };
+      }
+
+      chassis.style.setProperty('--ep-bg', base.bg);
+      chassis.style.setProperty('--ep-border', base.border);
+      chassis.style.setProperty('--ep-text', '#ffffff');
+      chassis.style.setProperty('--ep-accent', currentAccentColor);
+      chassis.style.setProperty('--ep-dim', p.dim);
+      chassis.style.setProperty('--ep-tag-bg', p.tagBg);
+      chassis.style.setProperty('--ep-tag-border', p.tagBorder);
+      chassis.style.setProperty('--ep-tag-text', p.tagText);
+
+      // Quote Mark focus setting
+      if (currentMarkStyle === 'accent') {
+        chassis.style.setProperty('--ep-qmark', currentAccentColor);
+      } else if (currentMarkStyle === 'ghost') {
+        chassis.style.setProperty('--ep-qmark', '#555555');
+      } else if (currentMarkStyle === 'stark') {
+        chassis.style.setProperty('--ep-qmark', '#ffffff');
+      }
+    }
+
+    // ==============================================================================
+    // LAYOUT & TYPOGRAPHY TWEAKER CONTROLS
+    // ==============================================================================
+    function setSubLayout(layout) {
+      currentSubLayout = layout;
+      document.querySelectorAll('[id^="type-btn-"]').forEach(b => b.classList.remove('active'));
+      document.getElementById(`type-btn-${layout}`).classList.add('active');
+      renderActiveEpaper();
+    }
+
+    function setFontFamily(font) {
+      currentFontFamily = font;
+      document.querySelectorAll('[id^="font-btn-"]').forEach(b => b.classList.remove('active'));
+      document.getElementById(`font-btn-${font}`).classList.add('active');
+      updateChassisClasses();
+    }
+
+    function setFontScale(scale) {
+      currentFontScale = scale;
+      document.querySelectorAll('[id^="scale-btn-"]').forEach(b => b.classList.remove('active'));
+      document.getElementById(`scale-btn-${scale}`).classList.add('active');
+      updateChassisClasses();
+    }
+
+    function toggleContext() {
+      showContext = !showContext;
+      document.getElementById('toggle-context-btn').classList.toggle('active', showContext);
+      renderActiveEpaper();
+    }
+
+    function toggleCompactMode() {
+      isCompact = !isCompact;
+      document.getElementById('toggle-compact-btn').classList.toggle('active', isCompact);
+      updateChassisClasses();
+    }
+
+    function updateChassisClasses() {
+      const chassis = document.getElementById('epaper-stage');
+      chassis.className = `epaper-chassis ep-font-${currentFontFamily} font-scale-${currentFontScale}`;
+      if (isCompact) chassis.classList.add('compact');
+      applyColorVariables();
+    }
+
+    // Resolve 5-point minimal metadata bundle
+    function getBundle(q) {
+      if (!q) return null;
+
+      const content = q.main_content || "";
+      const context = q.context || "";
+
+      const specific = availableSpecifics.find(s => s.id === q.specific_id);
+      const specificName = specific ? specific.name : "—";
+      const containerName = specific && specific.container ? specific.container.name : (specific ? (specific.container_name || "—") : "—");
+
+      let effectiveDate = (q.date || "").trim();
+      let isFallback = false;
+      if (!effectiveDate && specific && specific.date && specific.date.trim()) {
+        effectiveDate = specific.date.trim();
+        isFallback = true;
+      }
+
+      const rawThemes = (q.theme_ids || []).map(tid => {
+        const th = availableThemes.find(t => t.id === tid);
+        return th ? th.name : tid;
+      });
+      const hashtagThemes = rawThemes.map(t => `#${t}`);
+
+      const rawCategory = specific ? (specific.category || "").trim() : "";
+
+      return {
+        idx: q.idx ?? q.index,
+        content,
+        context,
+        category: rawCategory,
+        specificName,
+        containerName,
+        effectiveDate: effectiveDate || "—",
+        isFallback,
+        hashtagThemes: hashtagThemes.length > 0 ? hashtagThemes : ["#Wisdom"],
+        scores: q.scores || [],
+        average_score: q.average_score ?? q.avg_score ?? null
+      };
+    }
+
+    function renderActiveEpaper() {
+      const b = getBundle(activeQuote);
+      if (!b) return;
+
+      updateChassisClasses();
+      document.getElementById('raw-payload-json').textContent = JSON.stringify(b, null, 2);
+
+      const stage = document.getElementById('epaper-stage');
+
+      // Category-Driven Handling: writing => justify, music/poem => left
+      const catLower = (b.category || "").toLowerCase().trim();
+      const isWriting = catLower === "writing" || catLower === "bài viết" || catLower === "baiviet";
+      const alignClass = isWriting ? "content-justify" : "content-left";
+
+      // ==============================================================================
+      // VISION COLOR ENGINE:
+      // - Quotation mark & Container: SAME color, chosen randomly from pool of 2 [Gold (#f59e0b) vs Blue (#38bdf8)]
+      // - Each tag: distinct random color for variety
+      // - Header (#IDX ~ Specific, Date: <date>): Ghost (#666666) & smaller
+      // ==============================================================================
+
+      // Deterministic pseudo-random seed based on quote index or ID so it feels stable per quote
+      const quoteSeed = (typeof b.idx === 'number' ? b.idx : (parseInt(String(b.idx).replace(/\D/g, ''), 10) || 1)) + reRollSeed;
+      let sharedAccentColor;
+      if (sharedColorMode === 'gold') {
+        sharedAccentColor = '#f59e0b';
+      } else if (sharedColorMode === 'blue') {
+        sharedAccentColor = '#38bdf8';
+      } else {
+        const isGold = (quoteSeed % 2 === 0);
+        sharedAccentColor = isGold ? '#f59e0b' : '#38bdf8'; // Random pool of 2 (Gold vs Blue)
+      }
+
+      // Content: Italic and wrapped by distinct quotation marks matching the Container's color
+      const formattedContent = `<span class="ep-qmark ep-qmark-open" style="color:${sharedAccentColor} !important;">“</span><em>${b.content.replace(/\n/g, '<br>')}</em><span class="ep-qmark ep-qmark-close" style="color:${sharedAccentColor} !important;">”</span>`;
+
+      // Header components: Ghost (#666) and smaller font size
+      const headerTitleHTML = `<span class="ep-header-left"><strong class="ep-idx-num">#${b.idx}</strong><span class="ep-sep">~</span><span class="ep-specific-title">${b.specificName}</span></span>`;
+      const headerDateHTML = `<span class="ep-header-right"><span class="ep-date-label">Date: </span><span class="ep-date-val">${b.effectiveDate}</span></span>`;
+
+      // Dynamic Tag Color Palette Pool for individual tags
+      const tagColorPool = [
+        { bg: '#081724', border: '#12395b', text: '#38bdf8' }, // Sapphire Blue
+        { bg: '#1c1507', border: '#423211', text: '#f59e0b' }, // Imperial Gold
+        { bg: '#07181c', border: '#113e4a', text: '#06b6d4' }, // Cyan
+        { bg: '#071811', border: '#11422c', text: '#10b981' }, // Emerald
+        { bg: '#1a080f', border: '#4a1529', text: '#f43f5e' }, // Crimson Rose
+        { bg: '#16091e', border: '#431959', text: '#c084fc' }, // Violet
+        { bg: '#191307', border: '#473611', text: '#fbbf24' }  // Amber
+      ];
+
+      // Each tag receives an individual random color block from the palette
+      const tagsBlocks = b.hashtagThemes.map((t, idx) => {
+        // String hash for stable color selection per tag name
+        let hash = 0;
+        for (let i = 0; i < t.length; i++) hash = (hash << 5) - hash + t.charCodeAt(i);
+        const colorIdx = Math.abs((hash + idx * 7) % tagColorPool.length);
+        const c = tagColorPool[colorIdx];
+        return `<span class="ep-tag-block" style="background:${c.bg} !important; border-color:${c.border} !important; color:${c.text} !important;">${t}</span>`;
+      }).join('');
+
+      // Container: Shares the exact same color as the quotation marks (Gold or Blue)
+      const containerHTML = `<span class="ep-container-name" style="color:${sharedAccentColor} !important; font-weight:700;">${b.containerName}</span>`;
+
+      if (currentSubLayout === 'minimal') {
+        stage.innerHTML = `
+          <div class="ep-type-minimal">
+            <!-- 1. Header: #<idx> ~ <specific> on left, Date: <date> on right -->
+            <div class="ep-status-bar" style="${dividerBorder}">
+              <div>${headerTitleHTML}</div>
+              <div>${headerDateHTML}</div>
+            </div>
+
+            <!-- 2. Content: Category-Driven Alignment -->
+            <div class="ep-content ${alignClass}">
+              ${formattedContent}
+            </div>
+
+            <!-- 3. Optional Context -->
+            ${(showContext && b.context) ? `
+              <div class="ep-context">
+                ${b.context}
+              </div>
+            ` : ''}
+
+            <!-- 4. Footer: Tags on LEFT · Container on RIGHT -->
+            <div class="ep-footer" style="${dividerBorder}">
+              <div class="ep-tags">${tagsBlocks}</div>
+              <div class="ep-attribution">${containerHTML}</div>
+            </div>
+          </div>
+        `;
+      } else if (currentSubLayout === 'cardplate') {
+        stage.innerHTML = `
+          <div class="ep-type-cardplate" style="${dividerBorder}">
+            <!-- Header -->
+            <div class="ep-card-header" style="${dividerBorder}">
+              <div>${headerTitleHTML}</div>
+              <div>${headerDateHTML}</div>
+            </div>
+
+            <!-- Content -->
+            <div class="ep-content ${alignClass}">
+              ${formattedContent}
+            </div>
+
+            ${(showContext && b.context) ? `
+              <div style="font-family:'JetBrains Mono'; font-size:0.8rem; background:var(--ep-tag-bg); padding:0.6rem 0.8rem; border-left:2px solid var(--ep-accent); margin-bottom:1.35rem; line-height:1.5; color:var(--ep-dim);">
+                ${b.context}
+              </div>
+            ` : ''}
+
+            <!-- Footer -->
+            <div class="ep-card-footer" style="${dividerBorder}">
+              <div class="ep-tags">${tagsBlocks}</div>
+              <div class="ep-attribution">${containerHTML}</div>
+            </div>
+          </div>
+        `;
+      } else if (currentSubLayout === 'poster') {
+        stage.innerHTML = `
+          <div class="ep-type-poster">
+            <div class="ep-idx-huge" style="color:${idxColor};">#${b.idx}</div>
+
+            <div class="ep-status-bar" style="${dividerBorder}">
+              <div>${headerTitleHTML}</div>
+              <div>${headerDateHTML}</div>
+            </div>
+
+            <!-- Content -->
+            <div class="ep-content ${alignClass}">
+              ${formattedContent}
+            </div>
+
+            ${(showContext && b.context) ? `
+              <div style="font-family:'JetBrains Mono'; font-size:0.8rem; background:var(--ep-tag-bg); padding:0.6rem 0.8rem; border-left:2px solid var(--ep-accent); margin-bottom:1.35rem; line-height:1.5; color:var(--ep-dim);">
+                ${b.context}
+              </div>
+            ` : ''}
+
+            <!-- Footer -->
+            <div class="ep-poster-meta" style="${dividerBorder}">
+              <div class="ep-tags">${tagsBlocks}</div>
+              <div class="ep-attribution">${containerHTML}</div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const cur = html.getAttribute('data-theme') || 'dark';
+      const nxt = cur === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', nxt);
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

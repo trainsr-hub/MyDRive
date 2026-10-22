@@ -1,0 +1,2760 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Prescripts Studio — Navigation &amp; Curation Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+  <style>
+    /* ==========================================================================
+       PRESCRIPTS STUDIO — SINGLE-PAGE CRUD & NAVIGATION HUB
+       ========================================================================== */
+    :root {
+      --bg-canvas:        #080706;
+      --bg-card:          #13100d;
+      --bg-card-hover:    #1c1713;
+      --bg-input:         #1a1511;
+      --bg-input-focus:   #231c16;
+
+      --text-vivid:       #fffcf7;
+      --text-main:        #ede4d8;
+      --text-muted:       #8a7b6c;
+      --text-dim:         #5c5044;
+
+      --border-dim:       #292018;
+      --border-mid:       #3f3226;
+      --border-bright:    #634f3c;
+
+      --accent:           #ff9e1b;
+      --accent-hover:     #ffb03a;
+      --accent-glow:      rgba(255, 158, 27, 0.25);
+      --accent-bg:        rgba(255, 158, 27, 0.12);
+      --accent-border:    rgba(255, 158, 27, 0.4);
+
+      --hazard-high:      #f43f5e;
+      --hazard-low:       #10b981;
+
+      --radius-sm:        6px;
+      --radius-md:        10px;
+      --radius-lg:        14px;
+      --shadow-subtle:    0 4px 20px rgba(0, 0, 0, 0.5);
+
+      color-scheme: dark;
+      font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14.5px;
+      line-height: 1.5;
+    }
+
+    :root[data-theme="light"] {
+      --bg-canvas:        #f5f3ef;
+      --bg-card:          #ffffff;
+      --bg-card-hover:    #f9f7f4;
+      --bg-input:         #f0ebe3;
+      --bg-input-focus:   #ffffff;
+
+      --text-vivid:       #18130e;
+      --text-main:        #2c231a;
+      --text-muted:       #6b5a49;
+      --text-dim:         #9e8c79;
+
+      --border-dim:       #ded5c7;
+      --border-mid:       #c5b8a5;
+      --border-bright:    #8f7d67;
+
+      --accent:           #d97706;
+      --accent-hover:     #b45309;
+      --accent-glow:      rgba(217, 119, 6, 0.2);
+      --accent-bg:        rgba(217, 119, 6, 0.1);
+      --accent-border:    rgba(217, 119, 6, 0.4);
+
+      --hazard-high:      #e11d48;
+      --hazard-low:       #059669;
+
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      padding: 1.5rem 1.5rem 4rem;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 1440px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Top Navigation */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-dim);
+      padding-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .title-stack h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .title-stack h1 .badge {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs-bar {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      padding: 0.35rem;
+      border-radius: var(--radius-md);
+    }
+
+    .nav-tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.15s ease;
+    }
+
+    .nav-tab-btn:hover {
+      color: var(--text-vivid);
+      background: var(--bg-input);
+    }
+
+    .nav-tab-btn.active {
+      background: var(--accent-bg);
+      border-color: var(--accent-border);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .btn-action {
+      background: var(--bg-card);
+      border: 1px solid var(--border-mid);
+      color: var(--text-main);
+      padding: 0.5rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s ease;
+    }
+
+    .btn-action:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+      color: var(--text-vivid);
+    }
+
+    .btn-action.btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #080706;
+      font-weight: 700;
+    }
+
+    .btn-action.btn-danger:hover {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: var(--hazard-high);
+      color: var(--hazard-high);
+    }
+
+    /* Views Host */
+    .view-container {
+      display: none;
+      animation: fadeIn 0.15s ease;
+    }
+
+    .view-container.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Form & Workspace */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .workspace-grid { grid-template-columns: 1fr; }
+    }
+
+    .blocks-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .entry-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      overflow: visible !important;
+      position: relative;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .entry-card:focus-within {
+      border-color: var(--border-mid);
+      z-index: 50;
+    }
+
+    .card-header {
+      padding: 0.85rem 1.15rem;
+      background: rgba(255, 255, 255, 0.015);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .card-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-vivid);
+    }
+
+    .card-tag {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-bg);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      border: 1px solid var(--accent-border);
+      text-transform: uppercase;
+    }
+
+    .card-body {
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .field-hint {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    /* Inputs */
+    .raw-input-box {
+      width: 100%;
+      height: 44px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      color: var(--text-vivid);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0 0.85rem;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .raw-input-box:focus {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .raw-textarea-box {
+      width: 100%;
+      min-height: 100px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      color: var(--text-vivid);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.88rem;
+      padding: 0.85rem;
+      outline: none;
+      resize: vertical;
+      line-height: 1.6;
+      transition: all 0.15s ease;
+    }
+
+    .raw-textarea-box:focus {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* Single Selector Styles */
+    .notion-combobox-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      overflow: visible !important;
+    }
+
+    .notion-combobox-trigger {
+      width: 100%;
+      min-height: 44px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .notion-combobox-trigger:hover,
+    .notion-combobox-trigger.active {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .selected-val-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .combobox-chevron {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      transition: transform 0.2s ease;
+    }
+
+    .notion-combobox-trigger.active .combobox-chevron {
+      transform: rotate(180deg);
+      color: var(--accent);
+    }
+
+    /* Suggestor Monolith */
+    .suggestor-host {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      overflow: visible !important;
+    }
+
+    .searcher-monolith {
+      width: 100%;
+      height: 44px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-mid);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      padding: 0 0.85rem;
+      gap: 0.65rem;
+      transition: all 0.15s ease;
+    }
+
+    .searcher-monolith:focus-within {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .searcher-icon {
+      color: var(--accent);
+      font-size: 1rem;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .searcher-input {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-vivid);
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+
+    .searcher-clear {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: var(--text-muted);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    /* Selected Chips */
+    .selected-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .selected-chips-row:empty { display: none; }
+
+    .chip-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      user-select: none;
+    }
+
+    .chip-remove {
+      cursor: pointer;
+      opacity: 0.7;
+      font-size: 0.75rem;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+
+    .chip-remove:hover {
+      opacity: 1;
+      background: rgba(244, 63, 94, 0.2);
+      color: #fb7185;
+    }
+
+    /* Dropdown Menus */
+    .notion-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85);
+      z-index: 1000 !important;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      max-height: 260px;
+    }
+
+    .notion-dropdown-menu.open { display: flex; }
+
+    .dropdown-options-list {
+      overflow-y: auto;
+      padding: 0.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-height: 200px;
+    }
+
+    .dropdown-opt-row {
+      padding: 0.55rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.1s ease;
+      gap: 0.5rem;
+    }
+
+    .dropdown-opt-row:hover {
+      background: var(--bg-input-focus);
+      color: var(--accent);
+    }
+
+    .dropdown-opt-row.selected {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      color: var(--accent);
+    }
+
+    .opt-label-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      flex: 1 1 auto;
+      gap: 2px;
+    }
+
+    .opt-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .opt-title {
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--text-vivid);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .opt-context {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-style: italic;
+      opacity: 0.65;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .opt-delete-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-dim);
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .opt-delete-btn:hover {
+      background: rgba(244, 63, 94, 0.18);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #fb7185;
+    }
+
+    .dropdown-create-row {
+      padding: 0.6rem 0.75rem;
+      background: var(--accent-bg);
+      border-top: 1px solid var(--accent-border);
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .dropdown-create-row:hover {
+      background: var(--accent);
+      color: #080706;
+    }
+
+    /* CRUD Grid & Table Views */
+    .crud-view-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .crud-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+    }
+
+    .crud-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .crud-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-dim);
+    }
+
+    .crud-table td {
+      padding: 0.85rem 1rem;
+      font-size: 0.88rem;
+      border-bottom: 1px solid var(--border-dim);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    .crud-table tr:last-child td { border-bottom: none; }
+    .crud-table tr:hover td { background: var(--bg-card-hover); }
+
+    /* Tree View for Themes */
+    .theme-tree-node {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 0.85rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.4rem;
+      transition: all 0.15s ease;
+    }
+
+    .theme-tree-node:hover {
+      border-color: var(--border-mid);
+      background: var(--bg-card-hover);
+    }
+
+    .theme-tree-node.child-level-1 { margin-left: 1.5rem; border-left: 3px solid var(--accent); }
+    .theme-tree-node.child-level-2 { margin-left: 3rem; border-left: 3px solid var(--hazard-low); }
+
+    /* Visual Tree Cards (Read-Only Outliners) */
+    .tree-branch-group {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      margin-bottom: 0.65rem;
+    }
+
+    .tree-branch-header {
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tree-branch-body {
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .tree-subbranch {
+      margin-left: 1.25rem;
+      border-left: 2px solid var(--border-bright);
+      padding-left: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .tree-subbranch-2 {
+      margin-left: 1.25rem;
+      border-left: 2px solid var(--accent-border);
+      padding-left: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .badge-mock {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Inspector Sticky */
+    .inspector-sticky {
+      position: sticky;
+      top: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .inspector-header {
+      padding: 0.75rem 1.15rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .live-json-display {
+      padding: 1rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.76rem;
+      line-height: 1.5;
+      color: var(--text-main);
+      background: var(--bg-canvas);
+      max-height: 520px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Modal Drawer for Create/Edit */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      z-index: 5000;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-md);
+      width: 100%;
+      max-width: 580px;
+      max-height: 90vh; /* Keeps entire box within viewport */
+      display: flex;
+      flex-direction: column; /* Flex layout so footer stays anchored */
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85);
+      overflow: hidden;
+      animation: modalPop 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalPop {
+      from { transform: scale(0.96); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 1rem 1.25rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      overflow-y: auto; /* SCROLLABLE! */
+      flex: 1 1 auto;
+      max-height: calc(90vh - 130px);
+    }
+
+    .modal-footer {
+      padding: 0.85rem 1.25rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid var(--border-dim);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.6rem;
+      flex-shrink: 0; /* ANCHORED AT BOTTOM */
+    }
+
+    /* Toast */
+    .toast-msg {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--accent);
+      color: #080706;
+      font-weight: 700;
+      font-size: 0.88rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      z-index: 6000;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .toast-msg.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- Top Navigation -->
+    <header class="top-bar">
+      <div class="title-stack">
+        <h1>
+          <span>Prescripts</span>
+          <span class="badge">Studio</span>
+        </h1>
+      </div>
+      <!-- Tab Navigation Buttons -->
+      <nav class="nav-tabs-bar">
+        <button class="nav-tab-btn active" onclick="switchMainView('quote-entry', this)">📜 Quote Entry</button>
+        <button class="nav-tab-btn" onclick="openTableView('quotes', this)">📚 Quotes Table</button>
+        <button class="nav-tab-btn" onclick="openTableView('containers', this)">🏛️ Containers</button>
+        <button class="nav-tab-btn" onclick="openTableView('specifics', this)">📍 Specifics</button>
+        <button class="nav-tab-btn" onclick="openTableView('themes', this)">🌲 Themes</button>
+        <button class="nav-tab-btn" onclick="openTableView('usages', this)">🏷️ Usages</button>
+        <button class="nav-tab-btn" onclick="openVisualTreesView(this)">🌳 Visual Trees</button>
+        <a href="/quote_presentation_test.html" target="_blank" class="nav-tab-btn" style="text-decoration:none; display:inline-flex; align-items:center;">🎨 Presentation Test</a>
+        <a href="/esp32_19_display_mock.html" target="_blank" class="nav-tab-btn" style="text-decoration:none; display:inline-flex; align-items:center;">📟 1.9" IPS Bar</a>
+      </nav>
+      <div class="header-actions" style="display:flex; gap:0.5rem; align-items:center;">
+        <button class="btn-action btn-turso-sync" id="btn-turso-sync" style="background:rgba(255,158,27,0.18); border-color:var(--accent); color:var(--accent); font-weight:700; box-shadow:0 0 10px rgba(255,158,27,0.2);" onclick="syncToTursoCloud()" title="One-way push: updates Turso Cloud SQLite database to reflect local state for ESP32">☁️ Save to Turso</button>
+        <button class="btn-action" onclick="toggleTheme()">🌓 Theme</button>
+      </div>
+    </header>
+
+    <!-- ======================================================================
+         VIEW 1: QUOTE CURATION & ENTRY FORM
+         ====================================================================== -->
+    <main class="view-container active" id="quotes-view">
+      <div class="workspace-grid">
+
+        <!-- Form Stream -->
+        <div class="blocks-stream">
+
+          <!-- 1. QUOTE CONTENT -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">1. Quote Core &amp; Reflection</span>
+              <span class="card-tag">Required</span>
+            </div>
+            <div class="card-body">
+              <div>
+                <div class="field-label">
+                  <span>Main Quote Content (Multi-Line)</span>
+                  <span class="field-hint">Preserves line breaks</span>
+                </div>
+                <textarea class="raw-textarea-box" id="input-main-content" placeholder="Enter wisdom quote, poem, or reflection..." oninput="updateField('main_content', this.value)"></textarea>
+              </div>
+              <div>
+                <div class="field-label">
+                  <span>Genesis Context &amp; Reflection</span>
+                  <span class="field-hint">Situational backdrop</span>
+                </div>
+                <textarea class="raw-textarea-box" id="input-context" style="min-height: 70px;" placeholder="Why this quote was saved, situation, or personal reflection..." oninput="updateField('context', this.value)"></textarea>
+              </div>
+            </div>
+          </section>
+
+          <!-- 2. FLEXIBLE DATE SUGGESTOR -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">2. Flexible Date</span>
+              <span class="card-tag">Suggestor</span>
+            </div>
+            <div class="card-body">
+              <div class="suggestor-host" id="date-host">
+                <div class="field-label">
+                  <span>Temporal Coordinate</span>
+                  <span class="field-hint">Type year e.g. 2020, range 2020~2023-05, or date</span>
+                </div>
+                <div class="searcher-monolith">
+                  <span class="searcher-icon">📅</span>
+                  <input type="text" class="searcher-input" id="input-date" placeholder="Type year e.g. 2020, range 2020~2023-05, or 2026-10-02..." oninput="handleDateInput(this.value)" onfocus="handleDateInput(this.value)" onkeydown="handleDateKey(event)">
+                  <button class="searcher-clear" onclick="clearDateInput()">✕</button>
+                </div>
+                <div class="notion-dropdown-menu" id="date-dropdown">
+                  <div class="dropdown-options-list" id="date-options-list"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. SPECIFIC ENDPOINT SINGLE SELECTOR -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">3. Specific Endpoint (Work / Character / Diary / Wisdom)</span>
+              <span class="card-tag">Single Select</span>
+            </div>
+            <div class="card-body">
+              <div class="notion-combobox-wrap" id="specific-combo-wrap">
+                <div class="field-label">
+                  <span>Select Specific Endpoint (Click to browse or search)</span>
+                  <span class="field-hint">Auto-fills default tags</span>
+                </div>
+                <div class="notion-combobox-trigger" id="specific-combo-trigger" onclick="toggleSpecificDropdown()">
+                  <span id="specific-selected-val" style="color:var(--text-muted); font-size:0.9rem;">Select specific endpoint...</span>
+                  <div style="display:flex; align-items:center; gap:0.4rem;">
+                    <button class="opt-delete-btn" id="specific-clear-btn" style="display:none;" title="Clear selection" onclick="event.stopPropagation(); clearSpecificSelection()">✕</button>
+                    <span class="combobox-chevron">▼</span>
+                  </div>
+                </div>
+                <div class="notion-dropdown-menu" id="specific-combo-menu">
+                  <div style="padding: 0.5rem; border-bottom: 1px solid var(--border-dim); background:var(--bg-input);">
+                    <input type="text" class="searcher-input" id="specific-search-input" style="height:32px; font-size:0.88rem; width:100%; border:none; outline:none;" placeholder="Filter endpoints or origins (e.g. Diary, Infant Joy, Blake)..." oninput="filterSpecificDropdown(this.value)" onkeydown="handleSpecificKey(event)">
+                  </div>
+                  <div class="dropdown-options-list" id="specific-options-list"></div>
+                  <div class="dropdown-create-row" id="specific-create-row" style="display: none;" onclick="openCreateSpecificModal((document.getElementById('specific-search-input').value || '').trim())">
+                    <span>+ Create new specific endpoint "</span><span id="specific-create-query"></span><span>"</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 4. THEMES TREE MULTI-SELECT -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">4. Themes Tree (child_of Hierarchy)</span>
+              <span class="card-tag">Themes</span>
+            </div>
+            <div class="card-body">
+              <div class="suggestor-host" id="theme-host">
+                <div class="field-label">
+                  <span>Assign Themes from your Tree</span>
+                  <span class="field-hint">Search parent or child themes</span>
+                </div>
+                <div class="searcher-monolith">
+                  <span class="searcher-icon">🌲</span>
+                  <input type="text" class="searcher-input" id="theme-input" placeholder="Type to search themes or create new..." oninput="filterThemeDropdown(this.value)" onfocus="filterThemeDropdown(this.value)" onkeydown="handleThemeKey(event)">
+                  <button class="searcher-clear" onclick="clearThemeInput()">✕</button>
+                </div>
+                <div class="selected-chips-row" id="theme-chips"></div>
+                <div class="notion-dropdown-menu" id="theme-dropdown">
+                  <div class="dropdown-options-list" id="theme-options-list"></div>
+                  <div class="dropdown-create-row" id="theme-create-row" style="display: none;" onclick="openModal('theme-modal')">
+                    <span>+ Create new theme in tree "</span><span id="theme-create-query"></span><span>"</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 5. USAGE MULTI-SELECT WITH CONFLICT MATRIX -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">5. Usage Purpose &amp; Morning Mode</span>
+              <span class="card-tag">Usage</span>
+            </div>
+            <div class="card-body">
+              <div class="field-label">
+                <span>Select usage intent (Conflicting modes auto-deselect)</span>
+                <span class="field-hint" id="active-usage-count">0 active</span>
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:0.5rem;" id="usage-pills-container">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+          </section>
+
+          <!-- 6. RESPONSE QUOTES & BACKLINKS -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">6. Relations &amp; Deep Links</span>
+              <span class="card-tag">Graph</span>
+            </div>
+            <div class="card-body">
+              <div class="suggestor-host" id="pref-host">
+                <div class="field-label">
+                  <span>Response Quotes (Preference)</span>
+                  <span class="field-hint">Search quotes by text</span>
+                </div>
+                <div class="searcher-monolith">
+                  <span class="searcher-icon">💬</span>
+                  <input type="text" class="searcher-input" id="pref-input" placeholder="Search existing quotes by content text..." oninput="filterPrefDropdown(this.value)" onfocus="filterPrefDropdown(this.value)">
+                  <button class="searcher-clear" onclick="clearPrefInput()">✕</button>
+                </div>
+                <div class="selected-chips-row" id="pref-chips"></div>
+                <div class="notion-dropdown-menu" id="pref-dropdown">
+                  <div class="dropdown-options-list" id="pref-options-list"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="field-label">
+                  <span>External Reference URL / Obsidian URI</span>
+                  <span class="field-hint">e.g. obsidian://open... or https://...</span>
+                </div>
+                <input type="text" class="raw-input-box" id="input-backlink" placeholder="https://... or obsidian://open?vault=Main_03..." oninput="updateBacklink(this.value)">
+              </div>
+            </div>
+          </section>
+
+          <!-- 7. SCORING & EVALUATION -->
+          <section class="entry-card">
+            <div class="card-header">
+              <span class="card-title">7. Scoring &amp; Rating</span>
+              <span class="card-tag">Evaluation</span>
+            </div>
+            <div class="card-body">
+              <div>
+                <div class="field-label">
+                  <span>Scores List (Numerical Ratings)</span>
+                  <span class="field-hint">e.g. 5, 6, 4, 7, 5 or [5,6,4,7,5]</span>
+                </div>
+                <input type="text" class="raw-input-box" id="input-scores" placeholder="e.g. 5, 6, 4, 7, 5" oninput="handleScoresInput(this.value)">
+              </div>
+              <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem;">
+                <div style="flex: 1;">
+                  <div class="field-label">
+                    <span>Average Value</span>
+                    <span class="field-hint">Auto-calculated from scores</span>
+                  </div>
+                  <input type="number" step="0.1" class="raw-input-box" id="input-average-score" placeholder="e.g. 5.4" oninput="handleAverageScoreInput(this.value)">
+                </div>
+                <div id="score-preview-badge" style="display:flex; align-items:center; gap:0.4rem; padding: 0.6rem 1rem; background: var(--bg-input); border: 1px solid var(--border-mid); border-radius: var(--radius-sm); font-family: 'JetBrains Mono'; font-weight: 700; color: var(--accent); margin-top: 1.2rem; min-height: 42px;">
+                  <span>★</span>
+                  <span id="score-preview-val">—</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- RIGHT: LIVE STATE INSPECTOR -->
+        <aside class="inspector-sticky">
+          <div class="inspector-header">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-vivid);">Live State Preview</span>
+              <span class="card-tag" id="live-index-badge">IDX: 1</span>
+            </div>
+            <div style="display:flex; gap:0.4rem;">
+              <button class="btn-action" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="clearForm()">↺ Reset</button>
+              <button class="btn-action btn-primary" style="padding: 0.3rem 0.8rem; font-size: 0.75rem;" onclick="saveQuote()">💾 Save Quote</button>
+              <button class="btn-action btn-turso-sync" style="background:rgba(255,158,27,0.18); border-color:var(--accent); color:var(--accent); font-weight:700; padding: 0.3rem 0.8rem; font-size: 0.75rem;" onclick="syncToTursoCloud()" title="Push local database to Turso Cloud for ESP32">☁️ Save to Turso</button>
+            </div>
+          </div>
+          <pre class="live-json-display" id="live-json-pre">{ /* Loading live state... */ }</pre>
+        </aside>
+
+      </div>
+    </main>
+
+
+    <!-- ======================================================================
+         GENERIC SOFT-CODED TABLE STUDIO VIEW (TABLES 1, 2, 3, 4, 5)
+         ====================================================================== -->
+    <main class="view-container" id="table-studio-view">
+      <div class="crud-view-wrap">
+        <div class="crud-header-bar">
+          <div>
+            <h2 id="studio-table-title" style="font-size:1.15rem; font-weight:700; color:var(--text-vivid);">Table</h2>
+            <p id="studio-table-desc" style="font-size:0.82rem; color:var(--text-muted); margin-top:0.2rem;">Description</p>
+          </div>
+          <div style="display:flex; gap:0.6rem; align-items:center;">
+            <input type="text" class="raw-input-box" id="studio-table-search" placeholder="Filter records in table..." style="width:240px; height:36px; font-size:0.85rem;" oninput="filterActiveTable(this.value)">
+            <button class="btn-action btn-primary" id="studio-create-btn" onclick="openCreateRecordModal()">+ New Record</button>
+            <button class="btn-action btn-turso-sync" style="background:rgba(255,158,27,0.18); border-color:var(--accent); color:var(--accent); font-weight:700; height:36px; padding:0 0.85rem; font-size:0.82rem;" onclick="syncToTursoCloud()" title="Push local database to Turso Cloud for ESP32">☁️ Save to Turso</button>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto; width:100%; border:1px solid var(--border-dim); border-radius:var(--radius-md);">
+          <table class="crud-table" id="studio-table" style="border:none; border-radius:0; min-width:1100px;">
+            <thead id="studio-table-thead"></thead>
+            <tbody id="studio-table-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- ======================================================================
+         VIEW: RELATIONAL VISUAL TREES (VIEW ONLY)
+         ====================================================================== -->
+    <main class="view-container" id="visual-trees-view">
+      <div class="crud-view-wrap">
+        <div class="crud-header-bar">
+          <div>
+            <h2 id="tree-visual-title" style="font-size:1.15rem; font-weight:700; color:var(--text-vivid);">Relational Visual Trees (View Only)</h2>
+            <p id="tree-visual-desc" style="font-size:0.82rem; color:var(--text-muted); margin-top:0.2rem;">Inspect structural links across your database entities. Items marked with 'M-' are mock scaffolding.</p>
+          </div>
+          <!-- 3-Segment Switcher -->
+          <div style="display:flex; gap:0.4rem; background:var(--bg-input); padding:0.25rem; border-radius:var(--radius-sm); border:1px solid var(--border-mid);">
+            <button class="nav-tab-btn active" id="btn-tree-csq" style="padding:0.35rem 0.7rem; font-size:0.78rem;" onclick="switchVisualTreeMode('csq', this)">1. Container → Specific → Quotes</button>
+            <button class="nav-tab-btn" id="btn-tree-thm" style="padding:0.35rem 0.7rem; font-size:0.78rem;" onclick="switchVisualTreeMode('themes', this)">2. Themes (child_of)</button>
+            <button class="nav-tab-btn" id="btn-tree-spu" style="padding:0.35rem 0.7rem; font-size:0.78rem;" onclick="switchVisualTreeMode('specific-usages', this)">3. Specific → Usages</button>
+          </div>
+        </div>
+
+        <div id="tree-visual-canvas" style="display:flex; flex-direction:column; gap:0.75rem; background:var(--bg-canvas); padding:1.25rem; border-radius:var(--radius-md); border:1px solid var(--border-dim); min-height:400px;">
+          <!-- Tree Nodes Rendered Dynamically via JS -->
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+
+  <!-- ======================================================================
+       GENERIC RECORD EDITOR MODAL (SOFT-CODED)
+       ====================================================================== -->
+  <div class="modal-overlay" id="generic-modal" onclick="handleModalOverlayClick(event, 'generic-modal')">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="generic-modal-title" style="font-size:1rem; font-weight:700; color:var(--text-vivid);">Edit Record</h3>
+        <button class="opt-delete-btn" style="width:28px; height:28px; font-size:1rem;" title="Close" onclick="handleModalExitRequest('generic-modal')">✕</button>
+      </div>
+      <div class="modal-body" id="generic-modal-fields" oninput="markModalDirty()" onchange="markModalDirty()">
+        <!-- Dynamically rendered based on active table's field definitions -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn-action" onclick="handleModalExitRequest('generic-modal')">Cancel</button>
+        <button class="btn-action btn-primary" onclick="saveActiveRecordModal()">Save Record</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Message -->
+  <div class="toast-msg" id="toast">State Updated</div>
+
+
+  <!-- ======================================================================
+       APPLICATION JAVASCRIPT LOGIC
+       ====================================================================== -->
+  <script>
+    const API_BASE = window.location.origin.startsWith('http') ? window.location.origin : 'http://127.0.0.1:20137';
+
+    // State (Zero sentiment, clean relational IDs)
+    let activeQuote = {
+      id: "",
+      index: 1,
+      main_content: "",
+      context: "",
+      date: "",
+      specific_id: null,
+      theme_ids: [],
+      usage_ids: [],
+      preference: [],
+      backlinks: [],
+      scores: [],
+      average_score: null
+    };
+
+    // Master Cache
+    let availableContainers = [];
+    let availableSpecifics = [];
+    let availableThemes = [];
+    let availableUsages = [
+      { id: "00050001A1088D80", name: "Rewrite Craft", description: "Sentence rhythm & prose training", icon: "✍️", conflicts_with: ["00050001A1088D83"] },
+      { id: "00050001A1088D81", name: "Diary Prompt", description: "Creative catalyst for morning writing", icon: "💡", conflicts_with: [] },
+      { id: "00050001A1088D82", name: "Memory Anchor", description: "Core realization from personal history", icon: "⚓", conflicts_with: ["00050001A1088D84"] },
+      { id: "00050001A1088D83", name: "Daily Rule", description: "Actionable principle & meta-habit", icon: "📜", conflicts_with: ["00050001A1088D80"] },
+      { id: "00050001A1088D84", name: "Perspective / Levity", description: "Cosmic scale / meme / curiosity", icon: "🪐", conflicts_with: ["00050001A1088D82"] }
+    ];
+    let availableQuotes = {};
+    let allQuotesList = [];
+
+    // Hex Generator
+    function generateHexId(prefix = "0001") {
+      const now = Date.now();
+      const hexTs = now.toString(16).toUpperCase().padStart(12, '0').slice(-12);
+      const cleanPrefix = String(prefix).toUpperCase().padStart(4, '0').slice(0, 4);
+      return `${cleanPrefix}${hexTs}`;
+    }
+
+    // View Switcher
+    function switchView(viewId, btn) {
+      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+      if (btn) btn.classList.add('active');
+    }
+
+    function fireToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    function closeAllDropdowns() {
+      document.querySelectorAll('.notion-dropdown-menu').forEach(dd => dd.classList.remove('open'));
+      document.querySelectorAll('.notion-combobox-trigger').forEach(tr => tr.classList.remove('active'));
+    }
+
+    function updateField(field, value) {
+      activeQuote[field] = value;
+      if (!activeQuote.id && activeQuote.main_content.trim()) {
+        activeQuote.id = generateHexId("0001");
+      }
+      renderLiveJSON();
+    }
+
+    function updateBacklink(val) {
+      activeQuote.backlinks = val.trim() ? [val.trim()] : [];
+      renderLiveJSON();
+    }
+
+    function handleScoresInput(val) {
+      let cleaned = (val || "").trim();
+      if (cleaned.startsWith('[') && cleaned.endsWith(']')) {
+        cleaned = cleaned.slice(1, -1);
+      }
+      const parts = cleaned.split(/[\s,]+/).filter(Boolean);
+      const nums = [];
+      for (const p of parts) {
+        const n = parseFloat(p);
+        if (!isNaN(n)) nums.push(Number.isInteger(n) ? parseInt(n, 10) : Math.round(n * 100) / 100);
+      }
+      activeQuote.scores = nums;
+      if (nums.length > 0) {
+        const sum = nums.reduce((a, b) => a + b, 0);
+        const avg = Math.round((sum / nums.length) * 100) / 100;
+        activeQuote.average_score = avg;
+        const avgInput = document.getElementById('input-average-score');
+        if (avgInput) avgInput.value = avg;
+        const badgeVal = document.getElementById('score-preview-val');
+        if (badgeVal) badgeVal.textContent = avg;
+      } else {
+        activeQuote.average_score = null;
+        const avgInput = document.getElementById('input-average-score');
+        if (avgInput) avgInput.value = '';
+        const badgeVal = document.getElementById('score-preview-val');
+        if (badgeVal) badgeVal.textContent = '—';
+      }
+      renderLiveJSON();
+    }
+
+    function handleAverageScoreInput(val) {
+      const n = parseFloat(val);
+      if (!isNaN(n)) {
+        activeQuote.average_score = Math.round(n * 100) / 100;
+        const badgeVal = document.getElementById('score-preview-val');
+        if (badgeVal) badgeVal.textContent = activeQuote.average_score;
+      } else {
+        activeQuote.average_score = null;
+        const badgeVal = document.getElementById('score-preview-val');
+        if (badgeVal) badgeVal.textContent = '—';
+      }
+      renderLiveJSON();
+    }
+
+    function renderLiveJSON() {
+      const pre = document.getElementById('live-json-pre');
+      pre.textContent = JSON.stringify(activeQuote, null, 2);
+      const curIdx = activeQuote.idx ?? activeQuote.index ?? 1;
+      document.getElementById('live-index-badge').textContent = `IDX: ${curIdx}`;
+    }
+
+    // ==============================================================================
+    // 2. DATE SUGGESTOR
+    // ==============================================================================
+    function handleDateInput(val) {
+      activeQuote.date = val.trim();
+      renderLiveJSON();
+
+      const dropdown = document.getElementById('date-dropdown');
+      const list = document.getElementById('date-options-list');
+      const q = val.trim().toLowerCase();
+
+      closeAllDropdowns();
+      dropdown.classList.add('open');
+
+      const currentYear = new Date().getFullYear();
+      let suggestions = [];
+
+      if (!q) {
+        suggestions = [`${currentYear}`, `${currentYear}-10`, `${currentYear}-10-02`, `2020~${currentYear}`, `2020`];
+      } else {
+        if (/^\d{1,4}$/.test(q)) {
+          suggestions.push(q, `${q}-01`, `${q}-05`, `${q}~${currentYear}`);
+        } else if (/^\d{4}-/.test(q)) {
+          suggestions.push(q, `${q}-01`, `${q}-15`);
+        } else {
+          suggestions.push(q);
+        }
+      }
+
+      list.innerHTML = suggestions.slice(0, 6).map(s => `
+        <div class="dropdown-opt-row" onclick="selectDate('${s}')">
+          <span style="color:var(--accent); font-family:'JetBrains Mono'; font-weight:600;">📅 ${s}</span>
+        </div>
+      `).join('');
+    }
+
+    function selectDate(val) {
+      document.getElementById('input-date').value = val;
+      activeQuote.date = val;
+      document.getElementById('date-dropdown').classList.remove('open');
+      renderLiveJSON();
+    }
+
+    function clearDateInput() {
+      document.getElementById('input-date').value = "";
+      activeQuote.date = "";
+      document.getElementById('date-dropdown').classList.remove('open');
+      renderLiveJSON();
+    }
+
+    function handleDateKey(e) {
+      if (e.key === 'Enter' || e.key === 'Escape') {
+        document.getElementById('date-dropdown').classList.remove('open');
+      }
+    }
+
+    // ==============================================================================
+    // 3. SPECIFIC SINGLE SELECTOR
+    // ==============================================================================
+    function toggleSpecificDropdown() {
+      const menu = document.getElementById('specific-combo-menu');
+      const trigger = document.getElementById('specific-combo-trigger');
+      if (!menu || !trigger) return;
+      const isOpen = menu.classList.contains('open');
+      closeAllDropdowns();
+      if (!isOpen) {
+        menu.classList.add('open');
+        trigger.classList.add('active');
+        const searchInput = document.getElementById('specific-search-input');
+        if (searchInput) {
+          searchInput.value = "";
+          filterSpecificDropdown("");
+          searchInput.focus();
+        }
+      }
+    }
+
+    function selectSpecific(id) {
+      activeQuote.specific_id = id;
+
+      const s = availableSpecifics.find(item => item.id === id);
+      if (s) {
+        renderSpecificBadge(s);
+        if (!activeQuote.date && s.date) {
+          activeQuote.date = s.date;
+          const dateInput = document.getElementById('input-date');
+          if (dateInput) dateInput.value = s.date;
+        }
+        // Pre-fill default usage IDs from this specific endpoint
+        if (s.default_usage_ids && s.default_usage_ids.length > 0) {
+          activeQuote.usage_ids = [...s.default_usage_ids];
+          renderUsagePills();
+          fireToast(`Selected: ${s.name} (Auto-set default usage)`);
+        } else {
+          activeQuote.usage_ids = [];
+          renderUsagePills();
+          fireToast(`Selected: ${s.name} · ${s.container ? s.container.name : ''}`);
+        }
+      }
+
+      closeAllDropdowns();
+      renderLiveJSON();
+    }
+
+    function clearSpecificSelection() {
+      activeQuote.specific_id = null;
+      activeQuote.usage_ids = [];
+      renderSpecificBadge(null);
+      renderUsagePills();
+      renderLiveJSON();
+    }
+
+    function renderSpecificBadge(s) {
+      const badge = document.getElementById('specific-selected-val');
+      const clearBtn = document.getElementById('specific-clear-btn');
+      if (s) {
+        const cname = s.container ? s.container.name : '';
+        const dateTag = s.date ? ` <span style="opacity:0.65; font-size:0.75rem;">📅 ${s.date}</span>` : '';
+        badge.innerHTML = `<span class="selected-val-badge">📍 ${s.name} · <span style="opacity:0.75; font-weight:normal;">${cname}</span>${dateTag}</span>`;
+        if (clearBtn) clearBtn.style.display = 'inline-flex';
+      } else {
+        badge.innerHTML = `<span style="color:var(--text-muted); font-size:0.9rem;">Select specific endpoint...</span>`;
+        if (clearBtn) clearBtn.style.display = 'none';
+      }
+    }
+
+    function filterSpecificDropdown(q) {
+      const list = document.getElementById('specific-options-list');
+      const createRow = document.getElementById('specific-create-row');
+      const query = (q || "").trim().toLowerCase();
+
+      const matches = availableSpecifics.filter(s => {
+        const sName = (s.name || "").toLowerCase();
+        const cName = (s.container && s.container.name) ? s.container.name.toLowerCase() : '';
+        const dStr = (s.date || "").toLowerCase();
+        return sName.includes(query) || cName.includes(query) || dStr.includes(query);
+      });
+
+      if (matches.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">No matching endpoints.</div>';
+      } else {
+        list.innerHTML = matches.map(s => {
+          const isSelected = activeQuote.specific_id === s.id;
+          const cname = (s.container && s.container.name) ? ` · ${s.container.name}` : '';
+          const dateTag = s.date ? ` · 📅 ${s.date}` : '';
+          return `
+            <div class="dropdown-opt-row ${isSelected ? 'selected' : ''}" onclick="selectSpecific('${s.id}')">
+              <div class="opt-label-group">
+                <div class="opt-title-row">
+                  ${isSelected ? '<span class="opt-check">✓</span>' : ''}
+                  <span class="opt-title">${s.name}</span>
+                  <span class="opt-context">${cname}${dateTag}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (query && !availableSpecifics.some(s => (s.name || "").toLowerCase() === query)) {
+        createRow.style.display = 'flex';
+        document.getElementById('specific-create-query').textContent = q.trim();
+      } else {
+        createRow.style.display = 'none';
+      }
+    }
+
+    function openCreateSpecificModal(initialName = "") {
+      currentTableKey = "specifics";
+      const config = TABLES_CONFIG["specifics"];
+      document.getElementById('generic-modal-title').textContent = `+ Create New in ${config.title}`;
+      renderGenericModalFields({ name: initialName }, false);
+      openModal('generic-modal');
+    }
+
+    function handleSpecificKey(e) {
+      if (e.key === 'Enter') {
+        const q = (document.getElementById('specific-search-input').value || "").trim();
+        const match = availableSpecifics.find(s => (s.name || "").toLowerCase() === q.toLowerCase());
+        if (match) selectSpecific(match.id);
+        else openCreateSpecificModal(q);
+      } else if (e.key === 'Escape') {
+        closeAllDropdowns();
+      }
+    }
+
+    // ==============================================================================
+    // 4. THEMES TREE MULTI-SELECT
+    // ==============================================================================
+    function renderThemeChips() {
+      const container = document.getElementById('theme-chips');
+      container.innerHTML = activeQuote.theme_ids.map(tid => {
+        const th = availableThemes.find(t => t.id === tid);
+        const name = th ? th.name : tid;
+        const parent = (th && th.parent_name) ? ` (${th.parent_name})` : '';
+        return `
+          <span class="chip-badge">
+            <span>🌲 ${name}${parent}</span>
+            <span class="chip-remove" onclick="event.stopPropagation(); removeTheme('${tid}')">✕</span>
+          </span>
+        `;
+      }).join('');
+    }
+
+    function filterThemeDropdown(q) {
+      const dropdown = document.getElementById('theme-dropdown');
+      const list = document.getElementById('theme-options-list');
+      const createRow = document.getElementById('theme-create-row');
+      const query = (q || "").trim().toLowerCase();
+
+      closeAllDropdowns();
+      dropdown.classList.add('open');
+
+      const matches = availableThemes.filter(t => t.name.toLowerCase().includes(query) || (t.parent_name && t.parent_name.toLowerCase().includes(query)));
+
+      if (matches.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">No matching themes in tree.</div>';
+      } else {
+        list.innerHTML = matches.map(t => {
+          const isSelected = activeQuote.theme_ids.includes(t.id);
+          const parent = t.parent_name ? ` · ${t.parent_name}` : ' · [Root]';
+          return `
+            <div class="dropdown-opt-row ${isSelected ? 'selected' : ''}" onclick="toggleThemeSelect('${t.id}')">
+              <div class="opt-label-group">
+                <div class="opt-title-row">
+                  <span class="opt-check">${isSelected ? '✓' : '+'}</span>
+                  <span class="opt-title">${t.name}</span>
+                  <span class="opt-context">${parent}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (query && !availableThemes.some(t => t.name.toLowerCase() === query)) {
+        createRow.style.display = 'flex';
+        document.getElementById('theme-create-query').textContent = q.trim();
+      } else {
+        createRow.style.display = 'none';
+      }
+    }
+
+    function toggleThemeSelect(id) {
+      if (activeQuote.theme_ids.includes(id)) {
+        activeQuote.theme_ids = activeQuote.theme_ids.filter(t => t !== id);
+      } else {
+        activeQuote.theme_ids.push(id);
+      }
+      renderThemeChips();
+      renderLiveJSON();
+      filterThemeDropdown(document.getElementById('theme-input').value);
+    }
+
+    function removeTheme(id) {
+      activeQuote.theme_ids = activeQuote.theme_ids.filter(t => t !== id);
+      renderThemeChips();
+      renderLiveJSON();
+    }
+
+    function clearThemeInput() {
+      document.getElementById('theme-input').value = "";
+      filterThemeDropdown("");
+    }
+
+    function handleThemeKey(e) {
+      if (e.key === 'Enter') {
+        const q = (document.getElementById('theme-input').value || "").trim();
+        const match = availableThemes.find(t => t.name.toLowerCase() === q.toLowerCase());
+        if (match) toggleThemeSelect(match.id);
+        else openCreateThemeModal(null, q);
+      } else if (e.key === 'Escape') {
+        closeAllDropdowns();
+      }
+    }
+
+    // ==============================================================================
+    // 5. USAGE MULTI-SELECT WITH CONFLICT RULES
+    // ==============================================================================
+    function renderUsagePills() {
+      const container = document.getElementById('usage-pills-container');
+      container.innerHTML = availableUsages.map(opt => {
+        const isActive = activeQuote.usage_ids.includes(opt.id);
+        const icon = opt.icon || '🏷️';
+        return `
+          <div class="btn-action ${isActive ? 'btn-primary' : ''}" style="cursor:pointer; font-size:0.82rem;" title="${opt.description || ''}" onclick="toggleUsage('${opt.id}')">
+            <span>${icon} ${opt.name}</span>
+            ${isActive ? '<span>✓</span>' : ''}
+          </div>
+        `;
+      }).join('');
+      document.getElementById('active-usage-count').textContent = `${activeQuote.usage_ids.length} selected`;
+    }
+
+    function toggleUsage(id) {
+      const opt = availableUsages.find(o => o.id === id);
+      if (!opt) return;
+
+      if (activeQuote.usage_ids.includes(id)) {
+        activeQuote.usage_ids = activeQuote.usage_ids.filter(u => u !== id);
+      } else {
+        // Enforce conflict matrix: auto-remove conflicting choices!
+        const conflicts = opt.conflicts_with || [];
+        if (conflicts.length > 0) {
+          activeQuote.usage_ids = activeQuote.usage_ids.filter(u => !conflicts.includes(u));
+          fireToast(`Resolved conflict for ${opt.name}`);
+        }
+        activeQuote.usage_ids.push(id);
+      }
+      renderUsagePills();
+      renderLiveJSON();
+    }
+
+    // ==============================================================================
+    // 6. RESPONSE QUOTES
+    // ==============================================================================
+    function renderPrefChips() {
+      const container = document.getElementById('pref-chips');
+      container.innerHTML = activeQuote.preference.map(qid => {
+        const q = availableQuotes[qid];
+        const snippet = q ? q.main_content.split('\n')[0].substring(0, 36) + '...' : qid.substring(0, 8);
+        return `
+          <span class="chip-badge" title="${q ? q.main_content : qid}">
+            <span>💬 ${snippet}</span>
+            <span class="chip-remove" onclick="event.stopPropagation(); removePref('${qid}')">✕</span>
+          </span>
+        `;
+      }).join('');
+    }
+
+    function filterPrefDropdown(q) {
+      const dropdown = document.getElementById('pref-dropdown');
+      const list = document.getElementById('pref-options-list');
+      const query = (q || "").trim().toLowerCase();
+
+      closeAllDropdowns();
+      dropdown.classList.add('open');
+
+      const matches = Object.values(availableQuotes).filter(quote => {
+        return quote.main_content.toLowerCase().includes(query) ||
+               (quote.context && quote.context.toLowerCase().includes(query));
+      });
+
+      if (matches.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">No matching quotes found.</div>';
+        return;
+      }
+
+      list.innerHTML = matches.map(quote => {
+        const isSelected = activeQuote.preference.includes(quote.id);
+        const firstLine = quote.main_content.split('\n')[0];
+        return `
+          <div class="dropdown-opt-row ${isSelected ? 'selected' : ''}" onclick="togglePref('${quote.id}')">
+            <div class="opt-label-group">
+              <div class="opt-title-row">
+                <span class="opt-check">${isSelected ? '✓' : '+'}</span>
+                <span class="opt-title">“${firstLine}”</span>
+              </div>
+              <span class="opt-context">${quote.date} · ${quote.context || ''}</span>
+            </div>
+            <span style="font-family:'JetBrains Mono'; font-size:0.7rem; color:var(--text-dim);">#${quote.id.substring(0,8)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function togglePref(id) {
+      if (activeQuote.preference.includes(id)) activeQuote.preference = activeQuote.preference.filter(q => q !== id);
+      else activeQuote.preference.push(id);
+      renderPrefChips();
+      renderLiveJSON();
+      filterPrefDropdown(document.getElementById('pref-input').value);
+    }
+
+    function removePref(id) {
+      activeQuote.preference = activeQuote.preference.filter(q => q !== id);
+      renderPrefChips();
+      renderLiveJSON();
+    }
+
+    function clearPrefInput() {
+      document.getElementById('pref-input').value = "";
+      filterPrefDropdown("");
+    }
+
+    // ==============================================================================
+    // SAVE QUOTE (DIRECT SQLITE)
+    // ==============================================================================
+    async function saveQuote() {
+      if (!activeQuote.main_content.trim()) {
+        alert("Please provide the main quote content before saving.");
+        return;
+      }
+
+      if (!activeQuote.id) activeQuote.id = generateHexId("0001");
+      if (!activeQuote.date) activeQuote.date = new Date().toISOString().split('T')[0];
+
+      try {
+        const res = await fetch(`${API_BASE}/api/quote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(activeQuote)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const savedIdx = data.index ?? data.idx;
+          fireToast(`✓ Saved Quote #${savedIdx} to SQLite!`);
+          activeQuote.index = savedIdx + 1;
+          activeQuote.idx = activeQuote.index;
+          activeQuote.id = "";
+          activeQuote.main_content = "";
+          activeQuote.context = "";
+          activeQuote.preference = [];
+          activeQuote.scores = [];
+          activeQuote.average_score = null;
+          document.getElementById('input-main-content').value = "";
+          document.getElementById('input-context').value = "";
+          const sInp = document.getElementById('input-scores');
+          if (sInp) sInp.value = "";
+          const avgInp = document.getElementById('input-average-score');
+          if (avgInp) avgInp.value = "";
+          const sBadge = document.getElementById('score-preview-val');
+          if (sBadge) sBadge.textContent = "—";
+          renderPrefChips();
+          renderLiveJSON();
+          fetchBackendData();
+          return;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          fireToast("Server Error: " + (errData.error || res.statusText));
+        }
+      } catch (err) {
+        fireToast("❌ Error: Local Server unreachable.");
+      }
+    }
+
+    function clearForm() {
+      activeQuote = {
+        id: "",
+        index: activeQuote.index || activeQuote.idx || 1,
+        idx: activeQuote.idx || activeQuote.index || 1,
+        main_content: "",
+        context: "",
+        date: "",
+        specific_id: null,
+        theme_ids: [],
+        usage_ids: [],
+        preference: [],
+        backlinks: [],
+        scores: [],
+        average_score: null
+      };
+      document.getElementById('input-main-content').value = "";
+      document.getElementById('input-context').value = "";
+      document.getElementById('input-date').value = "";
+      document.getElementById('input-backlink').value = "";
+      const sInp = document.getElementById('input-scores');
+      if (sInp) sInp.value = "";
+      const avgInp = document.getElementById('input-average-score');
+      if (avgInp) avgInp.value = "";
+      const sBadge = document.getElementById('score-preview-val');
+      if (sBadge) sBadge.textContent = "—";
+      renderSpecificBadge(null);
+      renderThemeChips();
+      renderUsagePills();
+      renderPrefChips();
+      renderLiveJSON();
+    }
+
+    // ==============================================================================
+    // SOFT-CODED TABLE STUDIO ENGINE (TABLES 1, 2, 3, 4, 5)
+    // ==============================================================================
+
+    let currentTableKey = "quotes";
+
+    const TABLES_CONFIG = {
+      quotes: {
+        id: "quotes",
+        title: "Quotes (Table 1: 0001...)",
+        desc: "Wisdom passages, reflections, and quotes in SQLite",
+        prefix: "0001",
+        saveEndpoint: `${API_BASE}/api/quote`,
+        deleteEndpoint: `${API_BASE}/api/quote/delete`,
+        getData: () => allQuotesList,
+        columns: [
+          { key: "idx", label: "IDX", format: (v, row) => `<span style="color:var(--accent); font-weight:700;">#${v ?? (row ? (row.idx ?? row.index) : '')}</span>` },
+          { key: "main_content", label: "Content", format: v => `“${String(v).split('\n')[0].substring(0, 48)}${String(v).length > 48 ? '...' : ''}”` },
+          { key: "context", label: "Context", format: v => v ? `<span style="color:var(--text-muted); font-size:0.8rem;">${String(v).split('\n')[0].substring(0, 32)}${String(v).length > 32 ? '...' : ''}</span>` : '—' },
+          { key: "scores", label: "Scores", format: v => {
+            let arr = [];
+            if (Array.isArray(v)) arr = v;
+            else if (typeof v === 'string' && v.trim()) {
+              try { arr = JSON.parse(v); } catch(e) {}
+            }
+            if (!arr || arr.length === 0) return '—';
+            return `<span style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--text-muted); background:var(--bg-input); padding:0.2rem 0.45rem; border-radius:4px; border:1px solid var(--border-dim);">[${arr.join(', ')}]</span>`;
+          }},
+          { key: "average_score", label: "Avg Score", format: (v, row) => {
+            const val = v !== undefined && v !== null && v !== '' ? v : (row && row.avg_score !== undefined && row.avg_score !== null ? row.avg_score : null);
+            if (val === undefined || val === null || val === '') return '—';
+            return `<span style="color:var(--accent); font-weight:700; font-family:'JetBrains Mono'; font-size:0.85rem;">★ ${val}</span>`;
+          }},
+          { key: "specific_id", label: "Specific Endpoint", format: v => {
+            const s = availableSpecifics.find(item => item.id === v);
+            return s ? `<span class="selected-val-badge">📍 ${s.name} · ${s.container ? s.container.name : (s.container_name || '')}</span>` : '—';
+          }},
+          { key: "date", label: "Date", format: (v, row) => {
+            if (v && String(v).trim()) {
+              return `<span style="font-family:'JetBrains Mono'; font-size:0.78rem;">${v}</span>`;
+            }
+            const s = availableSpecifics.find(item => item.id === (row ? row.specific_id : null));
+            if (s && s.date && String(s.date).trim()) {
+              return `<span style="font-family:'JetBrains Mono'; font-size:0.78rem; opacity:0.65;" title="Inherited fallback from endpoint: ${s.name}">📅 ${s.date} <span style="font-size:0.68rem; opacity:0.6;">(endpoint)</span></span>`;
+            }
+            return '—';
+          }},
+          { key: "theme_ids", label: "Themes", format: v => {
+            const ids = Array.isArray(v) ? v : [];
+            if (ids.length === 0) return '—';
+            return ids.map(tid => {
+              const t = availableThemes.find(item => item.id === tid);
+              const name = t ? t.name : tid;
+              return `<span class="chip-badge" style="font-size:0.72rem; background:var(--bg-input); border-color:var(--border-mid);">🏷️ ${name}</span>`;
+            }).join(' ');
+          }},
+          { key: "usage_ids", label: "Usages", format: v => (v || []).map(uid => {
+            const u = availableUsages.find(item => item.id === uid);
+            return `<span class="chip-badge" style="font-size:0.72rem;">${u ? (u.icon || '') + ' ' + u.name : uid}</span>`;
+          }).join(' ') || '—' },
+          { key: "preference", label: "Preferences", format: v => {
+            const ids = Array.isArray(v) ? v : [];
+            if (ids.length === 0) return '—';
+            return ids.map(qid => {
+              const q = allQuotesList.find(item => item.id === qid);
+              const label = q ? `#${q.idx ?? q.index}` : qid.substring(0, 8);
+              return `<span class="chip-badge" style="font-size:0.72rem; color:var(--accent);">↪ ${label}</span>`;
+            }).join(' ');
+          }},
+          { key: "backlinks", label: "Backlinks", format: v => {
+            const links = Array.isArray(v) ? v : [];
+            if (links.length === 0) return '—';
+            return links.map(url => {
+              try {
+                const u = new URL(url);
+                return `<a href="${url}" target="_blank" class="chip-badge" style="font-size:0.72rem; color:var(--accent); text-decoration:none;" onclick="event.stopPropagation()">🔗 ${u.hostname}</a>`;
+              } catch (e) {
+                return `<span class="chip-badge" style="font-size:0.72rem;">🔗 ${url.substring(0, 20)}</span>`;
+              }
+            }).join(' ');
+          }}
+        ],
+        fields: [
+          { key: "id", label: "ID (0001...)", type: "readonly" },
+          { key: "idx", label: "Index / Sequence (#)", type: "number" },
+          { key: "main_content", label: "Main Quote Content", type: "textarea", required: true },
+          { key: "context", label: "Reflection Context", type: "textarea" },
+          { key: "scores", label: "Scores List (e.g. [5,6,4,7,5] or 5, 6, 4, 7, 5)", type: "scores_array" },
+          { key: "average_score", label: "Average Score (e.g. 5.4, auto-computed if blank)", type: "decimal_number" },
+          { key: "date", label: "Date (Flexible)", type: "text" },
+          { key: "specific_id", label: "Specific Endpoint", type: "select", optionsSource: "specifics" },
+          { key: "theme_ids", label: "Themes (Tree)", type: "multi_select", optionsSource: "themes" },
+          { key: "usage_ids", label: "Usage Modes", type: "multi_select", optionsSource: "usages" },
+          { key: "preference", label: "Preferences / Follow-ups (Quote IDs)", type: "json_array" },
+          { key: "backlinks", label: "Backlinks (URLs)", type: "json_array" }
+        ]
+      },
+      containers: {
+        id: "containers",
+        title: "Containers (Table 2: 0002...)",
+        desc: "Origins, creators, franchises, and personas",
+        prefix: "0002",
+        saveEndpoint: `${API_BASE}/api/container`,
+        deleteEndpoint: `${API_BASE}/api/container/delete`,
+        getData: () => availableContainers,
+        columns: [
+          { key: "id", label: "ID", isMono: true },
+          { key: "name", label: "Name", isBold: true },
+          { key: "type", label: "Type", format: v => `<span class="card-tag">${v || 'origin'}</span>` },
+          { key: "notes", label: "Notes" }
+        ],
+        fields: [
+          { key: "id", label: "ID (0002...)", type: "readonly" },
+          { key: "name", label: "Container Name (e.g. William Blake, Evangelion, The Manager)", type: "text", required: true },
+          { key: "type", label: "Type (e.g. author, anime, personal, book, band)", type: "text" },
+          { key: "notes", label: "Notes / Context", type: "textarea" }
+        ]
+      },
+      specifics: {
+        id: "specifics",
+        title: "Specifics (Table 3: 0003...)",
+        desc: "Specific works, characters, diary, and wisdom endpoints",
+        prefix: "0003",
+        saveEndpoint: `${API_BASE}/api/specific`,
+        deleteEndpoint: `${API_BASE}/api/specific/delete`,
+        getData: () => availableSpecifics,
+        columns: [
+          { key: "id", label: "ID", isMono: true },
+          { key: "name", label: "Endpoint Name", isBold: true, format: v => `📍 ${v}` },
+          { key: "container_name", label: "Origin / Creator", format: (v, r) => `<span class="selected-val-badge">${v || (r.container ? r.container.name : '')}</span>` },
+          { key: "category", label: "Category", format: v => `<span class="card-tag">${v || 'endpoint'}</span>` },
+          { key: "date", label: "Date" },
+          { key: "default_usage_ids", label: "Default Usages", format: v => (v || []).map(uid => {
+            const u = availableUsages.find(item => item.id === uid);
+            return `<span class="chip-badge" style="font-size:0.72rem;">${u ? (u.icon || '') + ' ' + u.name : uid}</span>`;
+          }).join(' ') },
+          { key: "notes", label: "Notes", format: v => v ? `<span style="color:var(--text-muted); font-size:0.8rem;">${v}</span>` : '—' }
+        ],
+        fields: [
+          { key: "id", label: "ID (0003...)", type: "readonly" },
+          { key: "name", label: "Endpoint Name (e.g. Infant Joy, Asuka, Diary, Wisdom, Thought on)", type: "text", required: true },
+          { key: "container_id", label: "Parent Container", type: "select", optionsSource: "containers", required: true },
+          { key: "category", label: "Category (e.g. poem, music, character, diary, wisdom, thought)", type: "text" },
+          { key: "date", label: "Date (Flexible: e.g. 2026-09-30, 2024-05, 1789)", type: "text" },
+          { key: "default_usage_ids", label: "Default Usage Modes", type: "multi_select", optionsSource: "usages" },
+          { key: "notes", label: "Notes", type: "textarea" }
+        ]
+      },
+      themes: {
+        id: "themes",
+        title: "Themes (Table 4: 0004...)",
+        desc: "Regular table representing hierarchical concepts with child_of parent link",
+        prefix: "0004",
+        saveEndpoint: `${API_BASE}/api/theme`,
+        deleteEndpoint: `${API_BASE}/api/theme/delete`,
+        getData: () => availableThemes,
+        columns: [
+          { key: "id", label: "ID", isMono: true },
+          { key: "name", label: "Theme Name", isBold: true, format: (v, r) => r.child_of ? `↳ 🏷️ ${v}` : `📁 ${v}` },
+          { key: "parent_name", label: "Parent (child_of)", format: v => v ? `<span class="selected-val-badge">↳ ${v}</span>` : `<span style="color:var(--text-dim);">[Root Level]</span>` },
+          { key: "notes", label: "Notes / Definition" }
+        ],
+        fields: [
+          { key: "id", label: "ID (0004...)", type: "readonly" },
+          { key: "name", label: "Theme Name", type: "text", required: true },
+          { key: "child_of", label: "Child Of (Parent Theme in Tree)", type: "select", optionsSource: "themes_optional" },
+          { key: "notes", label: "Definition / Guardrails", type: "textarea" }
+        ]
+      },
+      usages: {
+        id: "usages",
+        title: "Usages (Table 5: 0005...)",
+        desc: "Morning modes & utility intents with conflict matrix",
+        prefix: "0005",
+        saveEndpoint: `${API_BASE}/api/usage`,
+        deleteEndpoint: `${API_BASE}/api/usage/delete`,
+        getData: () => availableUsages,
+        columns: [
+          { key: "id", label: "ID", isMono: true },
+          { key: "name", label: "Usage Mode", isBold: true, format: (v, r) => `${r.icon || '🏷️'} ${v}` },
+          { key: "description", label: "Description" },
+          { key: "conflicts_with", label: "Conflicts With", format: v => (v || []).map(cid => {
+            const u = availableUsages.find(item => item.id === cid);
+            return `<span class="chip-badge" style="font-size:0.72rem; border-color:var(--hazard-high); color:var(--hazard-high);">⚡ ${u ? u.name : cid}</span>`;
+          }).join(' ') }
+        ],
+        fields: [
+          { key: "id", label: "ID (0005...)", type: "readonly" },
+          { key: "icon", label: "Icon / Emoji (e.g. ✍️, 💡, ⚓, 📜, 🪐)", type: "text" },
+          { key: "name", label: "Usage Mode Name", type: "text", required: true },
+          { key: "description", label: "Description", type: "textarea" },
+          { key: "conflicts_with", label: "Conflicts With (Usage Modes)", type: "multi_select", optionsSource: "usages" }
+        ]
+      }
+    };
+
+    function switchMainView(viewType, btn) {
+      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      if (viewType === 'quote-entry') {
+        document.getElementById('quotes-view').classList.add('active');
+      } else {
+        document.getElementById('table-studio-view').classList.add('active');
+      }
+    }
+
+    function openTableView(tableKey, btn) {
+      currentTableKey = tableKey;
+      switchMainView('table-studio', btn);
+
+      const config = TABLES_CONFIG[tableKey];
+      document.getElementById('studio-table-title').textContent = config.title;
+      document.getElementById('studio-table-desc').textContent = config.desc;
+      document.getElementById('studio-create-btn').textContent = `+ New ${tableKey.slice(0, -1)}`;
+      document.getElementById('studio-table-search').value = "";
+
+      renderActiveTable();
+    }
+
+    function renderActiveTable(filteredList = null) {
+      const config = TABLES_CONFIG[currentTableKey];
+      const data = filteredList || config.getData();
+
+      // Render Headers
+      const thead = document.getElementById('studio-table-thead');
+      thead.innerHTML = `
+        <tr>
+          ${config.columns.map(col => `<th>${col.label}</th>`).join('')}
+          <th style="text-align:right;">Actions</th>
+        </tr>
+      `;
+
+      // Render Rows
+      const tbody = document.getElementById('studio-table-tbody');
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${config.columns.length + 1}" style="text-align:center; color:var(--text-muted); padding:1.5rem;">No records found in table.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map(row => {
+        const cells = config.columns.map(col => {
+          let val = row[col.key];
+          if (val === undefined || val === null) {
+            if (col.key === 'idx') val = row.index;
+            else if (col.key === 'index') val = row.idx;
+          }
+          let formatted = col.format ? col.format(val, row) : (val !== null && val !== undefined ? val : '—');
+          let style = col.isMono ? "font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--text-dim);" : (col.isBold ? "font-weight:700; color:var(--text-vivid);" : "");
+          return `<td style="${style}">${formatted}</td>`;
+        }).join('');
+
+        return `
+          <tr>
+            ${cells}
+            <td style="text-align:right; white-space:nowrap;">
+              <button class="btn-action" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="openEditRecordModal('${row.id}')">✏️ Edit</button>
+              <button class="btn-action btn-danger" style="padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="deleteRecord('${row.id}')">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterActiveTable(q) {
+      const config = TABLES_CONFIG[currentTableKey];
+      const data = config.getData();
+      const query = (q || "").toLowerCase().trim();
+
+      if (!query) {
+        renderActiveTable(data);
+        return;
+      }
+
+      const filtered = data.filter(row => {
+        const directMatch = Object.values(row).some(val => {
+          if (typeof val === 'string') return val.toLowerCase().includes(query);
+          if (typeof val === 'number') return String(val).includes(query);
+          if (Array.isArray(val)) return val.some(item => String(item).toLowerCase().includes(query));
+          return false;
+        });
+        if (directMatch) return true;
+
+        if (row.theme_ids && Array.isArray(row.theme_ids)) {
+          if (row.theme_ids.some(tid => {
+            const t = availableThemes.find(item => item.id === tid);
+            return t && t.name.toLowerCase().includes(query);
+          })) return true;
+        }
+
+        if (row.specific_id) {
+          const s = availableSpecifics.find(item => item.id === row.specific_id);
+          if (s && (s.name.toLowerCase().includes(query) || (s.container && s.container.name.toLowerCase().includes(query)))) return true;
+        }
+
+        return false;
+      });
+      renderActiveTable(filtered);
+    }
+
+    function openCreateRecordModal() {
+      const config = TABLES_CONFIG[currentTableKey];
+      document.getElementById('generic-modal-title').textContent = `+ Create New in ${config.title}`;
+      renderGenericModalFields({}, false);
+      openModal('generic-modal');
+    }
+
+    function openEditRecordModal(id) {
+      const config = TABLES_CONFIG[currentTableKey];
+      const data = config.getData();
+      const record = data.find(r => r.id === id);
+      if (!record) return;
+
+      document.getElementById('generic-modal-title').textContent = `✏️ Edit Record in ${config.title}`;
+      renderGenericModalFields(record, true);
+      openModal('generic-modal');
+    }
+
+    function renderGenericModalFields(record, isEdit) {
+      const config = TABLES_CONFIG[currentTableKey];
+      const container = document.getElementById('generic-modal-fields');
+      const recId = record.id || generateHexId(config.prefix);
+
+      container.innerHTML = config.fields.map(f => {
+        let val = record[f.key];
+        if (val === undefined || val === null) {
+          if (f.key === 'idx') val = record.index !== undefined ? record.index : "";
+          else if (f.key === 'index') val = record.idx !== undefined ? record.idx : "";
+          else val = "";
+        }
+
+        if (f.type === "readonly") {
+          return `
+            <div>
+              <label class="field-label">${f.label}</label>
+              <input type="text" class="raw-input-box" id="modal-field-${f.key}" value="${recId}" readonly style="opacity:0.6; font-family:'JetBrains Mono';">
+            </div>
+          `;
+        }
+
+        if (f.type === "number") {
+          return `
+            <div>
+              <label class="field-label">${f.label} ${f.required ? '<span style="color:var(--accent);">*</span>' : ''}</label>
+              <input type="number" class="raw-input-box" id="modal-field-${f.key}" value="${val}">
+            </div>
+          `;
+        }
+
+        if (f.type === "text") {
+          return `
+            <div>
+              <label class="field-label">${f.label} ${f.required ? '<span style="color:var(--accent);">*</span>' : ''}</label>
+              <input type="text" class="raw-input-box" id="modal-field-${f.key}" value="${val}">
+            </div>
+          `;
+        }
+
+        if (f.type === "textarea") {
+          return `
+            <div>
+              <label class="field-label">${f.label} ${f.required ? '<span style="color:var(--accent);">*</span>' : ''}</label>
+              <textarea class="raw-textarea-box" id="modal-field-${f.key}" style="min-height:70px;">${val}</textarea>
+            </div>
+          `;
+        }
+
+        if (f.type === "select") {
+          let optsHTML = "";
+          if (f.optionsSource === "containers") {
+            optsHTML = availableContainers.map(c => `<option value="${c.id}" ${c.id === val ? 'selected' : ''}>${c.name}</option>`).join('');
+          } else if (f.optionsSource === "themes_optional") {
+            optsHTML = `<option value="">-- Root Level (No Parent) --</option>` +
+                       availableThemes.filter(t => t.id !== recId).map(t => `<option value="${t.id}" ${t.id === val ? 'selected' : ''}>${t.name}</option>`).join('');
+          } else if (f.optionsSource === "specifics") {
+            optsHTML = availableSpecifics.map(s => `<option value="${s.id}" ${s.id === val ? 'selected' : ''}>${s.name} · ${s.container ? s.container.name : ''}</option>`).join('');
+          }
+          return `
+            <div>
+              <label class="field-label">${f.label}</label>
+              <select class="raw-input-box" id="modal-field-${f.key}" style="height:44px;">
+                ${optsHTML}
+              </select>
+            </div>
+          `;
+        }
+
+        if (f.type === "json_array") {
+          const arrVal = Array.isArray(val) ? val.join(', ') : val;
+          return `
+            <div>
+              <label class="field-label">${f.label} (comma separated)</label>
+              <input type="text" class="raw-input-box" id="modal-field-${f.key}" value="${arrVal}">
+            </div>
+          `;
+        }
+
+        if (f.type === "scores_array") {
+          let arrVal = "";
+          if (Array.isArray(val)) arrVal = val.join(', ');
+          else if (typeof val === 'string' && val.trim()) {
+            try {
+              const p = JSON.parse(val);
+              arrVal = Array.isArray(p) ? p.join(', ') : val;
+            } catch(e) {
+              arrVal = val;
+            }
+          }
+          return `
+            <div>
+              <label class="field-label">${f.label}</label>
+              <input type="text" class="raw-input-box" id="modal-field-${f.key}" value="${arrVal}" placeholder="e.g. 5, 6, 4, 7, 5" oninput="recalcModalAvgScore()">
+            </div>
+          `;
+        }
+
+        if (f.type === "decimal_number") {
+          return `
+            <div>
+              <label class="field-label">${f.label}</label>
+              <input type="number" step="0.1" class="raw-input-box" id="modal-field-${f.key}" value="${val !== undefined && val !== null ? val : ''}" placeholder="e.g. 5.4">
+            </div>
+          `;
+        }
+
+        if (f.type === "multi_select") {
+          const activeIds = Array.isArray(val) ? val : [];
+          let pills = "";
+          if (f.optionsSource === "usages") {
+            pills = availableUsages.map(u => {
+              const active = activeIds.includes(u.id);
+              return `
+                <label style="display:inline-flex; align-items:center; gap:0.35rem; background:var(--bg-input); padding:0.35rem 0.65rem; border-radius:4px; font-size:0.8rem; cursor:pointer;">
+                  <input type="checkbox" class="modal-multi-chk-${f.key}" value="${u.id}" ${active ? 'checked' : ''}>
+                  <span>${u.icon || ''} ${u.name}</span>
+                </label>
+              `;
+            }).join('');
+          } else if (f.optionsSource === "themes") {
+            pills = availableThemes.map(t => {
+              const active = activeIds.includes(t.id);
+              const parent = t.parent_name ? ` (${t.parent_name})` : '';
+              return `
+                <label style="display:inline-flex; align-items:center; gap:0.35rem; background:var(--bg-input); padding:0.35rem 0.65rem; border-radius:4px; font-size:0.8rem; cursor:pointer;">
+                  <input type="checkbox" class="modal-multi-chk-${f.key}" value="${t.id}" ${active ? 'checked' : ''}>
+                  <span>${t.child_of ? '↳ 🏷️' : '📁'} ${t.name}${parent}</span>
+                </label>
+              `;
+            }).join('');
+          }
+          return `
+            <div>
+              <label class="field-label">${f.label}</label>
+              <div style="display:flex; flex-wrap:wrap; gap:0.4rem; padding:0.5rem; background:var(--bg-card); border:1px solid var(--border-dim); border-radius:var(--radius-sm);">
+                ${pills}
+              </div>
+            </div>
+          `;
+        }
+
+        return '';
+      }).join('');
+    }
+
+    function recalcModalAvgScore() {
+      const elScores = document.getElementById('modal-field-scores');
+      const elAvg = document.getElementById('modal-field-average_score');
+      if (!elScores || !elAvg) return;
+      let text = (elScores.value || "").trim();
+      if (text.startsWith('[') && text.endsWith(']')) text = text.slice(1, -1);
+      const parts = text.split(/[\s,]+/).filter(Boolean);
+      const nums = parts.map(p => parseFloat(p)).filter(n => !isNaN(n));
+      if (nums.length > 0) {
+        const sum = nums.reduce((a, b) => a + b, 0);
+        elAvg.value = Math.round((sum / nums.length) * 100) / 100;
+      }
+    }
+
+    async function saveActiveRecordModal() {
+      const config = TABLES_CONFIG[currentTableKey];
+      const payload = {};
+
+      for (const f of config.fields) {
+        if (f.type === "multi_select") {
+          const chks = document.querySelectorAll(`.modal-multi-chk-${f.key}:checked`);
+          payload[f.key] = Array.from(chks).map(c => c.value);
+        } else if (f.type === "scores_array") {
+          const el = document.getElementById(`modal-field-${f.key}`);
+          let text = el && el.value ? el.value.trim() : "";
+          if (text.startsWith('[') && text.endsWith(']')) text = text.slice(1, -1);
+          const parts = text.split(/[\s,]+/).filter(Boolean);
+          payload[f.key] = parts.map(p => {
+            const n = parseFloat(p);
+            return isNaN(n) ? null : (Number.isInteger(n) ? parseInt(n, 10) : Math.round(n * 100) / 100);
+          }).filter(n => n !== null);
+        } else if (f.type === "decimal_number") {
+          const el = document.getElementById(`modal-field-${f.key}`);
+          if (el && el.value.trim() !== "") {
+            payload[f.key] = Math.round(parseFloat(el.value.trim()) * 100) / 100;
+          } else {
+            payload[f.key] = null;
+          }
+        } else if (f.type === "json_array") {
+          const el = document.getElementById(`modal-field-${f.key}`);
+          payload[f.key] = el && el.value.trim() ? el.value.split(',').map(s => s.trim()).filter(Boolean) : [];
+        } else if (f.type === "number") {
+          const el = document.getElementById(`modal-field-${f.key}`);
+          if (el && el.value.trim() !== "") {
+            const numVal = parseInt(el.value.trim(), 10);
+            payload[f.key] = numVal;
+            if (f.key === 'idx') payload.index = numVal;
+            if (f.key === 'index') payload.idx = numVal;
+          }
+        } else {
+          const el = document.getElementById(`modal-field-${f.key}`);
+          if (el) payload[f.key] = el.value.trim();
+        }
+
+        if (f.required && !payload[f.key]) {
+          alert(`${f.label} is required.`);
+          return;
+        }
+      }
+
+      if (payload.scores && payload.scores.length > 0 && (payload.average_score === null || payload.average_score === undefined)) {
+        const sum = payload.scores.reduce((a, b) => a + b, 0);
+        payload.average_score = Math.round((sum / payload.scores.length) * 100) / 100;
+      }
+
+      try {
+        const res = await fetch(config.saveEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          closeModal('generic-modal');
+          fireToast(`Saved to ${config.title}`);
+          await fetchBackendData();
+          await loadArchiveList();
+          renderActiveTable();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert("Error saving: " + (err.error || res.statusText));
+        }
+      } catch (e) {
+        alert("Failed to connect to local server.");
+      }
+    }
+
+    async function deleteRecord(id) {
+      const config = TABLES_CONFIG[currentTableKey];
+      if (!confirm(`Delete record #${id} from ${config.title}?`)) return;
+
+      try {
+        const res = await fetch(config.deleteEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+
+        if (res.ok) {
+          fireToast("Record deleted");
+          await fetchBackendData();
+          await loadArchiveList();
+          renderActiveTable();
+        }
+      } catch (e) {
+        alert("Failed to delete record.");
+      }
+    }
+
+    // Modal Helpers & Dirty Guard
+    let isModalDirty = false;
+
+    function markModalDirty() {
+      isModalDirty = true;
+    }
+
+    function openModal(id) {
+      isModalDirty = false;
+      document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+      isModalDirty = false;
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function handleModalOverlayClick(event, modalId) {
+      if (event.target === document.getElementById(modalId)) {
+        handleModalExitRequest(modalId);
+      }
+    }
+
+    function handleModalExitRequest(modalId) {
+      if (isModalDirty) {
+        if (confirm("You have unsaved changes in this record. Are you sure you want to discard them?")) {
+          isModalDirty = false;
+          closeModal(modalId);
+          fireToast("Changes discarded");
+        }
+      } else {
+        closeModal(modalId);
+      }
+    }
+
+    // ==============================================================================
+    // RELATIONAL VISUAL TREES (VIEW ONLY)
+    // ==============================================================================
+
+    let currentVisualTreeMode = "csq";
+
+    function isMock(id) {
+      return id && String(id).startsWith("M-");
+    }
+
+    function mockBadge(id) {
+      return isMock(id) ? `<span class="badge-mock">MOCK</span>` : "";
+    }
+
+    function openVisualTreesView(btn) {
+      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('visual-trees-view').classList.add('active');
+      if (btn) btn.classList.add('active');
+
+      renderActiveVisualTree();
+    }
+
+    function switchVisualTreeMode(mode, btn) {
+      currentVisualTreeMode = mode;
+      document.querySelectorAll('#visual-trees-view .nav-tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      renderActiveVisualTree();
+    }
+
+    function renderActiveVisualTree() {
+      const canvas = document.getElementById('tree-visual-canvas');
+      if (!canvas) return;
+
+      if (currentVisualTreeMode === "csq") {
+        renderCSQTreeDiagram(canvas);
+      } else if (currentVisualTreeMode === "themes") {
+        renderThemesTreeDiagram(canvas);
+      } else if (currentVisualTreeMode === "specific-usages") {
+        renderSpecificUsagesTreeDiagram(canvas);
+      }
+    }
+
+    // ========== SVG TREE DIAGRAM ENGINE ==========
+    const NODE_W = 200, NODE_H = 36, GAP_X = 40, GAP_Y = 28, PAD = 20;
+
+    function truncText(t, max = 22) {
+      return t && t.length > max ? t.substring(0, max) + '…' : (t || '');
+    }
+
+    function svgNode(x, y, label, sublabel, color, isMockId) {
+      const mockTag = isMockId ? `<text x="${x + NODE_W - 8}" y="${y + 12}" text-anchor="end" font-size="8" font-weight="700" fill="${color}" opacity="0.7">M</text>` : '';
+      return `
+        <rect x="${x}" y="${y}" width="${NODE_W}" height="${NODE_H}" rx="6" fill="var(--bg-card)" stroke="${color}" stroke-width="1.5"/>
+        <text x="${x + 10}" y="${y + 15}" font-size="11" font-weight="700" fill="var(--text-vivid)">${truncText(label, 24)}</text>
+        ${sublabel ? `<text x="${x + 10}" y="${y + 28}" font-size="9" fill="var(--text-muted)">${truncText(sublabel, 28)}</text>` : ''}
+        ${mockTag}
+      `;
+    }
+
+    function svgLine(x1, y1, x2, y2, color) {
+      const midY = (y1 + y2) / 2;
+      return `<path d="M${x1},${y1} C${x1},${midY} ${x2},${midY} ${x2},${y2}" fill="none" stroke="${color}" stroke-width="1.2" opacity="0.5"/>`;
+    }
+
+    // 1. Container => Specific => Quotes (Multiple Trees)
+    function renderCSQTreeDiagram(canvas) {
+      document.getElementById('tree-visual-title').textContent = "1. Container → Specific → Quotes";
+      document.getElementById('tree-visual-desc').textContent = "Each Container is a separate tree root. M = mock scaffolding data.";
+
+      let allSVGs = '';
+
+      availableContainers.forEach(c => {
+        const specs = availableSpecifics.filter(s => s.container_id === c.id);
+        if (specs.length === 0) return;
+
+        let totalLeaves = 0;
+        const specData = specs.map(s => {
+          const quotes = allQuotesList.filter(q => q.specific_id === s.id);
+          totalLeaves += Math.max(quotes.length, 1);
+          return { spec: s, quotes };
+        });
+
+        const treeH = totalLeaves * (NODE_H + GAP_Y) + PAD * 2;
+        const treeW = NODE_W * 3 + GAP_X * 2 + PAD * 2;
+
+        let svg = `<svg width="${treeW}" height="${treeH}" xmlns="http://www.w3.org/2000/svg" style="display:block; margin-bottom:1.5rem;">`;
+
+        // Root node (Container)
+        const rootX = PAD;
+        const rootY = treeH / 2 - NODE_H / 2;
+        svg += svgNode(rootX, rootY, c.name, c.type || 'origin', 'var(--accent)', isMock(c.id));
+
+        // Specific nodes (Level 2)
+        const specX = PAD + NODE_W + GAP_X;
+        let leafIdx = 0;
+
+        specData.forEach(({ spec: s, quotes }) => {
+          const childCount = Math.max(quotes.length, 1);
+          const blockH = childCount * (NODE_H + GAP_Y);
+          const specY = PAD + leafIdx * (NODE_H + GAP_Y) + blockH / 2 - NODE_H / 2;
+
+          svg += svgLine(rootX + NODE_W, rootY + NODE_H / 2, specX, specY + NODE_H / 2, 'var(--accent)');
+          svg += svgNode(specX, specY, s.name, s.category || 'endpoint', 'var(--border-bright)', isMock(s.id));
+
+          // Quote nodes (Level 3)
+          const quoteX = specX + NODE_W + GAP_X;
+          if (quotes.length === 0) {
+            const qY = PAD + leafIdx * (NODE_H + GAP_Y);
+            svg += svgLine(specX + NODE_W, specY + NODE_H / 2, quoteX, qY + NODE_H / 2, 'var(--border-mid)');
+            svg += svgNode(quoteX, qY, '(no quotes)', '', 'var(--border-dim)', false);
+            leafIdx++;
+          } else {
+            quotes.forEach(q => {
+              const qY = PAD + leafIdx * (NODE_H + GAP_Y);
+              svg += svgLine(specX + NODE_W, specY + NODE_H / 2, quoteX, qY + NODE_H / 2, 'var(--border-mid)');
+              svg += svgNode(quoteX, qY, `#${q.index} "${truncText(q.main_content.split('\n')[0], 18)}"`, q.date, 'var(--hazard-low)', isMock(q.id));
+              leafIdx++;
+            });
+          }
+        });
+
+        svg += '</svg>';
+        allSVGs += svg;
+      });
+
+      canvas.innerHTML = allSVGs || '<div style="color:var(--text-muted); padding:1rem;">No containers with specifics found.</div>';
+    }
+
+    // 2. Themes (child_of) — Multiple Root Trees
+    function renderThemesTreeDiagram(canvas) {
+      document.getElementById('tree-visual-title').textContent = "2. Themes (child_of Hierarchy)";
+      document.getElementById('tree-visual-desc').textContent = "Each root theme is a separate tree. Sub-themes branch recursively.";
+
+      const roots = availableThemes.filter(t => !t.child_of);
+      const childrenMap = {};
+      availableThemes.forEach(t => {
+        if (t.child_of) {
+          if (!childrenMap[t.child_of]) childrenMap[t.child_of] = [];
+          childrenMap[t.child_of].push(t);
+        }
+      });
+
+      function countLeaves(nodeId) {
+        const children = childrenMap[nodeId] || [];
+        if (children.length === 0) return 1;
+        return children.reduce((sum, c) => sum + countLeaves(c.id), 0);
+      }
+
+      function renderBranch(node, x, yStart, yEnd) {
+        const nodeY = (yStart + yEnd) / 2 - NODE_H / 2;
+        let svg = svgNode(x, nodeY, node.name, node.notes || '', 'var(--accent)', isMock(node.id));
+
+        const children = childrenMap[node.id] || [];
+        if (children.length === 0) return svg;
+
+        const childX = x + NODE_W + GAP_X;
+        let childYCursor = yStart;
+
+        children.forEach(child => {
+          const leafCount = countLeaves(child.id);
+          const childBlockH = leafCount * (NODE_H + GAP_Y);
+          const childNodeY = childYCursor + childBlockH / 2 - NODE_H / 2;
+
+          svg += svgLine(x + NODE_W, nodeY + NODE_H / 2, childX, childNodeY + NODE_H / 2, 'var(--accent)');
+          svg += renderBranch(child, childX, childYCursor, childYCursor + childBlockH);
+          childYCursor += childBlockH;
+        });
+
+        return svg;
+      }
+
+      function getDepth(nodeId) {
+        const children = childrenMap[nodeId] || [];
+        if (children.length === 0) return 1;
+        return 1 + Math.max(...children.map(c => getDepth(c.id)));
+      }
+
+      let allSVGs = '';
+
+      roots.forEach(root => {
+        const leaves = countLeaves(root.id);
+        const depth = getDepth(root.id);
+        const treeH = leaves * (NODE_H + GAP_Y) + PAD * 2;
+        const treeW = depth * (NODE_W + GAP_X) + PAD * 2;
+
+        let svg = `<svg width="${treeW}" height="${treeH}" xmlns="http://www.w3.org/2000/svg" style="display:block; margin-bottom:1.5rem;">`;
+        svg += renderBranch(root, PAD, PAD, treeH - PAD);
+        svg += '</svg>';
+        allSVGs += svg;
+      });
+
+      canvas.innerHTML = allSVGs || '<div style="color:var(--text-muted); padding:1rem;">No themes found.</div>';
+    }
+
+    // 3. Specific → Usages (Multiple Trees)
+    function renderSpecificUsagesTreeDiagram(canvas) {
+      document.getElementById('tree-visual-title').textContent = "3. Specific → Default Usages";
+      document.getElementById('tree-visual-desc').textContent = "Each Specific endpoint is a tree root with its default usage modes as children.";
+
+      let allSVGs = '';
+
+      availableSpecifics.forEach(s => {
+        const usageIds = s.default_usage_ids || [];
+        if (usageIds.length === 0) return;
+
+        const usages = usageIds.map(uid => availableUsages.find(u => u.id === uid)).filter(Boolean);
+        const leafCount = usages.length;
+        const treeH = leafCount * (NODE_H + GAP_Y) + PAD * 2;
+        const treeW = NODE_W * 2 + GAP_X + PAD * 2;
+
+        let svg = `<svg width="${treeW}" height="${treeH}" xmlns="http://www.w3.org/2000/svg" style="display:block; margin-bottom:1.5rem;">`;
+
+        const rootX = PAD;
+        const rootY = treeH / 2 - NODE_H / 2;
+        const cname = s.container ? s.container.name : (s.container_name || '');
+        svg += svgNode(rootX, rootY, s.name, cname, 'var(--accent)', isMock(s.id));
+
+        const childX = rootX + NODE_W + GAP_X;
+        usages.forEach((u, i) => {
+          const uY = PAD + i * (NODE_H + GAP_Y);
+          svg += svgLine(rootX + NODE_W, rootY + NODE_H / 2, childX, uY + NODE_H / 2, 'var(--border-bright)');
+          svg += svgNode(childX, uY, `${u.icon || ''} ${u.name}`, u.description || '', 'var(--hazard-low)', isMock(u.id));
+        });
+
+        svg += '</svg>';
+        allSVGs += svg;
+      });
+
+      canvas.innerHTML = allSVGs || '<div style="color:var(--text-muted); padding:1rem;">No specifics with usages found.</div>';
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const cur = html.getAttribute('data-theme') || 'dark';
+      const nxt = cur === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', nxt);
+      localStorage.setItem('prescripts-theme', nxt);
+    }
+
+    // ==============================================================================
+    // TURSO CLOUD ONE-WAY SYNC (LOCAL SQLITE -> TURSO CLOUD)
+    // ==============================================================================
+    async function syncToTursoCloud() {
+      const btns = document.querySelectorAll(".btn-turso-sync");
+      btns.forEach(b => {
+        b.dataset.origText = b.innerHTML;
+        b.disabled = true;
+        b.style.opacity = "0.6";
+        b.innerHTML = "⏳ Syncing to Turso...";
+      });
+
+      try {
+        const res = await fetch(`${API_BASE}/api/turso/sync`, { method: "POST" });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          const c = data.counts || {};
+          fireToast(`✓ Turso Cloud Updated! (${c.quotes || 0} quotes, ${c.specifics || 0} specifics, ${c.containers || 0} containers)`);
+        } else {
+          alert(`Cloud Sync Error: ${data.error || res.statusText}`);
+          fireToast("❌ Cloud Sync Failed");
+        }
+      } catch (err) {
+        alert("Failed to connect to local server for Turso sync.");
+      } finally {
+        btns.forEach(b => {
+          b.disabled = false;
+          b.style.opacity = "1";
+          if (b.dataset.origText) b.innerHTML = b.dataset.origText;
+        });
+      }
+    }
+
+    // Backend Synchronizer
+    async function fetchBackendData() {
+      try {
+        const taxRes = await fetch(`${API_BASE}/api/taxonomy`);
+        if (taxRes.ok) {
+          const tax = await taxRes.json();
+          if (tax.containers) availableContainers = tax.containers;
+          if (tax.specifics) availableSpecifics = tax.specifics;
+          if (tax.themes) availableThemes = tax.themes;
+          if (tax.usages) availableUsages = tax.usages;
+        }
+
+        const qRes = await fetch(`${API_BASE}/api/quotes`);
+        if (qRes.ok) {
+          const quotes = await qRes.json();
+          if (Object.keys(quotes).length > 0) availableQuotes = quotes;
+        }
+
+        const listRes = await fetch(`${API_BASE}/api/quotes/list`);
+        if (listRes.ok) {
+          allQuotesList = await listRes.json();
+        }
+
+        const idxRes = await fetch(`${API_BASE}/api/next_index`);
+        if (idxRes.ok) {
+          const data = await idxRes.json();
+          activeQuote.index = data.next_index ?? data.next_idx ?? 1;
+          activeQuote.idx = activeQuote.index;
+        }
+      } catch (e) {}
+
+      renderUsagePills();
+      renderPrefChips();
+      renderThemeChips();
+      renderLiveJSON();
+    }
+
+    // Load Archive List for View 5 (Quotes Archive)
+    async function loadArchiveList() {
+      try {
+        const res = await fetch(`${API_BASE}/api/quotes/list`);
+        if (res.ok) {
+          allQuotesList = await res.json();
+          renderActiveTable();
+        }
+      } catch (e) {}
+    }
+
+    // Global Click Listener for Dropdowns
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#date-host')) {
+        const dd = document.getElementById('date-dropdown');
+        if (dd) dd.classList.remove('open');
+      }
+      if (!e.target.closest('#specific-combo-wrap')) {
+        const menu = document.getElementById('specific-combo-menu');
+        const trigger = document.getElementById('specific-combo-trigger');
+        if (menu) menu.classList.remove('open');
+        if (trigger) trigger.classList.remove('active');
+      }
+      if (!e.target.closest('#theme-host')) {
+        const dd = document.getElementById('theme-dropdown');
+        if (dd) dd.classList.remove('open');
+      }
+      if (!e.target.closest('#pref-host')) {
+        const dd = document.getElementById('pref-dropdown');
+        if (dd) dd.classList.remove('open');
+      }
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('generic-modal');
+        if (modal && modal.classList.contains('open')) {
+          handleModalExitRequest('generic-modal');
+        }
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const savedTheme = localStorage.getItem('prescripts-theme');
+      if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+      await fetchBackendData();
+    });
+  </script>
+</body>
+</html>

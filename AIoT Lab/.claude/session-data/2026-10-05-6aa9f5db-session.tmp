@@ -1,0 +1,71 @@
+# Session: 2026-10-05
+**Date:** 2026-10-05
+**Started:** 06:27
+**Last Updated:** 06:48
+**Project:** Blue AI
+**Branch:** main
+**Worktree:** D:\My Drive\Blue AI\Rebased\frontend
+**Repo:** D:\My Drive\Blue AI\.git
+
+---
+<!-- ECC:SUMMARY:START -->
+## Session Summary
+
+### Tasks
+- We should build the data sructure for each characters first. It should look like  similiar to the tables of "D:\My Drive\Blue AI\Entropy" we must plan first
+- continue
+- I don't see the UI where I can change stuff you say, Faust. Where are they?
+- Output token limit hit. Resume directly — no apology, no recap of what you were doing. Pick up mid-thought if that is where the cut happened. Break remaining work into smaller pieces.
+- Tell me, where are the database for "http://localhost:5174/identity.html" stored?
+- This is my fix, Faust:   <pasted_content id="e9db"> \`\`\` Vision # character Table - There should be a new Field which will have the shortened version of the Character Name. Like, how they're refering t
+- continue
+- Alright. You've done a good job, Faust. Though, the next part is rather hard. Because the images won't be that simple. I'm thinking that the image won't be stored within the character table at all. It
+- continue
+- Alright. Good, though there's a problem. Simimliar datas are being stored in multiple places
+
+### Files Modified
+- D:\My Drive\Blue AI\Rebased\backend\requirements.txt
+- D:\My Drive\Blue AI\Rebased\backend\db.py
+- D:\My Drive\Blue AI\Rebased\backend\models.py
+- D:\My Drive\Blue AI\Rebased\backend\graph_resolver.py
+- D:\My Drive\Blue AI\Rebased\backend\seed_data.py
+- D:\My Drive\Blue AI\Rebased\backend\main.py
+- D:\My Drive\Blue AI\Rebased\frontend\package.json
+- D:\My Drive\Blue AI\Rebased\frontend\vite.config.ts
+- D:\My Drive\Blue AI\Rebased\frontend\tsconfig.json
+- D:\My Drive\Blue AI\Rebased\frontend\tailwind.config.js
+- D:\My Drive\Blue AI\Rebased\frontend\postcss.config.js
+- D:\My Drive\Blue AI\Rebased\frontend\src\types\schema.ts
+- D:\My Drive\Blue AI\Rebased\frontend\src\types\api.ts
+- D:\My Drive\Blue AI\Rebased\frontend\src\store\useStudioStore.ts
+- D:\My Drive\Blue AI\Rebased\frontend\src\app\components\HeaderBar.tsx
+- D:\My Drive\Blue AI\Rebased\frontend\src\app\components\NodeCard.tsx
+- D:\My Drive\Blue AI\Rebased\frontend\src\app\components\MatrixGrid.tsx
+- D:\My Drive\Blue AI\Rebased\frontend\src\app\components\OutputPanel.tsx
+- D:\My Drive\Blue AI\Rebased\frontend\src\app\components\PoolInspector.tsx
+- D:\My Drive\Blue AI\Rebased\frontend\src\app\App.tsx
+- D:\My Drive\Blue AI\Rebased\frontend\src\main.tsx
+- D:\My Drive\Blue AI\Rebased\frontend\src\styles\globals.css
+- D:\My Drive\Blue AI\Rebased\frontend\index.html
+- D:\My Drive\Blue AI\Rebased\run.bat
+- D:\My Drive\Blue AI\Rebased\run.sh
+- D:\My Drive\Blue AI\Rebased\README.md
+- D:\My Drive\Blue AI\Rebased\frontend\src\obsidian-shim.ts
+- D:\My Drive\Blue AI\Rebased\frontend\src\utils\webVaultAdapter.ts
+- D:\My Drive\Blue AI\Rebased\frontend\src\store\useTriggerStore.ts
+- D:\My Drive\Blue AI\Rebased\frontend\src\app\components\OptionEditorModal.tsx
+
+### Tools Used
+Bash, Read, Glob, Agent, SendMessage, ListAgents, Skill, Write, Grep, PowerShell, Edit, AskUserQuestion, ExitPlanMode, EnterPlanMode, mcp__claude-vscode__getDiagnostics, TaskStop
+
+### Stats
+- Total user messages: 21
+<!-- ECC:SUMMARY:END -->
+
+### Notes for Next Session
+-
+
+### Context to Load
+```
+[relevant files]
+```

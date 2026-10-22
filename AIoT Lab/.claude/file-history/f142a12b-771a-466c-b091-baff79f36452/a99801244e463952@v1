@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""
+Tier 3: Execution Tools
+Pure deterministic tool execution (Subprocess Shell, Git, Filesystem, Audio Reflex).
+Adheres strictly to the Local Disk D: Policy and anti-silent-fallback rules.
+"""
+
+import os
+import sys
+import time
+import subprocess
+from pathlib import Path
+from typing import Optional
+
+from domain import ExecutionResult
+
+
+C2_SCRIPT_PATH = Path(r"D:\My Drive\Blue AI\.agents\scripts\c2.py")
+
+
+class SovereignTools:
+    """Deterministic system and developer tools."""
+
+    @staticmethod
+    def run_shell(command: str, cwd: str, timeout: int = 45) -> ExecutionResult:
+        """Executes a PowerShell command safely within the target workspace."""
+        start = time.perf_counter()
+        if not os.path.exists(cwd):
+            return ExecutionResult(
+                success=False, output="", latency_ms=0,
+                error=f"Workspace path does not exist: {cwd}"
+            )
+
+        cmd = ["powershell", "-NoProfile", "-NonInteractive", "-Command", command]
+        try:
+            res = subprocess.run(
+                cmd,
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                encoding="utf-8",
+                errors="replace"
+            )
+            elapsed = (time.perf_counter() - start) * 1000
+            stdout = res.stdout.strip()
+            stderr = res.stderr.strip()
+            output = stdout if stdout else stderr
+            return ExecutionResult(
+                success=(res.returncode == 0),
+                output=output,
+                latency_ms=elapsed,
+                error=stderr if res.returncode != 0 else None
+            )
+        except subprocess.TimeoutExpired:
+            elapsed = (time.perf_counter() - start) * 1000
+            return ExecutionResult(
+                success=False, output="", latency_ms=elapsed,
+                error=f"Command timed out after {timeout}s: {command}"
+            )
+        except Exception as e:
+            elapsed = (time.perf_counter() - start) * 1000
+            return ExecutionResult(
+                success=False, output="", latency_ms=elapsed,
+                error=f"Process execution error: {str(e)}"
+            )
+
+    @classmethod
+    def git_status(cls, cwd: str) -> ExecutionResult:
+        """Retrieves active Git branch, dirty status, and latest commit."""
+        cmd = (
+            "$b = git branch --show-current; "
+            "$s = git status -s; "
+            "$l = git log -1 --oneline; "
+            "Write-Output \"Branch: $b`nLast Commit: $l`nChanges:`n$s\""
+        )
+        return cls.run_shell(cmd, cwd=cwd, timeout=10)
+
+    @classmethod
+    def git_diff(cls, cwd: str, stat_only: bool = True) -> ExecutionResult:
+        """Retrieves Git diff (stat or full diff)."""
+        flag = "--stat" if stat_only else ""
+        return cls.run_shell(f"git diff {flag}", cwd=cwd, timeout=15)
+
+    @staticmethod
+    def read_file(file_path: str, max_lines: int = 150) -> ExecutionResult:
+        """Safely reads text content bounded by maximum lines."""
+        p = Path(file_path)
+        if not p.exists() or not p.is_file():
+            return ExecutionResult(success=False, output="", error=f"File not found: {file_path}")
+        try:
+            with open(p, "r", encoding="utf-8", errors="replace") as f:
+                lines = [f.readline() for _ in range(max_lines)]
+            return ExecutionResult(success=True, output="".join(lines))
+        except Exception as e:
+            return ExecutionResult(success=False, output="", error=str(e))
+
+    @staticmethod
+    def trigger_acoustic_reflex(speech_text: str) -> None:
+        """Invokes local biological TTS reflex asynchronously."""
+        if not C2_SCRIPT_PATH.exists() or not speech_text.strip():
+            return
+        clean_text = speech_text.replace('"', '\\"').strip()
+        try:
+            subprocess.Popen(
+                [sys.executable, str(C2_SCRIPT_PATH), "--no-tg", clean_text],
+                cwd=str(C2_SCRIPT_PATH.parent.parent.parent),
+                creationflags=0x08000000 if os.name == "nt" else 0
+            )
+        except Exception:
+            pass

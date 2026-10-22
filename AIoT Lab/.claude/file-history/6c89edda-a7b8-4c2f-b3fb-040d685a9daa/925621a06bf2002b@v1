@@ -1,0 +1,21 @@
+:: D:\My Drive\Blue AI\Test Projects\Drive Folder Template\run_app.bat
+@echo off
+setlocal
+cd /d "%~dp0"
+
+echo ========================================================
+echo   Drive Architect - Reconciler Launcher
+echo ========================================================
+
+REM 1. Port Clear Sweep (20170 & 20171)
+powershell -NoProfile -Command "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 20170, 20171 } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+
+ping 127.0.0.1 -n 2 >nul
+
+REM 2. Launch headless via VBScript
+cscript //nologo start_silent.vbs
+
+echo Services launched in background.
+echo Backend API : http://localhost:20171
+echo Frontend UI : http://localhost:20170
+echo ========================================================

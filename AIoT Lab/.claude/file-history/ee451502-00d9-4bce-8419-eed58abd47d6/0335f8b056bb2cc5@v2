@@ -1,0 +1,183 @@
+# ESP32 ↔ Turso Cloud SQLite Integration Guide
+
+This guide details how your **ESP32 microcontroller** connects directly to your **Turso Cloud SQLite database** 24/7 over Wi-Fi without needing your computer turned on.
+
+---
+
+## 1. Network & Architecture Overview
+
+```
+┌─────────────────────────────────┐
+│     Prescripts Studio (PC)      │
+│  "☁️ Push to Turso" (One-Way)   │
+└────────────────┬────────────────┘
+                 │ HTTPS (turso_sync.py)
+                 ▼
+┌─────────────────────────────────┐
+│       Turso Cloud SQLite        │  <--- Hosted 24/7 in AWS Sydney (ap-southeast-2)
+│  (heraclitus-rien-bluerose)     │  <--- 9 GB Free, Never Sleep, Pure SQLite
+└────────────────┬────────────────┘
+                 │
+                 │ HTTPS Pipeline API v2 (Over Wi-Fi)
+                 ▼
+┌─────────────────────────────────┐
+│       ESP32 Microcontroller     │  <--- Direct queries (Latest, Random, By ID)
+│  (E-Paper / TFT / Speaker)      │  <--- Zero local server required
+└─────────────────────────────────┘
+```
+
+---
+
+## 2. Turso Cloud HTTP Pipeline API Contract
+
+- **Endpoint**: `https://heraclitus-rien-bluerose.aws-ap-southeast-2.turso.io/v2/pipeline`
+- **Method**: `POST`
+- **Headers**:
+  ```http
+  Authorization: Bearer <YOUR_TURSO_AUTH_TOKEN>
+  Content-Type: application/json
+  ```
+- **Payload to Fetch Latest Quote**:
+  ```json
+  {
+    "requests": [
+      {
+        "type": "execute",
+        "stmt": {
+          "sql": "SELECT idx, main_content, date FROM quotes ORDER BY idx DESC LIMIT 1;"
+        }
+      },
+      { "type": "close" }
+    ]
+  }
+  ```
+- **Payload to Fetch Random Quote**:
+  ```json
+  {
+    "requests": [
+      {
+        "type": "execute",
+        "stmt": {
+          "sql": "SELECT idx, main_content, date FROM quotes ORDER BY RANDOM() LIMIT 1;"
+        }
+      },
+      { "type": "close" }
+    ]
+  }
+  ```
+
+---
+
+## 3. Ready-to-Flash ESP32 Arduino C++ Sketch
+
+Install in Arduino IDE Library Manager:
+- `ArduinoJson` (v6 or v7 by Benoit Blanchon)
+
+```cpp
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+
+// 1. Wi-Fi Configuration
+const char* ssid     = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+// 2. Turso Cloud Database Credentials
+const char* turso_url   = "https://heraclitus-rien-bluerose.aws-ap-southeast-2.turso.io/v2/pipeline";
+const char* turso_token = "YOUR_TURSO_AUTH_TOKEN";
+
+void fetchQuoteFromTurso(bool randomQuote = false) {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[WIFI] Disconnected. Reconnecting...");
+    WiFi.begin(ssid, password);
+    return;
+  }
+
+  WiFiClientSecure client;
+  client.setInsecure(); // Skips strict CA bundle verification to conserve ESP32 SRAM
+
+  HTTPClient http;
+  http.begin(client, turso_url);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("Authorization", String("Bearer ") + turso_token);
+
+  // Construct query: Latest or Random
+  String sql = randomQuote 
+    ? "SELECT idx, main_content, date FROM quotes ORDER BY RANDOM() LIMIT 1;"
+    : "SELECT idx, main_content, date FROM quotes ORDER BY idx DESC LIMIT 1;";
+
+  String payload = "{\"requests\":[{\"type\":\"execute\",\"stmt\":{\"sql\":\"" + sql + "\"}},{\"type\":\"close\"}]}";
+
+  Serial.println("[TURSO] Querying Cloud SQLite...");
+  int httpCode = http.POST(payload);
+
+  if (httpCode == 200) {
+    String response = http.getString();
+    
+    // Parse response with ArduinoJson
+    DynamicJsonDocument doc(4096);
+    DeserializationError error = deserializeJson(doc, response);
+
+    if (!error) {
+      JsonArray rows = doc["results"][0]["response"]["result"]["rows"];
+      if (rows.size() > 0) {
+        long idx = rows[0][0]["value"].as<long>();
+        String content = rows[0][1]["value"].as<String>();
+        String date = rows[0][2]["value"].as<String>();
+
+        Serial.println("\n========================================");
+        Serial.printf(" Quote #%ld (Date: %s)\n", idx, date.c_str());
+        Serial.println("========================================");
+        Serial.println(content);
+        Serial.println("========================================\n");
+
+        // -> Output to E-Paper display, TFT LCD, or I2S Audio here!
+      } else {
+        Serial.println("[TURSO] Database returned 0 rows.");
+      }
+    } else {
+      Serial.print("[JSON] Parse error: ");
+      Serial.println(error.c_str());
+    }
+  } else {
+    Serial.printf("[HTTP] Request failed, code: %d\n", httpCode);
+    Serial.println(http.getString());
+  }
+
+  http.end();
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  Serial.printf("\n[BOOT] Connecting to Wi-Fi '%s'...\n", ssid);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\n[WIFI] Connected! IP: " + WiFi.localIP().toString());
+
+  // Fetch the latest quote on boot
+  fetchQuoteFromTurso(false);
+}
+
+void loop() {
+  // Example: Query a new random quote every 60 seconds (or attach to a hardware button)
+  delay(60000);
+  fetchQuoteFromTurso(true);
+}
+```
+
+---
+
+## 4. How the One-Way Sync Operates
+
+1. You create or edit quotes/specifics in **Prescripts Studio (`prescripts_entry.html`)**.
+2. Click the **"☁️ Push to Turso"** button in the top navigation header.
+3. The local server executes `turso_sync.py`, which performs a one-way batch UPSERT of all tables into Turso Cloud.
+4. Your ESP32 immediately sees the new quotes on its next query!

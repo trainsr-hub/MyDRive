@@ -1,0 +1,43 @@
+{
+  "state": "blocked",
+  "detail": "API Error: 503 Service temporarily unavailable: all targets were skipped by pre-dispatch filters. This is a server-side issue, usually temporary — try again in a moment. If it persists, check your inference gateway (localhost:20128).",
+  "tempo": "blocked",
+  "inFlight": {
+    "tasks": 0,
+    "queued": 0,
+    "kinds": [],
+    "drainableMonitors": 0
+  },
+  "tokens": 32620,
+  "output": null,
+  "children": null,
+  "linkScanOffset": 705928,
+  "linkScanPath": "C:\\Users\\Admin\\.claude\\projects\\D--My-Drive-My-Obsidian-Vault-Main-03\\7beac19c-6171-440b-9520-b3687803cb20.jsonl",
+  "template": "bg",
+  "respawnFlags": [
+    "--effort",
+    "high",
+    "--model",
+    "Faust-ST",
+    "--permission-mode",
+    "auto"
+  ],
+  "bgIsolation": "none",
+  "providerEnv": {
+    "ANTHROPIC_MODEL": "Faust-ST"
+  },
+  "interactiveLineage": true,
+  "intent": "",
+  "name": "dataviewjs accounts error",
+  "nameSource": "auto",
+  "sessionId": "7beac19c-6171-440b-9520-b3687803cb20",
+  "resumeSessionId": "7beac19c-6171-440b-9520-b3687803cb20",
+  "daemonShort": "7beac19c",
+  "cliVersion": "2.1.268",
+  "cwd": "D:\\My Drive\\My Obsidian Vault\\Main_03",
+  "createdAt": "2026-09-11T04:48:22.357Z",
+  "updatedAt": "2026-09-11T05:43:53.021Z",
+  "firstTerminalAt": "2026-09-11T04:52:20.298Z",
+  "backend": "daemon",
+  "needs": "API unavailable — retry · API Error: 503 Service temporarily unavailable: all targets were skipped by pre-dispatch filters. This is a server-side issue, usually temporary — try again in a moment. If it persists, check your inference gateway (localhost:20128)."
+}

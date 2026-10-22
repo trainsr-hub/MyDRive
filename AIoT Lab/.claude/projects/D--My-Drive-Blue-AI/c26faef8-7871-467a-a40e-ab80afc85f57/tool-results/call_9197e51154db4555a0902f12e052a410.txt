@@ -1,0 +1,502 @@
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:4:  quotes -> specifics -> containers + themes (child_of tree) + usages (conflict matrix)
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:15:DEFAULT_DB_PATH = os.path.join(BASE_DIR, "data", "rose_quotes.db")
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:22:      1. quotes_map.json: { [hex_id]: QuoteObject } (Denormalized with Specifics, Containers, Themes, Usages)
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:26:        return {"quotes": 0, "specifics": 0, "containers": 0, "themes": 0, "usages": 0}
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:114:    # 5. Fetch all quotes (Table 1) - ZERO sentiment
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:115:    quotes_map = {}
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:126:            FROM quotes
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:154:            quotes_map[qid] = {
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:176:    # Write quotes_map.json
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:177:    quotes_map_path = os.path.join(out_dir, "quotes_map.json")
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:178:    with open(quotes_map_path, "w", encoding="utf-8") as f:
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:179:        json.dump(quotes_map, f, ensure_ascii=False, indent=2)
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:193:        "quotes": len(quotes_map),
+D:\My Drive\Blue AI\Entropy\Rose\compile_projections.py:203:    print(f"[OK] Compiled projections: {stats['quotes']} quotes, {stats['specifics']} specifics, {stats['containers']} containers, {stats['themes']} themes, {stats['usages']} usages.")
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:4:> quote, memory, or achievement. Each "prescript" seeds the morning journal and provides the
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:13:**Goal**: Lock the canonical metadata schema for a Prescript quote. Build the data entry UI
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:14:so the Manager can author, tag, and store quotes with zero friction.
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:22:| `main_content` | String (multi-line) | The quote itself |
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:26:| `preference` | Array\<HexID\> | Response/linked quotes — shown by content, stored as IDs |
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:37:- [x] Response quotes multi-select — shows content preview, stores hex IDs; context rendered italic + low opacity
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:42:- [ ] Save → writes to `quotes.jsonl` (append) + syncs `quotes.json` + SQLite
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:62:- A quote authored in Obsidian auto-ingests into the DB on save/sync
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:63:- A quote saved via the data entry UI can optionally back-propagate as an Obsidian note
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:67:- **Dataview plugin**: Query quotes by tag/sentiment/speaker directly inside Obsidian
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:81:**Goal**: The ESP32 OLED polls a local endpoint and renders the day's prescript.
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:82:Manager handles hardware flashing; Faust owns only the server-side endpoint.
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:86:- `GET /prescripts/today` — returns the selected quote as minimal JSON
+D:\My Drive\Blue AI\Entropy\Rose\PRESCRIPTS_PLAN.md:102:  → Phase 3 /today endpoint
+D:\My Drive\Blue AI\Entropy\Rose\README.md:11:Prescripts Studio is a clean, deterministic wisdom and quote curation platform built upon a **Pure 5-Tier Relational SQLite Engine** with CQRS JSON projections for instant $O(1)$ read performance. It completely eliminates arbitrary sentiment tags and duplicate shadow tables, operating with zero external build dependencies.
+D:\My Drive\Blue AI\Entropy\Rose\README.md:19:1. **Table 1: `quotes` (`0001...`)** — Wisdom quote artifacts with flexible dates, sequence numbers (`idx` / `index`), and relational references.
+D:\My Drive\Blue AI\Entropy\Rose\README.md:21:3. **Table 3: `specifics` (`0003...`)** — Discrete endpoints, works, chapters, diary entries, wisdom principles, or thoughts; binds to parent container and defines `default_usage_ids`.
+D:\My Drive\Blue AI\Entropy\Rose\README.md:32:├── server.py               # REST server with full CRUD endpoints & static host (port 20137)
+D:\My Drive\Blue AI\Entropy\Rose\README.md:37:├── ESP32_TURSO_GUIDE.md    # Complete ESP32 microcontroller firmware guide & Arduino sketch
+D:\My Drive\Blue AI\Entropy\Rose\README.md:41:├── seed_quote.py           # Hex ID generator and sample seed data generator
+D:\My Drive\Blue AI\Entropy\Rose\README.md:44:│   └── quote_schema.json   # Pure 5-tier JSON schema specification
+D:\My Drive\Blue AI\Entropy\Rose\README.md:46:    ├── rose_quotes.db      # Authoritative SQLite database (WAL mode)
+D:\My Drive\Blue AI\Entropy\Rose\README.md:47:    ├── quotes_map.json     # O(1) denormalized quotes projection
+D:\My Drive\Blue AI\Entropy\Rose\README.md:73:  python seed_quote.py
+D:\My Drive\Blue AI\Entropy\Rose\dev_server.py:4:Ideal for active development on database, API endpoints, or projections.
+D:\My Drive\Blue AI\Entropy\Rose\dev_server.py:20:    str(BASE_DIR / "seed_quote.py"),
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:4:Allows 24/7 serverless cloud hosting for ESP32 microcontrollers and mobile edge clients.
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:18:DEFAULT_DB_PATH = os.path.join(BASE_DIR, "data", "rose_quotes.db")
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:49:    Executes raw SQL statements on Turso via HTTP Pipeline API v2.
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:154:        # Table 1: quotes
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:156:            CREATE TABLE IF NOT EXISTS quotes (
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:171:        {"sql": "CREATE INDEX IF NOT EXISTS idx_quotes_idx ON quotes(idx);"},
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:172:        {"sql": "CREATE INDEX IF NOT EXISTS idx_quotes_date ON quotes(date);"}
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:179:        col_rows = query_turso("PRAGMA table_info(quotes);")
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:184:                alter_stmts.append({"sql": "ALTER TABLE quotes ADD COLUMN scores TEXT DEFAULT '[]';"})
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:186:                alter_stmts.append({"sql": "ALTER TABLE quotes ADD COLUMN average_score REAL;"})
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:197:    """Syncs all containers, specifics, themes, usages, and quotes from local SQLite to Turso."""
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:202:        return {"containers": 0, "specifics": 0, "themes": 0, "usages": 0, "quotes": 0}
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:277:    # 5. Quotes
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:278:    cur = conn.execute("SELECT id, idx, main_content, context, date, specific_id, theme_ids, usage_ids, preference, backlinks, scores, average_score FROM quotes;")
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:279:    quotes = cur.fetchall()
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:280:    for q in quotes:
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:283:                INSERT INTO quotes (id, idx, main_content, context, date, specific_id, theme_ids, usage_ids, preference, backlinks, scores, average_score)
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:316:        "quotes": len(quotes)
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:318:    print(f"[OK] Synced to Turso Cloud: {counts['quotes']} quotes, {counts['specifics']} specifics, {counts['containers']} containers, {counts['themes']} themes, {counts['usages']} usages.")
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:345:    latest_quotes = query_turso("SELECT idx, main_content, date FROM quotes ORDER BY idx DESC LIMIT 3;")
+D:\My Drive\Blue AI\Entropy\Rose\turso_sync.py:346:    for q in latest_quotes:
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:3:> **Target Platform**: ESP32 / ESP32-S3 Microcontrollers  
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:6:> **Rendering Paradigm**: Clean Vision Layout (Ghosted Header · Italic Body in Quotes · Multi-Color Tag Capsules · Shared Accent Container)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:48:| **2.9" Panoramic E-Paper** | Reflective E-Ink | **296 × 128 px** | **2.31 : 1** | **79.0 × 36.7 mm** | Ultra-wide panoramic letterbox, book-quote spread. |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:56:Unlike rigid 4-row grid displays, the **Rien-Prescript-Beeper** does not force quotes into artificial 4-row slots:
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:59:  - A 1-line quote renders as exactly 1 line and sits centered vertically in the display.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:67:  - The middle body area is a **Scrollable Viewport** (`ep-viewport`).
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:69:  - Long philosophical prose reflections (e.g. Quote #6) flow naturally at **Size L (14pt)**; the user scrolls smoothly down the passage using tactile physical buttons (`GPIO_UP`, `GPIO_DOWN`, rotary encoder, or touch drag).
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:73:For full-color microcontrollers (ST7789 / ILI9341 / LovyanGFX) and monochrome E-Paper:
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:78:| **Quote Body** | Crisp Paper White | `#FFFFFF` | `0xFFFF` | Maximum readability, primary focal point |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:79:| **Quotation Marks (`“ ”`)** | **Sapphire Blue** OR **Imperial Gold** | `#38bdf8` / `#f59e0b` | `0x3DF7` / `0xFD01` | **Shared Accent**: Random pool of 2 bookending the text |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:80:| **Container Name** | **Sapphire Blue** OR **Imperial Gold** | `#38bdf8` / `#f59e0b` | `0x3DF7` / `0xFD01` | **Shared Accent**: Harmonizes with quote marks at bottom right |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:148:FROM quotes q
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:151:ORDER BY RANDOM() LIMIT 1;
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:168:struct QuotePayload {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:179:// 2-Color Accent Pool for Quote Marks & Container
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:188:void drawQuoteOnDisplay(const QuotePayload &q) {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:189:  // Select shared accent color for quote marks & container from pool of 2
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:210:  // 5. Render Italic Quote Content (Crisp White: 0xFFFF)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:227:  // - Container on Right (Shares sharedAccent with quote marks)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:233:void printQuoteToSerial(const QuotePayload &q) {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:250:  // Body: Italic in quotes
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_UI_SPEC.md:260:  // Footer: Tags on Left (Vast random spectrum) · Container on Right (Accent)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:3:> Connect your Rien-Prescript-Beeper to the Blue Rose backend and fetch prescripts (quotes) over Wi-Fi for display on ST7789 / E-Paper screens.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:9:1. [Backend API Overview](#backend-api-overview)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:10:2. [The 5-Point Quote Payload](#the-5-point-quote-payload)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:11:3. [Available Endpoints](#available-endpoints)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:23:## Backend API Overview
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:25:The Blue Rose backend exposes a single, elegant REST API endpoint that serves personal prescripts (quotes) in a normalized 5-point bundle:
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:27:**API Base URL**
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:30:https://rien-bluerose-backend.kha70929.workers.dev/
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:33:Deployed on Cloudflare Workers. Responds with JSON payloads cached at the edge. Zero authentication required for read operations.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:37:## The 5-Point Quote Payload
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:39:Every prescript (quote) from the backend contains exactly 5 canonical fields that map directly to your display zones:
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:43:| `idx` | Integer | Header (left) | Unique quote identifier. Displayed as `#6`. |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:44:| `content` | String | Body (center) | The main quote text. Supports multi-line. Up to ~200 chars typical. |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:54:## Available Endpoints
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:56:### 1. Fetch Random Prescript
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:58:**GET** `/api/quote/random`
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:60:Returns a single random prescript from the entire collection.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:80:- **Page Navigation:** User presses "Next Quote" button → call this endpoint to jump to a new random quote.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:81:- **Idle Rotation:** Periodically fetch a new quote every N minutes to keep the display fresh.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:85:### 2. Fetch Quote by Index
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:87:**GET** `/api/quote/:idx`
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:94:GET /api/quote/6 HTTP/1.1
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:95:Host: rien-bluerose-backend.kha70929.workers.dev
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:117:  "error": "Quote not found"
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:123:- **Direct Recall:** User manually enters or recalls quote #6 → fetch by index for deterministic display.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:128:### 3. List All Quotes (Metadata)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:130:**GET** `/api/quotes/list`
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:132:Returns a lightweight list of all quotes with minimal metadata for pagination and indexing.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:155:- **Menu Navigation:** Display a scrollable list of all quotes on the screen to let user pick one.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:161:**GET** `/api/taxonomy`
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:193:- **Filtering:** Show quotes by category or tag on a menu screen.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:275:**CSS (White Body + Quote Marks):**
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:384:  /* Shared accent color: same as quote marks */
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:389:### Accent Color Pool (Quote Marks + Container)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:400:const accentIndex = Math.abs(quoteSeed % ACCENT_POOL.length);
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:414:  const hue = Math.abs(Math.floor((hash * goldenAngle + tagIndex * 89 + reRollSeed) % 360));
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:451:const char* API_BASE = "https://rien-bluerose-backend.kha70929.workers.dev";
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:463:### 2. Fetch Random Prescript
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:466:struct QuotePayload {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:477:QuotePayload fetchRandomQuote() {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:479:  String url = String(API_BASE) + "/api/quote/random";
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:484:  QuotePayload result = {};
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:514:### 3. Fetch Quote by Index
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:517:QuotePayload fetchQuoteByIndex(long idx) {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:519:  String url = String(API_BASE) + "/api/quote/" + String(idx);
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:524:  QuotePayload result = {};
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:535:    Serial.printf("Error fetching quote %ld: HTTP %d\n", idx, httpCode);
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:566:void renderQuoteOnDisplay(const QuotePayload &q) {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:586:  // 5. Body: Quote content with quote marks (centered, italic, white)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:590:  // Render opening quote mark in accent color
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:601:  // Render closing quote mark in accent color
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:667:> **Cold Start (No Cache):** On first power-on, fetch a random quote immediately. Display while fetching.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:669:> **Warm Restart:** Restore last viewed quote from NVS (Non-Volatile Storage). Fetch new ones on user navigation.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:671:> **Network Timeout:** If API is unreachable, fall back to embedded offline cache or last cached quote. Never leave display blank.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:680:void cacheQuote(const QuotePayload &q) {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:681:  prefs.begin("quotes", false);  // false = read-write
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:693:QuotePayload restoreCachedQuote() {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:694:  prefs.begin("quotes", true);  // true = read-only
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:695:  QuotePayload q;
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:713:| Button / Input | Action | API Call |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:715:| `GPIO_UP` (long press) | Previous Page (within current quote) | None (local pagination) |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:716:| `GPIO_DOWN` (long press) | Next Page (within current quote) | None (local pagination) |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:717:| `GPIO_OK` (tap) | Draw New Random Prescript | `GET /api/quote/random` |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:718:| `GPIO_OK` (double tap) | Fetch Quote List (for menu navigation) | `GET /api/quotes/list` |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:727:- **Payload Size:** ~500–2000 bytes (typical quote).
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:728:- **Request Latency:** 200–800ms (WiFi + Cloudflare edge routing).
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:735:- **Quote Cache:** Keep last 3–5 quotes in RAM for fast page navigation.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:753:| `404` | Quote not found (invalid idx) | Log error, fetch random quote instead. |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:755:| `0` (timeout) | Connection timeout (>10s) | Fall back to cached quote. Blink error LED. |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:760:QuotePayload fetchQuoteWithRetry(int maxRetries = 3) {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:764:    QuotePayload q = fetchRandomQuote();
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:766:      cacheQuote(q);  // Success: save to NVS
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:776:  Serial.println("API unreachable. Using cached quote.");
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:777:  return restoreCachedQuote();
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:785:> **Certificate Validation:** The backend uses Cloudflare's CA. ESP32 requires a root certificate bundle. Use `WiFiClientSecure` with `setCACert()` or disable cert validation only for testing (dangerous in production).
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:790:// Cloudflare root CA (extract from browser or use WiFiClientSecure::setInsecure() for testing)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_BACKEND_INTEGRATION_GUIDE.md:819:- [ESP32 NVS Flash Documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/storage/nvs_flash.html) — Persistent storage.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:3:This guide details how your **ESP32 microcontroller** securely accesses your **Turso Cloud SQLite database** in **read-only mode** 24/7 over Wi-Fi, and outlines the **minimal 5-point metadata specification** for hardware quote rendering.
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:26:For microcontrollers with limited display canvas (E-Paper, TFT, OLED) and audio engines, the lesser the metadata, the better. We strip away internal UUIDs, backlinks, and shadow tags, distilling each quote to **5 essential display dimensions**:
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:30:| **1** | **Content** | `content` | The core wisdom quote / poem text | Required |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:33:| **4** | **Specific Endpoint** | `specific_name` | The work, chapter, or song (e.g. *Infant Joy*, *Koi no Koe*) | Joined from Table 3 |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:34:| **5** | **Effective Date** | `effective_date` | The temporal coordinate (e.g. `2026-09-30`, `1789`) | **Display-time fallback**: If quote date is empty, automatically uses `specific.date` without mutating database |
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:44:### Query: Fetch Random Quote for Rendering
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:59:FROM quotes q
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:62:ORDER BY RANDOM() LIMIT 1;
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:65:### Query: Fetch Latest Quote for Rendering
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:80:FROM quotes q
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:105:// Turso Database HTTP Endpoint (Sydney AWS edge)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:114:struct QuoteRenderPayload {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:128:bool fetchQuoteFromTurso(QuoteRenderPayload &out, bool randomQuote = true) {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:158:               "FROM quotes q "
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:162:  sql += randomQuote ? "ORDER BY RANDOM() LIMIT 1;" : "ORDER BY q.idx DESC LIMIT 1;";
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:211:// ANSI 256-Color & RGB Codes for Microcontroller Displays & Serial Terminal:
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:218:// Vast Independent Tag Color Pool (16+ Distinct Microcontroller Colors):
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:239:void renderQuote(const QuoteRenderPayload &q) {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:240:  // 1. Randomly pick ONE shared color for quotation marks & container (Pool of 2: Gold or Blue)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:241:  bool pickGold = ((q.idx % 2) == 0); // Deterministic per quote or use random(0, 2)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:264:  // 4. Footer: Each tag has a distinct random color block (left) · Container shares mark's color (right)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:290:  // - Render quotes and container with shared accent color (Gold or Blue)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:311:  // Fetch and display a random quote on startup
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:312:  QuoteRenderPayload quote;
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:313:  if (fetchQuoteFromTurso(quote, true)) {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:314:    renderQuote(quote);
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:319:  // Cycle quote every 5 minutes (or attach to a physical button interrupt)
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:322:  QuoteRenderPayload quote;
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:323:  if (fetchQuoteFromTurso(quote, true)) {
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:324:    renderQuote(quote);
+D:\My Drive\Blue AI\Entropy\Rose\ESP32_TURSO_GUIDE.md:335:* `http://localhost:20137/quote_presentation_test.html`: Clean high-contrast E-Paper workbench preview.
+D:\My Drive\Blue AI\Entropy\Rose\db.py:4:  1. 'quotes'     (0001... : Wisdom Quote Artifact, stores specific_id, theme_ids, usage_ids)
+D:\My Drive\Blue AI\Entropy\Rose\db.py:6:  3. 'specifics'  (0003... : Specific Endpoint / Work / Character / Diary / Wisdom / Thought on)
+D:\My Drive\Blue AI\Entropy\Rose\db.py:19:DEFAULT_DB_PATH = os.path.join(BASE_DIR, "data", "rose_quotes.db")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:99:        # Table 1: quotes (0001... — zero sentiment field)
+D:\My Drive\Blue AI\Entropy\Rose\db.py:101:            CREATE TABLE IF NOT EXISTS quotes (
+D:\My Drive\Blue AI\Entropy\Rose\db.py:116:        conn.execute("CREATE INDEX IF NOT EXISTS idx_quotes_idx ON quotes(idx);")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:117:        conn.execute("CREATE INDEX IF NOT EXISTS idx_quotes_date ON quotes(date);")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:119:        q_cols = [r["name"] for r in conn.execute("PRAGMA table_info(quotes);").fetchall()]
+D:\My Drive\Blue AI\Entropy\Rose\db.py:122:                conn.execute("ALTER TABLE quotes ADD COLUMN theme_ids TEXT;")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:124:                conn.execute("ALTER TABLE quotes ADD COLUMN usage_ids TEXT;")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:126:                conn.execute("ALTER TABLE quotes ADD COLUMN specific_id TEXT;")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:128:                conn.execute("ALTER TABLE quotes ADD COLUMN scores TEXT DEFAULT '[]';")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:130:                conn.execute("ALTER TABLE quotes ADD COLUMN average_score REAL;")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:454:# TABLE 1: QUOTES (0001...) — CRUD (ZERO SENTIMENT)
+D:\My Drive\Blue AI\Entropy\Rose\db.py:460:    cur = conn.execute("SELECT COALESCE(MAX(idx), 0) + 1 AS next_idx FROM quotes;")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:466:def upsert_quote(quote: Dict[str, Any], db_path: str = DEFAULT_DB_PATH, compile_after: bool = True) -> None:
+D:\My Drive\Blue AI\Entropy\Rose\db.py:472:        sid = quote.get("specific_id")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:473:        if not sid and quote.get("specific_ids"):
+D:\My Drive\Blue AI\Entropy\Rose\db.py:474:            sids = quote["specific_ids"]
+D:\My Drive\Blue AI\Entropy\Rose\db.py:477:        raw_themes = quote.get("theme_ids", [])
+D:\My Drive\Blue AI\Entropy\Rose\db.py:480:        raw_usage = quote.get("usage_ids", quote.get("usage", []))
+D:\My Drive\Blue AI\Entropy\Rose\db.py:483:        preference = quote.get("preference", [])
+D:\My Drive\Blue AI\Entropy\Rose\db.py:486:        backlinks = quote.get("backlink", quote.get("backlinks", []))
+D:\My Drive\Blue AI\Entropy\Rose\db.py:490:        raw_scores = quote.get("scores")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:492:            raw_scores = quote.get("score_list")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:518:            existing_record = get_quote(quote["id"], db_path)
+D:\My Drive\Blue AI\Entropy\Rose\db.py:527:        avg_score = quote.get("average_score")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:529:            avg_score = quote.get("avg_score")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:544:        idx = quote.get("idx") or quote.get("index")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:546:            existing = get_quote(quote["id"], db_path)
+D:\My Drive\Blue AI\Entropy\Rose\db.py:553:        conn.execute("DELETE FROM quotes WHERE idx = ? AND id != ?;", (idx, quote["id"]))
+D:\My Drive\Blue AI\Entropy\Rose\db.py:556:            INSERT INTO quotes (
+D:\My Drive\Blue AI\Entropy\Rose\db.py:574:            quote["id"],
+D:\My Drive\Blue AI\Entropy\Rose\db.py:576:            quote["main_content"].strip(),
+D:\My Drive\Blue AI\Entropy\Rose\db.py:577:            quote.get("context", "").strip(),
+D:\My Drive\Blue AI\Entropy\Rose\db.py:578:            str(quote["date"]).strip(),
+D:\My Drive\Blue AI\Entropy\Rose\db.py:598:def get_quote(quote_id: str, db_path: str = DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+D:\My Drive\Blue AI\Entropy\Rose\db.py:600:    cur = conn.execute("SELECT * FROM quotes WHERE id = ?;", (quote_id,))
+D:\My Drive\Blue AI\Entropy\Rose\db.py:638:def get_all_quotes(db_path: str = DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+D:\My Drive\Blue AI\Entropy\Rose\db.py:641:    cur = conn.execute("SELECT * FROM quotes ORDER BY idx DESC;")
+D:\My Drive\Blue AI\Entropy\Rose\db.py:672:def delete_quote(quote_id: str, db_path: str = DEFAULT_DB_PATH) -> bool:
+D:\My Drive\Blue AI\Entropy\Rose\db.py:677:        conn.execute("DELETE FROM quotes WHERE id = ?;", (quote_id,))
+D:\My Drive\Blue AI\Entropy\Rose\db.py:688:def search_quotes(query: str, db_path: str = DEFAULT_DB_PATH, limit: int = 20) -> List[Dict[str, Any]]:
+D:\My Drive\Blue AI\Entropy\Rose\db.py:694:        FROM quotes
+D:\My Drive\Blue AI\Entropy\Rose\server.py:3:Serves the Prescripts Studio single-page interface and provides REST endpoints
+D:\My Drive\Blue AI\Entropy\Rose\server.py:5:  - Quotes, Containers, Specifics, Themes (child_of tree)
+D:\My Drive\Blue AI\Entropy\Rose\server.py:6:Includes graceful /api/shutdown to prevent orphaned processes.
+D:\My Drive\Blue AI\Entropy\Rose\server.py:51:        if path == "/api/taxonomy":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:60:        if path == "/api/quotes":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:61:            quotes_path = os.path.join(BASE_DIR, "data", "quotes_map.json")
+D:\My Drive\Blue AI\Entropy\Rose\server.py:62:            if not os.path.exists(quotes_path):
+D:\My Drive\Blue AI\Entropy\Rose\server.py:64:            with open(quotes_path, "r", encoding="utf-8") as f:
+D:\My Drive\Blue AI\Entropy\Rose\server.py:69:        if path == "/api/quotes/list":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:70:            self._send_json(db.get_all_quotes())
+D:\My Drive\Blue AI\Entropy\Rose\server.py:73:        if path == "/api/containers":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:77:        if path == "/api/specifics":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:81:        if path == "/api/themes":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:85:        if path == "/api/usages":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:89:        if path == "/api/next_index":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:110:        # Graceful shutdown endpoint
+D:\My Drive\Blue AI\Entropy\Rose\server.py:111:        if path == "/api/shutdown":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:117:        if path == "/api/turso/sync":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:126:        # --- QUOTES ---
+D:\My Drive\Blue AI\Entropy\Rose\server.py:127:        if path == "/api/quote":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:133:                from seed_quote import generate_hex_id, PREFIX_QUOTE
+D:\My Drive\Blue AI\Entropy\Rose\server.py:134:                payload["id"] = generate_hex_id(PREFIX_QUOTE)
+D:\My Drive\Blue AI\Entropy\Rose\server.py:138:                existing = db.get_quote(payload["id"])
+D:\My Drive\Blue AI\Entropy\Rose\server.py:146:            db.upsert_quote(payload, compile_after=True)
+D:\My Drive\Blue AI\Entropy\Rose\server.py:147:            saved = db.get_quote(payload["id"])
+D:\My Drive\Blue AI\Entropy\Rose\server.py:160:        if path == "/api/quote/delete":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:165:            db.delete_quote(qid)
+D:\My Drive\Blue AI\Entropy\Rose\server.py:170:        if path == "/api/container":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:177:                from seed_quote import generate_hex_id, PREFIX_CONTAINER
+D:\My Drive\Blue AI\Entropy\Rose\server.py:185:        if path == "/api/container/delete":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:195:        if path == "/api/specific":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:203:                from seed_quote import generate_hex_id, PREFIX_SPECIFIC
+D:\My Drive\Blue AI\Entropy\Rose\server.py:211:        if path == "/api/specific/delete":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:221:        if path == "/api/theme":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:228:                from seed_quote import generate_hex_id
+D:\My Drive\Blue AI\Entropy\Rose\server.py:236:        if path == "/api/theme/delete":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:246:        if path == "/api/usage":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:253:                from seed_quote import generate_hex_id, PREFIX_USAGE
+D:\My Drive\Blue AI\Entropy\Rose\server.py:261:        if path == "/api/usage/delete":
+D:\My Drive\Blue AI\Entropy\Rose\server.py:270:        self._send_json({"error": "Endpoint not found"}, status=404)
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:6:  - 0001: Quotes
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:20:PREFIX_QUOTE = "0001"
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:55:# Canonical Quotes (0001...) (Mock Data)
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:56:CANONICAL_ID_VINYL_QUOTE = "M-00010001A1088D80"
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:57:CANONICAL_ID_FAUST_QUOTE = "M-00010001A1088D81"
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:58:CANONICAL_ID_BLAKE_QUOTE = "M-00010001A1088D82"
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:61:def generate_hex_id(prefix: str = PREFIX_QUOTE, unix_ms: int = None) -> str:
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:81:def create_sample_quotes(deterministic: bool = True):
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:83:        id_vinyl = CANONICAL_ID_VINYL_QUOTE
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:84:        id_faust = CANONICAL_ID_FAUST_QUOTE
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:85:        id_blake = CANONICAL_ID_BLAKE_QUOTE
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:89:        id_vinyl = generate_hex_id(PREFIX_QUOTE, now_ms - 10000)
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:90:        id_faust = generate_hex_id(PREFIX_QUOTE, now_ms - 5000)
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:91:        id_blake = generate_hex_id(PREFIX_QUOTE, now_ms)
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:172:    # 5. Seed Quotes (Table 1) - references specific_id, theme_ids, usage_ids (ZERO sentiment)
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:173:    quote_1 = {
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:186:    quote_2 = {
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:199:    quote_3 = {
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:215:    db.upsert_quote(quote_1, compile_after=False)
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:216:    db.upsert_quote(quote_2, compile_after=False)
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:217:    db.upsert_quote(quote_3, compile_after=True)
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:219:    print(f"[OK] Seeded Quotes with Specifics & Usages (Zero sentiment).")
+D:\My Drive\Blue AI\Entropy\Rose\seed_quote.py:223:    create_sample_quotes()
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:8:  <link rel="preconnect" href="https://fonts.googleapis.com">
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:10:  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap">
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:331:    /* 4-LINE DISCRETE FRAMEBUFFER VIEWPORT (ZERO SCROLLBAR // 4 LINES MAX) */
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:511:    .scroll-indicator-pill {
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:547:        <select class="select-picker" id="quote-select" onchange="loadSelectedQuote(this.value, true)">
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:551:        <button class="btn" onclick="navQuote(-1)">◀ Prev</button>
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:552:        <button class="btn" onclick="navQuote(1)">Next ▶</button>
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:553:        <button class="btn" onclick="pickRandomQuote()">🎲 Random</button>
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:554:        <button class="btn" onclick="reRollColors()">🎨 Re-roll Colors</button>
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:599:          <div class="scroll-indicator-pill">
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:605:            <button class="hw-btn" onclick="navQuote(-1)">[◀ PREV QUOTE]</button>
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:606:            <button class="hw-btn" onclick="navQuote(1)">[NEXT QUOTE ❯]</button>
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:623:    // 1. EMBEDDED RESILIENT DATA (OFFLINE FALLBACK CACHE FOR PERSONAL QUOTES)
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:625:    const FALLBACK_QUOTES = [
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:667:    // Shared Accent Pool for Quote Marks & Container
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:678:    const API_BASE = window.location.origin.startsWith('http') ? window.location.origin : 'http://127.0.0.1:20137';
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:679:    let quotesList = [];
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:680:    let activeQuote = null;
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:708:    let reRollSeed = 0;
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:835:          navQuote(1); // loop to next prescript
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:846:    function getRandomCipherChar() {
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:847:      return SCRAMBLE_CHARS[Math.floor(Math.random() * NUM_SCRAMBLE_CHARS)];
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:939:            // Independent random lifespan across the canvas duration
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:940:            const lifespanMs = Math.random() * totalDurationMs;
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:946:              currentChar: getRandomCipherChar(),
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:948:              nextScramble: Math.random() * 40,
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:998:                  cell.currentChar = getRandomCipherChar();
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:999:                  cell.nextScramble = elapsed + 35 + Math.random() * 25;
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1111:          fetch(`${API_BASE}/api/taxonomy`).then(r => r.json()).catch(() => null),
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1112:          fetch(`${API_BASE}/api/quotes/list`).then(r => r.json()).catch(() => null)
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1118:          quotesList = qRes;
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1119:          document.getElementById('connection-status').innerHTML = '● LIVE API SYNCED';
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1131:      // Default to Quote #6 (or first) with static silent load on startup
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1132:      const target = quotesList.find(q => (q.idx === 6 || q.index === 6)) || quotesList[0];
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1134:        loadSelectedQuote(target.id, false);
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1139:      quotesList = FALLBACK_QUOTES;
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1145:      const select = document.getElementById('quote-select');
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1146:      select.innerHTML = quotesList.map(q => {
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1153:    function loadSelectedQuote(qid, shouldAnimate = true) {
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1154:      activeQuote = quotesList.find(q => q.id === qid) || quotesList[0];
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1155:      if (!activeQuote) return;
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1158:      document.getElementById('quote-select').value = activeQuote.id;
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1163:      if (quotesList.length === 0) return;
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1164:      const rnd = quotesList[Math.floor(Math.random() * quotesList.length)];
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1165:      loadSelectedQuote(rnd.id, true);
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1168:    function navQuote(step) {
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1169:      if (quotesList.length === 0) return;
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1170:      const curIdx = quotesList.findIndex(q => q.id === (activeQuote ? activeQuote.id : ''));
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1171:      let nextIdx = (curIdx + step + quotesList.length) % quotesList.length;
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1172:      loadSelectedQuote(quotesList[nextIdx].id, true);
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1175:    function pickRandomQuote() {
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1179:    function reRollColors() {
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1180:      reRollSeed = Math.floor(Math.random() * 1000);
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1216:    // Splits quote & context into discrete pages of AT MOST 4 LINES each with strict line budgeting
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1222:      if (!content) return [{ type: 'quote', lines: [''], hasNext: false }];
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1284:        const hasMoreQuote = (lookAheadIdx < tokens.length);
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1292:        if (hasMoreQuote) {
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1303:          const isQuoteTerminalLine = (!hasMoreQuote && lIdx === lineStrings.length - 1);
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1305:          // The final line of the quote (if ragged) is left-aligned.
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1306:          const align = (isWriting && !isQuoteTerminalLine && contentStr.includes(' ')) ? 'line-justify' : 'line-left';
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1314:          type: 'quote',
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1316:          hasNext: hasMoreQuote
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1364:      return pages.length > 0 ? pages : [{ type: 'quote', lines: [''], hasNext: false }];
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1405:      const hue = Math.abs(Math.floor((hash * goldenAngle + tagIndex * 89 + reRollSeed) % 360));
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1458:      const b = resolveBundle(activeQuote);
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1470:      const quoteSeed = typeof b.idx === 'number' ? b.idx : (parseInt(String(b.idx).replace(/\D/g, ''), 10) || 1);
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1471:      const accentIndex = Math.abs(quoteSeed % ACCENT_POOL.length);
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1536:      // Render Screen with EXACT 4-LINE BODY (ZERO EXTRA BANNERS // ZERO SCROLLBAR)
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1556:      if (shouldAnimate && animationEnabled && activePage.type === 'quote') {
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1589:      if (e.key === 'ArrowLeft') { navQuote(-1); e.preventDefault(); }
+D:\My Drive\Blue AI\Entropy\Rose\esp32_19_display_mock.html:1590:      if (e.key === 'ArrowRight') { navQuote(1); e.preventDefault(); }
+D:\My Drive\Blue AI\Entropy\Rose\schemas\quote_schema.json:3:  "title": "PrescriptQuote",
+D:\My Drive\Blue AI\Entropy\Rose\schemas\quote_schema.json:4:  "description": "Canonical Schema for Prescripts / Entropy Rose Pure 5-Tier Relational Quote System (Zero Sentiment, Zero Shadow Tables)",
+D:\My Drive\Blue AI\Entropy\Rose\schemas\quote_schema.json:25:      "description": "Primary quote or core wisdom text"
+D:\My Drive\Blue AI\Entropy\Rose\schemas\quote_schema.json:37:      "description": "16-character hex ID pointing to specific endpoint (work, character, diary, wisdom in Table 3)"
+D:\My Drive\Blue AI\Entropy\Rose\schemas\quote_schema.json:52:      "description": "Array of 16-character hex IDs of quotes that respond to or follow up on this quote"
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:7:  <link rel="preconnect" href="https://fonts.googleapis.com">
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:9:  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:828:      overflow-y: auto; /* SCROLLABLE! */
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:882:        <button class="nav-tab-btn active" onclick="switchMainView('quote-entry', this)">📜 Quote Entry</button>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:883:        <button class="nav-tab-btn" onclick="openTableView('quotes', this)">📚 Quotes Table</button>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:889:        <a href="/quote_presentation_test.html" target="_blank" class="nav-tab-btn" style="text-decoration:none; display:inline-flex; align-items:center;">🎨 Presentation Test</a>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:899:         VIEW 1: QUOTE CURATION & ENTRY FORM
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:901:    <main class="view-container active" id="quotes-view">
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:907:          <!-- 1. QUOTE CONTENT -->
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:910:              <span class="card-title">1. Quote Core &amp; Reflection</span>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:916:                  <span>Main Quote Content (Multi-Line)</span>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:919:                <textarea class="raw-textarea-box" id="input-main-content" placeholder="Enter wisdom quote, poem, or reflection..." oninput="updateField('main_content', this.value)"></textarea>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:926:                <textarea class="raw-textarea-box" id="input-context" style="min-height: 70px;" placeholder="Why this quote was saved, situation, or personal reflection..." oninput="updateField('context', this.value)"></textarea>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:955:          <!-- 3. SPECIFIC ENDPOINT SINGLE SELECTOR -->
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:958:              <span class="card-title">3. Specific Endpoint (Work / Character / Diary / Wisdom)</span>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:964:                  <span>Select Specific Endpoint (Click to browse or search)</span>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:968:                  <span id="specific-selected-val" style="color:var(--text-muted); font-size:0.9rem;">Select specific endpoint...</span>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:976:                    <input type="text" class="searcher-input" id="specific-search-input" style="height:32px; font-size:0.88rem; width:100%; border:none; outline:none;" placeholder="Filter endpoints or origins (e.g. Diary, Infant Joy, Blake)..." oninput="filterSpecificDropdown(this.value)" onkeydown="handleSpecificKey(event)">
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:980:                    <span>+ Create new specific endpoint "</span><span id="specific-create-query"></span><span>"</span>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1032:          <!-- 6. RESPONSE QUOTES & BACKLINKS -->
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1041:                  <span>Response Quotes (Preference)</span>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1042:                  <span class="field-hint">Search quotes by text</span>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1046:                  <input type="text" class="searcher-input" id="pref-input" placeholder="Search existing quotes by content text..." oninput="filterPrefDropdown(this.value)" onfocus="filterPrefDropdown(this.value)">
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1106:              <button class="btn-action btn-primary" style="padding: 0.3rem 0.8rem; font-size: 0.75rem;" onclick="saveQuote()">💾 Save Quote</button>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1155:            <button class="nav-tab-btn active" id="btn-tree-csq" style="padding:0.35rem 0.7rem; font-size:0.78rem;" onclick="switchVisualTreeMode('csq', this)">1. Container → Specific → Quotes</button>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1197:    const API_BASE = window.location.origin.startsWith('http') ? window.location.origin : 'http://127.0.0.1:20137';
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1200:    let activeQuote = {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1226:    let availableQuotes = {};
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1227:    let allQuotesList = [];
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1258:      activeQuote[field] = value;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1259:      if (!activeQuote.id && activeQuote.main_content.trim()) {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1260:        activeQuote.id = generateHexId("0001");
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1266:      activeQuote.backlinks = val.trim() ? [val.trim()] : [];
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1281:      activeQuote.scores = nums;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1285:        activeQuote.average_score = avg;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1291:        activeQuote.average_score = null;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1303:        activeQuote.average_score = Math.round(n * 100) / 100;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1305:        if (badgeVal) badgeVal.textContent = activeQuote.average_score;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1307:        activeQuote.average_score = null;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1316:      pre.textContent = JSON.stringify(activeQuote, null, 2);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1317:      const curIdx = activeQuote.idx ?? activeQuote.index ?? 1;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1325:      activeQuote.date = val.trim();
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1359:      activeQuote.date = val;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1366:      activeQuote.date = "";
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1399:      activeQuote.specific_id = id;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1404:        if (!activeQuote.date && s.date) {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1405:          activeQuote.date = s.date;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1409:        // Pre-fill default usage IDs from this specific endpoint
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1411:          activeQuote.usage_ids = [...s.default_usage_ids];
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1415:          activeQuote.usage_ids = [];
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1426:      activeQuote.specific_id = null;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1427:      activeQuote.usage_ids = [];
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1442:        badge.innerHTML = `<span style="color:var(--text-muted); font-size:0.9rem;">Select specific endpoint...</span>`;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1460:        list.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">No matching endpoints.</div>';
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1463:          const isSelected = activeQuote.specific_id === s.id;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1512:      container.innerHTML = activeQuote.theme_ids.map(tid => {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1540:          const isSelected = activeQuote.theme_ids.includes(t.id);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1565:      if (activeQuote.theme_ids.includes(id)) {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1566:        activeQuote.theme_ids = activeQuote.theme_ids.filter(t => t !== id);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1568:        activeQuote.theme_ids.push(id);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1576:      activeQuote.theme_ids = activeQuote.theme_ids.filter(t => t !== id);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1603:        const isActive = activeQuote.usage_ids.includes(opt.id);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1612:      document.getElementById('active-usage-count').textContent = `${activeQuote.usage_ids.length} selected`;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1619:      if (activeQuote.usage_ids.includes(id)) {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1620:        activeQuote.usage_ids = activeQuote.usage_ids.filter(u => u !== id);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1625:          activeQuote.usage_ids = activeQuote.usage_ids.filter(u => !conflicts.includes(u));
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1628:        activeQuote.usage_ids.push(id);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1635:    // 6. RESPONSE QUOTES
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1639:      container.innerHTML = activeQuote.preference.map(qid => {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1640:        const q = availableQuotes[qid];
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1659:      const matches = Object.values(availableQuotes).filter(quote => {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1660:        return quote.main_content.toLowerCase().includes(query) ||
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1661:               (quote.context && quote.context.toLowerCase().includes(query));
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1665:        list.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">No matching quotes found.</div>';
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1669:      list.innerHTML = matches.map(quote => {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1670:        const isSelected = activeQuote.preference.includes(quote.id);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1671:        const firstLine = quote.main_content.split('\n')[0];
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1673:          <div class="dropdown-opt-row ${isSelected ? 'selected' : ''}" onclick="togglePref('${quote.id}')">
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1679:              <span class="opt-context">${quote.date} · ${quote.context || ''}</span>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1681:            <span style="font-family:'JetBrains Mono'; font-size:0.7rem; color:var(--text-dim);">#${quote.id.substring(0,8)}</span>
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1688:      if (activeQuote.preference.includes(id)) activeQuote.preference = activeQuote.preference.filter(q => q !== id);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1689:      else activeQuote.preference.push(id);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1696:      activeQuote.preference = activeQuote.preference.filter(q => q !== id);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1707:    // SAVE QUOTE (DIRECT SQLITE)
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1709:    async function saveQuote() {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1710:      if (!activeQuote.main_content.trim()) {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1711:        alert("Please provide the main quote content before saving.");
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1715:      if (!activeQuote.id) activeQuote.id = generateHexId("0001");
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1716:      if (!activeQuote.date) activeQuote.date = new Date().toISOString().split('T')[0];
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1719:        const res = await fetch(`${API_BASE}/api/quote`, {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1722:          body: JSON.stringify(activeQuote)
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1728:          fireToast(`✓ Saved Quote #${savedIdx} to SQLite!`);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1729:          activeQuote.index = savedIdx + 1;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1730:          activeQuote.idx = activeQuote.index;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1731:          activeQuote.id = "";
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1732:          activeQuote.main_content = "";
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1733:          activeQuote.context = "";
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1734:          activeQuote.preference = [];
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1735:          activeQuote.scores = [];
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1736:          activeQuote.average_score = null;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1759:      activeQuote = {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1761:        index: activeQuote.index || activeQuote.idx || 1,
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1762:        idx: activeQuote.idx || activeQuote.index || 1,
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1795:    let currentTableKey = "quotes";
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1798:      quotes: {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1799:        id: "quotes",
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1800:        title: "Quotes (Table 1: 0001...)",
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1801:        desc: "Wisdom passages, reflections, and quotes in SQLite",
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1803:        saveEndpoint: `${API_BASE}/api/quote`,
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1804:        deleteEndpoint: `${API_BASE}/api/quote/delete`,
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1805:        getData: () => allQuotesList,
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1824:          { key: "specific_id", label: "Specific Endpoint", format: v => {
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1834:              return `<span style="font-family:'JetBrains Mono'; font-size:0.78rem; opacity:0.65;" title="Inherited fallback from endpoint: ${s.name}">📅 ${s.date} <span style="font-size:0.68rem; opacity:0.6;">(endpoint)</span></span>`;
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1855:              const q = allQuotesList.find(item => item.id === qid);
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1876:          { key: "main_content", label: "Main Quote Content", type: "textarea", required: true },
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1881:          { key: "specific_id", label: "Specific Endpoint", type: "select", optionsSource: "specifics" },
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1884:          { key: "preference", label: "Preferences / Follow-ups (Quote IDs)", type: "json_array" },
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1893:        saveEndpoint: `${API_BASE}/api/container`,
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1894:        deleteEndpoint: `${API_BASE}/api/container/delete`,
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1912:        desc: "Specific works, characters, diary, and wisdom endpoints",
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1914:        saveEndpoint: `${API_BASE}/api/specific`,
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1915:        deleteEndpoint: `${API_BASE}/api/specific/delete`,
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1919:          { key: "name", label: "Endpoint Name", isBold: true, format: v => `📍 ${v}` },
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1921:          { key: "category", label: "Category", format: v => `<span class="card-tag">${v || 'endpoint'}</span>` },
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1931:          { key: "name", label: "Endpoint Name (e.g. Infant Joy, Asuka, Diary, Wisdom, Thought on)", type: "text", required: true },
+D:\My Drive\Blue AI\Entropy\Rose\prescripts_entry.html:1944:        saveEndpoint: `${API_BASE}/api/theme`,
+
+[Showing results with pagination = limit: 500]

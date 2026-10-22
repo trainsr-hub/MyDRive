@@ -1,0 +1,112 @@
+/**
+ * Project Entry: Main Application Entry Point
+ * Orchestrates State, Components, and Lifecycles
+ */
+import { state, showToast } from './state.js';
+import { checkServerHealth, loadTables, ensureRecordsLoaded } from './api.js';
+import { initHeader } from './components/header.js';
+import { initToolbar, updateColCountLabel, renderFilterBar } from './components/toolbar.js';
+import { renderSchemaTable, refreshTableRow } from './components/schema-table.js';
+import { initSidebar, openSidebar, closeSidebar, navigateSidebar } from './components/sidebar.js';
+import { renderDataWorkspace, addDataRow, exportDataCSV } from './components/data-grid.js';
+
+// Global copy helper for SQL/JSON inspector
+window.copyCode = function(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => showToast('Copied to clipboard!'));
+};
+
+async function init() {
+  await checkServerHealth();
+  await loadTables();
+
+  // Initialize Header
+  initHeader(
+    // onTableSwitched
+    (tableName) => {
+      closeSidebar();
+      if (state.currentViewMode === 'schema') {
+        renderFilterBar();
+        renderSchemaTable();
+        updateColCountLabel();
+      } else {
+        ensureRecordsLoaded(tableName, () => renderDataWorkspace());
+      }
+    },
+    // onViewModeSwitched
+    (mode) => {
+      if (mode === 'schema') {
+        renderSchemaTable();
+        updateColCountLabel();
+      } else {
+        closeSidebar();
+        ensureRecordsLoaded(state.activeTable, () => renderDataWorkspace());
+      }
+    }
+  );
+
+  // Initialize Toolbar
+  initToolbar(
+    // onFilterChanged
+    () => renderSchemaTable(),
+    // onTableRenamed
+    () => renderSchemaTable()
+  );
+
+  // Initialize Sidebar
+  initSidebar(
+    // onColumnUpdated
+    (colIdx) => refreshTableRow(colIdx),
+    // onColumnDeleted
+    () => {
+      renderSchemaTable();
+      updateColCountLabel();
+    }
+  );
+
+  // Initialize Data Grid toolbar buttons
+  const btnAddRecord = document.getElementById('btn-add-record');
+  if (btnAddRecord) btnAddRecord.onclick = () => addDataRow();
+
+  const btnExportCSV = document.getElementById('btn-export-csv');
+  if (btnExportCSV) btnExportCSV.onclick = () => exportDataCSV();
+
+  const btnReloadData = document.getElementById('btn-reload-data');
+  if (btnReloadData) {
+    btnReloadData.onclick = () => {
+      delete state.tableRecords[state.activeTable];
+      ensureRecordsLoaded(state.activeTable, () => {
+        renderDataWorkspace();
+        showToast(`Reloaded ${state.activeTable} records`);
+      });
+    };
+  }
+
+  const searchInput = document.getElementById('data-search-input');
+  if (searchInput) {
+    searchInput.oninput = (e) => {
+      state.dataSearchQuery = (e.target.value || '').toLowerCase().trim();
+      renderDataWorkspace();
+    };
+  }
+
+  // Initial renders
+  renderSchemaTable();
+  updateColCountLabel();
+  ensureRecordsLoaded(state.activeTable);
+
+  // Global Keyboard Shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSidebar();
+    if (e.key === 'ArrowLeft' && state.activeColIdx !== null) navigateSidebar(-1);
+    if (e.key === 'ArrowRight' && state.activeColIdx !== null) navigateSidebar(1);
+  });
+}
+
+// Boot application when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}

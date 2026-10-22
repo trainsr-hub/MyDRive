@@ -1,0 +1,777 @@
+# server.py
+"""
+High-Performance Sovereign FastAPI Server for Google Drive Folder Reconciler.
+Bypasses legacy Streamlit to provide an ultra-responsive, beautiful REST API.
+"""
+
+import time
+import os
+from typing import Dict, Any, Optional
+from pathlib import Path
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+from core.config import config
+from core import drive_ops, db, logic, local_master, drive_sync_push, local_template
+from core.reconciler import (
+    extract_schema_from_drive_folder,
+    plan_entity_level_reconciliation,
+    execute_multi_entity_reconciliation,
+    MultiEntityReconciliationPlan,
+)
+from core.mock_store import mock_store, MOCK_TEMPLATE_ID, MOCK_ROOT_ID
+
+app = FastAPI(title="Drive Folder Template Reconciler API", version="2.0.0")
+
+# Local SQLite is sovereign Master (SSOT). Google Drive is slave mirror.
+GLOBAL_MOCK_MODE = False
+
+# Enable CORS for local Vite dev server
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# =====================================================================
+# REQUEST / RESPONSE SCHEMAS
+# =====================================================================
+
+class ScanRequest(BaseModel):
+    template_link: str = ""
+    root_link: str = ""
+    bypass_cache: bool = False
+
+
+class ReconcileRequest(BaseModel):
+    template_link: str = ""
+    root_link: str = ""
+    plan: Optional[Dict[str, Any]] = None
+
+
+class CreateMutation(BaseModel):
+    temp_id: str
+    parent_id: str
+    name: str
+    description: str = ""
+
+
+class UpdateMutation(BaseModel):
+    id: str
+    name: str
+    description: str = ""
+
+
+class DeleteMutation(BaseModel):
+    id: str
+    name: str
+
+
+class TemplateMutations(BaseModel):
+    creates: list[CreateMutation] = []
+    updates: list[UpdateMutation] = []
+    deletes: list[DeleteMutation] = []
+
+
+class TemplateSaveRequest(BaseModel):
+    template_link: str = ""
+    mutations: TemplateMutations
+
+
+class LocalTemplateMutationRequest(BaseModel):
+    action: str
+    relative_path: str = ""
+    name: str = ""
+    description: str = ""
+    parent_path: str = ""
+
+
+class AddTagRequest(BaseModel):
+    tag_key: str
+    tag_value: str
+
+
+class DeleteTagRequest(BaseModel):
+    tag_key: str
+    tag_value: Optional[str] = None
+
+
+class CloneTemplateRequest(BaseModel):
+    parent_id: str
+    clone_name: str
+    template_link: Optional[str] = None
+
+
+class CreateFolderRequest(BaseModel):
+    parent_id: str
+    name: str
+    description: Optional[str] = ""
+
+
+class RenameFolderRequest(BaseModel):
+    folder_id: str
+    name: str
+
+
+class TrashFolderRequest(BaseModel):
+    folder_id: str
+    force: bool = False
+    cascade: bool = True
+    trash_remote: bool = False
+
+
+class PurgeTrashRequest(BaseModel):
+    folder_ids: list[str] = []
+    purge_all: bool = False
+    trash_remote: bool = False
+
+
+class MoveFolderRequest(BaseModel):
+    folder_id: str
+    new_parent_id: str
+
+
+
+
+# =====================================================================
+# ENDPOINTS
+# =====================================================================
+
+@app.get("/api/status")
+def get_status():
+    """Returns system status, Google Service Account connectivity and SQLite storage stats."""
+    db.init_db()
+    sa_email = "trainjr@affable-doodad-461713-f6.iam.gserviceaccount.com"
+    return {
+        "status": "online",
+        "mock_mode": GLOBAL_MOCK_MODE,
+        "mock_template_id": MOCK_TEMPLATE_ID,
+        "mock_root_id": MOCK_ROOT_ID,
+        "service_account": sa_email,
+        "database": str(config.db_path),
+        "target_drive": "D:\\",
+        "default_template": MOCK_TEMPLATE_ID if GLOBAL_MOCK_MODE else config.default_template_url,
+        "default_root": MOCK_ROOT_ID if GLOBAL_MOCK_MODE else config.default_root_url,
+        "timestamp": time.time(),
+    }
+
+
+@app.post("/api/mock/toggle")
+def toggle_mock_mode(payload: Optional[Dict[str, Any]] = None):
+    """Toggles or sets the zero-latency mock mode."""
+    global GLOBAL_MOCK_MODE
+    if payload and "enabled" in payload:
+        GLOBAL_MOCK_MODE = bool(payload["enabled"])
+    else:
+        GLOBAL_MOCK_MODE = not GLOBAL_MOCK_MODE
+    return {"success": True, "mock_mode": GLOBAL_MOCK_MODE}
+
+
+@app.post("/api/mock/reset")
+def reset_mock_data():
+    """Resets the in-memory mock store back to its canonical drifted state."""
+    mock_store.reset()
+    return {"success": True, "message": "Mock store reset to canonical state", "mock_mode": GLOBAL_MOCK_MODE}
+
+
+
+@app.post("/api/scan")
+def scan_and_plan(req: ScanRequest):
+    """
+    Returns the declarative desired-state reconciliation plan.
+    By default (bypass_cache=False), loads from local SQLite Master in 0.5ms.
+    """
+    t0 = time.time()
+    t_link = req.template_link.strip() if req.template_link else config.default_template_url
+    r_link = req.root_link.strip() if req.root_link else config.default_root_url
+
+    # 1. Sovereign Local SQLite Master (Default 0ms offline)
+    if not req.bypass_cache and not GLOBAL_MOCK_MODE:
+        local_plan = local_master.get_local_master_plan()
+        duration_ms = round((time.time() - t0) * 1000, 1)
+        return {
+            "success": True,
+            "duration_ms": duration_ms or 0.5,
+            "template_id": local_plan["template_schema"]["id"],
+            "root_id": local_plan["data_root_id"],
+            "plan": local_plan,
+            "master": "local_sqlite",
+        }
+
+    # Instant Zero-Latency Mock Mode Route
+    if GLOBAL_MOCK_MODE or "mock" in t_link or "mock" in r_link:
+        mock_plan = mock_store.generate_mock_plan()
+        duration_ms = round((time.time() - t0) * 1000, 1)
+        return {
+            "success": True,
+            "duration_ms": duration_ms or 2.5,
+            "template_id": MOCK_TEMPLATE_ID,
+            "root_id": MOCK_ROOT_ID,
+            "plan": mock_plan,
+            "mock_mode": True,
+        }
+
+    template_id = drive_ops.extract_folder_id_from_url(t_link)
+    root_id = drive_ops.extract_folder_id_from_url(r_link)
+
+    if not template_id:
+        raise HTTPException(status_code=400, detail="Invalid or missing Template Folder URL / ID")
+    if not root_id:
+        raise HTTPException(status_code=400, detail="Invalid or missing Data Root Folder URL / ID")
+
+    try:
+        # Step 1: Always extract live template schema from Google Drive so changes are immediately caught
+        template_schema = extract_schema_from_drive_folder(template_id)
+        template_name = template_schema.get("name", "Archetype")
+        try:
+            db.save_template_schema(
+                name=template_name,
+                schema_dict=template_schema,
+                description=f"Archetype schema from {template_id}",
+                source_folder_id=template_id,
+            )
+        except Exception:
+            pass
+
+        # Step 2: Plan multi-entity reconciliation
+        plan = plan_entity_level_reconciliation(
+            data_root_id=root_id,
+            template_schema=template_schema,
+            template_name=template_name,
+            bypass_cache=req.bypass_cache,
+        )
+
+        duration_ms = round((time.time() - t0) * 1000, 1)
+
+        return {
+            "success": True,
+            "duration_ms": duration_ms,
+            "template_id": template_id,
+            "root_id": root_id,
+            "plan": plan.to_dict(),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing folder structure: {str(e)}")
+
+
+@app.post("/api/reconcile")
+def execute_reconcile(req: ReconcileRequest):
+    """
+    Executes reconciliation.
+    Applies mutations to local SQLite master in 1ms.
+    """
+    t0 = time.time()
+    try:
+        # 1. Local SQLite Master Reconciliation (Default 1ms)
+        if not GLOBAL_MOCK_MODE and req.plan and not str(req.plan.get("data_root_id", "")).startswith("mock_"):
+            results = local_master.execute_local_reconcile(req.plan)
+            duration_ms = round((time.time() - t0) * 1000, 1)
+            return {
+                "success": True,
+                "results": results,
+                "duration_ms": duration_ms or 1.2,
+                "master": "local_sqlite",
+            }
+
+        # Instant Zero-Latency Mock Mode Route
+        if GLOBAL_MOCK_MODE or (req.plan and str(req.plan.get("data_root_id", "")).startswith("mock_")):
+            results = mock_store.execute_mock_reconcile(req.plan or {})
+            return {
+                "success": True,
+                "results": results,
+                "duration_ms": 2.5,
+                "mock_mode": True,
+            }
+
+        if req.plan:
+            multi_plan = MultiEntityReconciliationPlan.from_dict(req.plan)
+        else:
+            t_link = req.template_link.strip() if req.template_link else config.default_template_url
+            r_link = req.root_link.strip() if req.root_link else config.default_root_url
+            template_id = drive_ops.extract_folder_id_from_url(t_link)
+            root_id = drive_ops.extract_folder_id_from_url(r_link)
+            template_schema = extract_schema_from_drive_folder(template_id)
+            template_name = template_schema.get("name", "Archetype")
+            multi_plan = plan_entity_level_reconciliation(
+                data_root_id=root_id,
+                template_schema=template_schema,
+                template_name=template_name,
+                bypass_cache=True,
+            )
+
+        results = execute_multi_entity_reconciliation(multi_plan, dry_run=False)
+
+        # Clear cache for this root folder so subsequent scans reflect newly created/updated state
+        cache_key = f"{multi_plan.data_root_id}:{multi_plan.template_name}"
+        db.clear_folder_tree_cache(cache_key)
+
+        duration_ms = round((time.time() - t0) * 1000, 1)
+        results["duration_ms"] = duration_ms
+
+        return {
+            "success": True,
+            "results": results,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to execute live reconciliation: {str(e)}")
+
+
+@app.get("/api/history")
+def get_history():
+    """Returns recent reconciliation execution runs from SQLite."""
+    try:
+        logs = db.get_recent_reconciliations(limit=20)
+        return {
+            "success": True,
+            "history": logs,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read audit history: {str(e)}")
+
+
+@app.post("/api/cache/clear")
+def clear_cache():
+    """Wipes SQLite folder tree cache."""
+    try:
+        db.clear_folder_tree_cache()
+        return {"success": True, "message": "All SQLite folder tree cache cleared successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to clear cache: {str(e)}")
+
+
+@app.get("/api/template")
+def get_template(template_link: str = ""):
+    """Fetches the template tree from local SQLite and physical Disk D."""
+    t0 = time.time()
+    try:
+        tree = local_template.get_local_template_tree()
+        vault_tags = db.load_vault_data()
+        duration_ms = round((time.time() - t0) * 1000, 1)
+        return {
+            "success": True,
+            "template_id": tree["id"],
+            "template_name": tree["name"],
+            "tree": tree,
+            "vault_tags": vault_tags,
+            "duration_ms": duration_ms or 0.5,
+            "master": "local_disk_d",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load local template: {str(e)}")
+
+
+@app.post("/api/template/mutate")
+def mutate_template(req: LocalTemplateMutationRequest):
+    """Apply one immediate mutation to the local Disk D: template."""
+    t0 = time.time()
+    try:
+        result = local_template.mutate_local_template(
+            action=req.action,
+            relative_path=req.relative_path,
+            name=req.name,
+            description=req.description,
+            parent_path=req.parent_path,
+        )
+        result["duration_ms"] = round((time.time() - t0) * 1000, 1)
+        return result
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to mutate local template: {str(exc)}") from exc
+
+
+@app.get("/api/tags")
+def get_tags():
+    """Returns all metadata tag keys and values stored in SQLite."""
+    return {"success": True, "tags": db.load_vault_data()}
+
+
+@app.post("/api/tags/add")
+def add_tag(req: AddTagRequest):
+    """Adds a key-value tag to SQLite."""
+    ok = db.add_single_tag(req.tag_key, req.tag_value)
+    return {"success": ok, "tags": db.load_vault_data()}
+
+
+@app.post("/api/tags/delete")
+def delete_tag(req: DeleteTagRequest):
+    """Deletes a tag value or entire key from SQLite."""
+    if req.tag_value:
+        ok = db.delete_tag(req.tag_key, req.tag_value)
+    else:
+        ok = db.delete_key(req.tag_key) > 0
+    return {"success": ok, "tags": db.load_vault_data()}
+
+
+# =====================================================================
+# DRIVE NAVIGATOR & CLONE SPANWNER ENDPOINTS
+# =====================================================================
+
+@app.get("/api/drive/browse")
+def browse_folder(folder_id: Optional[str] = None):
+    """
+    Returns folder metadata, immediate subfolders with origin tags, and files for the Drive Navigator dashboard.
+    """
+    t0 = time.time()
+    fid = folder_id.strip() if folder_id else (MOCK_ROOT_ID if GLOBAL_MOCK_MODE else config.default_root_url)
+
+    # Mock mode branch
+    if GLOBAL_MOCK_MODE or (fid and "mock" in fid):
+        resolved_id = fid if fid.startswith("mock_") else MOCK_ROOT_ID
+        current_f = mock_store.get_folder(resolved_id) or mock_store.get_folder(MOCK_ROOT_ID)
+        all_contents = mock_store.list_contents(current_f["id"])
+        subfolders = []
+        files = []
+        for item in all_contents:
+            if item.get("mimeType") == "application/vnd.google-apps.folder":
+                subfolders.append({
+                    "id": item["id"],
+                    "name": item["name"],
+                    "description": item.get("description", ""),
+                    "source_id": item.get("properties", {}).get("src"),
+                    "mimeType": "application/vnd.google-apps.folder",
+                })
+            else:
+                files.append(item)
+
+        parents = [current_f["parent_id"]] if current_f.get("parent_id") else []
+        return {
+            "success": True,
+            "duration_ms": 1.5,
+            "current_folder": {
+                "id": current_f["id"],
+                "name": current_f["name"],
+                "description": current_f.get("description", ""),
+                "source_id": current_f.get("properties", {}).get("src"),
+                "parents": parents,
+            },
+            "subfolders": subfolders,
+            "files": files,
+            "mock_mode": True,
+        }
+
+    resolved_id = drive_ops.extract_folder_id_from_url(fid)
+    if not resolved_id:
+        raise HTTPException(status_code=400, detail="Invalid folder ID or link")
+
+    try:
+        meta = drive_ops.get_file_metadata(resolved_id)
+        contents = drive_ops.list_folder_contents(resolved_id)
+
+        subfolders = []
+        files = []
+
+        for item in contents:
+            mime = item.get("mimeType", "")
+            if mime == "application/vnd.google-apps.folder":
+                cid = item["id"]
+                src_id = logic.extract_source_id(item)
+                subfolders.append({
+                    "id": cid,
+                    "name": item.get("name", "Untitled Folder"),
+                    "description": item.get("description", "") or "",
+                    "source_id": src_id,
+                    "mimeType": mime,
+                })
+            else:
+                files.append({
+                    "id": item["id"],
+                    "name": item.get("name", "Untitled File"),
+                    "mimeType": mime,
+                    "thumbnail_url": drive_ops.format_thumbnail_url(item["id"]) if mime.startswith("image/") else None,
+                })
+
+        duration_ms = round((time.time() - t0) * 1000, 1)
+        return {
+            "success": True,
+            "duration_ms": duration_ms,
+            "current_folder": {
+                "id": meta["id"],
+                "name": meta.get("name", "Root"),
+                "description": meta.get("description", "") or "",
+                "source_id": logic.extract_source_id(meta),
+                "parents": meta.get("parents", []),
+            },
+            "subfolders": subfolders,
+            "files": files,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to browse folder: {str(e)}")
+
+
+@app.post("/api/drive/clone_template")
+def clone_template(req: CloneTemplateRequest):
+    """
+    Creates a new custom-named entity clone under parent_id in local SQLite master.
+    """
+    t0 = time.time()
+    pid = drive_ops.extract_folder_id_from_url(req.parent_id) or req.parent_id
+    clean_name = req.clone_name.strip()
+    if not clean_name:
+        raise HTTPException(status_code=400, detail="Folder name cannot be empty")
+
+    if GLOBAL_MOCK_MODE or "mock" in pid:
+        res = mock_store.clone_template(
+            target_parent_id=req.parent_id,
+            clone_name=clean_name,
+        )
+        res["duration_ms"] = 1.8
+        res["mock_mode"] = True
+        return res
+
+    # Local SQLite Sovereign Master Creation
+    import time as pytime
+    new_ent_id = f"ent_{int(pytime.time() * 1000)}"
+    template_id = db.get_config("template_id", "1qPYOlZ3-LlnfiBRorXUnNa_0yVZcILvM")
+
+    # 1. Insert entity root in folders table
+    db.save_folder(new_ent_id, clean_name, pid, f"src:{template_id}", src_id=template_id)
+
+    # 2. Recursively duplicate template subfolder tree into local SQLite
+    created_count = 1
+    def _clone_subfolders(src_p_id: str, dest_p_id: str):
+        nonlocal created_count
+        subs = db.list_children(src_p_id)
+        for s in subs:
+            c_new_id = f"fld_{int(pytime.time() * 1000)}_{created_count}"
+            db.save_folder(
+                drive_id=c_new_id,
+                name=s["name"],
+                child_of=dest_p_id,
+                description=s.get("description", ""),
+                src_id=s["drive_id"],
+            )
+            created_count += 1
+            _clone_subfolders(s["drive_id"], c_new_id)
+
+    _clone_subfolders(template_id, new_ent_id)
+    duration_ms = round((time.time() - t0) * 1000, 1)
+
+    return {
+        "success": True,
+        "cloned_root_id": new_ent_id,
+        "clone_name": clean_name,
+        "total_folders_created": created_count,
+        "duration_ms": duration_ms or 1.2,
+        "master": "local_sqlite",
+    }
+
+
+@app.post("/api/drive/create_folder")
+def create_folder_endpoint(req: CreateFolderRequest):
+    """Creates a regular folder in local SQLite master."""
+    if GLOBAL_MOCK_MODE or (req.parent_id and "mock" in req.parent_id):
+        res = mock_store.create_folder(name=req.name.strip(), parent_id=req.parent_id, description=req.description or "")
+        return {"success": True, "folder": res, "mock_mode": True}
+
+    pid = drive_ops.extract_folder_id_from_url(req.parent_id) or req.parent_id
+    import time as pytime
+    new_id = f"fld_{int(pytime.time() * 1000)}"
+    res = db.save_folder(new_id, req.name.strip(), pid, req.description or "")
+    return {"success": True, "folder": res, "master": "local_sqlite"}
+
+
+@app.post("/api/drive/rename_folder")
+def rename_folder_endpoint(req: RenameFolderRequest):
+    """Renames a folder in local SQLite master."""
+    if GLOBAL_MOCK_MODE or (req.folder_id and "mock" in req.folder_id):
+        res = mock_store.update_folder(req.folder_id, name=req.name.strip())
+        return {"success": True, "folder": res, "mock_mode": True}
+
+    fid = drive_ops.extract_folder_id_from_url(req.folder_id) or req.folder_id
+    db.update_folder_fields(fid, name=req.name.strip())
+    return {"success": True, "folder": {"id": fid, "name": req.name.strip()}, "master": "local_sqlite"}
+
+
+@app.post("/api/drive/trash_folder")
+def trash_folder_endpoint(req: TrashFolderRequest):
+    """Moves a folder to trash in local SQLite master (with recursive cascade and optional remote trash)."""
+    if GLOBAL_MOCK_MODE or (req.folder_id and "mock" in req.folder_id):
+        ok = mock_store.trash_folder(req.folder_id)
+        return {"success": ok, "mock_mode": True}
+
+    fid = drive_ops.extract_folder_id_from_url(req.folder_id) or req.folder_id
+
+    if req.trash_remote:
+        try:
+            drive_ops.trash_file(fid)
+        except Exception:
+            pass
+
+    if req.cascade:
+        deleted_count = db.delete_folder_tree(fid)
+    else:
+        deleted_count = 1 if db.delete_folder_record(fid) else 0
+
+    return {
+        "success": deleted_count > 0,
+        "deleted_count": deleted_count,
+        "folder_id": fid,
+        "master": "local_sqlite",
+    }
+
+
+@app.get("/api/drive/all_folders")
+def get_all_folders_endpoint():
+    """Returns all rows in local SQLite folders table with parent & child metadata."""
+    rows = db.list_all_raw_folders()
+    return {"success": True, "folders": rows, "count": len(rows)}
+
+
+@app.get("/api/drive/trash_candidates")
+def get_trash_candidates_endpoint():
+    """
+    Scans neo_drive.db and local plan to find:
+    1. Extraneous folders (PRUNE_EMPTY or FLAG_RED)
+    2. Orphan folders (child_of points to non-existent folder)
+    3. Duplicate folders (same name under same child_of)
+    """
+    all_f = db.list_all_raw_folders()
+    all_ids = {f["drive_id"] for f in all_f}
+    root_id = db.get_config("root_id", "14J8QBCqdSQOPerLBIaR2jLyYhZ4WbJUA")
+    template_id = db.get_config("template_id", "1qPYOlZ3-LlnfiBRorXUnNa_0yVZcILvM")
+
+    # 1. Orphans
+    orphans = []
+    for f in all_f:
+        if f["child_of"] and f["child_of"] not in all_ids:
+            orphans.append({
+                "id": f["drive_id"],
+                "name": f["name"],
+                "parent_id": f["child_of"],
+                "parent_name": "Non-existent parent",
+                "description": f.get("description", ""),
+                "reason": f"Orphan: parent folder '{f['child_of']}' does not exist in database",
+                "child_folders_count": f.get("child_folders_count", 0),
+                "type": "ORPHAN",
+            })
+
+    # 2. Extraneous from Local Master Plan
+    extraneous = []
+    try:
+        plan = local_master.get_local_master_plan()
+        for g in plan.get("groups", []):
+            for ep in g.get("entity_plans", []):
+                for it in ep.get("items", []):
+                    if it.get("action_type") in ("PRUNE_EMPTY", "FLAG_RED") and it.get("target_id"):
+                        extraneous.append({
+                            "id": it["target_id"],
+                            "name": it["folder_name"],
+                            "parent_id": it.get("target_parent_id"),
+                            "parent_name": ep.get("target_root_name"),
+                            "relative_path": it.get("relative_path"),
+                            "description": it.get("current_desc", ""),
+                            "reason": it.get("reason", "Extraneous folder not present in archetype template"),
+                            "action_type": it.get("action_type"),
+                            "files_count": it.get("files_count", 0),
+                            "subfolders_count": it.get("subfolders_count", 0),
+                            "type": "EXTRANEOUS",
+                        })
+    except Exception as e:
+        print("Error getting plan extraneous:", e)
+
+    # 3. Duplicates under same parent
+    duplicates = []
+    seen = {}
+    for f in all_f:
+        key = (f["child_of"], f["name"].lower())
+        if key in seen:
+            duplicates.append({
+                "id": f["drive_id"],
+                "name": f["name"],
+                "parent_id": f["child_of"],
+                "parent_name": f.get("parent_name"),
+                "reason": f"Duplicate folder name '{f['name']}' under parent '{f.get('parent_name') or f['child_of']}'",
+                "original_id": seen[key]["drive_id"],
+                "type": "DUPLICATE",
+            })
+        else:
+            seen[key] = f
+
+    # Combine unique trash IDs
+    combined_map = {}
+    for item in extraneous + orphans + duplicates:
+        combined_map[item["id"]] = item
+
+    return {
+        "success": True,
+        "total_count": len(combined_map),
+        "trash_items": list(combined_map.values()),
+        "extraneous_count": len(extraneous),
+        "orphan_count": len(orphans),
+        "duplicate_count": len(duplicates),
+        "database_total_folders": len(all_f),
+    }
+
+
+@app.post("/api/drive/purge_trash")
+def purge_trash_endpoint(req: PurgeTrashRequest):
+    """Purges selected or all trash/orphan folders from SQLite with recursive cascade."""
+    target_ids = list(req.folder_ids)
+
+    if req.purge_all:
+        candidates = get_trash_candidates_endpoint()
+        target_ids = [item["id"] for item in candidates["trash_items"]]
+
+    deleted_total = 0
+    for fid in target_ids:
+        if req.trash_remote:
+            try:
+                drive_ops.trash_file(fid)
+            except Exception:
+                pass
+        deleted_total += db.delete_folder_tree(fid)
+
+    return {
+        "success": True,
+        "deleted_count": deleted_total,
+        "purged_folder_ids": target_ids,
+        "message": f"Successfully purged {deleted_total} folder records from SQLite.",
+    }
+
+
+@app.post("/api/drive/move_folder")
+def move_folder_endpoint(req: MoveFolderRequest):
+    """Moves an entity or folder to a new group in local SQLite master."""
+    if GLOBAL_MOCK_MODE or (req.folder_id and "mock" in req.folder_id):
+        res = mock_store.move_folder(req.folder_id, req.new_parent_id)
+        return {"success": True, "folder": res, "mock_mode": True}
+
+    fid = drive_ops.extract_folder_id_from_url(req.folder_id) or req.folder_id
+    new_pid = drive_ops.extract_folder_id_from_url(req.new_parent_id) or req.new_parent_id
+    ok = db.update_folder_fields(fid, child_of=new_pid)
+    return {"success": ok, "folder": {"id": fid, "child_of": new_pid}, "master": "local_sqlite"}
+
+
+@app.post("/api/drive/sync_push")
+def sync_push_endpoint():
+    """
+    Forces Google Drive to be an exact slave mirror of local SQLite master.
+    """
+    try:
+        res = drive_sync_push.push_local_master_to_drive()
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to mirror to Google Drive: {str(e)}")
+
+
+
+
+
+# =====================================================================
+# STATIC ASSETS (VITE BUILD FRONTEND)
+# =====================================================================
+frontend_dist = Path(__file__).resolve().parent / "frontend" / "dist"
+if frontend_dist.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server:app", host="0.0.0.0", port=10191, reload=True)
+

@@ -1,0 +1,43 @@
+# Implementation Plan: Sovereign Hazard Rank Assignment on Gameplay Tab
+
+## Context
+The Manager has directed:
+- Add a new `hazard_rank` field (`INTEGER`, storing 3 to 7) to `tier_3_data` in `_3_state.db`.
+- **Zero Backfill & Zero Default**: Existing records will NOT be backfilled with defaults. Hazard Rank is the Manager's sovereign rating to be explicitly bestowed on each song.
+- **Gameplay Tab Integration**: Provide a dedicated Hazard Rank selector (3 to 7) in the Vinyl Angel player / gameplay tab so the Manager can directly assign rank to any active song.
+- Once this capability is verified and in place, we will discuss the mathematical formulation for recalculating Hazard Level with this new field.
+
+---
+
+## Technical Specifications
+
+### 1. Database Schema (`_3_state.db`)
+- Target: `D:\My Drive\SandBox Projetcs\backend\data\projects\music_app\app_data\_3_state.db`
+- Table: `tier_3_data`
+- DDL: `ALTER TABLE tier_3_data ADD COLUMN hazard_rank INTEGER;` (Nullable, no default value, no backfill).
+
+### 2. TypeScript Data Contracts
+- **`universe-25/src/apps/vinyl-angel/types.ts`**:
+  - Update `Tier3StateRecord`: add `hazard_rank?: number | null;`
+  - Update `PlaylistItem` and `TrackDisplayMeta`: add `hazard_rank?: number | null;`
+
+### 3. Engine Operations (`universe-25/src/apps/vinyl-angel/services/engine.ts`)
+- In `fetchTier3State()`: parse `hazard_rank` from SQLite response (`row.hazard_rank ? Number(row.hazard_rank) : null`).
+- In `syncTier2ToTier3()`: preserve `hazard_rank` when upserting tracks into `tier_3_data`.
+- Create `updateTrackHazardRank(projectId: string, trackId: string, rank: number)`:
+  - Directly upserts `{ hazard_rank: rank }` into `tier_3_data` via `executeOrder({ project_id, tier: '3', order: { action: 'upsert', key: trackId, data: { hazard_rank: rank } } })`.
+
+### 4. UI: Hazard Rank Control on Gameplay Tab (`VinylPlayer.tsx`)
+- Locate the main interaction deck in `VinylPlayer.tsx` (above or alongside the action scores 3+ to 7+).
+- Add a sovereign **HAZARD RANK** module:
+  - Header: `HAZARD RANK (SOVEREIGN DESIGNATION)` with an indicator showing the active track's current rank (e.g. `Unassigned` or `Rank 7`).
+  - 5 interactive rank buttons: `[3]`, `[4]`, `[5]`, `[6]`, `[7]` with theme styling (e.g., Bronze, Iron, Emerald, Flame, Imperial Crown).
+  - Clicking any button immediately calls `updateTrackHazardRank`, displays a toast notification (e.g. `👑 Assigned Hazard Rank 7 to "Track Title"`), and updates the local track state.
+
+---
+
+## Verification & Confirmation Steps
+1. Inspect SQLite schema with `PRAGMA table_info(tier_3_data)` to confirm `hazard_rank INTEGER` is present and existing rows have `hazard_rank = NULL`.
+2. Verify TypeScript compilation in `universe-25`.
+3. Test rank assignment via direct engine test to ensure write persistence in `_3_state.db`.
+4. Report completion to the Manager so we can transition to discussing the new Hazard Level formula.

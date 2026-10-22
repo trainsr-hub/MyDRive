@@ -1,0 +1,387 @@
+# server.py
+"""
+High-Performance Sovereign FastAPI Server for Google Drive Folder Reconciler.
+Bypasses legacy Streamlit to provide an ultra-responsive, beautiful REST API.
+"""
+
+import time
+import os
+from typing import Dict, Any, Optional
+from pathlib import Path
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+from core.config import config
+from core import drive_ops, db, logic
+from core.reconciler import (
+    extract_schema_from_drive_folder,
+    plan_entity_level_reconciliation,
+    execute_multi_entity_reconciliation,
+    MultiEntityReconciliationPlan,
+)
+
+app = FastAPI(title="Drive Folder Template Reconciler API", version="2.0.0")
+
+# Enable CORS for local Vite dev server
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# =====================================================================
+# REQUEST / RESPONSE SCHEMAS
+# =====================================================================
+
+class ScanRequest(BaseModel):
+    template_link: str = ""
+    root_link: str = ""
+    bypass_cache: bool = False
+
+
+class ReconcileRequest(BaseModel):
+    template_link: str = ""
+    root_link: str = ""
+    plan: Optional[Dict[str, Any]] = None
+
+
+class CreateMutation(BaseModel):
+    temp_id: str
+    parent_id: str
+    name: str
+    description: str = ""
+
+
+class UpdateMutation(BaseModel):
+    id: str
+    name: str
+    description: str = ""
+
+
+class DeleteMutation(BaseModel):
+    id: str
+    name: str
+
+
+class TemplateMutations(BaseModel):
+    creates: list[CreateMutation] = []
+    updates: list[UpdateMutation] = []
+    deletes: list[DeleteMutation] = []
+
+
+class TemplateSaveRequest(BaseModel):
+    template_link: str = ""
+    mutations: TemplateMutations
+
+
+class AddTagRequest(BaseModel):
+    tag_key: str
+    tag_value: str
+
+
+class DeleteTagRequest(BaseModel):
+    tag_key: str
+    tag_value: Optional[str] = None
+
+
+# =====================================================================
+# ENDPOINTS
+# =====================================================================
+
+@app.get("/api/status")
+def get_status():
+    """Returns system status, Google Service Account connectivity and SQLite storage stats."""
+    db.init_db()
+    sa_email = "trainjr@affable-doodad-461713-f6.iam.gserviceaccount.com"
+    return {
+        "status": "online",
+        "service_account": sa_email,
+        "database": str(config.db_path),
+        "target_drive": "D:\\",
+        "default_template": config.default_template_url,
+        "default_root": config.default_root_url,
+        "timestamp": time.time(),
+    }
+
+
+@app.post("/api/scan")
+def scan_and_plan(req: ScanRequest):
+    """
+    Scans the Template and Data Root folders in parallel.
+    Returns the declarative desired-state reconciliation plan.
+    Supports SQLite caching for instant sub-second repeat queries.
+    """
+    t0 = time.time()
+    t_link = req.template_link.strip() if req.template_link else config.default_template_url
+    r_link = req.root_link.strip() if req.root_link else config.default_root_url
+
+    template_id = drive_ops.extract_folder_id_from_url(t_link)
+    root_id = drive_ops.extract_folder_id_from_url(r_link)
+
+    if not template_id:
+        raise HTTPException(status_code=400, detail="Invalid or missing Template Folder URL / ID")
+    if not root_id:
+        raise HTTPException(status_code=400, detail="Invalid or missing Data Root Folder URL / ID")
+
+    try:
+        # Step 1: Always extract live template schema from Google Drive so changes are immediately caught
+        template_schema = extract_schema_from_drive_folder(template_id)
+        template_name = template_schema.get("name", "Archetype")
+        try:
+            db.save_template_schema(
+                name=template_name,
+                schema_dict=template_schema,
+                description=f"Archetype schema from {template_id}",
+                source_folder_id=template_id,
+            )
+        except Exception:
+            pass
+
+        # Step 2: Plan multi-entity reconciliation
+        plan = plan_entity_level_reconciliation(
+            data_root_id=root_id,
+            template_schema=template_schema,
+            template_name=template_name,
+            bypass_cache=req.bypass_cache,
+        )
+
+        duration_ms = round((time.time() - t0) * 1000, 1)
+
+        return {
+            "success": True,
+            "duration_ms": duration_ms,
+            "template_id": template_id,
+            "root_id": root_id,
+            "plan": plan.to_dict(),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing folder structure: {str(e)}")
+
+
+@app.post("/api/reconcile")
+def execute_reconcile(req: ReconcileRequest):
+    """
+    Executes live multi-part batch reconciliation against Google Drive:
+    1. Batch creates missing subfolders with template descriptions.
+    2. Batch updates description mismatches.
+    3. Batch trashes empty extraneous folders.
+    4. PRESERVES populated extraneous folders (Marked RED).
+    """
+    t0 = time.time()
+    try:
+        if req.plan:
+            multi_plan = MultiEntityReconciliationPlan.from_dict(req.plan)
+        else:
+            t_link = req.template_link.strip() if req.template_link else config.default_template_url
+            r_link = req.root_link.strip() if req.root_link else config.default_root_url
+            template_id = drive_ops.extract_folder_id_from_url(t_link)
+            root_id = drive_ops.extract_folder_id_from_url(r_link)
+            template_schema = extract_schema_from_drive_folder(template_id)
+            template_name = template_schema.get("name", "Archetype")
+            multi_plan = plan_entity_level_reconciliation(
+                data_root_id=root_id,
+                template_schema=template_schema,
+                template_name=template_name,
+                bypass_cache=True,
+            )
+
+        results = execute_multi_entity_reconciliation(multi_plan, dry_run=False)
+
+        # Clear cache for this root folder so subsequent scans reflect newly created/updated state
+        cache_key = f"{multi_plan.data_root_id}:{multi_plan.template_name}"
+        db.clear_folder_tree_cache(cache_key)
+
+        duration_ms = round((time.time() - t0) * 1000, 1)
+        results["duration_ms"] = duration_ms
+
+        return {
+            "success": True,
+            "results": results,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to execute live reconciliation: {str(e)}")
+
+
+@app.get("/api/history")
+def get_history():
+    """Returns recent reconciliation execution runs from SQLite."""
+    try:
+        logs = db.get_recent_reconciliations(limit=20)
+        return {
+            "success": True,
+            "history": logs,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read audit history: {str(e)}")
+
+
+@app.post("/api/cache/clear")
+def clear_cache():
+    """Wipes SQLite folder tree cache."""
+    try:
+        db.clear_folder_tree_cache()
+        return {"success": True, "message": "All SQLite folder tree cache cleared successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to clear cache: {str(e)}")
+
+
+@app.get("/api/template")
+def get_template(template_link: str = ""):
+    """Fetches the live hierarchical tree of the template folder and the SQLite tags vault."""
+    t0 = time.time()
+    t_link = template_link.strip() if template_link else config.default_template_url
+    template_id = drive_ops.extract_folder_id_from_url(t_link)
+    if not template_id:
+        raise HTTPException(status_code=400, detail="Invalid or missing Template Folder URL / ID")
+
+    try:
+        tree = drive_ops.get_hierarchical_tree(template_id)
+        vault_tags = db.load_vault_data()
+        duration_ms = round((time.time() - t0) * 1000, 1)
+        return {
+            "success": True,
+            "template_id": template_id,
+            "template_name": tree.get("name", "Archetype"),
+            "tree": tree,
+            "vault_tags": vault_tags,
+            "duration_ms": duration_ms,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load template tree: {str(e)}")
+
+
+@app.post("/api/template/save")
+def save_template(req: TemplateSaveRequest):
+    """
+    Applies additions, deletions, and metadata updates directly to Google Drive template archetype.
+    Automatically harvests new tags and updates SQLite schema records.
+    """
+    t0 = time.time()
+    t_link = req.template_link.strip() if req.template_link else config.default_template_url
+    template_id = drive_ops.extract_folder_id_from_url(t_link)
+    if not template_id:
+        raise HTTPException(status_code=400, detail="Invalid or missing Template Folder URL / ID")
+
+    created_count = 0
+    updated_count = 0
+    deleted_count = 0
+
+    try:
+        # 1. Process Deletions (safe trash)
+        for d in req.mutations.deletes:
+            if d.id and not d.id.startswith("temp_"):
+                drive_ops.trash_file(d.id)
+                deleted_count += 1
+
+        # 2. Process Updates (name and description)
+        for u in req.mutations.updates:
+            if u.id and not u.id.startswith("temp_"):
+                drive_ops.update_folder_meta(u.id, name=u.name, description=u.description)
+                updated_count += 1
+                if u.description:
+                    kvs, _ = logic.parse_description_to_key_values(u.description)
+                    if kvs:
+                        db.merge_harvested_tags(kvs, source_folder_id=u.id)
+
+        # 3. Process Additions (support multi-level nested folders)
+        id_map: Dict[str, str] = {template_id: template_id}
+        pending = list(req.mutations.creates)
+        while pending:
+            progress = False
+            next_pending = []
+            for c in pending:
+                parent = id_map.get(c.parent_id, c.parent_id)
+                if parent in id_map or not parent.startswith("temp_"):
+                    res = drive_ops.create_folder(c.name, parent_id=parent, description=c.description)
+                    new_id = res["id"]
+                    id_map[c.temp_id] = new_id
+                    created_count += 1
+                    progress = True
+                    if c.description:
+                        kvs, _ = logic.parse_description_to_key_values(c.description)
+                        if kvs:
+                            db.merge_harvested_tags(kvs, source_folder_id=new_id)
+                else:
+                    next_pending.append(c)
+
+            if not progress:
+                # Fallback: attach to root template
+                for c in next_pending:
+                    res = drive_ops.create_folder(c.name, parent_id=template_id, description=c.description)
+                    id_map[c.temp_id] = res["id"]
+                    created_count += 1
+                    if c.description:
+                        kvs, _ = logic.parse_description_to_key_values(c.description)
+                        if kvs:
+                            db.merge_harvested_tags(kvs, source_folder_id=res["id"])
+                break
+            pending = next_pending
+
+        # 4. Invalidate caches & update local schema record
+        db.clear_folder_tree_cache()
+        fresh_schema = extract_schema_from_drive_folder(template_id)
+        db.save_template_schema(
+            name=fresh_schema.get("name", "Archetype"),
+            schema_dict=fresh_schema,
+            description=f"Archetype schema from {template_id}",
+            source_folder_id=template_id,
+        )
+
+        # 5. Fetch fresh live tree and updated tags
+        fresh_tree = drive_ops.get_hierarchical_tree(template_id)
+        vault_tags = db.load_vault_data()
+        duration_ms = round((time.time() - t0) * 1000, 1)
+
+        return {
+            "success": True,
+            "duration_ms": duration_ms,
+            "created_count": created_count,
+            "updated_count": updated_count,
+            "deleted_count": deleted_count,
+            "tree": fresh_tree,
+            "vault_tags": vault_tags,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save template changes: {str(e)}")
+
+
+@app.get("/api/tags")
+def get_tags():
+    """Returns all metadata tag keys and values stored in SQLite."""
+    return {"success": True, "tags": db.load_vault_data()}
+
+
+@app.post("/api/tags/add")
+def add_tag(req: AddTagRequest):
+    """Adds a key-value tag to SQLite."""
+    ok = db.add_single_tag(req.tag_key, req.tag_value)
+    return {"success": ok, "tags": db.load_vault_data()}
+
+
+@app.post("/api/tags/delete")
+def delete_tag(req: DeleteTagRequest):
+    """Deletes a tag value or entire key from SQLite."""
+    if req.tag_value:
+        ok = db.delete_tag(req.tag_key, req.tag_value)
+    else:
+        ok = db.delete_key(req.tag_key) > 0
+    return {"success": ok, "tags": db.load_vault_data()}
+
+
+# =====================================================================
+# STATIC ASSETS (VITE BUILD FRONTEND)
+# =====================================================================
+frontend_dist = Path(__file__).resolve().parent / "frontend" / "dist"
+if frontend_dist.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server:app", host="0.0.0.0", port=10191, reload=True)
+

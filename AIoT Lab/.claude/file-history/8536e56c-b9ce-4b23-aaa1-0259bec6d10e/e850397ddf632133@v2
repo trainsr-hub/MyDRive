@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fluid Manifold · Liquid Accumulator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: radial-gradient(circle at 50% 30%, #0d1520 0%, #03060a 100%);
+  font-family: 'Segoe UI', system-ui, sans-serif; color: #e2e8f0; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+.hud {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 24px; z-index: 10;
+}
+.header { text-align: center; }
+.sub-title { font-size: 11px; letter-spacing: .25em; text-transform: uppercase; color: #10b981; font-weight: 700; }
+.main-title { font-size: 20px; font-weight: 800; letter-spacing: .1em; color: #ecfdf5; text-shadow: 0 0 16px rgba(16,185,129,0.4); }
+.tank-telemetry {
+  position: absolute; right: 30px; top: 50%; transform: translateY(-50%);
+  pointer-events: auto; display: flex; flex-direction: column; gap: 12px;
+  background: rgba(6, 15, 23, 0.85); border: 1px solid rgba(16,185,129,0.3);
+  padding: 16px 20px; border-radius: 14px;
+}
+.stat-row { display: flex; flex-direction: column; }
+.stat-lbl { font-size: 10px; letter-spacing: .15em; color: #6ee7b7; text-transform: uppercase; }
+.stat-num { font-size: 20px; font-weight: 800; font-family: monospace; color: #fff; }
+.controls { pointer-events: auto; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+.btn {
+  min-height: 52px; padding: 0 22px; background: rgba(6, 20, 29, 0.85);
+  border: 1.5px solid rgba(16,185,129,0.35); border-radius: 12px; color: #a7f3d0;
+  font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  cursor: pointer; transition: all .15s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:hover { background: #0f3b33; border-color: #34d399; color: #fff; box-shadow: 0 0 22px rgba(16,185,129,0.4); transform: translateY(-2px); }
+.btn:active { transform: translateY(1px); }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="header">
+    <div class="sub-title">Hydraulic Bio-Reservoir</div>
+    <div class="main-title">Volumetric Fluid Accumulator</div>
+  </div>
+  <div class="tank-telemetry">
+    <div class="stat-row"><span class="stat-lbl">Accumulated Volume</span><span class="stat-num" id="volVal">0 / 2,500 mL</span></div>
+    <div class="stat-row"><span class="stat-lbl">Hydrostatic Pressure</span><span class="stat-num" id="pressVal">1.02 bar</span></div>
+    <div class="stat-row"><span class="stat-lbl">Fluid Purity</span><span class="stat-num" style="color:#34d399;">99.8% Quantum</span></div>
+  </div>
+  <div class="controls">
+    <button class="btn" onclick="injectLiquid(10)">💧 Inject (+10%)</button>
+    <button class="btn" onclick="injectLiquid(30)">🌊 Flood Surge (+30%)</button>
+    <button class="btn" onclick="cycleFluid()">🧪 Swap Matrix</button>
+    <button class="btn" onclick="drainTank()">⚠️ Flush Purge</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const volValEl = document.getElementById('volVal'), pressValEl = document.getElementById('pressVal');
+let W, H, fillLevel = 0.15, targetLevel = 0.15, pouring = 0, fluidIdx = 0, bubbles = [], audioCtx = null;
+const TANK = { w: 220, h: 420 }, NODES = 42;
+const springs = Array.from({ length: NODES }, () => ({ y: 0, v: 0 }));
+const FLUIDS = [
+  { name: 'Emerald Nanite', color: '#10b981', glow: 'rgba(16,185,129,0.7)' },
+  { name: 'Cerulean Mana',  color: '#0ea5e9', glow: 'rgba(14,165,233,0.7)' },
+  { name: 'Crimson Plasma', color: '#f43f5e', glow: 'rgba(244,63,94,0.7)'  },
+  { name: 'Solar Ambrosia', color: '#f59e0b', glow: 'rgba(245,158,11,0.7)' }
+];
+
+function playBubbleSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = 'sine'; const f = 400 + Math.random() * 400;
+    osc.frequency.setValueAtTime(f, t); osc.frequency.exponentialRampToValueAtTime(f * 1.6, t + 0.08);
+    gain.gain.setValueAtTime(0.08, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.08);
+  } catch(e) {}
+}
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+resize();
+
+function injectLiquid(pct) {
+  targetLevel = Math.min(1.0, targetLevel + pct / 100);
+  pouring = 35; springs[Math.floor(NODES / 2)].v = 18; playBubbleSound();
+}
+function drainTank() { targetLevel = 0.05; springs[Math.floor(NODES / 2)].v = -14; }
+function cycleFluid() { fluidIdx = (fluidIdx + 1) % FLUIDS.length; }
+
+function updateSprings() {
+  for (let i = 0; i < NODES; i++) {
+    springs[i].v += -0.03 * springs[i].y - 0.035 * springs[i].v;
+    springs[i].y += springs[i].v;
+  }
+  for (let j = 0; j < 4; j++) {
+    for (let i = 0; i < NODES; i++) {
+      if (i > 0) springs[i - 1].v += 0.08 * (springs[i].y - springs[i - 1].y);
+      if (i < NODES - 1) springs[i + 1].v += 0.08 * (springs[i].y - springs[i + 1].y);
+    }
+  }
+}
+
+function updateBubbles(tx, ty, surfaceY) {
+  if (Math.random() < 0.25 && fillLevel > 0.08) {
+    bubbles.push({ x: tx + 15 + Math.random() * (TANK.w - 30), y: ty + TANK.h - 15, r: 2 + Math.random() * 4, vy: 1.2 + Math.random() * 2 });
+  }
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+    bubbles[i].y -= bubbles[i].vy;
+    if (bubbles[i].y <= surfaceY) { playBubbleSound(); bubbles.splice(i, 1); }
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  fillLevel += (targetLevel - fillLevel) * 0.08;
+  updateSprings();
+
+  const cx = W / 2, cy = H / 2, tx = cx - TANK.w / 2, ty = cy - TANK.h / 2;
+  const currentFluid = FLUIDS[fluidIdx], fluidH = TANK.h * fillLevel, surfaceBaseY = ty + TANK.h - fluidH;
+
+  if (pouring > 0) {
+    pouring--; ctx.save();
+    ctx.beginPath(); ctx.moveTo(cx - 3, ty - 60); ctx.lineTo(cx + 3, ty - 60);
+    ctx.lineTo(cx + 4, surfaceBaseY); ctx.lineTo(cx - 4, surfaceBaseY);
+    ctx.fillStyle = currentFluid.color; ctx.shadowColor = currentFluid.glow; ctx.shadowBlur = 15; ctx.fill();
+    ctx.restore();
+    if (Math.random() < 0.3) springs[Math.floor(NODES / 2)].v += 4;
+  }
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(10, 20, 32, 0.6)'; ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(tx, ty, TANK.w, TANK.h, 24); ctx.fill(); ctx.stroke();
+
+  ctx.save(); ctx.beginPath(); ctx.roundRect(tx, ty, TANK.w, TANK.h, 24); ctx.clip();
+  const step = TANK.w / (NODES - 1);
+  ctx.beginPath(); ctx.moveTo(tx, ty + TANK.h);
+  for (let i = 0; i < NODES; i++) ctx.lineTo(tx + i * step, surfaceBaseY + springs[i].y);
+  ctx.lineTo(tx + TANK.w, ty + TANK.h); ctx.closePath();
+
+  const lGrad = ctx.createLinearGradient(0, surfaceBaseY, 0, ty + TANK.h);
+  lGrad.addColorStop(0, currentFluid.color); lGrad.addColorStop(1, 'rgba(3, 8, 14, 0.95)');
+  ctx.fillStyle = lGrad; ctx.shadowColor = currentFluid.glow; ctx.shadowBlur = 24; ctx.fill();
+
+  updateBubbles(tx, ty, surfaceBaseY);
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  for (const b of bubbles) { ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+  for (let y = ty + 30; y < ty + TANK.h - 20; y += 40) {
+    ctx.beginPath(); ctx.moveTo(tx + 8, y); ctx.lineTo(tx + 22, y); ctx.stroke();
+  }
+  ctx.restore();
+
+  volValEl.textContent = `${Math.round(fillLevel * 2500).toLocaleString()} / 2,500 mL`;
+  pressValEl.textContent = `${(1.0 + fillLevel * 2.4).toFixed(2)} bar`;
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

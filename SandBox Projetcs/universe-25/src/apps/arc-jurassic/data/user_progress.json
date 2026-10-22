@@ -1,0 +1,136 @@
+{
+    "owned_dinos": {
+        "diplocaulus": {
+            "number": 2,
+            "rank": 2
+        },
+        "guanlong": {
+            "number": 3,
+            "rank": 2
+        },
+        "compsognathus_jp2": {
+            "number": 0,
+            "rank": 0
+        },
+        "carnotaurus_toy": {
+            "number": 0,
+            "rank": 0
+        },
+        "haast_eagle": {
+            "number": 0,
+            "rank": 0
+        },
+        "major": {
+            "number": 0,
+            "rank": 0
+        },
+        "angel": {
+            "number": 0,
+            "rank": 0
+        },
+        "compsognathus_gen_2": {
+            "number": 0,
+            "rank": 0
+        },
+        "little_eatie": {
+            "number": 0,
+            "rank": 0
+        },
+        "ceratosaurus_gen_2": {
+            "number": 0,
+            "rank": 0
+        },
+        "dakotaraptor": {
+            "number": 0,
+            "rank": 0
+        },
+        "zhejiangopterus": {
+            "number": 0,
+            "rank": 0
+        },
+        "dreadactylus": {
+            "number": 0,
+            "rank": 0
+        },
+        "compsovenator": {
+            "number": 0,
+            "rank": 0
+        },
+        "kaprodacthylus": {
+            "number": 0,
+            "rank": 0
+        },
+        "fukuimimus": {
+            "number": 0,
+            "rank": 0
+        },
+        "argentinosaurus": {
+            "number": 2,
+            "rank": 2
+        },
+        "hatzegopteryx": {
+            "number": 2,
+            "rank": 2
+        },
+        "bonitasaura": {
+            "number": 1,
+            "rank": 1
+        },
+        "tropeognathus": {
+            "number": 1,
+            "rank": 1
+        },
+        "stegosaurus": {
+            "number": 0,
+            "rank": 0
+        },
+        "alangasaurus": {
+            "number": 0,
+            "rank": 0
+        },
+        "chromaspinus": {
+            "number": 0,
+            "rank": 0
+        },
+        "indominus_rex_gen_2": {
+            "number": 0,
+            "rank": 0
+        },
+        "dilophoboa": {
+            "number": 0,
+            "rank": 0
+        },
+        "beta": {
+            "number": 0,
+            "rank": 0
+        },
+        "blue": {
+            "number": 0,
+            "rank": 0
+        },
+        "juggernaut_32": {
+            "number": 0,
+            "rank": 0
+        },
+        "homalocephale": {
+            "number": 0,
+            "rank": 0
+        },
+        "triceratops": {
+            "number": 0,
+            "rank": 0
+        },
+        "alanqa": {
+            "number": 1,
+            "rank": 1
+        },
+        "tuojiangosaurus": {
+            "number": 1,
+            "rank": 1
+        },
+        "pelecanimimus": {
+            "number": 2,
+            "rank": 2
+        }
+    }
+}

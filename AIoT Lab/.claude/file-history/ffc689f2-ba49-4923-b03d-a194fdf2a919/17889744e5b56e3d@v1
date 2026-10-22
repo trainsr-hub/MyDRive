@@ -1,0 +1,1840 @@
+<!-- ui-test-standalone.html -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Project Entry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+  <style>
+    /* ========================================================================
+       DESIGN SYSTEM TOKENS
+       ======================================================================== */
+    :root {
+      --bg-canvas:      #0a0908;
+      --bg-card:        #15110d;
+      --bg-card-hover:  #1f1813;
+      --bg-input:       #1c1611;
+      --bg-input-focus: #28201a;
+      --bg-row-hover:   #1a1410;
+      --bg-row-active:  #1f1a0f;
+
+      --text-primary:   #fefdfb;
+      --text-secondary: #e8ddd0;
+      --text-tertiary:  #8f7f6e;
+      --text-dim:       #6a5d4f;
+
+      --border-light:   #3a2d23;
+      --border-mid:     #4d3d30;
+      --border-table:   #2a201a;
+
+      --accent:         #ff9e1b;
+      --accent-hover:   #ffb03a;
+      --accent-glow:    rgba(255, 158, 27, 0.3);
+      --accent-bg:      rgba(255, 158, 27, 0.12);
+
+      --success:  #10b981;
+      --warning:  #f59e0b;
+      --danger:   #f43f5e;
+
+      /* Type category colors */
+      --c-pk:      #38bdf8;
+      --c-text:    #10b981;
+      --c-scalar:  #f59e0b;
+      --c-boolean: #a78bfa;
+      --c-enum:    #f43f5e;
+      --c-rel:     #ff9e1b;
+
+      --font-display: "IBM Plex Sans", system-ui, sans-serif;
+      --font-body:    "IBM Plex Sans", system-ui, sans-serif;
+      --font-mono:    "IBM Plex Mono", monospace;
+      --base-font-size: 15px;
+
+      --gap-xs: 0.5rem;
+      --gap-sm: 0.75rem;
+      --gap-md: 1.25rem;
+      --gap-lg: 2rem;
+      --gap-xl: 3rem;
+
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+
+      --input-height: 42px;
+
+      --sidebar-width: 400px;
+      --sidebar-anim: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+
+      color-scheme: dark;
+    }
+
+    :root[data-theme="light"] {
+      --bg-canvas:      #faf8f5;
+      --bg-card:        #fff8f3;
+      --bg-card-hover:  #fff0e8;
+      --bg-input:       #f5ede5;
+      --bg-input-focus: #fff8f3;
+      --bg-row-hover:   #fdf4ec;
+      --bg-row-active:  #fff3e0;
+
+      --text-primary:   #18130e;
+      --text-secondary: #382f26;
+      --text-tertiary:  #6b5a49;
+      --text-dim:       #9e8c79;
+
+      --border-light:   #e8dccf;
+      --border-mid:     #d9cabc;
+      --border-table:   #ede4da;
+
+      --accent:         #d97706;
+      --accent-hover:   #b45309;
+      --accent-bg:      rgba(217, 119, 6, 0.10);
+
+      color-scheme: light;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --bg-canvas:      #faf8f5;
+        --bg-card:        #fff8f3;
+        --bg-card-hover:  #fff0e8;
+        --bg-input:       #f5ede5;
+        --bg-input-focus: #fff8f3;
+        --bg-row-hover:   #fdf4ec;
+        --bg-row-active:  #fff3e0;
+        --text-primary:   #18130e;
+        --text-secondary: #382f26;
+        --text-tertiary:  #6b5a49;
+        --text-dim:       #9e8c79;
+        --border-light:   #e8dccf;
+        --border-mid:     #d9cabc;
+        --border-table:   #ede4da;
+        --accent:         #d97706;
+        --accent-hover:   #b45309;
+        --accent-bg:      rgba(217, 119, 6, 0.10);
+        color-scheme: light;
+      }
+    }
+
+    /* ========================================================================
+       RESET
+       ======================================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-secondary);
+      font: var(--base-font-size) var(--font-body);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* ========================================================================
+       APP SHELL
+       ======================================================================== */
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ========================================================================
+       HEADER
+       ======================================================================== */
+    .app-header {
+      flex-shrink: 0;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-light);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .app-title {
+      font: 700 1.35rem var(--font-display);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      white-space: nowrap;
+    }
+
+    .badge {
+      font: 600 0.72rem var(--font-mono);
+      color: var(--accent);
+      background: var(--accent-bg);
+      border: 1px solid var(--accent);
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .header-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border-mid);
+      flex-shrink: 0;
+    }
+
+    /* Table tabs */
+    .table-tabs {
+      display: flex;
+      gap: 0.25rem;
+      flex: 1;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 0.4rem 0.9rem;
+      font: 500 13px var(--font-body);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      outline: none;
+    }
+
+    .tab-btn:hover {
+      background: var(--bg-input);
+      color: var(--text-secondary);
+      border-color: var(--border-light);
+    }
+
+    .tab-btn.active {
+      background: var(--accent-bg);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .tab-btn.new-table {
+      border-style: dashed;
+      border-color: var(--border-mid);
+      color: var(--text-dim);
+    }
+
+    .tab-btn.new-table:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    /* Header actions */
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    /* ========================================================================
+       BUTTONS
+       ======================================================================== */
+    button { font: inherit; cursor: pointer; border: none; outline: none; transition: all 0.12s ease; border-radius: var(--radius-md); }
+
+    .btn {
+      height: 36px;
+      padding: 0 1rem;
+      font-weight: 600;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      color: var(--text-secondary);
+      border-radius: var(--radius-md);
+    }
+
+    .btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-mid);
+      color: var(--text-primary);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0a0908;
+      font-weight: 700;
+    }
+
+    .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+    .btn.danger {
+      background: rgba(244, 63, 94, 0.1);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: var(--danger);
+    }
+
+    .btn.danger:hover {
+      background: rgba(244, 63, 94, 0.2);
+      border-color: var(--danger);
+    }
+
+    .btn.ghost {
+      background: transparent;
+      border-color: transparent;
+      color: var(--text-tertiary);
+    }
+
+    .btn.ghost:hover { background: var(--bg-input); color: var(--text-secondary); }
+
+    .btn.sm { height: 30px; padding: 0 0.7rem; font-size: 12px; }
+    .btn.icon-only { width: 36px; padding: 0; justify-content: center; }
+    .btn.icon-only.sm { width: 30px; }
+
+    /* ========================================================================
+       TOOLBAR (below header, above table) — two compact rows
+       ======================================================================== */
+    .toolbar {
+      flex-shrink: 0;
+      background: var(--bg-canvas);
+      border-bottom: 1px solid var(--border-table);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Row 1: Filter bar */
+    .toolbar-row {
+      padding: 0.45rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border-table);
+    }
+
+    .toolbar-row:last-child { border-bottom: none; }
+
+    /* Row 2: Order strip — single horizontal scrollable line */
+    .toolbar-order-row {
+      padding: 0.35rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .toolbar-order-row::-webkit-scrollbar { display: none; }
+
+    .toolbar-label {
+      font: 600 10px var(--font-mono);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 14px;
+      background: var(--border-light);
+      flex-shrink: 0;
+    }
+
+    /* Filter buttons in toolbar */
+    .filter-btn {
+      padding: 0.3rem 0.7rem;
+      font: 500 12px var(--font-body);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+
+    .filter-btn:hover {
+      background: var(--bg-input);
+      color: var(--text-secondary);
+    }
+
+    .filter-btn.active {
+      background: var(--accent-bg);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Column order tokens (compact, single-row scrollable) */
+    .token-strip {
+      display: flex;
+      gap: 0.3rem;
+      align-items: center;
+      flex-wrap: nowrap;   /* single row — parent scrolls */
+      position: relative;
+    }
+
+    .col-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      padding: 0.2rem 0.45rem;
+      font: 500 11px var(--font-body);
+      color: var(--text-secondary);
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+      will-change: transform;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1),
+                  box-shadow 0.15s ease,
+                  border-color 0.15s ease;
+    }
+
+    .col-chip:hover { border-color: var(--border-mid); background: var(--bg-card-hover); }
+
+    .col-chip.is-dragging {
+      position: fixed;
+      z-index: 9999;
+      cursor: grabbing !important;
+      opacity: 0.95;
+      border-color: var(--accent);
+      background: var(--bg-card-hover);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 0 2px var(--accent);
+      pointer-events: none;
+      transition: none;
+    }
+
+    .chip-placeholder {
+      display: inline-flex;
+      border: 2px dashed var(--accent);
+      background: var(--accent-bg);
+      border-radius: 4px;
+      box-sizing: border-box;
+      pointer-events: none;
+      transition: width 0.2s cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    .col-chip .chip-handle { font-size: 10px; color: var(--text-dim); letter-spacing: -1px; }
+    .col-chip .chip-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ========================================================================
+       WORKSPACE (table + sidebar)
+       ======================================================================== */
+    .workspace {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ========================================================================
+       TABLE AREA
+       ======================================================================== */
+    .table-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: auto;
+      padding: 0;
+      transition: flex 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Notion-style table */
+    .notion-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    /* Smooth hide for slug/sql cells */
+    .notion-table .col-slug,
+    .notion-table .col-sql {
+      transition: opacity 0.18s ease;
+    }
+    .sidebar-open .notion-table .col-slug,
+    .sidebar-open .notion-table .col-sql {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Default column widths (sidebar closed) */
+    .notion-table colgroup col:nth-child(1) { width: 48px; }
+    .notion-table colgroup col:nth-child(2) { width: auto; }
+    .notion-table colgroup col:nth-child(3) { width: 160px; }
+    .notion-table colgroup col:nth-child(4) { width: 140px; }
+    .notion-table colgroup col:nth-child(5) { width: 190px; }
+    .notion-table colgroup col:nth-child(6) { width: 88px; }
+
+    /* Sidebar open: hide Slug & SQL columns to free space, keep Name + Type */
+    .sidebar-open .notion-table colgroup col:nth-child(4) { width: 0; }
+    .sidebar-open .notion-table colgroup col:nth-child(5) { width: 0; }
+    .sidebar-open .notion-table colgroup col:nth-child(6) { width: 52px; }
+    .sidebar-open .notion-table .col-slug { display: none; }
+    .sidebar-open .notion-table .col-sql  { display: none; }
+    .sidebar-open .notion-table .th-slug  { display: none; }
+    .sidebar-open .notion-table .th-sql   { display: none; }
+
+    /* Table head */
+    .notion-table thead th {
+      padding: 0.55rem 0.75rem;
+      text-align: left;
+      font: 600 11px var(--font-mono);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border-table);
+      background: var(--bg-canvas);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .notion-table thead th:first-child { text-align: center; }
+
+    /* Table body rows */
+    .notion-table tbody tr {
+      border-bottom: 1px solid var(--border-table);
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+
+    .notion-table tbody tr:hover:not(.row-add) { background: var(--bg-row-hover); }
+
+    .notion-table tbody tr.selected {
+      background: var(--bg-row-active);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    /* Table cells */
+    .notion-table tbody td {
+      padding: 0 0.75rem;
+      height: 44px;
+      vertical-align: middle;
+      border-right: 1px solid var(--border-table);
+      font-size: 13.5px;
+    }
+
+    .notion-table tbody td:last-child { border-right: none; }
+
+    /* Row number cell */
+    .td-num {
+      text-align: center;
+      font: 500 11px var(--font-mono);
+      color: var(--text-dim);
+    }
+
+    /* Row hover shows expand icon in num cell */
+    .notion-table tbody tr:hover .td-num .row-num { display: none; }
+    .notion-table tbody tr:hover .td-num .row-expand { display: inline; }
+    .td-num .row-expand { display: none; font-size: 14px; color: var(--accent); }
+
+    /* Name cell */
+    .td-name {
+      font-weight: 500;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      max-width: 100%;
+    }
+
+    .col-icon { font-size: 15px; flex-shrink: 0; }
+    .col-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Type chip */
+    .type-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      font: 600 11.5px var(--font-mono);
+      white-space: nowrap;
+      border: 1px solid;
+    }
+
+    /* Category color variants */
+    .type-chip.pk      { color: var(--c-pk);      background: rgba(56,189,248,0.10); border-color: rgba(56,189,248,0.35); }
+    .type-chip.text    { color: var(--c-text);    background: rgba(16,185,129,0.10); border-color: rgba(16,185,129,0.35); }
+    .type-chip.scalar  { color: var(--c-scalar);  background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.35); }
+    .type-chip.boolean { color: var(--c-boolean); background: rgba(167,139,250,0.10); border-color: rgba(167,139,250,0.35); }
+    .type-chip.enum    { color: var(--c-enum);    background: rgba(244,63,94,0.10);  border-color: rgba(244,63,94,0.35); }
+    .type-chip.rel     { color: var(--c-rel);     background: rgba(255,158,27,0.10); border-color: rgba(255,158,27,0.35); }
+
+    /* Slug cell */
+    .td-slug {
+      font: 500 12px var(--font-mono);
+      color: var(--text-tertiary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* SQL cell */
+    .td-sql {
+      font: 400 11.5px var(--font-mono);
+      color: var(--text-dim);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Action cell */
+    .td-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      justify-content: flex-end;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+    }
+
+    .notion-table tbody tr:hover .td-actions { opacity: 1; }
+
+    /* Add row */
+    .row-add td {
+      padding: 0.5rem 0.75rem;
+      cursor: default;
+    }
+
+    .row-add:hover { background: transparent !important; }
+
+    .add-field-strip {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 0.4rem 0;
+    }
+
+    .add-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.3rem 0.65rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      font: 500 12px var(--font-body);
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+
+    .add-chip:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Empty state */
+    .table-empty {
+      padding: 3rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    /* ========================================================================
+       FIELD EDITOR SIDEBAR
+       ======================================================================== */
+    .field-sidebar {
+      flex-shrink: 0;
+      width: 0;
+      overflow: hidden;
+      background: var(--bg-card);
+      border-left: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      transition: width var(--sidebar-anim);
+    }
+
+    .field-sidebar.open {
+      width: var(--sidebar-width);
+    }
+
+    .sidebar-inner {
+      width: var(--sidebar-width);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* Sidebar header */
+    .sidebar-head {
+      flex-shrink: 0;
+      padding: 1rem 1.25rem 0.75rem;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidebar-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .sidebar-col-label {
+      font: 700 14px var(--font-body);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow: hidden;
+    }
+
+    .sidebar-col-label .col-num {
+      font: 500 11px var(--font-mono);
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .sidebar-col-label .col-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      gap: 0.25rem;
+      align-items: center;
+    }
+
+    /* Sidebar tabs */
+    .sidebar-tabs {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .stab-btn {
+      padding: 0.3rem 0.7rem;
+      font: 600 11px var(--font-mono);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      color: var(--text-dim);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      transition: all 0.12s ease;
+    }
+
+    .stab-btn:hover { background: var(--bg-input); color: var(--text-secondary); }
+
+    .stab-btn.active {
+      background: var(--accent-bg);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Sidebar body */
+    .sidebar-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* Sidebar panels */
+    .sidebar-panel { display: none; flex-direction: column; gap: 1.25rem; }
+    .sidebar-panel.active { display: flex; }
+
+    /* Field groups */
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .field-label {
+      font: 600 11px var(--font-mono);
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .field-hint {
+      font: 400 11px var(--font-body);
+      color: var(--text-dim);
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    select,
+    textarea {
+      height: var(--input-height);
+      padding: 0 0.85rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 14px;
+      transition: all 0.12s ease;
+      resize: none;
+      width: 100%;
+    }
+
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      background: var(--bg-input-focus);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      outline: none;
+    }
+
+    textarea {
+      height: 90px;
+      padding: 0.65rem 0.85rem;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='8' height='6' viewBox='0 0 8 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23ff9e1b' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 2rem;
+      cursor: pointer;
+    }
+
+    /* Enum options */
+    .options-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .option-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--accent-bg);
+      border: 1px solid rgba(255,158,27,0.3);
+      color: var(--accent);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+
+    .option-pill button {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 0;
+      line-height: 1;
+      opacity: 0.7;
+    }
+
+    .option-pill button:hover { opacity: 1; }
+
+    /* Section divider */
+    .section-sep {
+      height: 1px;
+      background: var(--border-light);
+    }
+
+    /* Sidebar footer */
+    .sidebar-footer {
+      flex-shrink: 0;
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--border-light);
+    }
+
+    /* Code view (inspector) */
+    .code-block {
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .code-block-head {
+      padding: 0.5rem 0.85rem;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border-light);
+      font: 600 11px var(--font-mono);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .code-pre {
+      padding: 0.85rem;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+      overflow-x: auto;
+      max-height: 380px;
+      overflow-y: auto;
+      white-space: pre;
+    }
+
+    /* ========================================================================
+       TOAST
+       ======================================================================== */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--accent);
+      color: #0a0908;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 0.7rem 1.25rem;
+      border-radius: var(--radius-md);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 99999;
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: all 0.22s ease;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ========================================================================
+       SCROLLBAR STYLING
+       ======================================================================== */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+    /* ========================================================================
+       RESPONSIVE
+       ======================================================================== */
+    @media (max-width: 768px) {
+      :root { --sidebar-width: 100vw; }
+      .field-sidebar.open { width: 100vw; position: fixed; right: 0; top: 0; bottom: 0; z-index: 200; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app-shell">
+
+  <!-- ======= HEADER ======= -->
+  <header class="app-header">
+    <div class="app-title">
+      <span>Project</span>
+      <span class="badge">Entry</span>
+    </div>
+    <div class="header-divider"></div>
+
+    <!-- Table tabs -->
+    <nav class="table-tabs" id="table-tabs"></nav>
+
+    <div class="header-actions">
+      <button class="btn primary" onclick="saveTable()">💾 Save</button>
+      <button class="btn" onclick="syncSqlite()">⚡ Sync</button>
+      <button class="btn" onclick="toggleTheme()">🌓</button>
+    </div>
+  </header>
+
+  <!-- ======= TOOLBAR ======= -->
+  <div class="toolbar" id="toolbar">
+    <!-- Row 1: Filter + meta -->
+    <div class="toolbar-row">
+      <span class="toolbar-label">Filter</span>
+      <div id="filter-bar" style="display:flex;gap:0.3rem;flex-wrap:wrap;"></div>
+      <div class="toolbar-divider"></div>
+      <span id="col-count-label" style="font:500 11px var(--font-mono);color:var(--text-dim);white-space:nowrap;"></span>
+      <span style="font:500 11px var(--font-mono);color:var(--text-dim);">·</span>
+      <span style="font:500 11px var(--font-body);color:var(--text-tertiary);cursor:pointer;" id="table-name-display" onclick="promptRenameTable()"></span>
+    </div>
+    <!-- Row 2: Column order chips (horizontal scroll) -->
+    <div class="toolbar-order-row">
+      <span class="toolbar-label" style="flex-shrink:0;">Order</span>
+      <div class="token-strip" id="token-strip"></div>
+    </div>
+  </div>
+
+  <!-- ======= WORKSPACE ======= -->
+  <div class="workspace">
+
+    <!-- Table area -->
+    <div class="table-area" id="table-area">
+      <table class="notion-table" id="notion-table">
+        <colgroup>
+          <col><col><col><col><col><col>
+        </colgroup>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Column Name</th>
+            <th>Type</th>
+            <th class="th-slug">Slug</th>
+            <th class="th-sql">SQL Type</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Field editor sidebar -->
+    <aside class="field-sidebar" id="field-sidebar">
+      <div class="sidebar-inner">
+
+        <!-- Sidebar head -->
+        <div class="sidebar-head">
+          <div class="sidebar-head-row">
+            <div class="sidebar-col-label" id="sidebar-col-label">
+              <span class="col-num" id="sb-col-num">#1</span>
+              <span id="sb-col-icon"></span>
+              <span class="col-title" id="sb-col-title">Column</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.25rem;">
+              <div class="sidebar-nav">
+                <button class="btn ghost icon-only sm" onclick="navigateSidebar(-1)" title="Previous column">◀</button>
+                <button class="btn ghost icon-only sm" onclick="navigateSidebar(1)" title="Next column">▶</button>
+              </div>
+              <button class="btn ghost icon-only" onclick="closeSidebar()" title="Close (Esc)">✕</button>
+            </div>
+          </div>
+          <div class="sidebar-tabs">
+            <button class="stab-btn active" onclick="switchSidebarTab('edit', this)">Edit</button>
+            <button class="stab-btn" onclick="switchSidebarTab('sql', this)">SQL</button>
+            <button class="stab-btn" onclick="switchSidebarTab('json', this)">JSON</button>
+          </div>
+        </div>
+
+        <!-- Sidebar body -->
+        <div class="sidebar-body">
+
+          <!-- Edit panel -->
+          <div class="sidebar-panel active" id="sp-edit">
+
+            <div class="field-group">
+              <label class="field-label">Column Name</label>
+              <input type="text" id="sb-name" placeholder="e.g. User ID"
+                oninput="sbUpdateName(this.value)">
+            </div>
+
+            <div class="field-group">
+              <label class="field-label">Slug <span class="field-hint">(database key)</span></label>
+              <input type="text" id="sb-slug" placeholder="e.g. user_id"
+                style="font-family: var(--font-mono); font-size: 13px;"
+                oninput="sbUpdateSlug(this.value)">
+            </div>
+
+            <div class="field-group">
+              <label class="field-label">Field Type</label>
+              <select id="sb-type" onchange="sbUpdateType(this.value)"></select>
+            </div>
+
+            <div class="section-sep"></div>
+
+            <!-- Dynamic metadata section -->
+            <div id="sb-meta"></div>
+
+          </div>
+
+          <!-- SQL panel -->
+          <div class="sidebar-panel" id="sp-sql">
+            <div class="code-block">
+              <div class="code-block-head">
+                <span id="sql-title">CREATE TABLE</span>
+                <button class="btn sm ghost" onclick="copyCode('sql-code')">📋 Copy</button>
+              </div>
+              <pre class="code-pre" id="sql-code"></pre>
+            </div>
+          </div>
+
+          <!-- JSON panel -->
+          <div class="sidebar-panel" id="sp-json">
+            <div class="code-block">
+              <div class="code-block-head">
+                <span id="json-title">JSON Schema</span>
+                <button class="btn sm ghost" onclick="copyCode('json-code')">📋 Copy</button>
+              </div>
+              <pre class="code-pre" id="json-code"></pre>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Sidebar footer -->
+        <div class="sidebar-footer">
+          <button class="btn danger" style="width:100%;" onclick="sbDeleteColumn()">
+            🗑 Delete Column
+          </button>
+        </div>
+
+      </div>
+    </aside>
+
+  </div><!-- end .workspace -->
+
+</div><!-- end .app-shell -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   DATA MODEL
+   ============================================================ */
+
+const FIELD_TYPES = {
+  hex_id:          { category: 'pk',      icon: '🔑', title: 'Hex ID',          sql: 'TEXT PRIMARY KEY' },
+  text_single:     { category: 'text',    icon: '📝', title: 'Text (single)',    sql: 'TEXT' },
+  text_multi:      { category: 'text',    icon: '📋', title: 'Text (multi)',     sql: 'TEXT' },
+  int_scalar:      { category: 'scalar',  icon: '🔢', title: 'Integer',         sql: 'INTEGER' },
+  float_scalar:    { category: 'scalar',  icon: '🔢', title: 'Float',           sql: 'REAL' },
+  boolean:         { category: 'boolean', icon: '🔘', title: 'Boolean',         sql: 'INTEGER DEFAULT 0' },
+  enum_single:     { category: 'enum',    icon: '🏷️', title: 'Enum (single)',   sql: 'TEXT' },
+  enum_multi:      { category: 'enum',    icon: '🏷️', title: 'Enum (multi)',    sql: 'TEXT (JSON)' },
+  relation_single: { category: 'rel',     icon: '🔗', title: 'Relation (→1)',   sql: 'TEXT' },
+  relation_multi:  { category: 'rel',     icon: '🔗', title: 'Relation (→N)',   sql: 'TEXT (JSON)' },
+};
+
+const MOCK_DATA = {
+  users: {
+    table_name: 'users',
+    columns: [
+      { name: 'User ID',   slug: 'id',          type: 'hex_id',          metadata: { prefix: 'USER' } },
+      { name: 'Username',  slug: 'username',     type: 'text_single',     metadata: {} },
+      { name: 'Email',     slug: 'email',        type: 'text_single',     metadata: {} },
+      { name: 'Bio',       slug: 'bio',          type: 'text_multi',      metadata: {} },
+      { name: 'Age',       slug: 'age',          type: 'int_scalar',      metadata: {} },
+      { name: 'Balance',   slug: 'balance',      type: 'float_scalar',    metadata: {} },
+      { name: 'Active',    slug: 'is_active',    type: 'boolean',         metadata: {} },
+      { name: 'Role',      slug: 'role',         type: 'enum_single',     metadata: { options: ['admin', 'editor', 'viewer'] } },
+      { name: 'Tags',      slug: 'tags',         type: 'enum_multi',      metadata: { options: ['premium', 'verified', 'staff'] } },
+      { name: 'Manager',   slug: 'manager_id',   type: 'relation_single', metadata: { target: 'users' } },
+      { name: 'Projects',  slug: 'project_ids',  type: 'relation_multi',  metadata: { target: 'projects' } },
+    ]
+  },
+  projects: {
+    table_name: 'projects',
+    columns: [
+      { name: 'Project ID',   slug: 'id',          type: 'hex_id',          metadata: { prefix: 'PROJ' } },
+      { name: 'Title',         slug: 'title',        type: 'text_single',     metadata: {} },
+      { name: 'Description',   slug: 'description',  type: 'text_multi',      metadata: {} },
+      { name: 'Budget',        slug: 'budget',        type: 'float_scalar',    metadata: {} },
+      { name: 'Status',        slug: 'status',        type: 'enum_single',     metadata: { options: ['planning', 'active', 'completed'] } },
+      { name: 'Public',        slug: 'is_public',     type: 'boolean',         metadata: {} },
+      { name: 'Owner',         slug: 'owner_id',      type: 'relation_single', metadata: { target: 'users' } },
+      { name: 'Team Members',  slug: 'member_ids',    type: 'relation_multi',  metadata: { target: 'users' } },
+    ]
+  }
+};
+
+let tables = JSON.parse(JSON.stringify(MOCK_DATA));
+let activeTable  = 'users';
+let activeFilter = 'all';
+let activeSidebarTab = 'edit';
+let activeColIdx = null;   // currently selected column index
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init() {
+  renderTableTabs();
+  renderFilterBar();
+  renderTable();
+  renderTokenStrip();
+  updateColCountLabel();
+
+  // Keyboard: Escape closes sidebar
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeSidebar();
+    if (e.key === 'ArrowLeft'  && activeColIdx !== null) navigateSidebar(-1);
+    if (e.key === 'ArrowRight' && activeColIdx !== null) navigateSidebar(1);
+  });
+}
+
+/* ============================================================
+   TABLE TABS
+   ============================================================ */
+function renderTableTabs() {
+  const container = document.getElementById('table-tabs');
+  const names = Object.keys(tables);
+  container.innerHTML = names.map(name => `
+    <button class="tab-btn ${name === activeTable ? 'active' : ''}" onclick="switchTable('${name}')">
+      📁 ${name}
+    </button>
+  `).join('') + `
+    <button class="tab-btn new-table" onclick="createTable()">+ New Table</button>
+  `;
+}
+
+function switchTable(name) {
+  if (!tables[name]) return;
+  activeTable = name;
+  activeColIdx = null;
+  closeSidebar();
+  renderTableTabs();
+  renderFilterBar();
+  renderTable();
+  renderTokenStrip();
+  updateColCountLabel();
+}
+
+function createTable() {
+  const name = prompt('Table name (e.g., tasks, inventory):');
+  if (!name) return;
+  const clean = name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  if (tables[clean]) { alert('Table already exists'); return; }
+  tables[clean] = {
+    table_name: clean,
+    columns: [{ name: 'ID', slug: 'id', type: 'hex_id', metadata: { prefix: clean.substring(0, 4).toUpperCase() } }]
+  };
+  switchTable(clean);
+  showToast(`Created table "${clean}"`);
+}
+
+function promptRenameTable() {
+  const current = tables[activeTable].table_name;
+  const next = prompt('Rename table:', current);
+  if (!next || next === current) return;
+  const clean = next.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  tables[activeTable].table_name = clean;
+  renderTable();
+  document.getElementById('table-name-display').textContent = clean;
+  showToast(`Renamed to "${clean}"`);
+}
+
+function updateColCountLabel() {
+  const t = tables[activeTable];
+  if (!t) return;
+  document.getElementById('col-count-label').textContent = `${t.columns.length} columns`;
+  document.getElementById('table-name-display').textContent = t.table_name;
+}
+
+/* ============================================================
+   FILTER BAR
+   ============================================================ */
+function renderFilterBar() {
+  const cats = ['all', 'pk', 'text', 'scalar', 'boolean', 'enum', 'rel'];
+  const icons = { all: '📊', pk: '🔑', text: '📝', scalar: '🔢', boolean: '🔘', enum: '🏷️', rel: '🔗' };
+  document.getElementById('filter-bar').innerHTML = cats.map(cat => `
+    <button class="filter-btn ${cat === activeFilter ? 'active' : ''}" onclick="setFilter('${cat}')">
+      ${icons[cat]} ${cat === 'all' ? 'All' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+    </button>
+  `).join('');
+}
+
+function setFilter(cat) {
+  activeFilter = cat;
+  renderFilterBar();
+  renderTable();
+}
+
+/* ============================================================
+   MAIN TABLE RENDER
+   ============================================================ */
+function getFilteredColumns() {
+  const t = tables[activeTable];
+  if (!t) return [];
+  return activeFilter === 'all'
+    ? t.columns.map((c, i) => ({ col: c, realIdx: i }))
+    : t.columns.map((c, i) => ({ col: c, realIdx: i })).filter(({ col }) => FIELD_TYPES[col.type]?.category === activeFilter);
+}
+
+function renderTable() {
+  const tbody = document.getElementById('table-body');
+  const filtered = getFilteredColumns();
+  updateColCountLabel();
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="table-empty">No columns in this category.</td></tr>`;
+    renderAddRow();
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(({ col, realIdx }) => renderTableRow(col, realIdx)).join('');
+
+  // Re-render the add row at the bottom
+  renderAddRow();
+
+  // Restore selection highlight
+  if (activeColIdx !== null) {
+    const row = tbody.querySelector(`tr[data-idx="${activeColIdx}"]`);
+    if (row) row.classList.add('selected');
+  }
+}
+
+function renderTableRow(col, idx) {
+  const ft = FIELD_TYPES[col.type] || {};
+  const t = tables[activeTable];
+  const isFirst = idx === 0;
+  const isLast  = idx === t.columns.length - 1;
+
+  return `
+    <tr data-idx="${idx}" onclick="selectRow(${idx})" class="${activeColIdx === idx ? 'selected' : ''}">
+      <td class="td-num">
+        <span class="row-num" style="color:var(--text-dim);font:500 11px var(--font-mono)">${idx + 1}</span>
+        <span class="row-expand">⤢</span>
+      </td>
+      <td>
+        <div class="td-name">
+          <span class="col-icon">${ft.icon || ''}</span>
+          <span class="col-name-text">${escHtml(col.name)}</span>
+        </div>
+      </td>
+      <td>
+        <span class="type-chip ${ft.category || ''}">${ft.title || col.type}</span>
+      </td>
+      <td class="td-slug col-slug">${escHtml(col.slug || '')}</td>
+      <td class="td-sql col-sql">${ft.sql || ''}</td>
+      <td>
+        <div class="td-actions" onclick="event.stopPropagation()">
+          <button class="btn ghost icon-only sm" onclick="moveColumn(${idx}, -1)" ${isFirst ? 'disabled' : ''} title="Move up" style="${isFirst ? 'opacity:0.3' : ''}">▲</button>
+          <button class="btn ghost icon-only sm" onclick="moveColumn(${idx}, 1)"  ${isLast  ? 'disabled' : ''} title="Move down" style="${isLast ? 'opacity:0.3' : ''}">▼</button>
+          <button class="btn ghost icon-only sm" onclick="deleteRowDirect(${idx})" title="Delete">✕</button>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+function renderAddRow() {
+  const tbody = document.getElementById('table-body');
+  const types = [
+    ['hex_id','🔑 Hex ID'], ['text_single','📝 Text'], ['text_multi','📋 Multi'],
+    ['int_scalar','🔢 Int'], ['float_scalar','🔢 Float'], ['boolean','🔘 Bool'],
+    ['enum_single','🏷️ Enum'], ['enum_multi','🏷️ Multi-Enum'],
+    ['relation_single','🔗 Relation'], ['relation_multi','🔗 Rel-N'],
+  ];
+  const existingAddRow = tbody.querySelector('.row-add');
+  if (existingAddRow) existingAddRow.remove();
+
+  const tr = document.createElement('tr');
+  tr.className = 'row-add';
+  tr.innerHTML = `<td colspan="6">
+    <div class="add-field-strip">
+      <span style="font:600 11px var(--font-mono);color:var(--text-dim);margin-right:0.25rem;">+ ADD</span>
+      ${types.map(([slug, label]) => `
+        <button class="add-chip" onclick="addField('${slug}')">${label}</button>
+      `).join('')}
+    </div>
+  </td>`;
+  tbody.appendChild(tr);
+}
+
+/* ============================================================
+   ROW SELECTION → SIDEBAR
+   ============================================================ */
+function selectRow(idx) {
+  if (activeColIdx === idx) {
+    // Toggle: clicking same row closes sidebar
+    closeSidebar();
+    return;
+  }
+  activeColIdx = idx;
+
+  // Update row highlight
+  document.querySelectorAll('#table-body tr').forEach(r => r.classList.remove('selected'));
+  const row = document.querySelector(`#table-body tr[data-idx="${idx}"]`);
+  if (row) row.classList.add('selected');
+
+  openSidebar();
+}
+
+function openSidebar() {
+  document.getElementById('field-sidebar').classList.add('open');
+  document.body.classList.add('sidebar-open');
+  populateSidebar();
+}
+
+function closeSidebar() {
+  document.getElementById('field-sidebar').classList.remove('open');
+  document.body.classList.remove('sidebar-open');
+  document.querySelectorAll('#table-body tr').forEach(r => r.classList.remove('selected'));
+  activeColIdx = null;
+}
+
+function navigateSidebar(dir) {
+  if (activeColIdx === null) return;
+  const t = tables[activeTable];
+  const next = activeColIdx + dir;
+  if (next < 0 || next >= t.columns.length) return;
+  activeColIdx = next;
+
+  document.querySelectorAll('#table-body tr').forEach(r => r.classList.remove('selected'));
+  const row = document.querySelector(`#table-body tr[data-idx="${next}"]`);
+  if (row) row.classList.add('selected');
+
+  populateSidebar();
+}
+
+/* ============================================================
+   SIDEBAR POPULATION
+   ============================================================ */
+function populateSidebar() {
+  if (activeColIdx === null) return;
+  const t = tables[activeTable];
+  const col = t.columns[activeColIdx];
+  if (!col) return;
+  const ft = FIELD_TYPES[col.type] || {};
+
+  // Header labels
+  document.getElementById('sb-col-num').textContent   = `#${activeColIdx + 1} of ${t.columns.length}`;
+  document.getElementById('sb-col-icon').textContent  = ft.icon || '';
+  document.getElementById('sb-col-title').textContent = col.name;
+
+  // Edit fields
+  document.getElementById('sb-name').value = col.name;
+  document.getElementById('sb-slug').value = col.slug || '';
+
+  // Type select
+  const sel = document.getElementById('sb-type');
+  sel.innerHTML = Object.entries(FIELD_TYPES).map(([slug, info]) =>
+    `<option value="${slug}" ${col.type === slug ? 'selected' : ''}>${info.icon} ${info.title}</option>`
+  ).join('');
+
+  // Meta section
+  renderSidebarMeta(col);
+
+  // Code panels
+  populateSidebarCode();
+}
+
+function renderSidebarMeta(col) {
+  const meta = col.metadata || {};
+  const container = document.getElementById('sb-meta');
+
+  if (col.type === 'hex_id') {
+    container.innerHTML = `
+      <div class="field-group">
+        <label class="field-label">ID Prefix <span class="field-hint">(max 4 chars)</span></label>
+        <input type="text" maxlength="4" value="${escHtml(meta.prefix || '')}"
+          oninput="sbUpdateMeta('prefix', this.value)">
+      </div>
+    `;
+    return;
+  }
+
+  if (col.type.startsWith('enum_')) {
+    const options = Array.isArray(meta.options) ? meta.options : [];
+    container.innerHTML = `
+      <div class="field-group">
+        <label class="field-label">Options</label>
+        <div class="options-list" id="sb-options-list">
+          ${options.map((opt, i) => `
+            <span class="option-pill">
+              ${escHtml(opt)}
+              <button onclick="sbRemoveOption(${i})" title="Remove">✕</button>
+            </span>
+          `).join('')}
+        </div>
+        <input type="text" placeholder="Type option, press Enter"
+          onkeydown="if(event.key==='Enter'){sbAddOption(this.value);this.value='';}" style="margin-top:0.4rem;">
+      </div>
+    `;
+    return;
+  }
+
+  if (col.type.startsWith('relation_')) {
+    const target = meta.target || 'self';
+    container.innerHTML = `
+      <div class="field-group">
+        <label class="field-label">Target Table</label>
+        <select onchange="sbUpdateMeta('target', this.value)">
+          <option value="self" ${target === 'self' ? 'selected' : ''}>Self (tree)</option>
+          ${Object.keys(tables).map(tname => `
+            <option value="${tname}" ${target === tname ? 'selected' : ''}>${tname}</option>
+          `).join('')}
+        </select>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = '';
+}
+
+function populateSidebarCode() {
+  const t = tables[activeTable];
+  document.getElementById('sql-title').textContent  = `${t.table_name}.sql`;
+  document.getElementById('json-title').textContent = `${t.table_name}.json`;
+  document.getElementById('sql-code').textContent   = generateSQL(t);
+  document.getElementById('json-code').textContent  = JSON.stringify(t, null, 2);
+}
+
+/* ============================================================
+   SIDEBAR TAB SWITCHING
+   ============================================================ */
+function switchSidebarTab(tab, btn) {
+  activeSidebarTab = tab;
+  document.querySelectorAll('.stab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`sp-${tab}`).classList.add('active');
+  if (tab === 'sql' || tab === 'json') populateSidebarCode();
+}
+
+/* ============================================================
+   SIDEBAR MUTATION HANDLERS
+   ============================================================ */
+function sbUpdateName(val) {
+  if (activeColIdx === null) return;
+  tables[activeTable].columns[activeColIdx].name = val;
+  document.getElementById('sb-col-title').textContent = val;
+  refreshTableRow(activeColIdx);
+  renderTokenStrip();
+}
+
+function sbUpdateSlug(val) {
+  if (activeColIdx === null) return;
+  tables[activeTable].columns[activeColIdx].slug = val;
+  refreshTableRow(activeColIdx);
+}
+
+function sbUpdateType(val) {
+  if (activeColIdx === null) return;
+  const col = tables[activeTable].columns[activeColIdx];
+  col.type = val;
+  col.metadata = {};
+  if (val.startsWith('enum_'))     col.metadata.options = ['option1'];
+  if (val.startsWith('relation_')) col.metadata.target  = 'self';
+  if (val === 'hex_id')            col.metadata.prefix  = activeTable.substring(0, 4).toUpperCase();
+  populateSidebar();
+  refreshTableRow(activeColIdx);
+}
+
+function sbUpdateMeta(key, val) {
+  if (activeColIdx === null) return;
+  if (!tables[activeTable].columns[activeColIdx].metadata)
+    tables[activeTable].columns[activeColIdx].metadata = {};
+  tables[activeTable].columns[activeColIdx].metadata[key] = val;
+}
+
+function sbAddOption(val) {
+  if (!val.trim() || activeColIdx === null) return;
+  const meta = tables[activeTable].columns[activeColIdx].metadata;
+  if (!Array.isArray(meta.options)) meta.options = [];
+  if (!meta.options.includes(val)) { meta.options.push(val); }
+  renderSidebarMeta(tables[activeTable].columns[activeColIdx]);
+}
+
+function sbRemoveOption(i) {
+  if (activeColIdx === null) return;
+  tables[activeTable].columns[activeColIdx].metadata.options.splice(i, 1);
+  renderSidebarMeta(tables[activeTable].columns[activeColIdx]);
+}
+
+function sbDeleteColumn() {
+  if (activeColIdx === null) return;
+  const name = tables[activeTable].columns[activeColIdx].name;
+  tables[activeTable].columns.splice(activeColIdx, 1);
+  closeSidebar();
+  renderTable();
+  renderTokenStrip();
+  updateColCountLabel();
+  showToast(`Deleted "${name}"`);
+}
+
+/* ============================================================
+   TABLE ROW ACTIONS (from action cell, not sidebar)
+   ============================================================ */
+function deleteRowDirect(idx) {
+  const name = tables[activeTable].columns[idx].name;
+  tables[activeTable].columns.splice(idx, 1);
+  if (activeColIdx === idx) closeSidebar();
+  else if (activeColIdx !== null && activeColIdx > idx) activeColIdx--;
+  renderTable();
+  renderTokenStrip();
+  updateColCountLabel();
+  showToast(`Deleted "${name}"`);
+}
+
+function moveColumn(idx, dir) {
+  const cols = tables[activeTable].columns;
+  const target = idx + dir;
+  if (target < 0 || target >= cols.length) return;
+
+  const [moved] = cols.splice(idx, 1);
+  cols.splice(target, 0, moved);
+
+  // Track sidebar selection
+  if      (activeColIdx === idx)    activeColIdx = target;
+  else if (activeColIdx === target) activeColIdx = idx;
+
+  renderTable();
+  renderTokenStrip();
+  if (activeColIdx !== null) populateSidebar();
+}
+
+function addField(type) {
+  const t = tables[activeTable];
+  const newCol = { name: FIELD_TYPES[type].title, slug: 'new_field', type, metadata: {} };
+  if (type.startsWith('enum_'))     newCol.metadata.options = ['option1', 'option2'];
+  if (type.startsWith('relation_')) newCol.metadata.target  = 'self';
+  if (type === 'hex_id')            newCol.metadata.prefix  = activeTable.substring(0, 4).toUpperCase();
+  t.columns.push(newCol);
+  renderTable();
+  renderTokenStrip();
+  updateColCountLabel();
+  // Open sidebar on new column
+  activeColIdx = t.columns.length - 1;
+  openSidebar();
+  showToast(`Added ${FIELD_TYPES[type].title}`);
+}
+
+/* Refresh a single table row in-place without full re-render */
+function refreshTableRow(idx) {
+  const col = tables[activeTable].columns[idx];
+  const row = document.querySelector(`#table-body tr[data-idx="${idx}"]`);
+  if (!row) { renderTable(); return; }
+  const ft = FIELD_TYPES[col.type] || {};
+
+  row.querySelector('.col-icon').textContent      = ft.icon || '';
+  row.querySelector('.col-name-text').textContent = col.name;
+  const chip = row.querySelector('.type-chip');
+  chip.className = `type-chip ${ft.category || ''}`;
+  chip.textContent = ft.title || col.type;
+  row.querySelector('.td-slug').textContent = col.slug || '';
+  row.querySelector('.td-sql').textContent  = ft.sql || '';
+}
+
+/* ============================================================
+   TOKEN STRIP (drag-to-reorder column chips above table)
+   ============================================================ */
+function renderTokenStrip() {
+  if (!tables[activeTable]) return;
+  const strip = document.getElementById('token-strip');
+
+  const CAT_COLORS = {
+    pk: 'var(--c-pk)', text: 'var(--c-text)', scalar: 'var(--c-scalar)',
+    boolean: 'var(--c-boolean)', enum: 'var(--c-enum)', rel: 'var(--c-rel)',
+  };
+
+  strip.innerHTML = tables[activeTable].columns.map((col, idx) => {
+    const ft   = FIELD_TYPES[col.type] || {};
+    const color = CAT_COLORS[ft.category] || 'var(--accent)';
+    return `
+      <div class="col-chip" data-index="${idx}">
+        <span class="chip-handle">⋮⋮</span>
+        <span class="chip-dot" style="background:${color};"></span>
+        <span>${escHtml(col.name)}</span>
+      </div>
+    `;
+  }).join('');
+
+  strip.querySelectorAll('.col-chip').forEach(chip => {
+    chip.addEventListener('pointerdown', handleChipPointerDown);
+  });
+}
+
+/* ---- Pointer drag engine (FLIP) ---- */
+let activeDrag = null;
+
+function handleChipPointerDown(e) {
+  if (e.button !== 0) return;
+  const chip    = e.currentTarget;
+  const strip   = document.getElementById('token-strip');
+  const fromIdx = Number(chip.dataset.index);
+  const rect    = chip.getBoundingClientRect();
+
+  chip.setPointerCapture(e.pointerId);
+
+  const placeholder  = document.createElement('div');
+  placeholder.className = 'chip-placeholder';
+  placeholder.style.width  = `${rect.width}px`;
+  placeholder.style.height = `${rect.height}px`;
+
+  const offsetX = e.clientX - rect.left;
+  const offsetY = e.clientY - rect.top;
+
+  activeDrag = { chip, strip, fromIdx, placeholder, offsetX, offsetY,
+                 rect, isDragging: false, startX: e.clientX, startY: e.clientY };
+
+  const onMove = (me) => {
+    if (!activeDrag) return;
+    const dist = Math.hypot(me.clientX - activeDrag.startX, me.clientY - activeDrag.startY);
+
+    if (!activeDrag.isDragging && dist > 3) {
+      activeDrag.isDragging = true;
+      chip.parentNode.insertBefore(placeholder, chip);
+      chip.classList.add('is-dragging');
+      chip.style.width  = `${rect.width}px`;
+      chip.style.height = `${rect.height}px`;
+    }
+
+    if (activeDrag.isDragging) {
+      chip.style.left = `${me.clientX - offsetX}px`;
+      chip.style.top  = `${me.clientY - offsetY}px`;
+      updateChipPlacementFLIP(me.clientX, me.clientY);
+    }
+  };
+
+  const onUp = () => {
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    try { chip.releasePointerCapture(e.pointerId); } catch (_) {}
+
+    if (!activeDrag.isDragging) { activeDrag = null; return; }
+
+    const targetRect  = placeholder.getBoundingClientRect();
+    const currentLeft = parseFloat(chip.style.left);
+    const currentTop  = parseFloat(chip.style.top);
+    const dx = targetRect.left - currentLeft;
+    const dy = targetRect.top  - currentTop;
+
+    chip.style.transition = 'transform 0.22s cubic-bezier(0.16,1,0.3,1)';
+    chip.style.transform  = `translate(${dx}px,${dy}px)`;
+
+    setTimeout(() => {
+      const children = [...strip.children].filter(c => c !== chip);
+      const toIdx    = children.indexOf(placeholder);
+
+      chip.classList.remove('is-dragging');
+      ['position','left','top','width','height','transform','transition','boxShadow']
+        .forEach(p => chip.style[p] = '');
+
+      if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+
+      if (toIdx !== -1 && toIdx !== activeDrag.fromIdx) {
+        const cols = tables[activeTable].columns;
+        const [movedCol] = cols.splice(activeDrag.fromIdx, 1);
+        cols.splice(toIdx, 0, movedCol);
+
+        // Remap sidebar selection
+        if (activeColIdx !== null) {
+          if      (activeColIdx === activeDrag.fromIdx) activeColIdx = toIdx;
+          else if (activeDrag.fromIdx < toIdx && activeColIdx > activeDrag.fromIdx && activeColIdx <= toIdx) activeColIdx--;
+          else if (activeDrag.fromIdx > toIdx && activeColIdx >= toIdx && activeColIdx < activeDrag.fromIdx) activeColIdx++;
+        }
+
+        renderTable();
+        renderTokenStrip();
+        if (activeColIdx !== null) { openSidebar(); populateSidebar(); }
+      }
+      activeDrag = null;
+    }, 220);
+  };
+
+  window.addEventListener('pointermove', onMove, { passive: true });
+  window.addEventListener('pointerup', onUp);
+}
+
+function updateChipPlacementFLIP(pX, pY) {
+  const { strip, chip, placeholder } = activeDrag;
+  const elements = [...strip.querySelectorAll('.col-chip:not(.is-dragging)')];
+  let target = null;
+
+  for (const el of elements) {
+    const box = el.getBoundingClientRect();
+    if (pY < box.top - 4)                                    { target = el; break; }
+    if (pY <= box.bottom + 4 && pX < box.left + box.width/2) { target = el; break; }
+  }
+
+  const curr = placeholder.nextElementSibling === chip ? chip.nextElementSibling : placeholder.nextElementSibling;
+  if (curr === target) return;
+
+  const firstPos = new Map();
+  elements.forEach(el => firstPos.set(el, el.getBoundingClientRect()));
+
+  if (target) strip.insertBefore(placeholder, target);
+  else        strip.appendChild(placeholder);
+
+  elements.forEach(el => {
+    const first = firstPos.get(el);
+    const last  = el.getBoundingClientRect();
+    const dx = first.left - last.left;
+    const dy = first.top  - last.top;
+    if (dx !== 0 || dy !== 0) {
+      el.style.transition = 'none';
+      el.style.transform  = `translate(${dx}px,${dy}px)`;
+      el.offsetHeight; // force reflow
+      el.style.transition = 'transform 0.22s cubic-bezier(0.2,0,0,1)';
+      el.style.transform  = '';
+    }
+  });
+}
+
+/* ============================================================
+   CODE GENERATION
+   ============================================================ */
+function generateSQL(table) {
+  if (!table) return '-- No table';
+  const lines = [`CREATE TABLE IF NOT EXISTS ${table.table_name} (`];
+  const cols = table.columns.map(col => {
+    const ft = FIELD_TYPES[col.type];
+    return `    ${(col.slug || col.name).padEnd(22)} ${ft.sql}`;
+  });
+  lines.push(cols.join(',\n'));
+  lines.push(');');
+  return lines.join('\n');
+}
+
+/* ============================================================
+   MISC
+   ============================================================ */
+function copyCode(elId) {
+  const text = document.getElementById(elId).textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied!'));
+}
+
+function saveTable() {
+  localStorage.setItem('project_entry_schemas', JSON.stringify(tables));
+  showToast('Saved to local storage');
+}
+
+function syncSqlite() {
+  showToast('SQLite sync (standalone mode)');
+}
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') || 'system';
+  const next = cur === 'dark' ? 'light' : cur === 'light' ? 'system' : 'dark';
+  if (next === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', next);
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2400);
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+init();
+</script>
+</body>
+</html>

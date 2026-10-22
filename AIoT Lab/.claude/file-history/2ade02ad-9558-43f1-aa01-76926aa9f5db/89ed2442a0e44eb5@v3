@@ -1,0 +1,365 @@
+"""
+Rebased Backend: Pure 5-Tier Relational SQLite Engine
+Hazard Trigger node system with Rose-pattern CRUD operations.
+
+Schema:
+  1. 'nodes'       (0001... : Prompt nodes with categories)
+  2. 'categories'  (0002... : Node groupings with hierarchy)
+  3. 'pools'       (0003... : Gacha weighted pools)
+  4. 'presets'     (0004... : Saved configurations)
+  5. 'wildcards'   (0005... : Token replacement patterns)
+"""
+
+import sqlite3
+import json
+import os
+import time
+from typing import Dict, Any, List, Optional
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB_PATH = os.path.join(BASE_DIR, "data", "rebased.db")
+
+
+_last_ts = 0
+
+
+def generate_hex_id(prefix: str) -> str:
+    """Generate 16-character hex ID: <4-char prefix><12-char monotonic unix ms>"""
+    global _last_ts
+    unix_ms = int(time.time() * 1000)
+    if unix_ms <= _last_ts:
+        unix_ms = _last_ts + 1
+    _last_ts = unix_ms
+    clean_prefix = str(prefix).upper().rjust(4, "0")[:4]
+    hex_ts = f"{unix_ms:012X}"[-12:]
+    return f"{clean_prefix}{hex_ts}"
+
+
+def get_connection(db_path: str = DEFAULT_DB_PATH) -> sqlite3.Connection:
+    """Creates a connection configured with WAL and concurrency pragmas."""
+    os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
+    conn = sqlite3.connect(db_path, timeout=5.0)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA busy_timeout = 5000;")
+    conn.execute("PRAGMA foreign_keys = ON;")
+    return conn
+
+
+def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
+    """Initialize the 5-table schema."""
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        # Table 2: categories (0002...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS categories (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                icon TEXT,
+                color TEXT,
+                selection_type TEXT DEFAULT 'multiple'
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);")
+
+        # Table 1: nodes (0001...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS nodes (
+                id TEXT PRIMARY KEY,
+                category_id TEXT NOT NULL,
+                label TEXT NOT NULL,
+                token TEXT NOT NULL,
+                default_weight REAL DEFAULT 1.0,
+                rarity TEXT DEFAULT 'N',
+                tags TEXT,
+                gacha_pool_id TEXT,
+                description TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+            );
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_nodes_category ON nodes(category_id);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_nodes_label ON nodes(label);")
+
+        # Table 3: pools (0003...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS pools (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                draw_count INTEGER DEFAULT 1,
+                items TEXT NOT NULL
+            );
+        """)
+
+        # Table 4: presets (0004...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS presets (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                target_engine TEXT DEFAULT 'ComfyUI',
+                active_node_ids TEXT,
+                node_weights TEXT,
+                custom_positive TEXT,
+                custom_negative TEXT,
+                active_gacha_pool_ids TEXT,
+                created_at TEXT NOT NULL
+            );
+        """)
+
+        # Table 5: wildcards (0005...)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS wildcards (
+                id TEXT PRIMARY KEY,
+                pattern TEXT NOT NULL UNIQUE,
+                options TEXT NOT NULL
+            );
+        """)
+
+    conn.close()
+
+
+# ==============================================================================
+# TABLE 2: CATEGORIES (0002...) — CRUD
+# ==============================================================================
+
+def upsert_category(category: Dict[str, Any], db_path: str = DEFAULT_DB_PATH) -> None:
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        name = category["name"].strip()
+        conn.execute("DELETE FROM categories WHERE name = ? OR id = ?;", (name, category["id"]))
+        conn.execute("""
+            INSERT INTO categories (id, name, description, icon, color, selection_type)
+            VALUES (?, ?, ?, ?, ?, ?);
+        """, (
+            category["id"],
+            name,
+            category.get("description", ""),
+            category.get("icon", ""),
+            category.get("color", "#6366f1"),
+            category.get("selection_type", "multiple")
+        ))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+
+
+def get_all_categories(db_path: str = DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    init_db(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT * FROM categories ORDER BY name ASC;")
+    rows = cur.fetchall()
+    conn.close()
+    return [{
+        "id": r["id"],
+        "name": r["name"],
+        "description": r["description"] or "",
+        "icon": r["icon"] or "",
+        "color": r["color"] or "#6366f1",
+        "selection_type": r["selection_type"] or "multiple"
+    } for r in rows]
+
+
+def delete_category(category_id: str, db_path: str = DEFAULT_DB_PATH) -> bool:
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        conn.execute("DELETE FROM categories WHERE id = ?;", (category_id,))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return True
+
+
+# ==============================================================================
+# TABLE 1: NODES (0001...) — CRUD
+# ==============================================================================
+
+def upsert_node(node: Dict[str, Any], db_path: str = DEFAULT_DB_PATH) -> None:
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        tags_json = json.dumps(node.get("tags", []), ensure_ascii=False)
+        created_at = node.get("created_at", time.strftime("%Y-%m-%d %H:%M:%S"))
+
+        conn.execute("DELETE FROM nodes WHERE id = ?;", (node["id"],))
+        conn.execute("""
+            INSERT INTO nodes (
+                id, category_id, label, token, default_weight, rarity,
+                tags, gacha_pool_id, description, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """, (
+            node["id"],
+            node["category_id"],
+            node["label"].strip(),
+            node["token"].strip(),
+            node.get("default_weight", 1.0),
+            node.get("rarity", "N"),
+            tags_json,
+            node.get("gacha_pool_id"),
+            node.get("description", ""),
+            created_at
+        ))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+
+
+def get_all_nodes(db_path: str = DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    init_db(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT * FROM nodes ORDER BY label ASC;")
+    rows = cur.fetchall()
+    conn.close()
+    return [{
+        "id": r["id"],
+        "category_id": r["category_id"],
+        "label": r["label"],
+        "token": r["token"],
+        "default_weight": r["default_weight"],
+        "rarity": r["rarity"] or "N",
+        "tags": json.loads(r["tags"]) if r["tags"] else [],
+        "gacha_pool_id": r["gacha_pool_id"],
+        "description": r["description"] or "",
+        "created_at": r["created_at"]
+    } for r in rows]
+
+
+def delete_node(node_id: str, db_path: str = DEFAULT_DB_PATH) -> bool:
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        conn.execute("DELETE FROM nodes WHERE id = ?;", (node_id,))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return True
+
+
+# ==============================================================================
+# TABLE 3: POOLS (0003...) — CRUD
+# ==============================================================================
+
+def upsert_pool(pool: Dict[str, Any], db_path: str = DEFAULT_DB_PATH) -> None:
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        items_json = json.dumps(pool.get("items", []), ensure_ascii=False)
+
+        conn.execute("DELETE FROM pools WHERE id = ?;", (pool["id"],))
+        conn.execute("""
+            INSERT INTO pools (id, name, description, draw_count, items)
+            VALUES (?, ?, ?, ?, ?);
+        """, (
+            pool["id"],
+            pool["name"].strip(),
+            pool.get("description", ""),
+            pool.get("draw_count", 1),
+            items_json
+        ))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+
+
+def get_all_pools(db_path: str = DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    init_db(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT * FROM pools ORDER BY name ASC;")
+    rows = cur.fetchall()
+    conn.close()
+    return [{
+        "id": r["id"],
+        "name": r["name"],
+        "description": r["description"] or "",
+        "draw_count": r["draw_count"],
+        "items": json.loads(r["items"]) if r["items"] else []
+    } for r in rows]
+
+
+def delete_pool(pool_id: str, db_path: str = DEFAULT_DB_PATH) -> bool:
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        conn.execute("DELETE FROM pools WHERE id = ?;", (pool_id,))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return True
+
+
+# ==============================================================================
+# TABLE 4: PRESETS (0004...) — CRUD
+# ==============================================================================
+
+def upsert_preset(preset: Dict[str, Any], db_path: str = DEFAULT_DB_PATH) -> None:
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+
+        active_node_ids_json = json.dumps(preset.get("active_node_ids", []), ensure_ascii=False)
+        node_weights_json = json.dumps(preset.get("node_weights", {}), ensure_ascii=False)
+        active_gacha_pool_ids_json = json.dumps(preset.get("active_gacha_pool_ids", []), ensure_ascii=False)
+        created_at = preset.get("created_at", time.strftime("%Y-%m-%d %H:%M:%S"))
+
+        conn.execute("DELETE FROM presets WHERE id = ?;", (preset["id"],))
+        conn.execute("""
+            INSERT INTO presets (
+                id, name, description, target_engine,
+                active_node_ids, node_weights, custom_positive, custom_negative,
+                active_gacha_pool_ids, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """, (
+            preset["id"],
+            preset["name"].strip(),
+            preset.get("description", ""),
+            preset.get("target_engine", "ComfyUI"),
+            active_node_ids_json,
+            node_weights_json,
+            preset.get("custom_positive", ""),
+            preset.get("custom_negative", ""),
+            active_gacha_pool_ids_json,
+            created_at
+        ))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+
+
+def get_all_presets(db_path: str = DEFAULT_DB_PATH) -> List[Dict[str, Any]]:
+    init_db(db_path)
+    conn = get_connection(db_path)
+    cur = conn.execute("SELECT * FROM presets ORDER BY name ASC;")
+    rows = cur.fetchall()
+    conn.close()
+    return [{
+        "id": r["id"],
+        "name": r["name"],
+        "description": r["description"] or "",
+        "target_engine": r["target_engine"] or "ComfyUI",
+        "active_node_ids": json.loads(r["active_node_ids"]) if r["active_node_ids"] else [],
+        "node_weights": json.loads(r["node_weights"]) if r["node_weights"] else {},
+        "custom_positive": r["custom_positive"] or "",
+        "custom_negative": r["custom_negative"] or "",
+        "active_gacha_pool_ids": json.loads(r["active_gacha_pool_ids"]) if r["active_gacha_pool_ids"] else [],
+        "created_at": r["created_at"]
+    } for r in rows]
+
+
+def delete_preset(preset_id: str, db_path: str = DEFAULT_DB_PATH) -> bool:
+    init_db(db_path)
+    conn = get_connection(db_path)
+    with conn:
+        conn.execute("BEGIN IMMEDIATE;")
+        conn.execute("DELETE FROM presets WHERE id = ?;", (preset_id,))
+    conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+    conn.close()
+    return True

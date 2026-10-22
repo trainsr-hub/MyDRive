@@ -1,0 +1,130 @@
+// State management, defaults, and alert evaluation engine
+
+export const DEFAULT_STATE = {
+  stationId: "station_01",
+  stationName: "Aegis Feeder Alpha",
+  status: "online", // "online" | "dispensing_food" | "dispensing_water" | "offline"
+  isSimulated: false,
+  lastUpdated: new Date().toISOString(),
+
+  // Live Telemetry
+  foodTank: 1850,       // remaining grams in food tank (Capacity: 2500g)
+  waterTank: 2200,      // remaining ml in water tank (Capacity: 3000ml)
+  bowlFood: 45,         // remaining grams in food bowl
+  bowlWater: 140,       // remaining ml in water bowl
+  foodTankTemp: 23.5,   // °C in food tank
+  foodTankMoisture: 48, // %RH in food tank
+
+  // Automation Flags
+  autoFillWater: true,
+  autoFillFood: true,
+
+  // Last actions
+  lastFoodRefill: null,
+  lastWaterRefill: null,
+
+  // Threshold Configuration
+  config: {
+    tempMin: 16.0,     // °C minimum allowed temperature
+    tempMax: 28.0,     // °C maximum allowed temperature
+    moistureMax: 65.0, // %RH maximum allowed moisture
+    bowlWaterMin: 50,  // ml minimum water in bowl
+    bowlWaterMax: 200, // ml maximum water in bowl
+    bowlFoodMin: 30,   // g minimum food in bowl
+    bowlFoodMax: 100,  // g maximum food in bowl
+  },
+
+  // Tank Capacities & Physical Limits
+  capacities: {
+    foodTank: 2500,    // g max tank
+    waterTank: 3000,   // ml max tank
+    bowlFoodMaxLimit: 150,  // g max bowl capacity
+    bowlWaterMaxLimit: 250, // ml max bowl capacity
+  },
+};
+
+/**
+ * Evaluates active alerts and radical threshold conditions
+ * @param {typeof DEFAULT_STATE} state
+ * @returns {Array<{ id: string, type: 'critical'|'warning'|'action_required'|'info', title: string, message: string, timestamp: string }>}
+ */
+export function evaluateAlerts(state) {
+  const alerts = [];
+  const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const cfg = state.config || DEFAULT_STATE.config;
+
+  // 1. Radical Temperature Alerts
+  if (state.foodTankTemp > cfg.tempMax) {
+    alerts.push({
+      id: "radical-temp-high",
+      type: "critical",
+      title: "Radical Temperature High",
+      message: `Food tank temperature is ${state.foodTankTemp.toFixed(1)}°C, exceeding safe threshold of ${cfg.tempMax.toFixed(1)}°C. Food spoilage risk!`,
+      timestamp: now,
+    });
+  } else if (state.foodTankTemp < cfg.tempMin) {
+    alerts.push({
+      id: "radical-temp-low",
+      type: "warning",
+      title: "Radical Temperature Low",
+      message: `Food tank temperature dropped to ${state.foodTankTemp.toFixed(1)}°C (below minimum allowed ${cfg.tempMin.toFixed(1)}°C).`,
+      timestamp: now,
+    });
+  }
+
+  // 2. Radical Moisture Alert
+  if (state.foodTankMoisture > cfg.moistureMax) {
+    alerts.push({
+      id: "radical-moisture",
+      type: "critical",
+      title: "Radical Moisture Detected",
+      message: `Food tank moisture is ${state.foodTankMoisture.toFixed(1)}% RH (max safe limit is ${cfg.moistureMax.toFixed(1)}%). High risk of mold and kibble decay!`,
+      timestamp: now,
+    });
+  }
+
+  // 3. Manual Refill Water Alert (when auto-fill is OFF and water bowl is depleted)
+  if (!state.autoFillWater && state.bowlWater <= cfg.bowlWaterMin) {
+    alerts.push({
+      id: "manual-refill-water",
+      type: "action_required",
+      title: "Water Bowl Depleted — Manual Refill Needed",
+      message: `Water bowl has only ${Math.round(state.bowlWater)} ml (below min setpoint of ${cfg.bowlWaterMin} ml). Auto-fill is OFF. Please refill manually!`,
+      timestamp: now,
+    });
+  }
+
+  // 4. Manual Refill Food Alert (when auto-fill is OFF and food bowl is depleted)
+  if (!state.autoFillFood && state.bowlFood <= cfg.bowlFoodMin) {
+    alerts.push({
+      id: "manual-refill-food",
+      type: "action_required",
+      title: "Food Bowl Depleted — Manual Refill Needed",
+      message: `Food bowl has only ${Math.round(state.bowlFood)} g (below min setpoint of ${cfg.bowlFoodMin} g). Auto-fill is OFF. Please refill manually!`,
+      timestamp: now,
+    });
+  }
+
+  // 5. Bulk Supply Tank Warnings
+  if (state.foodTank < 350) {
+    alerts.push({
+      id: "tank-food-low",
+      type: "warning",
+      title: "Food Tank Supply Running Low",
+      message: `Main food reservoir has only ${Math.round(state.foodTank)} g remaining. Please restock bulk pet food.`,
+      timestamp: now,
+    });
+  }
+
+  if (state.waterTank < 450) {
+    alerts.push({
+      id: "tank-water-low",
+      type: "warning",
+      title: "Water Tank Supply Running Low",
+      message: `Main water reservoir has only ${Math.round(state.waterTank)} ml remaining. Please refill the main water tank.`,
+      timestamp: now,
+    });
+  }
+
+  return alerts;
+}

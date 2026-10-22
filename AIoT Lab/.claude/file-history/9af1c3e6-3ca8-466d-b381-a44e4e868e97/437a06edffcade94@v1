@@ -1,0 +1,44 @@
+{
+	"motd": {
+		"cloudBuildErrorAfter": 1594252800000,
+		"cloudBuildWarnAfter": 1590019200000,
+		"defaultNode10After": 1594252800000,
+		"minVersion": "3.0.5",
+		"node8DeploysDisabledAfter": 1613390400000,
+		"node8RuntimeDisabledAfter": 1615809600000,
+		"node8WarnAfter": 1600128000000,
+		"fetched": 1791476797401
+	},
+	"gemini": false,
+	"usage": true,
+	"analytics-uuid": "fdd93c9f-efbc-4057-b217-bd67bbf232ef",
+	"user": {
+		"iss": "accounts.google.com",
+		"azp": "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com",
+		"aud": "563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com",
+		"sub": "113732298008620212709",
+		"email": "kha70929@gmail.com",
+		"email_verified": true,
+		"at_hash": "La9nSqdivcyXe7s_GQqNuA",
+		"iat": 1791476836,
+		"exp": 1791480436
+	},
+	"tokens": {
+		"expires_at": 1791484251989,
+		"refresh_token": "1//0gbkJZmnNS3DiCgYIARAAGBASNgF-L9IrTQpI3f9txtkLRVcxhEYhJzh6tXeORs12-R5FGGO2CsEbc65XNaoAzSNmdc8cIBZK3Q",
+		"scopes": [],
+		"access_token": "ya29.a0AX07CmtfUd9aClwpIXhAT4rnsw1r1yLR71De0nS2lQsXKnxrbqrt7Dkm3GSs9Az1hopV7GEPJN5v1IN6cp4kSVjIWANDxekbZmLme2L8bpNyQe_Qv3lONR2ejIO141kMvTljh8oKmf9xx8iXkEu0eN7KVVo5WtTgYoGKRHqV8_9R5h3DZOre9kOYYpaqAwhoDKsi_PdIsGqJaCgYKAVQSARYSFQHGX2MiNjC1iDW5XQMJfUQJ7T9kaQ0211",
+		"expires_in": 3599,
+		"scope": "https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/cloudplatformprojects.readonly https://www.googleapis.com/auth/firebase https://www.googleapis.com/auth/userinfo.email openid",
+		"token_type": "Bearer",
+		"id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6Ijk0M2EzYTVkN2Q5MTk2MjVhNDU0ZTQ4OWI3NWMyOWFkYWI1N2FjYmEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiNTYzNTg0MzM1ODY5LWZncmhnbWQ0N2JxbmVraWo1aThiNXByMDNobzg0OWU2LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiNTYzNTg0MzM1ODY5LWZncmhnbWQ0N2JxbmVraWo1aThiNXByMDNobzg0OWU2LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTEzNzMyMjk4MDA4NjIwMjEyNzA5IiwiZW1haWwiOiJraGE3MDkyOUBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiYXRfaGFzaCI6ImpJbG1zVHF6X2pIVUFSb3VSb3drNXciLCJpYXQiOjE3OTE0ODA2NTAsImV4cCI6MTc5MTQ4NDI1MH0.WKGBdqtMOC-L3q6rbv0jQ-HFB-AF7KFTarSrt8dD1D1EIzE-2XeWb-DBeLWLqZWql0GZIZ7CdhtyTfcCQ91jpZzYCqwfDQOW1eNOnPg6hR1YZn-TojrrCkkS6qBrRw9kB-WQ2gnCz9F4dHfIbPkDDOI9eBjcjRsaLTnjTFNr4PZ3jxePgPT4lYWDs27730WvfRzPz8ObBwbix8-iXPFkfC-UfQndSL2EFoXPfYxPt99P7sS4-H868hk86s7B6YZYQZqDE7a8CYOaC5tq15cP2__uxM5RgAU_lfaf0PfUG9n16YL8ePgQxOAGx952pu0eXZbHkDGa-cmY8e84SqiLRg"
+	},
+	"activeProjects": {
+		"D:\\My Drive\\Blue AI\\firebase-task-board\\firebase-task-board": "Lacking Sleep"
+	},
+	"apiEnablementCache": {
+		"manhattan-cafe-9fe21": {
+			"firestore.googleapis.com": true
+		}
+	}
+}

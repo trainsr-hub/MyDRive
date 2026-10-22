@@ -1,0 +1,109 @@
+# test_rename_reconciler.py
+"""
+Deterministic unit test for Source-ID Matching and Rename Reconciliation.
+Verifies that when a folder in a template is renamed:
+1. The reconciler recognizes the folder by its immutable 'src' pointer.
+2. Emits an atomic RENAME action.
+3. Does NOT create duplicate folders.
+4. Does NOT trash or flag the renamed folder as an anomaly.
+"""
+
+import sys
+from pathlib import Path
+from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from core import reconciler, logic, drive_ops
+
+
+def test_rename_reconciliation():
+    print("=== [Test] Source ID Matching & Rename Detection ===")
+
+    # 1. Template schema where folder with ID 'tpl_fld_100' was renamed to '01_Source_Clips'
+    template_schema = {
+        "id": "tpl_root_001",
+        "name": "Production_Archetype",
+        "description": "Master Archetype",
+        "subfolders": {
+            "01_Source_Clips": {
+                "id": "tpl_fld_100",
+                "name": "01_Source_Clips",
+                "description": "Category: Raw Video",
+                "subfolders": {},
+            },
+            "02_Audio": {
+                "id": "tpl_fld_200",
+                "name": "02_Audio",
+                "description": "Category: Stems",
+                "subfolders": {},
+            },
+        },
+    }
+
+    # 2. Target entity clone where folder still has old name '01_Raw_Footage'
+    # but its description/properties correctly points to 'tpl_fld_100'
+    mock_entity_subfolders = [
+        {
+            "id": "act_fld_aaa",
+            "name": "01_Raw_Footage",  # Old name!
+            "description": "src:tpl_fld_100\nCategory: Raw Video",
+            "properties": {"src": "tpl_fld_100"},
+            "mimeType": "application/vnd.google-apps.folder",
+        },
+        {
+            "id": "act_fld_bbb",
+            "name": "02_Audio",
+            "description": "src:tpl_fld_200\nCategory: Stems",
+            "properties": {"src": "tpl_fld_200"},
+            "mimeType": "application/vnd.google-apps.folder",
+        },
+    ]
+
+    mock_target_meta = {
+        "id": "act_root_001",
+        "name": "Client_Alpha",
+        "description": "Master Archetype",
+    }
+
+    def mock_list_subfolders(parent_id):
+        if parent_id == "act_root_001":
+            return mock_entity_subfolders
+        return []
+
+    with patch.object(drive_ops, "get_file_metadata", return_value=mock_target_meta), \
+         patch.object(drive_ops, "list_subfolders", side_effect=mock_list_subfolders), \
+         patch.object(drive_ops, "get_folder_child_count", return_value=(0, 0)):
+
+        plan = reconciler.plan_reconciliation(
+            target_root_id="act_root_001",
+            template_schema=template_schema,
+            template_name="Production_Archetype",
+        )
+
+        summary = plan.summary()
+        print(f"Plan summary: {summary}")
+
+        # Assertions
+        assert summary["rename_count"] == 1, f"Expected 1 RENAME action, got {summary['rename_count']}!"
+        assert summary["create_count"] == 0, f"Expected 0 CREATE actions (no duplicates), got {summary['create_count']}!"
+        assert summary["prune_empty_count"] == 0, f"Expected 0 PRUNE actions, got {summary['prune_empty_count']}!"
+        assert summary["flagged_red_count"] == 0, f"Expected 0 ANOMALIES, got {summary['flagged_red_count']}!"
+
+        rename_item = plan.renames[0]
+        assert rename_item.current_name == "01_Raw_Footage", f"Expected old name '01_Raw_Footage', got '{rename_item.current_name}'!"
+        assert rename_item.folder_name == "01_Source_Clips", f"Expected new name '01_Source_Clips', got '{rename_item.folder_name}'!"
+        assert rename_item.target_id == "act_fld_aaa", f"Expected target_id 'act_fld_aaa', got '{rename_item.target_id}'!"
+        assert rename_item.source_id == "tpl_fld_100", f"Expected source_id 'tpl_fld_100', got '{rename_item.source_id}'!"
+
+        print(f"✓ RENAME action successfully detected:")
+        print(f"   Target ID    : {rename_item.target_id}")
+        print(f"   Current Name : {rename_item.current_name}")
+        print(f"   New Name     : {rename_item.folder_name}")
+        print(f"   Source ID    : {rename_item.source_id}")
+        print(f"   Reason       : {rename_item.reason}")
+
+    print("\n🎉 ALL RENAME RECONCILIATION TESTS PASSED PERFECTLY!")
+
+
+if __name__ == "__main__":
+    test_rename_reconciliation()

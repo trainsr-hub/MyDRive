@@ -1,0 +1,68 @@
+/* ============================================================================ */
+/* GACHA ANIMATION WORKER STYLES                                               */
+/* Seamless, Transparent, Borderless HTML Animation Player with Instant Skip    */
+/* ============================================================================ */
+
+.gacha-animation-worker-container {
+    width: 100%;
+    min-height: 580px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: visible;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    cursor: pointer;
+    user-select: none;
+    animation: gachaAnimWorkerFadeIn 0.35s ease-out;
+}
+
+@keyframes gachaAnimWorkerFadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.gacha-animation-skip-badge {
+    position: absolute;
+    bottom: 24px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: rgba(14, 10, 22, 0.82);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(124, 77, 255, 0.25);
+    color: #e5d8ff;
+    font-size: 11.5px;
+    font-weight: 700;
+    font-family: monospace;
+    letter-spacing: 0.5px;
+    transition: all 0.15s ease-out;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.gacha-animation-skip-badge:hover {
+    background: rgba(26, 17, 44, 0.95);
+    border-color: #ffd700;
+    color: #ffffff;
+    box-shadow: 0 6px 24px rgba(255, 215, 0, 0.35), 0 0 16px rgba(124, 77, 255, 0.4);
+    transform: translateY(-2px) scale(1.02);
+}
+
+.gacha-animation-worker-iframe {
+    width: 100%;
+    height: 580px;
+    border: none;
+    outline: none;
+    background: transparent;
+    display: block;
+    overflow: visible;
+    pointer-events: auto;
+}
+

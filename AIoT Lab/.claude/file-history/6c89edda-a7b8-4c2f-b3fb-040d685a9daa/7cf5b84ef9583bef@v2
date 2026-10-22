@@ -1,0 +1,417 @@
+# core/drive_ops.py
+"""
+High-Performance Google Drive API Operations for Arc-2-Neo-Drives.
+Features:
+- Thread-safe connection pooling
+- Concurrent level-by-level directory traversal (ThreadPoolExecutor)
+- Google Native Multipart Batch Requests (new_batch_http_request)
+- Exponential backoff retry loop for rate limit resilience
+- Strict field masking to reduce JSON payload sizes
+"""
+
+import re
+import time
+import random
+from typing import Dict, List, Optional, Any, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from googleapiclient.errors import HttpError
+from .auth import get_thread_safe_drive_service
+
+
+def with_retry(func, max_retries: int = 4):
+    """Executes a function with exponential jitter backoff on transient errors."""
+    for attempt in range(max_retries):
+        try:
+            return func()
+        except HttpError as e:
+            status = getattr(e.resp, "status", None)
+            if status in (429, 500, 502, 503) and attempt < max_retries - 1:
+                sleep_time = min(2 ** attempt + random.uniform(0.1, 0.8), 8.0)
+                time.sleep(sleep_time)
+                continue
+            raise
+        except Exception:
+            if attempt < max_retries - 1:
+                time.sleep(1.0)
+                continue
+            raise
+
+
+def extract_folder_id_from_url(url_or_id: str) -> Optional[str]:
+    """Extracts Google Drive folder ID from various URL formats or returns raw ID."""
+    if not url_or_id:
+        return None
+    url_str = url_or_id.strip()
+
+    match = re.search(r"/folders/([a-zA-Z0-9_-]+)", url_str)
+    if match:
+        return match.group(1)
+
+    if re.fullmatch(r"[a-zA-Z0-9_-]{15,60}", url_str):
+        return url_str
+
+    return None
+
+
+extract_folder_id = extract_folder_id_from_url
+
+
+def get_file_metadata(
+    file_id: str,
+    fields: str = "id, name, mimeType, description, parents, properties"
+) -> Dict[str, Any]:
+    """Fetches masked metadata fields for a specific Google Drive file or folder."""
+    def _call():
+        service = get_thread_safe_drive_service()
+        return service.files().get(
+            fileId=file_id,
+            fields=fields,
+            supportsAllDrives=True,
+        ).execute()
+
+    try:
+        return with_retry(_call)
+    except Exception as e:
+        raise RuntimeError(f"Error fetching metadata for ID '{file_id}': {e}")
+
+
+def list_folder_contents(
+    folder_id: str,
+    fields: str = "files(id, name, mimeType, description, parents, properties)"
+) -> List[Dict[str, Any]]:
+    """
+    Lists all non-trashed immediate contents inside a folder with strict field masking.
+    Handles pagination automatically.
+    """
+    items: List[Dict[str, Any]] = []
+    page_token = None
+
+    while True:
+        def _call():
+            service = get_thread_safe_drive_service()
+            query = f"'{folder_id}' in parents and trashed = false"
+            return service.files().list(
+                q=query,
+                fields=f"nextPageToken, {fields}",
+                pageToken=page_token,
+                pageSize=1000,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+            ).execute()
+
+        try:
+            response = with_retry(_call)
+            items.extend(response.get("files", []))
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                break
+        except Exception as e:
+            raise RuntimeError(f"Error listing contents of folder '{folder_id}': {e}")
+
+    return items
+
+
+def list_subfolders(folder_id: str) -> List[Dict[str, Any]]:
+    """Lists only immediate 1st-level child subfolders."""
+    all_contents = list_folder_contents(folder_id)
+    return [
+        item for item in all_contents 
+        if item.get("mimeType") == "application/vnd.google-apps.folder"
+    ]
+
+
+def parallel_list_subfolders(
+    folder_ids: List[str], 
+    max_workers: int = 10
+) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Concurrently lists subfolders for a batch of parent folder IDs using a thread pool.
+    Returns: { parent_id: [child_subfolders...] }
+    """
+    if not folder_ids:
+        return {}
+
+    results: Dict[str, List[Dict[str, Any]]] = {}
+    actual_workers = min(max_workers, len(folder_ids))
+
+    with ThreadPoolExecutor(max_workers=actual_workers) as executor:
+        future_to_id = {
+            executor.submit(list_subfolders, fid): fid 
+            for fid in folder_ids
+        }
+        for future in as_completed(future_to_id):
+            fid = future_to_id[future]
+            try:
+                results[fid] = future.result()
+            except Exception as e:
+                results[fid] = []
+
+    return results
+
+
+def create_folder(
+    name: str,
+    parent_id: str,
+    description: str = "",
+    properties: Optional[Dict[str, str]] = None
+) -> Dict[str, Any]:
+    """Creates a new folder under parent_id with specified name, description, and custom properties."""
+    body: Dict[str, Any] = {
+        "name": name,
+        "mimeType": "application/vnd.google-apps.folder",
+        "parents": [parent_id],
+        "description": description or "",
+    }
+    if properties:
+        body["properties"] = properties
+
+    def _call():
+        service = get_thread_safe_drive_service()
+        return service.files().create(
+            body=body,
+            fields="id, name, mimeType, parents, description, properties",
+            supportsAllDrives=True,
+        ).execute()
+
+    try:
+        return with_retry(_call)
+    except Exception as e:
+        raise RuntimeError(f"Error creating folder '{name}' in parent '{parent_id}': {e}")
+
+
+def update_description(file_id: str, new_description: str) -> Dict[str, Any]:
+    """Updates the description metadata of a file or folder."""
+    def _call():
+        service = get_thread_safe_drive_service()
+        return service.files().update(
+            fileId=file_id,
+            body={"description": new_description},
+            fields="id, name, description, properties",
+            supportsAllDrives=True,
+        ).execute()
+
+    try:
+        return with_retry(_call)
+    except Exception as e:
+        raise RuntimeError(f"Error updating description for '{file_id}': {e}")
+
+
+def update_folder_meta(
+    file_id: str,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    properties: Optional[Dict[str, str]] = None
+) -> Dict[str, Any]:
+    """Updates name, description, and/or custom properties metadata of a file or folder on Google Drive."""
+    body: Dict[str, Any] = {}
+    if name is not None and name.strip():
+        body["name"] = name.strip()
+    if description is not None:
+        body["description"] = description.strip()
+    if properties:
+        body["properties"] = properties
+    if not body:
+        return {}
+
+    def _call():
+        service = get_thread_safe_drive_service()
+        return service.files().update(
+            fileId=file_id,
+            body=body,
+            fields="id, name, description, mimeType, properties",
+            supportsAllDrives=True,
+        ).execute()
+
+    try:
+        return with_retry(_call)
+    except Exception as e:
+        raise RuntimeError(f"Error updating metadata for '{file_id}': {e}")
+
+
+def get_hierarchical_tree(folder_id: str, parent_id: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Recursively scans a Google Drive folder and constructs a complete hierarchical tree
+    with IDs, names, descriptions, and children for visual template editing.
+    """
+    meta = get_file_metadata(folder_id, fields="id, name, mimeType, description, parents")
+    children_subfolders = list_subfolders(folder_id)
+    children = []
+    for child in children_subfolders:
+        children.append(get_hierarchical_tree(child["id"], parent_id=folder_id))
+
+    children.sort(key=lambda x: x["name"].lower())
+
+    return {
+        "id": meta["id"],
+        "name": meta.get("name", ""),
+        "description": meta.get("description", "") or "",
+        "parentId": parent_id or (meta.get("parents", [None])[0] if meta.get("parents") else None),
+        "children": children,
+    }
+
+
+def trash_file(file_id: str) -> Dict[str, Any]:
+    """Safely moves a file or folder to the Google Drive Trash."""
+    def _call():
+        service = get_thread_safe_drive_service()
+        return service.files().update(
+            fileId=file_id,
+            body={"trashed": True},
+            fields="id, name, trashed",
+            supportsAllDrives=True,
+        ).execute()
+
+    try:
+        return with_retry(_call)
+    except Exception as e:
+        raise RuntimeError(f"Error moving '{file_id}' to trash: {e}")
+
+
+def get_folder_child_count(folder_id: str) -> Tuple[int, int]:
+    """Returns (subfolders_count, non_folder_files_count) for immediate children of a folder."""
+    contents = list_folder_contents(folder_id)
+    folders = sum(1 for c in contents if c.get("mimeType") == "application/vnd.google-apps.folder")
+    files = len(contents) - folders
+    return folders, files
+
+
+def is_folder_empty(folder_id: str) -> bool:
+    """Checks if a folder is completely empty (0 child folders and 0 files)."""
+    folders, files = get_folder_child_count(folder_id)
+    return folders == 0 and files == 0
+
+
+def format_thumbnail_url(file_id: str, size: int = 1648) -> str:
+    """Formats a direct Google Drive thumbnail URL for images/videos."""
+    return f"https://drive.google.com/thumbnail?id={file_id}&sz=s{size}"
+
+
+# =====================================================================
+# GOOGLE NATIVE BATCH HTTP REQUESTS (100 OPS / SINGLE HTTP POST)
+# =====================================================================
+
+def batch_create_folders(
+    folder_specs: List[Dict[str, str]], 
+    chunk_size: int = 50
+) -> List[Dict[str, Any]]:
+    """
+    Creates multiple folders in batches using Google Drive's native multipart batch endpoint.
+    Each spec: {"name": str, "parent_id": str, "description": str, "relative_path": str}
+    Returns list of successfully created folder dicts with 'id' and 'relative_path'.
+    """
+    if not folder_specs:
+        return []
+
+    service = get_thread_safe_drive_service()
+    created_results: List[Dict[str, Any]] = []
+
+    # Process in chunks of up to chunk_size (default 50 for safety margin)
+    for i in range(0, len(folder_specs), chunk_size):
+        chunk = folder_specs[i : i + chunk_size]
+        batch = service.new_batch_http_request()
+
+        def make_callback(spec):
+            def _cb(request_id, response, exception):
+                if exception is None:
+                    created_results.append({
+                        "id": response.get("id"),
+                        "name": response.get("name"),
+                        "relative_path": spec.get("relative_path"),
+                        "parent_id": spec.get("parent_id"),
+                    })
+            return _cb
+
+        for spec in chunk:
+            body: Dict[str, Any] = {
+                "name": spec["name"],
+                "mimeType": "application/vnd.google-apps.folder",
+                "parents": [spec["parent_id"]],
+                "description": spec.get("description", ""),
+            }
+            if spec.get("properties"):
+                body["properties"] = spec["properties"]
+            req = service.files().create(
+                body=body,
+                fields="id, name, mimeType, parents, description, properties",
+                supportsAllDrives=True,
+            )
+            batch.add(req, callback=make_callback(spec))
+
+        batch.execute()
+
+    return created_results
+
+
+def batch_update_descriptions(
+    update_specs: List[Dict[str, str]], 
+    chunk_size: int = 50
+) -> int:
+    """
+    Updates descriptions for multiple folders in batches.
+    Each spec: {"file_id": str, "description": str}
+    Returns count of successfully updated items.
+    """
+    if not update_specs:
+        return 0
+
+    service = get_thread_safe_drive_service()
+    updated_count = 0
+
+    for i in range(0, len(update_specs), chunk_size):
+        chunk = update_specs[i : i + chunk_size]
+        batch = service.new_batch_http_request()
+
+        def _cb(request_id, response, exception):
+            nonlocal updated_count
+            if exception is None:
+                updated_count += 1
+
+        for spec in chunk:
+            req = service.files().update(
+                fileId=spec["file_id"],
+                body={"description": spec["description"]},
+                fields="id, name",
+                supportsAllDrives=True,
+            )
+            batch.add(req, callback=_cb)
+
+        batch.execute()
+
+    return updated_count
+
+
+def batch_trash_files(
+    file_ids: List[str], 
+    chunk_size: int = 50
+) -> int:
+    """
+    Trashes multiple folders in batches.
+    Returns count of successfully trashed items.
+    """
+    if not file_ids:
+        return 0
+
+    service = get_thread_safe_drive_service()
+    trashed_count = 0
+
+    for i in range(0, len(file_ids), chunk_size):
+        chunk = file_ids[i : i + chunk_size]
+        batch = service.new_batch_http_request()
+
+        def _cb(request_id, response, exception):
+            nonlocal trashed_count
+            if exception is None:
+                trashed_count += 1
+
+        for fid in chunk:
+            req = service.files().update(
+                fileId=fid,
+                body={"trashed": True},
+                fields="id, trashed",
+                supportsAllDrives=True,
+            )
+            batch.add(req, callback=_cb)
+
+        batch.execute()
+
+    return trashed_count

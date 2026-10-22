@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firebase Task Board</title>
+  </head>
+  <body>
+    <main class="app">
+      <section id="auth-view" class="panel">
+        <h1>Firebase Task Board</h1>
+        <p class="muted">A tiny playground for Firebase Authentication + Firestore.</p>
+
+        <form id="auth-form">
+          <label>
+            Email
+            <input id="email" type="email" autocomplete="email" required />
+          </label>
+
+          <label>
+            Password
+            <input id="password" type="password" autocomplete="current-password" minlength="6" required />
+          </label>
+
+          <div class="actions">
+            <button type="submit" data-mode="login">Log in</button>
+            <button type="button" id="signup-btn" class="secondary">Create account</button>
+          </div>
+
+          <p id="auth-message" class="message"></p>
+        </form>
+      </section>
+
+      <section id="app-view" class="panel hidden">
+        <header class="topbar">
+          <div>
+            <h1>My Tasks</h1>
+            <p id="user-info" class="muted"></p>
+          </div>
+          <button id="logout-btn" class="secondary">Log out</button>
+        </header>
+
+        <form id="task-form" class="task-form">
+          <input id="task-title" type="text" placeholder="What needs to be done?" maxlength="120" required />
+          <button type="submit">Add task</button>
+        </form>
+
+        <p id="task-message" class="message"></p>
+        <ul id="task-list" class="task-list"></ul>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

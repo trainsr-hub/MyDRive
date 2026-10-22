@@ -1,0 +1,79 @@
+# Plan: Named Component & Condition Tables
+
+## Context
+The Manager wants the ability to create and rename named **tables** from the top-level **CATEGORIES** navigation—across both Components and Conditions.
+
+The plugin currently treats Components as a two-level hierarchy:
+- **Category**: a folder below `Hazard_Trigger_Data/Components/`.
+- **Table**: a JSON file inside that folder, whose entries are `Record<HexId, ComponentEntry>`.
+
+Conditions already live as JSON dictionaries below `Hazard_Trigger_Data/Conditions/`, but the manager currently merges *all* condition files for reading and always writes the aggregate dictionary back to `conditions.json`. That is incompatible with user-managed, independent condition tables: editing one table could collapse entries from every table into the default file. The work must therefore add source-aware condition-table loading/saving before its UI gains table creation and rename capabilities.
+
+## Recommended Approach
+
+### 1. Establish safe, reusable table/category file operations
+**Modify:** `src/utils/componentManager.ts`
+
+- Add one shared name normalizer/validator for user-created folder and file names:
+  - trim whitespace;
+  - reject empty names, path separators, Windows-invalid characters, control characters, reserved Windows device names, and names ending in `.` or spaces;
+  - append `.json` only to component/condition table filenames;
+  - reject collisions instead of silently overwriting.
+- Add component hierarchy operations using Obsidian’s `app.vault.adapter`:
+  - `createCategoryFolder()` creates `Hazard_Trigger_Data/Components/<category>/`.
+  - `renameCategoryFolder()` atomically renames that folder, retaining all child tables and data.
+  - reuse/upgrade `createComponentFile()` to create an empty `{}` table in the selected category.
+  - `renameComponentFile()` renames an existing component JSON table while retaining its entries.
+- Return the new vault-relative path on successful creation/rename, so the UI can explicitly reselect its item after reload.
+
+### 2. Give Components category/table navigation full management controls
+**Modify:** `src/app/components/ComponentsManagerView.tsx`
+
+- Add `+ Category` to the top **CATEGORIES** row and `+ Table` to the selected category’s **FILES** row.
+- Add an edit/rename action to the selected category and selected table pill; use pre-populated native prompts to match current lightweight in-app editing patterns.
+- On success: call store `reload()`, update `selectedFolderId` / `selectedFileRelPath` to the returned path, and let the current working-copy synchronization initialize the new/renamed table.
+- Surface validation, collision, and adapter failure messages with `window.alert`; no destructive overwrite path.
+- Keep matrix domains read-only: creation/rename controls apply only to normal `Components/` folders/files, never `Matrices/`.
+
+### 3. Make Condition data source-aware
+**Modify:** `src/types/schema.ts`, `src/utils/conditionManager.ts`, `src/store/useTriggerStore.ts`
+
+- Extend the condition loading result so it retains each table’s filename/path and its individual dictionary, alongside the merged registry used by the condition-physics engine.
+- Preserve the current merged `conditions` registry for `requirement`, `impact`, `tag_team`, and `conflicts_with` resolution. This ensures every condition table remains part of the same global condition graph.
+- Refactor `ConditionManager` to:
+  - list condition JSON tables and load/save an individual selected table;
+  - create an empty named condition table;
+  - rename a condition table without altering its entries;
+  - continue treating `conditions.json` as the default table for backward compatibility.
+- Change single-condition creation from component pickers to write explicitly to the default `conditions.json`, avoiding ambiguity when no Conditions table context exists.
+
+### 4. Add named Condition table navigation and editing
+**Modify:** `src/app/components/ConditionsManagerView.tsx`
+
+- Add a **TABLES** row above the existing condition-category filter tabs.
+- Let the Manager select the active condition table; display and edit only that table’s entries in the grid.
+- Add `+ Table` and rename control using the same safe manager operations as Components.
+- Save only the active table’s working dictionary—never the global merged registry.
+- Keep the existing semantic `Category` tabs (Subject, Pose, Environment, etc.) as filters within the selected table; they are distinct from table navigation.
+- Add a visible table label/path beside the current storage hint, so the Manager always sees which JSON table will be edited.
+
+### 5. Protect reference integrity during structural renames
+**Modify:** `src/app/components/ComponentsManagerView.tsx`, `src/app/components/ConditionsManagerView.tsx`
+
+- Table and category renames retain JSON contents and Hex IDs, so cross-references (`requirement`, `impact`, `tag_team`, `conflicts_with`) remain valid with no migration.
+- Do not provide delete controls in this first pass. Deletion is destructive and must be designed separately with dependency awareness and explicit confirmation.
+
+## Verification
+
+1. Run `npm run build` inside `.obsidian/plugins/obsidian-hazard-trigger`; require a zero-error Vite build.
+2. Components:
+   - create a category, create an empty table in it, add/save an option;
+   - rename the table, then rename the category;
+   - confirm the JSON contents persist and the UI remains selected on the renamed objects.
+3. Conditions:
+   - create a second named conditions table, add/save a condition there, and rename it;
+   - reopen the default `conditions.json` table and verify it was not overwritten;
+   - confirm both tables contribute to the store’s merged condition registry and selectors.
+4. Select a condition from the secondary condition table in a component’s requirement/impact picker; save and reload; confirm selection and conflict/tag-team physics still resolve.
+5. Attempt duplicate, empty, separator-containing, and Windows-reserved names; confirm they are rejected without filesystem mutation.
+6. Confirm no management controls appear for Matrix domains.

@@ -1,0 +1,81 @@
+{
+  "table_name": "quotes",
+  "columns": [
+    {
+      "name": "Quote ID",
+      "slug": "id",
+      "type": "hex_id",
+      "metadata": {
+        "prefix": "QUOT"
+      }
+    },
+    {
+      "name": "Index Number",
+      "slug": "idx",
+      "type": "int_scalar",
+      "metadata": {
+        "default_option": "max(idx) + 1"
+      }
+    },
+    {
+      "name": "Quote Content",
+      "slug": "main_content",
+      "type": "text_multi",
+      "metadata": {}
+    },
+    {
+      "name": "Context & Attribution",
+      "slug": "context",
+      "type": "text_multi",
+      "metadata": {}
+    },
+    {
+      "name": "Date Added",
+      "slug": "date",
+      "type": "text_single",
+      "metadata": {}
+    },
+    {
+      "name": "Specific Source",
+      "slug": "specific_id",
+      "type": "relation_single",
+      "metadata": {
+        "target": "specifics"
+      }
+    },
+    {
+      "name": "Themes",
+      "slug": "theme_ids",
+      "type": "relation_multi",
+      "metadata": {
+        "target": "themes"
+      }
+    },
+    {
+      "name": "Usages",
+      "slug": "usage_ids",
+      "type": "relation_multi",
+      "metadata": {
+        "target": "usages"
+      }
+    },
+    {
+      "name": "Preference Tags",
+      "slug": "preference",
+      "type": "enum_multi",
+      "metadata": {
+        "options": [
+          "starred",
+          "favorite",
+          "essential"
+        ]
+      }
+    },
+    {
+      "name": "Average Score",
+      "slug": "average_score",
+      "type": "float_scalar",
+      "metadata": {}
+    }
+  ]
+}

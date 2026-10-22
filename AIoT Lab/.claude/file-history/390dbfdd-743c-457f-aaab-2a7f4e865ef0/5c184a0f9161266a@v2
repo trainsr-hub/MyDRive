@@ -1,0 +1,85 @@
+// path: src/apps/arc-jurassic/core/evolutionEngine.ts
+/**
+ * Evolution Engine for ARC Jurassic
+ *
+ * Rules:
+ * - Evolution requires at most 4 dinos to increase by an EVO level.
+ * - Standard 4-evo dino thresholds: [1, 2, 4, 8] (max capacity = 8)
+ * - 10-evo boss dino thresholds: [1, 2, 4, 8, 12, 16, 20, 24, 28, 32] (max capacity = 32)
+ * - General N-evo thresholds: for e <= 4, 2^(e-1); for e > 4, 8 + (e - 4) * 4.
+ */
+
+export function getDinoThresholds(evoCount: number = 4): number[] {
+    const total = Math.max(1, evoCount);
+    const thresholds: number[] = [];
+    for (let e = 1; e <= total; e++) {
+        if (e <= 4) {
+            thresholds.push(Math.pow(2, e - 1));
+        } else {
+            thresholds.push(8 + (e - 4) * 4);
+        }
+    }
+    return thresholds;
+}
+
+export function calcDinoMaxCapacity(dinoOrEvoCount: any): number {
+    let evoCount = 4;
+    if (typeof dinoOrEvoCount === 'number') {
+        evoCount = dinoOrEvoCount;
+    } else if (dinoOrEvoCount && Array.isArray(dinoOrEvoCount.evolutions)) {
+        evoCount = dinoOrEvoCount.evolutions.length;
+    }
+    const thresholds = getDinoThresholds(evoCount);
+    return thresholds[thresholds.length - 1] || 8;
+}
+
+export function calcDinoRank(ownedCount: number, evoCount: number = 4): number {
+    if (!ownedCount || ownedCount <= 0) return 0;
+    const thresholds = getDinoThresholds(evoCount);
+    let rank = 0;
+    for (let i = 0; i < thresholds.length; i++) {
+        if (ownedCount >= thresholds[i]) {
+            rank = i + 1;
+        } else {
+            break;
+        }
+    }
+    return rank;
+}
+
+export function calcDinoCurrentEvo(dino: any, rank: number, isUnlocked: boolean = true): any | null {
+    const evolutions = dino?.evolutions || [];
+    if (evolutions.length === 0) return null;
+    if (!isUnlocked || rank <= 0) {
+        return evolutions[evolutions.length - 1]; // Preview max evo when locked
+    }
+    const index = Math.min(Math.max(0, rank - 1), evolutions.length - 1);
+    return evolutions[index];
+}
+
+export function calcDinoProgressWidth(ownedCount: number, evoCount: number = 4): number {
+    if (!ownedCount || ownedCount <= 0) return 0;
+    const thresholds = getDinoThresholds(evoCount);
+    const N = thresholds.length;
+    if (N === 0) return 0;
+    if (ownedCount >= thresholds[N - 1]) return 100;
+
+    if (ownedCount < thresholds[0]) {
+        const segStart = 0;
+        const segEnd = (0.5 / N) * 100;
+        return segStart + (ownedCount / thresholds[0]) * (segEnd - segStart);
+    }
+
+    for (let i = 1; i < N; i++) {
+        const prevThresh = thresholds[i - 1];
+        const currThresh = thresholds[i];
+        if (ownedCount <= currThresh) {
+            const segStart = ((i - 0.5) / N) * 100;
+            const segEnd = ((i + 0.5) / N) * 100;
+            const fraction = (ownedCount - prevThresh) / (currThresh - prevThresh);
+            return segStart + fraction * (segEnd - segStart);
+        }
+    }
+
+    return 100;
+}

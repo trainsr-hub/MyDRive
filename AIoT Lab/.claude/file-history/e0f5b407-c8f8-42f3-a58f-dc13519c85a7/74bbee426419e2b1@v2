@@ -1,0 +1,282 @@
+/* ========================================================================
+   FIELD EDITOR SIDEBAR, CONFIG CARDS, INPUTS & CODE PANELS
+   ======================================================================== */
+.field-sidebar {
+  flex-shrink: 0;
+  width: 0;
+  overflow: hidden;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  transition: width var(--sidebar-anim);
+}
+
+.field-sidebar.open {
+  width: var(--sidebar-width);
+}
+
+.sidebar-inner {
+  width: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Sidebar header */
+.sidebar-head {
+  flex-shrink: 0;
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.sidebar-col-label {
+  font: 700 14px var(--font-body);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.sidebar-col-label .col-num {
+  font: 500 11px var(--font-mono);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.sidebar-col-label .col-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-nav {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+/* Sidebar tabs */
+.sidebar-tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.stab-btn {
+  padding: 0.3rem 0.7rem;
+  font: 600 11px var(--font-mono);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: all 0.12s ease;
+}
+
+.stab-btn:hover { background: var(--bg-input); color: var(--text-secondary); }
+
+.stab-btn.active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Sidebar body */
+.sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Sidebar panels */
+.sidebar-panel { display: none; flex-direction: column; gap: 1.25rem; }
+.sidebar-panel.active { display: flex; }
+
+/* Field groups */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field-label {
+  font: 600 11px var(--font-mono);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.field-hint {
+  font: 400 11px var(--font-body);
+  color: var(--text-dim);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Inputs & selects */
+input[type="text"],
+input[type="email"],
+input[type="number"],
+select,
+textarea {
+  height: var(--input-height);
+  padding: 0 0.85rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  transition: all 0.12s ease;
+  resize: none;
+  width: 100%;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  background: var(--bg-input-focus);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  outline: none;
+}
+
+textarea {
+  height: 90px;
+  padding: 0.65rem 0.85rem;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='8' height='6' viewBox='0 0 8 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23ff9e1b' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 2rem;
+  cursor: pointer;
+}
+
+/* Sidebar Section Cards (Always Visible) */
+.sidebar-section-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.section-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 0.5rem;
+  font: 600 11.5px var(--font-mono);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Enum option pills */
+.options-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.option-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--accent-bg);
+  border: 1px solid rgba(255,158,27,0.3);
+  color: var(--accent);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.option-pill button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.option-pill button:hover { opacity: 1; }
+
+.section-sep {
+  height: 1px;
+  background: var(--border-light);
+}
+
+.sidebar-footer {
+  flex-shrink: 0;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border-light);
+}
+
+/* Code inspector block */
+.code-block {
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.code-block-head {
+  padding: 0.5rem 0.85rem;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid var(--border-light);
+  font: 600 11px var(--font-mono);
+  color: var(--text-dim);
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.code-pre {
+  padding: 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  overflow-x: auto;
+  max-height: 380px;
+  overflow-y: auto;
+  white-space: pre;
+}
+
+@media (max-width: 768px) {
+  :root { --sidebar-width: 100vw; }
+  .field-sidebar.open { width: 100vw; position: fixed; right: 0; top: 0; bottom: 0; z-index: 200; }
+}

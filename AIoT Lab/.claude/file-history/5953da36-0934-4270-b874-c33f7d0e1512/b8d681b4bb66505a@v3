@@ -1,0 +1,95 @@
+# Tactical Blueprint: Sovereign Custom Playlists for Universe 25
+
+## Context & Objectives
+The Manager has directed the implementation of **Custom Playlists** in Vinyl Angel:
+- Focus solely on **Catalog Playlists** (default YouTube ingested channels) and **My Custom Playlists** (hand-curated mixtapes).
+- Custom playlists allow personal curation, bookmarking, and looping of designated tracks (including Timeblock and prestige tracks).
+- Must adhere strictly to the 5-Tier architecture: custom playlists reside in Tier 5 configuration (`_5_config.db`), hydrate metadata on-the-fly from Tier 1 (`_1_static.db`) and Tier 4 (`_4_display.db`), and stream seamlessly through `VinylPlayer.tsx`.
+
+---
+
+## Architecture & Data Contracts
+
+### 1. SQLite Database Schema (`_5_config.db`)
+- **Database File**: `backend/data/projects/music_app/app_data/_5_config.db`
+- **Table**: `custom_playlists`
+- **Schema**:
+  - `id`: `TEXT PRIMARY KEY` (e.g. `pl_1730000000_abc`)
+  - `name`: `TEXT NOT NULL`
+  - `emoji`: `TEXT DEFAULT '🎵'`
+  - `description`: `TEXT`
+  - `track_ids`: `TEXT NOT NULL` (JSON-serialized array of YouTube video IDs)
+  - `created_at`: `TEXT NOT NULL` (ISO timestamp)
+  - `updated_at`: `TEXT NOT NULL` (ISO timestamp)
+
+### 2. Project Tier Configuration (`music_app/index.json`)
+Add dedicated tier alias pointing to `_5_config.db`:
+```json
+"custom_playlists": { "filename": "_5_config.db", "format": "sqlite", "table": "custom_playlists" }
+```
+
+### 3. Backend Storage Engine Fix (`backend/core/storage_engine.py`)
+In `upsert`, `batch_upsert`, `read_all`, `read_key`, `batch_read`, and `delete`:
+- Replace `if not tables:` with `if target_table not in tables:` to support creating and querying new tables on an existing SQLite database file that already has tables (like `_5_config.db`).
+
+### 4. TypeScript Interface (`universe-25/src/apps/vinyl-angel/types.ts`)
+```typescript
+export interface CustomPlaylist {
+  id: string;
+  name: string;
+  emoji?: string;
+  description?: string;
+  track_ids: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+```
+
+### 5. Zustand Store State (`useVinylStore.ts`)
+- State: `customPlaylists: CustomPlaylist[]`
+- Actions: `setCustomPlaylists`, `addCustomPlaylist`, `updateCustomPlaylist`, `removeCustomPlaylist`
+
+### 6. Engine Services (`universe-25/src/apps/vinyl-angel/services/engine.ts`)
+- `fetchCustomPlaylists(projectId)`: Reads and normalizes all custom playlists from Tier 5.
+- `saveCustomPlaylist(projectId, playlist)`: Upserts a custom playlist in Tier 5.
+- `deleteCustomPlaylist(projectId, playlistId)`: Deletes a custom playlist from Tier 5.
+- `toggleTrackInCustomPlaylist(projectId, playlistId, trackId)`: Adds/removes a track ID and updates Tier 5.
+- `fetchCustomPlaylistTracks(projectId, trackIds)`: Batch-reads Tier 1 for static metadata and Tier 4 for hazard metrics, returning `PlaylistItem[]` ready for player buffering.
+
+---
+
+## UI Components & Integration
+
+### 1. `CreatePlaylistModal.tsx`
+- Modal dialog using `ModalContainer` and `SharedButton`.
+- Inputs: Name, Emoji selector (with quick-pick icons: 🎵, 🎧, 🔥, 🌙, ☕, ⚡, 🚀, 🌊, ⚔️, 🪶, 💎, 🌸), Description.
+- Automatically saves to Tier 5 and updates Zustand store.
+
+### 2. `AddToPlaylistModal.tsx`
+- Checklist dialog showing all custom playlists with checkmarks for tracks already included.
+- Clicking a playlist toggles the active track's membership with instant optimistic UI update.
+- Shortcut button to open `CreatePlaylistModal` directly if the user needs a new list.
+
+### 3. Vinyl Player Integration (`VinylPlayer.tsx`)
+- **Include Dropdown**:
+  - `🌐 All Playlists (Shuffle)`
+  - `<optgroup label="⭐ My Custom Playlists">`: Shows user's playlists (e.g. `🌙 Late Night Focus (14 songs)`) + `➕ New Custom Playlist...` trigger.
+  - `<optgroup label="📻 Channel Origins">`: Shows ingested YouTube channels.
+- **Custom Stream Mode**:
+  - When `selectedChannel` starts with `CUSTOM:pl_xxx`, `loadData` calls `fetchCustomPlaylistTracks` and buffers the tracks.
+  - When all songs finish, `handleNextSong` loops the custom playlist instead of falling back to random catalog songs.
+- **Quick-Add Popover**:
+  - `+ Playlist` button on the player header bar next to the song title for instant 1-click toggling.
+
+### 4. Vinyl Gallery Integration (`VinylGallery.tsx`)
+- Add `+ List` button on each track card and in the Track Inspector modal so you can curate any track directly into your custom playlists.
+
+---
+
+## Verification & Testing Plan
+1. **Backend Verification**: Test order execution via Python to verify `custom_playlists` table is created in `_5_config.db`, records are upserted, queried, and deleted properly.
+2. **TypeScript & Compilation**: Verify 0 diagnostics across all modified and newly created files via `mcp_claude_vscode_getDiagnostics`.
+3. **End-to-End User Flow**:
+   - Create a playlist with custom emoji and name.
+   - Add songs to it from Player and Gallery.
+   - Stream the playlist in the Player; verify tracks buffer, display accurate hazard scores, and loop seamlessly.

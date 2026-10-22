@@ -1,0 +1,86 @@
+import asyncio
+import json
+import subprocess
+import time
+import urllib.request
+import websockets
+
+async def test_iframe_direct():
+    chrome_path = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
+    proc = subprocess.Popen([
+        chrome_path,
+        '--headless=new',
+        '--remote-debugging-port=9223',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-default-browser-check',
+        'http://localhost:5173/animations/2-phases/phase_005_spool_and_shatter.html'
+    ])
+    await asyncio.sleep(2)
+
+    console_messages = []
+
+    try:
+        tabs = json.loads(urllib.request.urlopen('http://localhost:9223/json').read())
+        target_tab = None
+        for t in tabs:
+            if 'phase_005' in t.get('url', ''):
+                target_tab = t
+                break
+
+        if not target_tab:
+            print("Target tab phase_005 not found!")
+            return
+
+        ws_url = target_tab['webSocketDebuggerUrl']
+        print(f"Connecting to phase_005 tab: {ws_url}")
+
+        async with websockets.connect(ws_url) as ws:
+            await ws.send(json.dumps({'id': 1, 'method': 'Log.enable'}))
+            await ws.send(json.dumps({'id': 2, 'method': 'Runtime.enable'}))
+
+            # Trigger a deposit of 1800s directly
+            await ws.send(json.dumps({
+                'id': 3,
+                'method': 'Runtime.evaluate',
+                'params': {'expression': 'depositSession(1800)'}
+            }))
+
+            # Wait 3 seconds for spooling + explosion to complete
+            t_end = time.time() + 3.0
+            while time.time() < t_end:
+                try:
+                    raw = await asyncio.wait_for(ws.recv(), timeout=0.5)
+                    msg = json.loads(raw)
+                    method = msg.get('method', '')
+                    if method == 'Log.entryAdded':
+                        entry = msg.get('params', {}).get('entry', {})
+                        console_messages.append({
+                            'level': entry.get('level'),
+                            'text': entry.get('text'),
+                        })
+                    elif method == 'Runtime.consoleAPICalled':
+                        params = msg.get('params', {})
+                        args = [a.get('value', str(a)) for a in params.get('args', [])]
+                        console_messages.append({
+                            'level': params.get('type'),
+                            'text': ' '.join(str(x) for x in args),
+                        })
+                except asyncio.TimeoutError:
+                    pass
+
+        print("\n--- PHASE 005 CONSOLE MESSAGES ---")
+        for m in console_messages:
+            print(f"[{m.get('level')}] {m.get('text')}")
+
+        errors_or_warnings = [m for m in console_messages if m.get('level') in ('error', 'warning')]
+        if errors_or_warnings:
+            print("\n❌ Errors/Warnings found:", errors_or_warnings)
+        else:
+            print("\n✅ PERFECT: Exactly 0 console errors and 0 warnings during full deposit and explosion cycle!")
+
+    finally:
+        proc.terminate()
+
+if __name__ == '__main__':
+    asyncio.run(test_iframe_direct())

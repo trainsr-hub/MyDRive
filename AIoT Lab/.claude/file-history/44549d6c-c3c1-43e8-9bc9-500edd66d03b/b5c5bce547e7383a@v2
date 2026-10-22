@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Card Flip</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #0c0a14;
+  font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 32px;
+}
+
+/* ── Stars bg ── */
+.stars {
+  position: fixed; inset: 0; pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(180,160,255,.7) 0 1px, transparent 1.4px),
+    radial-gradient(circle, rgba(220,210,255,.4) 0 1px, transparent 1.4px);
+  background-size: 113px 113px, 79px 79px;
+  background-position: 23px 17px, 54px 61px;
+  opacity: .18;
+}
+
+/* ── Scene ── */
+.scene {
+  position: relative;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 32px;
+  z-index: 1;
+}
+
+/* ── Card ── */
+.card-wrap {
+  width: 220px; height: 340px;
+  perspective: 900px;
+  cursor: default;
+}
+
+.card {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(.4,0,.2,1);
+}
+.card.flipped { transform: rotateY(180deg); }
+.card.shake {
+  animation: shake 0.35s ease;
+}
+@keyframes shake {
+  0%,100% { transform: rotateY(0) translateX(0); }
+  20%      { transform: rotateY(0) translateX(-8px); }
+  40%      { transform: rotateY(0) translateX(8px); }
+  60%      { transform: rotateY(0) translateX(-5px); }
+  80%      { transform: rotateY(0) translateX(4px); }
+}
+
+.card-face {
+  position: absolute; inset: 0;
+  border-radius: 16px;
+  backface-visibility: hidden;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+
+/* Back face */
+.card-back {
+  background: linear-gradient(145deg, #1a1228 0%, #120d22 100%);
+  border: 1.5px solid rgba(140,100,220,.3);
+  box-shadow: 0 0 40px rgba(100,60,200,.25), inset 0 0 30px rgba(80,40,160,.15);
+  animation: backGlow 4s ease-in-out infinite;
+}
+@keyframes backGlow {
+  0%,100% { box-shadow: 0 0 40px rgba(100,60,200,.25), inset 0 0 30px rgba(80,40,160,.15); }
+  50%      { box-shadow: 0 0 60px rgba(120,80,240,.40), inset 0 0 40px rgba(100,60,200,.25); }
+}
+
+/* Mandala back design */
+.card-back::before, .card-back::after {
+  content: '';
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+.card-back::before {
+  width: 160px; height: 160px;
+  border: 1px solid rgba(160,120,255,.2);
+  box-shadow:
+    0 0 0 20px rgba(140,100,240,.06),
+    0 0 0 40px rgba(120,80,220,.04),
+    0 0 0 60px rgba(100,60,200,.03);
+}
+.card-back::after {
+  width: 80px; height: 80px;
+  border: 1px solid rgba(200,160,255,.25);
+  background: radial-gradient(circle, rgba(140,100,240,.15) 0%, transparent 70%);
+}
+
+.mandala-lines {
+  position: absolute; inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg,   transparent, transparent 39px, rgba(140,100,240,.07) 40px),
+    repeating-linear-gradient(90deg,  transparent, transparent 39px, rgba(140,100,240,.07) 40px),
+    repeating-linear-gradient(45deg,  transparent, transparent 27px, rgba(140,100,240,.04) 28px),
+    repeating-linear-gradient(-45deg, transparent, transparent 27px, rgba(140,100,240,.04) 28px);
+}
+
+.card-mark {
+  position: relative; z-index: 1;
+  font-size: 48px;
+  opacity: .35;
+  animation: markPulse 4s ease-in-out infinite;
+}
+@keyframes markPulse {
+  0%,100% { opacity: .35; transform: scale(1); }
+  50%      { opacity: .55; transform: scale(1.06); }
+}
+
+/* Front face */
+.card-front {
+  transform: rotateY(180deg);
+  background: linear-gradient(145deg, #1c1430 0%, #14102a 100%);
+  border: 2px solid var(--rarity-color, rgba(200,160,255,.4));
+  box-shadow: 0 0 50px var(--rarity-glow, rgba(160,120,255,.3));
+  flex-direction: column; gap: 12px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.card-rarity-label {
+  font-size: 10px; letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--rarity-color, #a78bfa);
+  opacity: .7;
+}
+.card-result-symbol { font-size: 64px; }
+.card-result-name {
+  font-size: 18px; font-weight: 700;
+  color: var(--rarity-color, #a78bfa);
+  letter-spacing: .06em;
+}
+
+/* ── Light rays (Legendary) ── */
+.rays {
+  position: absolute; inset: 0;
+  pointer-events: none; opacity: 0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.rays.active { animation: raysAnim 1.2s ease-out forwards; }
+@keyframes raysAnim {
+  0%  { opacity: 0; }
+  15% { opacity: 1; }
+  100%{ opacity: 0; }
+}
+.rays::before {
+  content: '';
+  position: absolute; inset: -100%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg, rgba(255,220,80,.18) 5deg, transparent 10deg,
+    transparent 30deg, rgba(255,220,80,.18) 35deg, transparent 40deg,
+    transparent 60deg, rgba(255,220,80,.18) 65deg, transparent 70deg,
+    transparent 90deg, rgba(255,220,80,.18) 95deg, transparent 100deg,
+    transparent 120deg, rgba(255,220,80,.18) 125deg, transparent 130deg,
+    transparent 150deg, rgba(255,220,80,.18) 155deg, transparent 160deg,
+    transparent 180deg, rgba(255,220,80,.18) 185deg, transparent 190deg,
+    transparent 210deg, rgba(255,220,80,.18) 215deg, transparent 220deg,
+    transparent 240deg, rgba(255,220,80,.18) 245deg, transparent 250deg,
+    transparent 270deg, rgba(255,220,80,.18) 275deg, transparent 280deg,
+    transparent 300deg, rgba(255,220,80,.18) 305deg, transparent 310deg,
+    transparent 330deg, rgba(255,220,80,.18) 335deg, transparent 340deg
+  );
+  animation: raysSpin 1.2s linear forwards;
+}
+@keyframes raysSpin { to { transform: rotate(60deg); } }
+
+/* ── Result text ── */
+.result-label {
+  font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--rarity-color, #a78bfa);
+  opacity: 0; transform: translateY(8px);
+  transition: opacity .4s, transform .4s;
+  text-align: center; min-height: 24px;
+}
+.result-label.show { opacity: 1; transform: translateY(0); }
+
+/* ── Button ── */
+.draw-btn {
+  padding: 14px 48px;
+  background: #1a1228; border: 1.5px solid rgba(140,100,220,.35);
+  border-radius: 12px; color: #c4b5fd;
+  font-size: 13px; letter-spacing: .16em; text-transform: uppercase;
+  cursor: pointer; transition: background .15s, box-shadow .15s, transform .1s;
+  box-shadow: 0 0 20px rgba(100,60,200,.2);
+}
+.draw-btn:hover:not(:disabled) {
+  background: #231640; box-shadow: 0 0 32px rgba(120,80,240,.35);
+}
+.draw-btn:active:not(:disabled) { transform: scale(.97); }
+.draw-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ── Label ── */
+#label {
+  position: fixed; bottom: 16px; left: 18px;
+  font-family: monospace; font-size: 10px; letter-spacing: .14em;
+  color: rgba(140,100,220,.2); text-transform: uppercase;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<div class="scene">
+  <div class="card-wrap">
+    <div class="card" id="card">
+      <!-- Back -->
+      <div class="card-face card-back">
+        <div class="mandala-lines"></div>
+        <div class="card-mark">✦</div>
+      </div>
+      <!-- Front -->
+      <div class="card-face card-front" id="cardFront">
+        <div class="rays" id="rays"></div>
+        <div class="card-rarity-label" id="rarityLabel">—</div>
+        <div class="card-result-symbol" id="resultSymbol">✦</div>
+        <div class="card-result-name"  id="resultName">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-label" id="resultLabel"></div>
+  <button class="draw-btn" id="drawBtn" onclick="draw()">Draw Card</button>
+</div>
+
+<div id="label">Card Flip · Summon</div>
+
+<script>
+const RARITIES = [
+  { name: 'Legendary', symbol: '★', color: '#fbbf24', glow: 'rgba(251,191,36,.45)', weight: 5  },
+  { name: 'Epic',      symbol: '◈', color: '#a855f7', glow: 'rgba(168,85,247,.4)',  weight: 15 },
+  { name: 'Rare',      symbol: '◆', color: '#60a5fa', glow: 'rgba(96,165,250,.4)',  weight: 30 },
+  { name: 'Common',    symbol: '✦', color: '#9ca3af', glow: 'rgba(156,163,175,.3)', weight: 50 },
+];
+
+function roll() {
+  const total = RARITIES.reduce((a, r) => a + r.weight, 0);
+  let rand    = Math.random() * total;
+  for (const r of RARITIES) { rand -= r.weight; if (rand <= 0) return r; }
+  return RARITIES[RARITIES.length - 1];
+}
+
+let busy = false;
+const card   = document.getElementById('card');
+const front  = document.getElementById('cardFront');
+const btn    = document.getElementById('drawBtn');
+
+function setRarity(r) {
+  front.style.setProperty('--rarity-color', r.color);
+  front.style.setProperty('--rarity-glow',  r.glow);
+  document.getElementById('rarityLabel').textContent  = r.name;
+  document.getElementById('resultSymbol').textContent = r.symbol;
+  document.getElementById('resultName').textContent   = r.name;
+}
+
+const wait = ms => new Promise(res => setTimeout(res, ms));
+
+async function draw() {
+  if (busy) return;
+  busy = true;
+  btn.disabled = true;
+
+  const result = roll();
+  setRarity(result);
+
+  // 1. Shake
+  card.classList.add('shake');
+  await wait(360);
+  card.classList.remove('shake');
+
+  // 2. Flip
+  card.classList.add('flipped');
+  await wait(400);
+
+  // 3. Legendary rays
+  if (result.name === 'Legendary') {
+    const rays = document.getElementById('rays');
+    rays.classList.remove('active');
+    void rays.offsetWidth;
+    rays.classList.add('active');
+  }
+
+  // 4. Show result label
+  const lbl = document.getElementById('resultLabel');
+  lbl.textContent = result.name;
+  lbl.style.color = result.color;
+  lbl.classList.add('show');
+
+  // 5. Post to vault
+  window.parent.postMessage({ type: 'summon', animation: 'Card Flip', result: result.name }, '*');
+
+  // 6. Hold, then reset
+  await wait(3000);
+  card.classList.remove('flipped');
+  lbl.classList.remove('show');
+  await wait(700);
+  busy = false;
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>

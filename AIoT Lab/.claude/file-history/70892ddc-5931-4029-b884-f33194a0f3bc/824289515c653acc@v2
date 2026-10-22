@@ -1,0 +1,636 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useGlobalStore } from '../../store/useGlobalStore';
+import { GameLayout } from '../../components/GameLayout';
+import { Sparkles, List, Sliders, Dna, Bot } from 'lucide-react';
+
+// Import styles for Black Hole physics and Gacha UI
+import './styles/juraGlobal.css';
+
+// Import modular tab views (1 folder per tab architecture)
+import { GachaTab } from './components/tabs/gacha/GachaTab';
+import { DinoDetailsTab } from './components/tabs/details/DinoDetailsTab';
+import { AllDinosTab } from './components/tabs/alldinos/AllDinosTab';
+import { SettingsTab } from './components/tabs/settings/SettingsTab';
+
+import { useArcJurassicStore, type ResourceData } from './store/useArcJurassicStore';
+export type { ResourceData };
+import { calcUserTop3Ferocity, calcUserTotalFerocity, calcGachaPool, selectWeightedRoll } from './core/calcGachaPool';
+import { calcDinoCost } from './core/calcDinoCost';
+import { calcDinoMaxCapacity, calcDinoRank, calcDinosNeededForDinoNextEvo, calcDinosNeededForDinoMaxEvo } from './core/evolutionEngine';
+import { rutGonTime } from './core/rutGonTime';
+import {
+  fetchArcProgress,
+  persistArcProgress,
+  resetArcProgress
+} from '../../core/syncEngine';
+import type { DueDinoData, BuyAnimationTarget } from './components/tabs/gacha/types';
+
+// Import raw game data directly for optimal Vite bundling and zero runtime fetch errors
+import dinoRawData from './data/dino.json';
+import lookupRawData from './data/lookup.json';
+import userProgressRawData from './data/user_progress.json';
+
+// Complete data structures for Universe 25 integration
+interface DinoObject {
+  uuid: string;
+  name: string;
+  image_url: string;
+  region: string;
+  rarity: string;
+  hybrid_type: string;
+  class: string;
+  hatch_time_mins: number;
+  buy_price_dna: number;
+  sell_price_dna: number;
+  release_date: string;
+  facts: string[];
+  ingredients: any[];
+  evolutions: {
+    level: number;
+    health: number;
+    damage: number;
+    image_url: string;
+    portrait_frame: string;
+  }[];
+}
+
+interface LookupData {
+  class_icons: Record<string, string>;
+  card_backgrounds: Record<string, string>;
+  hybrid_types: Record<string, string>;
+  region: Record<string, string>;
+  portrait_frames: Record<string, string>;
+  stats: Record<string, string>;
+}
+
+interface UserProgress {
+  owned_dinos: Record<string, { number: number; rank: number; ferocity?: number }>;
+}
+
+const LOCAL_STORAGE_CHEAT_KEY = 'arc_jurassic_free_buy_cheat_v1';
+const LOCAL_STORAGE_RAPID_MODE_KEY = 'arc_jurassic_rapid_mode_v1';
+const LOCAL_STORAGE_AUTO_GACHA_BUY_KEY = 'arc_jurassic_auto_gacha_buy_v1';
+const LOCAL_STORAGE_DUE_DINO_KEY = 'arc_jurassic_due_dino_v1';
+
+export const ArcJurassic: React.FC = () => {
+  const setActiveApp = useGlobalStore((s) => s.setActiveApp);
+
+  // State for game data
+  const [objects, setObjects] = useState<DinoObject[]>([]);
+  const [lookup, setLookup] = useState<LookupData>({
+    class_icons: {},
+    card_backgrounds: {},
+    hybrid_types: {},
+    region: {},
+    portrait_frames: {},
+    stats: {},
+  });
+  const [userProgress, setUserProgress] = useState<UserProgress>({ owned_dinos: {} });
+  const myResources = useArcJurassicStore((s) => s.resources);
+  const setMyResources = useArcJurassicStore((s) => s.setResources);
+  const hydrateArcResources = useArcJurassicStore((s) => s.hydrateFromBackend);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<'gacha' | 'alldinos' | 'settings'>('gacha');
+  const [rosterTargetUuid, setRosterTargetUuid] = useState<string | null>(null);
+  const [buyAnimationTarget, setBuyAnimationTarget] = useState<BuyAnimationTarget | null>(null);
+
+  // Due Dino persistence: lightweight frontend state (remembers unbought roll)
+  const [dueDino, setDueDino] = useState<DueDinoData | null>(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_DUE_DINO_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [excludedIds, setExcludedIds] = useState<string[]>([]);
+  const [top3Ferocity, setTop3Ferocity] = useState(0);
+  const [totalArmyFerocity, setTotalArmyFerocity] = useState(0);
+  const [isFreeBuyCheat, setIsFreeBuyCheat] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(LOCAL_STORAGE_CHEAT_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [isRapidMode, setIsRapidMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(LOCAL_STORAGE_RAPID_MODE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [isAutoGachaBuy, setIsAutoGachaBuy] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(LOCAL_STORAGE_AUTO_GACHA_BUY_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Auto Gacha & Buy 10-Roll Cap Limiter
+  const AUTO_GACHA_ROLL_CAP = 10;
+  const [autoRollsRemaining, setAutoRollsRemaining] = useState<number>(AUTO_GACHA_ROLL_CAP);
+  const autoRollsRemainingRef = useRef<number>(AUTO_GACHA_ROLL_CAP);
+  autoRollsRemainingRef.current = autoRollsRemaining;
+
+  // Load game data from authoritative backend SQLite tiers with bundled fallback
+  useEffect(() => {
+    const initGameData = async () => {
+      try {
+        // 1. Process Dino Objects
+        const dinoObjects: DinoObject[] = Object.entries(dinoRawData).map(([uuid, dino]) => ({
+          uuid,
+          ...(dino as Omit<DinoObject, 'uuid'>)
+        }));
+
+        // 2. Authoritative Backend SQLite Progress Hydration
+        // Prefer backend state over bundled fallback. Only use bundled data if backend call fails.
+        let initialProgress: UserProgress = { owned_dinos: {} };
+        try {
+          const backendProgress = await fetchArcProgress();
+          if (backendProgress) {
+            initialProgress = backendProgress as UserProgress;
+          }
+        } catch (err) {
+          console.warn('[ARC Jurassic] Backend SQLite progress hydration failed, using empty collection:', err);
+          // On error, use empty collection (not bundled starter pack)
+          initialProgress = { owned_dinos: {} };
+        }
+
+        // 3. Authoritative Backend SQLite Resources Hydration via Shared Store
+        await hydrateArcResources();
+
+        setObjects(dinoObjects);
+        setLookup(lookupRawData as unknown as LookupData);
+        setUserProgress(initialProgress);
+
+        // 4. Calculate top 3 ferocity stats & excluded IDs
+        const calculatedExcludedIds: string[] = [];
+
+        for (const [uuid, data] of Object.entries(initialProgress.owned_dinos || {})) {
+          const dino = dinoObjects.find((d: DinoObject) => (d.uuid || (d as any).id || (d as any).name) === uuid);
+          if (dino) {
+            const limit = calcDinoMaxCapacity(dino);
+            if ((data as any).number >= limit) {
+              calculatedExcludedIds.push(uuid);
+            }
+          }
+        }
+
+        const top3 = calcUserTop3Ferocity(dinoObjects, initialProgress);
+        const totalFero = calcUserTotalFerocity(dinoObjects, initialProgress);
+
+        setExcludedIds(calculatedExcludedIds);
+        setTop3Ferocity(top3);
+        setTotalArmyFerocity(totalFero);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error initializing ARC Jurassic game data:", error);
+        setLoading(false);
+      }
+    };
+
+    initGameData();
+  }, []);
+
+  const handleUpdateProgress = async (prog: UserProgress) => {
+    setUserProgress(prog);
+    const totalFero = calcUserTotalFerocity(objects, prog);
+    const top3 = calcUserTop3Ferocity(objects, prog);
+    setTotalArmyFerocity(totalFero);
+    setTop3Ferocity(top3);
+
+    // Recalculate excluded IDs for creatures reaching max capacity
+    const calculatedExcludedIds: string[] = [];
+    for (const [uuid, data] of Object.entries(prog.owned_dinos || {})) {
+      const dino = objects.find((d: DinoObject) => (d.uuid || (d as any).id || (d as any).name) === uuid);
+      if (dino) {
+        const limit = calcDinoMaxCapacity(dino);
+        if ((data as any).number >= limit) {
+          calculatedExcludedIds.push(uuid);
+        }
+      }
+    }
+    setExcludedIds(calculatedExcludedIds);
+
+    try {
+      await persistArcProgress(prog as any);
+    } catch (e) {
+      console.warn('Failed to save progress to SQLite backend:', e);
+    }
+  };
+
+  const handleResetCollection = async () => {
+    setUserProgress({ owned_dinos: {} });
+    setTotalArmyFerocity(0);
+    setTop3Ferocity(0);
+    setExcludedIds([]);
+    try {
+      await resetArcProgress();
+    } catch (e) {
+      console.warn('Failed to reset progress in SQLite backend:', e);
+    }
+  };
+
+  const handleUpdateResources = (res: ResourceData) => {
+    setMyResources(res);
+  };
+
+  const handleSetDueDino = (data: DueDinoData | null) => {
+    setDueDino(data);
+    try {
+      if (data) {
+        localStorage.setItem(LOCAL_STORAGE_DUE_DINO_KEY, JSON.stringify(data));
+      } else {
+        localStorage.removeItem(LOCAL_STORAGE_DUE_DINO_KEY);
+      }
+    } catch (e) {
+      console.warn('Failed to save due dino to localStorage:', e);
+    }
+  };
+
+  const handleToggleFreeBuyCheat = (enabled: boolean) => {
+    setIsFreeBuyCheat(enabled);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_CHEAT_KEY, String(enabled));
+    } catch (e) {
+      console.warn('Failed to save cheat state to localStorage:', e);
+    }
+  };
+
+  const handleToggleRapidMode = (enabled: boolean) => {
+    setIsRapidMode(enabled);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_RAPID_MODE_KEY, String(enabled));
+    } catch (e) {
+      console.warn('Failed to save rapid mode state to localStorage:', e);
+    }
+  };
+
+  const handleToggleAutoGachaBuy = (enabled: boolean) => {
+    setIsAutoGachaBuy(enabled);
+    if (enabled) {
+      setAutoRollsRemaining(AUTO_GACHA_ROLL_CAP);
+      autoRollsRemainingRef.current = AUTO_GACHA_ROLL_CAP;
+    }
+    try {
+      localStorage.setItem(LOCAL_STORAGE_AUTO_GACHA_BUY_KEY, String(enabled));
+    } catch (e) {
+      console.warn('Failed to save auto gacha buy state to localStorage:', e);
+    }
+  };
+
+  // Autonomous Headless Auto Gacha & Auto Buy Controller
+  // Operates continuously across any tab (including List of Dinos) without requiring Gacha Tab to be mounted
+  useEffect(() => {
+    if (!isAutoGachaBuy || loading || buyAnimationTarget !== null || rosterTargetUuid !== null) return;
+    if (objects.length === 0) return;
+
+    let timer: ReturnType<typeof setTimeout>;
+
+    const executeAutonomousStep = () => {
+      // 1. Calculate outcomes pool
+      const poolResult = calcGachaPool(objects, userProgress, excludedIds);
+      const possibleOutcomes = poolResult.pool;
+      if (possibleOutcomes.length === 0) return;
+
+      // 2. Resolve Target Dino & Multiplier (check outstanding due dino first, else roll)
+      let targetUuid: string | null = dueDino?.uuid || null;
+      let multiplier: number = dueDino?.multiplier || 1;
+
+      if (!targetUuid) {
+        // Read persisted wager
+        let wagerOption: string | number = 1;
+        try {
+          const saved = localStorage.getItem('arc_jurassic_roll_wager_v1');
+          if (saved === 'next-evo' || saved === 'max-evo') {
+            wagerOption = saved;
+          } else {
+            const parsed = Number(saved);
+            wagerOption = [1, 2, 3, 4, 8, 16].includes(parsed) ? parsed : 1;
+          }
+        } catch {
+          wagerOption = 1;
+        }
+
+        const roll = selectWeightedRoll(possibleOutcomes);
+        if (!roll) return;
+        targetUuid = roll.uuid;
+
+        const dinoObj = objects.find(o => (o.uuid || (o as any).id || (o as any).name) === targetUuid);
+        if (wagerOption === 'next-evo') {
+          multiplier = calcDinosNeededForDinoNextEvo(dinoObj || roll, userProgress);
+        } else if (wagerOption === 'max-evo') {
+          multiplier = calcDinosNeededForDinoMaxEvo(dinoObj || roll, userProgress);
+        } else {
+          const num = typeof wagerOption === 'number' ? wagerOption : Number(wagerOption);
+          multiplier = isNaN(num) || num < 1 ? 1 : num;
+        }
+      }
+
+      const dino = objects.find(o => (o.uuid || (o as any).id || (o as any).name) === targetUuid);
+      if (!dino) return;
+
+      // 3. Affordability & Capacity Check
+      const cost = calcDinoCost(dino);
+      const currentData = userProgress?.owned_dinos?.[targetUuid] || { number: 0, rank: 0 };
+      const currentCount = Number((currentData as any).number || 0);
+      const maxCapacity = calcDinoMaxCapacity(dino);
+      const maxBuyable = Math.max(1, maxCapacity - currentCount);
+      const buyQty = Math.min(Math.max(1, multiplier), maxBuyable);
+
+      const totalTimeSeconds = cost.totalTimeSeconds * buyQty;
+
+      let canAfford = isFreeBuyCheat;
+      if (!canAfford) {
+        const currentJurassicTime = Number(myResources.jurassic_time?.amount ?? myResources.elemental_time?.golden?.amount ?? 0);
+        canAfford = currentJurassicTime >= totalTimeSeconds;
+      }
+
+      if (!canAfford) {
+        // If cannot afford, save as due dino if not already set, and wait for resources
+        if (!dueDino) {
+          handleSetDueDino({
+            uuid: targetUuid,
+            multiplier
+          });
+        }
+        return;
+      }
+
+      // 4. Deduct resources if cheat disabled
+      if (!isFreeBuyCheat) {
+        const newRes = { ...myResources };
+        const currentJurassicTime = Number(newRes.jurassic_time?.amount ?? newRes.elemental_time?.golden?.amount ?? 0);
+
+        newRes.jurassic_time = {
+          ...newRes.jurassic_time,
+          amount: Math.max(0, Number((currentJurassicTime - totalTimeSeconds).toFixed(2)))
+        };
+
+        handleUpdateResources(newRes);
+      }
+
+      // 5. Calculate pool differential and extract target pool drop rate
+      const prevPoolResult = calcGachaPool(objects, userProgress, excludedIds);
+      const prevPoolSet = new Set(prevPoolResult.pool.map(p => p.uuid));
+      const prevCap = prevPoolResult.cap;
+      const targetPoolDino = prevPoolResult.pool.find(p => p.uuid === targetUuid);
+      const dropRatePercent = targetPoolDino ? targetPoolDino.dropRatePercent : undefined;
+
+      // 6. Update progress & rank
+      const newProg = { ...userProgress, owned_dinos: { ...(userProgress?.owned_dinos || {}) } };
+      const updatedCount = currentCount + buyQty;
+      const evoCount = dino.evolutions?.length || 4;
+      const prevRank = calcDinoRank(currentCount, evoCount);
+      const newRank = calcDinoRank(updatedCount, evoCount);
+      const wasFirstBuy = currentCount === 0;
+
+      newProg.owned_dinos[targetUuid] = {
+        number: updatedCount,
+        rank: newRank
+      };
+
+      handleUpdateProgress(newProg);
+
+      // Post-progress pool
+      const postPoolResult = calcGachaPool(objects, newProg, excludedIds);
+      const newCap = postPoolResult.cap;
+      const newlyUnlockedPoolDinos = postPoolResult.pool.filter(p => !prevPoolSet.has(p.uuid));
+
+      // Clear due dino on successful purchase
+      if (dueDino) {
+        handleSetDueDino(null);
+      }
+
+      // 7. Trigger Rank Climb animation directly on active view
+      setBuyAnimationTarget({
+        uuid: targetUuid,
+        wasFirstBuy,
+        prevRank,
+        newRank,
+        buyQty,
+        dropRatePercent,
+        newlyUnlockedPoolDinos,
+        prevCap,
+        newCap
+      });
+
+      // 8. Decrement remaining auto rolls (shutdown will be triggered AFTER up-evo / rank climb finishes)
+      const nextRolls = Math.max(0, autoRollsRemainingRef.current - 1);
+      autoRollsRemainingRef.current = nextRolls;
+      setAutoRollsRemaining(nextRolls);
+
+      // Ensure view is on List of Dinos so the user experiences the rank climb animation
+      if (view !== 'alldinos') {
+        setView('alldinos');
+      }
+    };
+
+    timer = setTimeout(executeAutonomousStep, 600);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [
+    isAutoGachaBuy,
+    loading,
+    buyAnimationTarget,
+    rosterTargetUuid,
+    objects,
+    userProgress,
+    excludedIds,
+    dueDino,
+    isFreeBuyCheat,
+    myResources,
+    view
+  ]);
+
+  const handleClearAnimation = useCallback(() => {
+    setBuyAnimationTarget(null);
+    // Disarm Auto Gacha & Buy AFTER the rank climb / up-evo sequence has completely finished
+    if (autoRollsRemainingRef.current <= 0) {
+      setIsAutoGachaBuy(false);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_AUTO_GACHA_BUY_KEY, 'false');
+      } catch (e) {
+        console.warn('Failed to save auto gacha buy state to localStorage:', e);
+      }
+    }
+  }, []);
+
+  const handleReturnToGacha = useCallback(() => {
+    setView('gacha');
+  }, []);
+
+  const handleBuySuccess = useCallback((summary: BuyAnimationTarget) => {
+    setBuyAnimationTarget(summary);
+    setView('alldinos');
+  }, []);
+
+  const handleOpenDinoDetails = useCallback((uuid: string | null) => {
+    // Opening the Dino Details sidebar immediately disarms Auto Gacha & Buy mode
+    if (uuid) {
+      setIsAutoGachaBuy(prev => {
+        if (prev) {
+          try {
+            localStorage.setItem(LOCAL_STORAGE_AUTO_GACHA_BUY_KEY, 'false');
+          } catch (e) {
+            console.warn('Failed to save auto gacha buy state to localStorage:', e);
+          }
+          return false;
+        }
+        return prev;
+      });
+    }
+    setRosterTargetUuid(uuid);
+  }, []);
+
+  // Handle navigation back to master game
+  const handleBackToHub = () => {
+    setActiveApp('golden-hour');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white">
+        <div className="text-4xl mb-6">⏳ Loading ARC Jurassic...</div>
+        <div className="animate-spin rounded-full border-4 border-b-4 border-amber-500 w-16 h-16"></div>
+      </div>
+    );
+  }
+
+  return (
+    <GameLayout
+      title="ARC Jurassic"
+      gameTitleIcon={<Dna className="w-5 h-5 text-[#ffd86b]" />}
+      gameTitleBadge="GENETIC VAULT"
+      gameTitleSubtitle="Prehistoric Gacha Nexus • DNA Synthesis Lab"
+      showBackButton={true}
+      backButton="Golden Hour"
+      onBackClick={handleBackToHub}
+      headerRight={
+        <div className="flex items-center gap-3 text-xs font-mono flex-wrap">
+          {/* Total Army Ferocity Indicator */}
+          <div className="flex items-center gap-2 bg-[#161208] px-3.5 py-1.5 rounded-xl border border-amber-500/50 text-xs font-mono font-bold text-amber-300 shadow-[0_0_12px_rgba(255,215,0,0.18)]">
+            <img
+              src="https://cdn.paleo.gg/games/jwtg/images/stats/ferocity.png"
+              className="w-4 h-4 object-contain"
+              alt="Ferocity"
+            />
+            <span>{totalArmyFerocity.toLocaleString()} Total Fero</span>
+          </div>
+
+          {/* Dedicated Resource 1: Jurassic Time */}
+          <div className="flex items-center gap-2 bg-[#14101c] px-3.5 py-1.5 rounded-xl border border-[#2e2638] text-xs font-mono font-bold text-sky-400 shadow-sm">
+            <img src={myResources.jurassic_time?.icon} className="w-4 h-4 object-contain" alt="Jurassic Time" />
+            <span>{rutGonTime(myResources.jurassic_time?.amount || 0, "seconds")}</span>
+          </div>
+
+          {/* Dedicated Resource 2: DNA */}
+          <div className="flex items-center gap-2 bg-[#14101c] px-3.5 py-1.5 rounded-xl border border-[#2e2638] text-xs font-mono font-bold text-[#ffd86b] shadow-sm">
+            <img src={myResources.dna?.icon} className="w-4 h-4 object-contain" alt="DNA" />
+            <span>{(myResources.dna?.amount || 0).toLocaleString()} DNA</span>
+          </div>
+
+          {/* Dedicated Resource 3: Red Orbs */}
+          <div className="flex items-center gap-2 bg-[#1c1424] px-3.5 py-1.5 rounded-xl border border-rose-900/60 text-xs font-mono font-bold text-rose-400 shadow-sm">
+            <img src={myResources.red_orbs?.icon} className="w-4 h-4 object-contain" alt="Red Orbs" />
+            <span>{myResources.red_orbs?.amount || 0} Orbs</span>
+          </div>
+
+          {/* Quick Control: Auto Gacha & Buy Master Killswitch */}
+          <button
+            type="button"
+            onClick={() => handleToggleAutoGachaBuy(!isAutoGachaBuy)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer select-none ${
+              isAutoGachaBuy
+                ? 'bg-emerald-950/80 hover:bg-rose-950/80 border-emerald-400 hover:border-rose-400 text-emerald-300 hover:text-rose-300 shadow-[0_0_12px_rgba(52,211,153,0.35)] animate-pulse'
+                : 'bg-[#14101c] hover:bg-[#20182c] border-[#2e2638] hover:border-emerald-500/50 text-[#8c7a9e] hover:text-emerald-400 shadow-sm'
+            }`}
+            title={isAutoGachaBuy ? 'Click to Stop Auto Gacha & Buy' : 'Click to Enable Auto Gacha & Buy (10-Roll Cap)'}
+          >
+            <Bot className={`w-4 h-4 ${isAutoGachaBuy ? 'text-emerald-400' : 'text-[#8c7a9e]'}`} />
+            <span>{isAutoGachaBuy ? `AUTO GACHA: ON (${autoRollsRemaining}/10)` : 'AUTO GACHA: OFF'}</span>
+          </button>
+        </div>
+      }
+      tabs={[
+        { id: 'gacha', label: 'Gacha', icon: <Sparkles className="w-4 h-4" /> },
+        { id: 'alldinos', label: 'List of Dinos', icon: <List className="w-4 h-4" /> },
+        { id: 'settings', label: 'Settings', icon: <Sliders className="w-4 h-4" /> },
+      ]}
+      activeTab={view}
+      onTabChange={(id) => setView(id as 'gacha' | 'alldinos' | 'settings')}
+    >
+      {/* TAB 1: GACHA */}
+      <div className={view === 'gacha' ? 'block' : 'hidden'}>
+        <GachaTab
+          objects={objects}
+          lookup={lookup}
+          userFerocity={Math.max(Math.floor(top3Ferocity / 2.5), 200)}
+          excludedIds={excludedIds}
+          userProgress={userProgress}
+          myResources={myResources}
+          isFreeBuyCheat={isFreeBuyCheat}
+          isAutoGachaBuy={isAutoGachaBuy}
+          dueDino={dueDino}
+          onSetDueDino={handleSetDueDino}
+          onUpdateResources={handleUpdateResources}
+          onUpdateProgress={handleUpdateProgress}
+          onBuySuccess={handleBuySuccess}
+        />
+      </div>
+
+      {/* TAB 2: ALL DINOS */}
+      <div className={view === 'alldinos' ? 'block' : 'hidden'}>
+        <AllDinosTab
+          objects={objects}
+          lookup={lookup}
+          userProgress={userProgress}
+          buyAnimationTarget={buyAnimationTarget}
+          isRapidMode={isRapidMode}
+          isAutoGachaBuy={isAutoGachaBuy}
+          onClearAnimation={handleClearAnimation}
+          onSelectDino={handleOpenDinoDetails}
+          onReturnToGacha={handleReturnToGacha}
+        />
+      </div>
+
+      {/* TAB 3: SETTINGS */}
+      <div className={view === 'settings' ? 'block' : 'hidden'}>
+        <SettingsTab
+          userProgress={userProgress}
+          myResources={myResources}
+          isFreeBuyCheat={isFreeBuyCheat}
+          isRapidMode={isRapidMode}
+          isAutoGachaBuy={isAutoGachaBuy}
+          autoRollsRemaining={autoRollsRemaining}
+          onUpdateProgress={handleUpdateProgress}
+          onResetCollection={handleResetCollection}
+          onUpdateResources={handleUpdateResources}
+          onToggleFreeBuyCheat={handleToggleFreeBuyCheat}
+          onToggleRapidMode={handleToggleRapidMode}
+          onToggleAutoGachaBuy={handleToggleAutoGachaBuy}
+        />
+      </div>
+
+      {/* DINO DETAILS SLIDE-OVER INSPECTOR DRAWER */}
+      {rosterTargetUuid && (
+        <DinoDetailsTab
+          uuid={rosterTargetUuid}
+          objects={objects}
+          lookup={lookup}
+          userProgress={userProgress}
+          onBack={() => setRosterTargetUuid(null)}
+          onGoToGacha={() => {
+            setRosterTargetUuid(null);
+            setView('gacha');
+          }}
+        />
+      )}
+    </GameLayout>
+  );
+};

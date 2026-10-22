@@ -1,0 +1,252 @@
+D:\My Drive\SandBox Projetcs\Universe25.bat:74:powershell -NoProfile -Command "$p = Start-Process -FilePath 'cmd.exe' -WorkingDirectory '!FRONTEND_DIR!' -ArgumentList '/c npx vite --host 0.0.0.0 --port 5173' -WindowStyle Hidden -PassThru -RedirectStandardOutput '%PID_DIR%\frontend.log' -RedirectStandardError '%PID_DIR%\frontend_err.log'; if ($p) { [System.IO.File]::WriteAllText('%PID_DIR%\frontend.pid', $p.Id.ToString()) }"
+D:\My Drive\SandBox Projetcs\Universe25.bat:89:echo Backend  : http://localhost:8080  (Log: %PID_DIR%\backend.log)
+D:\My Drive\SandBox Projetcs\Universe25.bat:90:echo Frontend : http://localhost:5173  (Log: %PID_DIR%\frontend.log)
+D:\My Drive\SandBox Projetcs\Plans\Phase_ESP32.md:170:// Local IP of your PC running the Backend (port 8080)
+D:\My Drive\SandBox Projetcs\backend\test_notion_integration.py:11:BACKEND_URL = "http://localhost:8080/api/v1"
+D:\My Drive\SandBox Projetcs\backend\run_backend.py:18:        port=8080,
+D:\My Drive\SandBox Projetcs\universe-25\index.html:6:    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+D:\My Drive\SandBox Projetcs\docs\U25 ~ Codex of Time_backup\Trash\03 ~ Hardware Specs & NFC Sync Protocol.md:109:### Sync Request Payload (`POST http://localhost:8080/api/v1/execute`)
+D:\My Drive\SandBox Projetcs\universe-25\BACKEND_SETUP.md:5:- **Currently:** Not running (port 8080 unreachable)
+D:\My Drive\SandBox Projetcs\universe-25\BACKEND_SETUP.md:28:Open `http://localhost:5173` (Vite dev server) and check console for API errors.
+D:\My Drive\SandBox Projetcs\universe-25\IMPROVEMENTS.md:107:GET http://localhost:8080/health
+D:\My Drive\SandBox Projetcs\universe-25\IMPROVEMENTS.md:113:The existing API structure at `http://localhost:8080/api/v1/execute` remains unchanged and is ready for integration with Gate of Babylon-style treasury modules.
+D:\My Drive\SandBox Projetcs\universe-25\IMPROVEMENTS.md:139:npm run dev          # Runs on http://localhost:5174
+D:\My Drive\SandBox Projetcs\universe-25\vite.config.ts:9:    port: 5173,
+D:\My Drive\SandBox Projetcs\backend\core\storage_engine.py:3:import sqlite3
+D:\My Drive\SandBox Projetcs\backend\curler.py:5:import sqlite3
+D:\My Drive\SandBox Projetcs\universe-25\SETUP_COMPLETE.md:5:### Frontend: http://localhost:5174
+D:\My Drive\SandBox Projetcs\universe-25\SETUP_COMPLETE.md:15:### Backend: http://localhost:8080
+D:\My Drive\SandBox Projetcs\universe-25\SETUP_COMPLETE.md:58:    POST http://localhost:8080/api/v1/execute
+D:\My Drive\SandBox Projetcs\universe-25\SETUP_COMPLETE.md:83:Server runs on: `http://0.0.0.0:8080` (accessible via localhost:8080)
+D:\My Drive\SandBox Projetcs\universe-25\SETUP_COMPLETE.md:90:App runs on: `http://localhost:5174`
+D:\My Drive\SandBox Projetcs\universe-25\SETUP_COMPLETE.md:179:1. Check backend is running: `curl http://localhost:8080/openapi.json`
+D:\My Drive\SandBox Projetcs\universe-25\SETUP_COMPLETE.md:180:2. Verify port 8080 is not blocked
+D:\My Drive\SandBox Projetcs\universe-25\SETUP_COMPLETE.md:186:3. Try different port: Vite auto-selects if 5173 is busy
+D:\My Drive\SandBox Projetcs\backend\server.py:117:        port=8080,
+D:\My Drive\SandBox Projetcs\universe-25\black-hole-gacha-test.html:5:<meta name="viewport" content="width=device-width, initial-scale=1.0">
+D:\My Drive\SandBox Projetcs\universe-25\STATUS.md:10:### Frontend: http://localhost:5174
+D:\My Drive\SandBox Projetcs\universe-25\STATUS.md:15:### Backend: http://localhost:8080
+D:\My Drive\SandBox Projetcs\universe-25\STATUS.md:101:Frontend checks: `GET http://localhost:8080/openapi.json`  
+D:\My Drive\SandBox Projetcs\universe-25\STATUS.md:114:✅ Docs: http://localhost:8080/docs
+D:\My Drive\SandBox Projetcs\universe-25\STATUS.md:121:✅ App: http://localhost:5174  
+D:\My Drive\SandBox Projetcs\universe-25\STATUS.md:136:Invoke-RestMethod -Uri "http://localhost:8080/api/v1/execute" `
+D:\My Drive\SandBox Projetcs\universe-25\STATUS.md:150:Invoke-RestMethod -Uri "http://localhost:8080/api/v1/execute" `
+D:\My Drive\SandBox Projetcs\universe-25\STATUS.md:214:- **API Docs:** http://localhost:8080/docs
+D:\My Drive\SandBox Projetcs\universe-25\STATUS.md:231:**Questions?** Check the API documentation at http://localhost:8080/docs
+D:\My Drive\SandBox Projetcs\.claude\memory\div\game\arc-jurassic-gameplay-rules.md:40:  The drop rate scales proportionally with the total quantity of material specimens owned divided by 10:
+D:\My Drive\SandBox Projetcs\universe-25\scripts\sync_paleo_data.py:115:                "image_url": f"{CDN_BASE}/creature-portrait/{uuid}_evo{idx+1}.png",
+D:\My Drive\SandBox Projetcs\docs\U25 ~ Codex of Time_backup\Old\07_FRONTEND_WEB_OS_ARCHITECTURE.md:113:- If the backend on port `8080` disconnects:
+D:\My Drive\SandBox Projetcs\backend\integrations\google_tasks\client.py:5:import sqlite3
+D:\My Drive\SandBox Projetcs\backend\integrations\google_tasks\client.py:627:        creds = flow.run_local_server(port=0)
+D:\My Drive\SandBox Projetcs\.claude\memory\div\backend\faust-acoustic-engine.md:21:- **Pipelined Playback & Preload**: Supports eager startup preloading (`preload()`) and sentence-streaming playback to drop TTFA under 150ms.
+D:\My Drive\SandBox Projetcs\.claude\memory\div\backend\data-engine-architecture.md:17:## Blue Rose Storage Engine (Backend on port 8080)
+D:\My Drive\SandBox Projetcs\backend\integrations\curler\curler_service.py:6:import sqlite3
+D:\My Drive\SandBox Projetcs\.claude\memory\div\backend\telegram-dumb-io-daemon.md:3:description: "Golden Standard Telegram Dumb I/O Daemon on port 20130 with zero LLM, pure transport, FIFO directive queue, and real-time remote execution"
+D:\My Drive\SandBox Projetcs\docs\U25 ~ Codex of Time_backup\Old\06_BACKEND_DATA_STORAGE_ENGINE.md:11:The backend of Universe 25 runs on the **Blue Rose Storage Engine** (Python / FastAPI running locally on port `8080`).
+D:\My Drive\SandBox Projetcs\.claude\memory\div\backend\daemon-watchdog-startup-workflow.md:30:   - The Telegram daemon broadcasts its own gateway readiness (`⚡ Faust Gateway Online: Daemon active on port 20130`).
+D:\My Drive\SandBox Projetcs\.claude\memory\div\backend\faust-resident-audio-daemon.md:3:description: Resident Audio Daemon (Pattern B) on port 20129 eliminating Kokoro model cold-start reload overhead with Smart Dual-Mode
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\types.ts:7:export interface Tier3StateRecord {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\types.ts:40:export interface Tier2EventEntry {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\types.ts:110:export type ScoreTier = '3+' | '4+' | '5+' | '6+' | '7+' | 'block';
+D:\My Drive\SandBox Projetcs\universe-25\public\animations\black-hole.html:5:<meta name="viewport" content="width=device-width, initial-scale=1.0">
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\services\engine.ts:44:export function calculateHazardLevel(record: Tier3StateRecord | ChannelStateRecord): number {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\services\engine.ts:64:export function calculateTotalPlayed(record: Tier3StateRecord | ChannelStateRecord): number {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\services\engine.ts:74:export function getDominantTimeblock(record: Tier3StateRecord | ChannelStateRecord): string | null {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\services\engine.ts:237:export async function fetchEligibleTier4List(
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\services\engine.ts:393:export async function fetchTier3State(projectId: string): Promise<Tier3StateRecord[]> {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\services\engine.ts:421:export async function syncRawinfoMinusBlacklistToTier1(projectId: string): Promise<{
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\services\engine.ts:471:export async function syncTier2ToTier3(projectId: string) {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\services\engine.ts:751:export async function syncTier3ToTier4(projectId: string) {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\services\engine.ts:1236:export async function fetchTier4DisplayStats(
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\store\useVinylStore.ts:5:import type { VinylLocalTheme, VinylPlayerSettings, VinylSessionStats, ShopItem, PlaylistItem, Tier2EventEntry, CustomPlaylist } from '../types';
+D:\My Drive\SandBox Projetcs\universe-25\src\index.css:1:@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cinzel+Decorative:wght@400;700;900&display=swap');
+D:\My Drive\SandBox Projetcs\universe-25\src\index.css:42:  --shadow-portal: 0 8px 40px rgba(212, 175, 55, 0.2);
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\components\GoldenHourConfig.tsx:388:              <li>Engine Endpoint: <code className="text-[#38bdf8]">POST http://localhost:8080/api/v1/execute</code></li>
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\engine\gachaEngine.ts:260:export function executePackRoll(deck: RawDeckPack, multiplier: number = 1): RollEngineResult {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:20:import type { VinylDisplayCard, Tier2EventEntry } from '../types';
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\components\VinylGallery.tsx:609:          <div className="bg-[#120f18] border border-[#d4af37] w-full max-w-xl rounded-2xl shadow-portal overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+D:\My Drive\SandBox Projetcs\universe-25\src\store\useGlobalStore.ts:61:            const errorMsg = status.lastError || 'Backend storage engine is offline or unreachable at http://localhost:8080'
+D:\My Drive\SandBox Projetcs\backend\data\projects\music_app\app_data\system\filler.py:2:import sqlite3
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\components\GachaAltar.tsx:53:  // Dispatcher: Lobby -> Animation Stage (supports 1:1 Universal Shredder Pass substitution)
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:21:import type { PlaylistItem, ScoreTier, ChannelOriginItem, TrackDisplayMeta, Tier2EventEntry } from '../types';
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:895:          err.message || 'Unable to connect to Blue Rose Storage Engine on http://localhost:8080'
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:1890:                The backend server at <code className="font-mono bg-rose-950 px-1.5 py-0.5 rounded text-rose-200">http://localhost:8080</code> is offline. You can continue listening and rating; all events are safely preserved locally in the Outbox and will automatically flush to <code className="font-mono bg-rose-950 px-1.5 py-0.5 rounded text-rose-200">_2_events.jsonl</code> upon reconnection.
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\components\VinylPlayer.tsx:2042:            {/* YouTube Video Viewport 16:9 */}
+D:\My Drive\SandBox Projetcs\universe-25\src\core\AppManager.tsx:22:    <div className="w-full min-h-screen portal-backdrop text-[#f5f0e8] font-inter selection:bg-[#d4af37] selection:text-black">
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\core\faustVoiceEngine.ts:136:        'http://localhost:8080/api/v1/voice/synthesize'
+D:\My Drive\SandBox Projetcs\universe-25\src\core\api.ts:5:export const API_BASE = 'http://localhost:8080'
+D:\My Drive\SandBox Projetcs\universe-25\src\core\api.ts:6:export const DEFAULT_PROJECT_ID = 'universe_25'
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\components\VinylPipeline.tsx:13:import type { Tier2EventEntry, Tier3StateRecord } from '../types';
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\components\VinylPipeline.tsx:14:import { Flame, Zap, Gauge, Sparkles, CheckCircle2, ShieldBan, RefreshCw } from 'lucide-react';
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\core\evolutionEngine.ts:12:export function getDinoThresholds(evoCount: number = 4): number[] {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\core\evolutionEngine.ts:39:export function calcDinoRank(ownedCount: number, evoCount: number = 4): number {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\core\evolutionEngine.ts:56:export function isDinoEvoUnlocked(ownedCount: number, evoRankOrIndex: number, evoCount: number = 4, isZeroIndexed: boolean = false): boolean {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\core\evolutionEngine.ts:161:export function calcDinoProgressWidth(ownedCount: number, evoCount: number = 4): number {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\core\evolutionEngine.ts:202:export function calcDinosNeededForNextEvo(ownedCount: number, evoCount: number = 4): number {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\core\evolutionEngine.ts:243:export function calcDinosNeededForMaxEvo(ownedCount: number, evoCount: number = 4): number {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\core\calcGachaPool.ts:78:export function getUserTopDinos(objects: any[], userProgress: any, limit: number = 25): TopDinoInfo[] {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\core\calcGachaPool.ts:125:export function getUserTop3Dinos(objects: any[], userProgress: any): TopDinoInfo[] {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\core\calcGachaPool.ts:132:export function calcUserTop3Ferocity(objects: any[], userProgress: any): number {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\components\AreaTab.tsx:114:      const res = await fetch('http://localhost:8080/api/v1/golden-hour/google-tasks/status');
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\components\AreaTab.tsx:131:      const res = await fetch('http://localhost:8080/api/v1/golden-hour/google-tasks/lists');
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\components\AreaTab.tsx:144:        ? `http://localhost:8080/api/v1/golden-hour/esp32/queue?limit=3&tasklist_id=${encodeURIComponent(listId)}`
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\components\AreaTab.tsx:145:        : 'http://localhost:8080/api/v1/golden-hour/esp32/queue?limit=3';
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\components\AreaTab.tsx:175:        ? 'http://localhost:8080/api/v1/golden-hour/google-tasks/tasks?tasklist_id=all'
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\components\AreaTab.tsx:176:        : `http://localhost:8080/api/v1/golden-hour/google-tasks/tasks?tasklist_id=${encodeURIComponent(listId)}`;
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\components\AreaTab.tsx:202:      const res = await fetch('http://localhost:8080/api/v1/golden-hour/google-tasks/sync', {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\components\AreaTab.tsx:229:      const res = await fetch('http://localhost:8080/api/v1/golden-hour/google-tasks/auth', {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\components\AreaTab.tsx:252:      const res = await fetch('http://localhost:8080/api/v1/golden-hour/google-tasks/complete', {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\golden-hour\components\AreaTab.tsx:277:      const res = await fetch('http://localhost:8080/api/v1/golden-hour/notion/read', {
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\components\VinylIngestion.tsx:652:      {/* Summary Report Table with 3-Tier Filter Chips */}
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\components\VinylIngestion.tsx:653:      {finalReport.length > 0 && (
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\components\VinylIngestion.tsx:712:            {filteredReports.length === 0 ? (
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\vinyl-angel\components\VinylIngestion.tsx:774:          <div className="bg-[#120f18] border border-[#d4af37] w-full max-w-3xl rounded-2xl shadow-portal overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200 max-h-[90vh]">
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\ArcJurassic.tsx:9:// Import modular tab views (1 folder per tab architecture)
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\ArcJurassic.tsx:17:import { calcUserTop3Ferocity, calcUserTotalFerocity, calcGachaPool, selectWeightedRoll } from './core/calcGachaPool';
+D:\My Drive\SandBox Projetcs\universe-25\src\components\ImperialHeader.tsx:39:                {lastError || 'Cannot connect to storage engine at http://localhost:8080. Durable game data will not synchronize.'}
+D:\My Drive\SandBox Projetcs\universe-25\src\components\GameLayout.tsx:6:import { ArrowLeft, Disc3, Ticket } from 'lucide-react'
+D:\My Drive\SandBox Projetcs\universe-25\src\components\GameLayout.tsx:72:    <div className={`min-h-screen w-full portal-backdrop text-[#f5f0e8] font-inter ${className}`}>
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\components\tabs\alldinos\NewPoolUnlocksModal.tsx:4:import { Sparkles, Zap, ArrowRight, Dna, CheckCircle2, Clock } from 'lucide-react';
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:25:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/acanthostega_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:33:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/acanthostega_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:41:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/acanthostega_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:49:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/acanthostega_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:81:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/acrocanthosaurus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:89:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/acrocanthosaurus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:97:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/acrocanthosaurus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:105:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/acrocanthosaurus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:137:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/aerotitan_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:145:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/aerotitan_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:153:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/aerotitan_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:161:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/aerotitan_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:193:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ailurarctos_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:201:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ailurarctos_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:209:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ailurarctos_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:217:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ailurarctos_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:262:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/alangasaurus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:270:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/alangasaurus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:278:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/alangasaurus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:286:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/alangasaurus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:318:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/alanqa_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:326:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/alanqa_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:334:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/alanqa_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:342:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/alanqa_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:422:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/albertosaurus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:430:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/albertosaurus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:438:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/albertosaurus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:446:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/albertosaurus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:491:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/allonogmius_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:499:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/allonogmius_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:507:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/allonogmius_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:515:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/allonogmius_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:547:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/allosaurus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:555:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/allosaurus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:563:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/allosaurus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:571:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/allosaurus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:603:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/amargasaurus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:611:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/amargasaurus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:619:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/amargasaurus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:627:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/amargasaurus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:659:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ammonite_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:667:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ammonite_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:675:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ammonite_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:683:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ammonite_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:715:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/amphicyon_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:723:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/amphicyon_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:731:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/amphicyon_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:739:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/amphicyon_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:771:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/amphicyon_gen_2_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:779:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/amphicyon_gen_2_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:787:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/amphicyon_gen_2_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:795:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/amphicyon_gen_2_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:827:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/andrewsarchus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:835:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/andrewsarchus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:843:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/andrewsarchus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:851:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/andrewsarchus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:896:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/andrewtherium_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:904:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/andrewtherium_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:912:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/andrewtherium_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:920:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/andrewtherium_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:952:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/angel_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:960:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/angel_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:968:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/angel_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:976:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/angel_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1008:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/animantarx_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1016:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/animantarx_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1024:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/animantarx_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1032:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/animantarx_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1077:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ankylodocus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1085:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ankylodocus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1093:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ankylodocus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1101:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ankylodocus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1133:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ankylosaurus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1141:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ankylosaurus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1149:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ankylosaurus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1157:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ankylosaurus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1189:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ankylosaurus_gen_2_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1197:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ankylosaurus_gen_2_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1205:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ankylosaurus_gen_2_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1213:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/ankylosaurus_gen_2_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1245:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/antarctopelta_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1253:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/antarctopelta_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1261:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/antarctopelta_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1269:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/antarctopelta_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1301:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/anurognathus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1309:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/anurognathus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1317:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/anurognathus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1325:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/anurognathus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1357:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/apatosaurus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1365:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/apatosaurus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1373:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/apatosaurus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1381:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/apatosaurus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1413:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/aquilops_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1421:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/aquilops_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1429:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/aquilops_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1437:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/aquilops_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1469:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/arambourgiania_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1477:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/arambourgiania_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1485:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/arambourgiania_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1493:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/arambourgiania_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1538:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/archaeophicyon_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1546:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/archaeophicyon_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1554:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/archaeophicyon_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1562:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/archaeophicyon_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1594:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/archaeotherium_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1602:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/archaeotherium_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1610:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/archaeotherium_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1618:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/archaeotherium_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1650:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/archelon_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1658:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/archelon_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1666:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/archelon_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1674:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/archelon_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1706:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/arctodus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1714:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/arctodus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1722:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/arctodus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1730:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/arctodus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1762:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/argentinosaurus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1770:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/argentinosaurus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1778:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/argentinosaurus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1786:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/argentinosaurus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1831:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/armormata_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1839:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/armormata_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1847:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/armormata_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1855:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/armormata_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1887:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/australotitan_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1895:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/australotitan_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1903:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/australotitan_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1911:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/australotitan_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1943:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/baculites_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1951:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/baculites_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1959:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/baculites_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1967:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/baculites_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:1999:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/bageherpeton_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:2007:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/bageherpeton_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:2015:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/bageherpeton_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:2023:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/bageherpeton_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:2068:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/bagehesaurus_evo1.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:2076:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/bagehesaurus_evo2.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:2084:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/bagehesaurus_evo3.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:2092:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/bagehesaurus_evo4.png",
+D:\My Drive\SandBox Projetcs\universe-25\src\apps\arc-jurassic\data\dino.json:2124:                "image_url": "https://cdn.paleo.gg/games/jwtg/images/creature-portrait/bajadasaurus_evo1.png",
+
+[Showing results with pagination = limit: 250]

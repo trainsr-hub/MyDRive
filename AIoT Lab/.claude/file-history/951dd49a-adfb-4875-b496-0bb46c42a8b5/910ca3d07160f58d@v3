@@ -1,0 +1,88 @@
+# Plan: Mirrored Folder/File Hierarchies for Components and Conditions
+
+## Context
+The requirement is precisely a mirrored two-tier filesystem model in both workspaces:
+
+```text
+Hazard_Trigger_Data/
+├─ Components/
+│  └─ _01_Subject/                  ← Category bar item / subfolder
+│     └─ 1_subjects.json            ← Files bar item / table
+└─ Conditions/
+   └─ _00_Core/                     ← Category bar item / subfolder
+      └─ conditions.json            ← Files bar item / condition table
+```
+
+The **Categories** bar must have a `+` action to create and rename subfolders. The **Files** bar must have a `+` action to create and rename JSON files inside the active subfolder. This is required for both Components and Conditions. The two systems differ only in their entry metadata and runtime treatment:
+
+- Component JSON tables contain `ComponentEntry` objects and participate in selection/random/prompt generation.
+- Condition JSON tables contain `ConditionEntry` objects; their entries merge into the global condition physics graph for `requirement`, `impact`, `tag_team`, and `conflicts_with` resolution.
+
+The legacy root file `Hazard_Trigger_Data/Conditions/conditions.json` will be moved automatically to `Hazard_Trigger_Data/Conditions/_00_Core/conditions.json`, as explicitly chosen by the Manager.
+
+## Recommended Implementation
+
+### 1. Shared safe hierarchy management primitives
+**Modify:** `src/utils/componentManager.ts`; create a parallel `src/utils/conditionManager.ts` API.
+
+- Add strict safe-name validation for category folder and table filename creation/rename: non-empty trimmed names; reject separators, Windows-invalid characters/control characters, trailing dots/spaces, reserved device names, and collisions.
+- Component operations:
+  - `createCategoryFolder()` / `renameCategoryFolder()` for folders under `Hazard_Trigger_Data/Components/`.
+  - keep `createComponentFile()` as the table creator, improving collision reporting.
+  - `renameComponentFile()` to rename a JSON table while preserving its raw dictionary.
+- Condition operations mirror Components exactly:
+  - `createConditionCategoryFolder()`, `renameConditionCategoryFolder()`;
+  - `createConditionFile()`, `renameConditionFile()`;
+  - source-aware `saveConditionFile()` for one selected table.
+- Use only Obsidian `app.vault.adapter` APIs (`exists`, `mkdir`, `write`, `read`, `rename`) and return the newly-created/renamed relative path so the UI can reselect it after `reload()`.
+
+### 2. Component manager category/file controls
+**Modify:** `src/app/components/ComponentsManagerView.tsx`
+
+- Add a `+ Category` button at the end of the first **Categories** pill row.
+- Add rename affordance for the selected normal Components category (not a Matrix domain).
+- Add a `+ File` button at the end of the active category’s **Files** pill row.
+- Add rename affordance for the selected file.
+- Use prefilled native prompts and `window.alert` errors to match existing lightweight UI interactions.
+- After each operation, `await reload()`, then set `selectedFolderId` / `selectedFileRelPath` to returned relative paths; reset the working copy through existing effects.
+- Matrix domains remain read-only because they use a separate `Matrices/` schema and `_matrix.json` state definitions.
+
+### 3. Promote Conditions to the same folder/file scanner model
+**Modify:** `src/types/schema.ts`, `src/utils/conditionManager.ts`, `src/store/useTriggerStore.ts`
+
+- Add `ConditionFileNode` and `ConditionFolderNode` types parallel to `ComponentFileNode` / `ComponentFolderNode`. Each condition file node holds its `relPath`, display name, and isolated `Record<string, ConditionEntry>`.
+- Replace direct-file-only condition discovery with a one-level folder/file scan of `Hazard_Trigger_Data/Conditions/`, filtering to JSON tables and ignoring metadata/system files beginning with `_` only when they are JSON metadata files rather than folder names.
+- Add a one-time migration in `ConditionManager.ensureConditionsFolder()`:
+  1. create `_00_Core` if absent;
+  2. if root `Conditions/conditions.json` exists and `_00_Core/conditions.json` does not, rename it into `_00_Core/conditions.json`;
+  3. never overwrite an already-migrated target.
+- Preserve a merged condition dictionary for `calculateState()` in the Zustand store, but retain the scanned folder/file tree separately for editing/navigation. Collision detection stays global across every condition table.
+- Resolve duplicate Hex IDs deterministically (later sorted file loses or emits a console warning); new IDs are generated globally and practically collision-free.
+
+### 4. Condition manager category/file controls and table-scoped editing
+**Modify:** `src/app/components/ConditionsManagerView.tsx`
+
+- Add the same two navigation rows used by Components:
+  - **Categories:** condition subfolders plus `+ Category` and selected-folder rename.
+  - **Files:** JSON condition tables in the selected folder plus `+ File` and selected-file rename.
+- Replace its local `loadAllConditions()` editor source with the selected `ConditionFileNode.entries` dictionary.
+- Keep the current semantic category filter tabs (*Subject*, *Pose*, *Environment*, etc.) beneath these navigation rows; they filter rows inside the active condition table and are not filesystem categories.
+- Save/discard affects only the selected JSON file. After save or structural operations, refresh the Zustand store so global component selectors and collision physics see all condition tables.
+- Update visible storage labels to show the active relative table path.
+
+### 5. Retain global selector and physics semantics
+**Modify:** `src/app/components/ComponentsManagerView.tsx`, `src/app/components/OptionEditorModal.tsx`, `src/store/useTriggerStore.ts`
+
+- `NotionConditionMultiSelect` continues consuming the store’s globally merged `conditions` registry, so a component in any Components file can select a condition from any Conditions folder/file.
+- Inline new-condition creation should save to the selected active condition file when that UI context is available; otherwise it falls back to `_00_Core/conditions.json`.
+- Existing `requirement`, `impact`, `tag_team`, and `conflicts_with` continue to hold Hex IDs, so moving or renaming folders/files preserves all references without migration.
+
+## Verification
+
+1. Run `npm run build` in `.obsidian/plugins/obsidian-hazard-trigger` and require a zero-error Vite build.
+2. On initialization, verify legacy `Conditions/conditions.json` moves once to `Conditions/_00_Core/conditions.json` without data loss.
+3. Components: create a category; create a JSON file in it; add and save an option; rename the file and folder; verify entries remain intact and selection follows the renamed paths.
+4. Conditions: create a category and JSON file; add/save a condition; rename the file and folder; verify only the selected table changes while other condition tables remain unchanged.
+5. Add a component requirement/impact pointing to a condition in a secondary Conditions table; reload; confirm condition selector, tag-team expansion, and conflict detection still function.
+6. Attempt blank, duplicate, path-containing, and Windows-reserved names; confirm every attempt is rejected without any disk mutation.
+7. Confirm Matrix domain folders/files do not display category/file creation or rename controls.

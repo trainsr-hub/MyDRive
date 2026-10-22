@@ -1,0 +1,42 @@
+export interface CharacterEntity {
+  id: string;
+  char_code: string;
+  canonical_name: string;
+  display_name?: string;
+  series?: string;
+  hazard_score?: number;
+  hazard_class?: string;
+  base_prompt?: string;
+  outfit?: string;
+  avatar_url?: string;
+  variant_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface VariantEntity {
+  id: string;
+  character_id: string;
+  char_code: string;
+  canonical_name: string;
+  series?: string;
+  avatar_url?: string;
+  variant_key: string;
+  variant_name: string;
+  prompt?: string;
+  outfit?: string;
+  is_default?: boolean | number;
+  created_at?: string;
+}
+
+export interface WorldEntity {
+  id: string;
+  name: string;
+  franchise?: string;
+  universe?: string;
+  media_type?: string;
+  description?: string;
+  character_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}

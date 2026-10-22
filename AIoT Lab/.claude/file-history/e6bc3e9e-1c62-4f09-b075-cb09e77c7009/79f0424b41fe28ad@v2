@@ -1,0 +1,292 @@
+/* path: src/apps/heraclitus/styles/yellowPoolTwoPhase.css */
+/* Two-Phase Kinetic Accumulator Engine Styles */
+/* Directly extracted from System Design Sandbox / Animations / Accumulating / 2 Phases */
+
+.chrono-scene {
+  position: relative;
+  width: 100%;
+  min-height: 640px;
+  height: 680px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 45%, #0d0818 0%, #030206 100%);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), inset 0 0 40px rgba(0, 0, 0, 0.6);
+  user-select: none;
+}
+
+.chrono-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.chrono-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 20px 20px;
+  z-index: 10;
+}
+
+/* Header & Vault */
+.chrono-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.chrono-sub-title {
+  font-size: 10px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--engine-primary, #fbbf24);
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.chrono-main-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #fff;
+  text-shadow: 0 0 16px var(--engine-glow, rgba(251, 191, 36, 0.35));
+}
+
+.chrono-pool-vault {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(14, 10, 24, 0.92);
+  border: 1.5px solid var(--engine-border, rgba(251, 191, 36, 0.4));
+  border-radius: 16px;
+  padding: 10px 24px;
+  margin-top: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 24px var(--engine-glow-soft, rgba(251, 191, 36, 0.2));
+  transition: transform 0.1s ease, border-color 0.1s ease, box-shadow 0.1s ease;
+}
+
+.chrono-pool-vault.absorb {
+  transform: scale(1.05);
+  border-color: var(--engine-absorb, #fde047);
+  box-shadow: 0 0 36px var(--engine-absorb-glow, rgba(251, 191, 36, 0.8));
+}
+
+.chrono-vault-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fef08a, #ca8a04);
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 900;
+  color: #78350f;
+}
+
+.chrono-vault-meta {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.chrono-vault-lbl {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  font-family: monospace;
+}
+
+.chrono-vault-val {
+  font-size: 26px;
+  font-weight: 900;
+  font-family: 'Consolas', monospace;
+  color: var(--engine-text, #fef08a);
+  text-shadow: 0 0 14px var(--engine-text-glow, rgba(254, 240, 138, 0.5));
+}
+
+/* Burst Badge (Session Worth / Accumulating) */
+.chrono-burst-badge {
+  position: absolute;
+  top: calc(50% + 56px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 20;
+}
+
+.chrono-burst-badge.spooling {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+  transition: opacity 0.12s ease;
+}
+
+.chrono-burst-badge.slow-fade {
+  animation: chronoSmoothSinkFade 1.0s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes chronoSmoothSinkFade {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1.05);
+    filter: drop-shadow(0 0 20px rgba(254, 240, 138, 0.9));
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(24px) scale(0.95);
+    filter: drop-shadow(0 0 2px rgba(254, 240, 138, 0));
+  }
+}
+
+.chrono-burst-lbl {
+  font-size: 10px;
+  font-family: monospace;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--engine-primary, #f59e0b);
+  font-weight: 800;
+  text-shadow: 0 0 10px var(--engine-glow, rgba(245, 158, 11, 0.8));
+}
+
+.chrono-burst-val {
+  font-size: 26px;
+  font-weight: 900;
+  font-family: 'Consolas', monospace;
+  color: #fef08a;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 18px rgba(254, 240, 138, 0.8);
+}
+
+.chrono-burst-val.lingering {
+  font-size: 30px;
+  color: #fff;
+  text-shadow: 0 0 24px #fde047, 0 0 50px rgba(234, 179, 8, 0.8);
+}
+
+/* Controls Layer */
+.chrono-controls {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 860px;
+}
+
+.chrono-btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.chrono-btn {
+  min-height: 46px;
+  padding: 0 18px;
+  background: rgba(18, 12, 30, 0.9);
+  border: 1.5px solid var(--engine-border, rgba(251, 191, 36, 0.35));
+  border-radius: 12px;
+  color: var(--engine-text, #fef08a);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.chrono-btn:hover {
+  background: #2b1845;
+  border-color: #fde047;
+  color: #fff;
+  box-shadow: 0 0 24px var(--engine-glow, rgba(251, 191, 36, 0.5));
+  transform: translateY(-2px);
+}
+
+.chrono-btn:active {
+  transform: scale(0.95);
+  background: #ca8a04;
+  color: #000;
+}
+
+/* Engine Theme Specific Overrides */
+.theme-spool {
+  --engine-primary: #fbbf24;
+  --engine-border: rgba(251, 191, 36, 0.4);
+  --engine-glow: rgba(251, 191, 36, 0.5);
+  --engine-glow-soft: rgba(251, 191, 36, 0.2);
+  --engine-absorb: #fde047;
+  --engine-absorb-glow: rgba(251, 191, 36, 0.8);
+  --engine-text: #fef08a;
+  --engine-text-glow: rgba(254, 240, 138, 0.5);
+}
+
+.theme-singularity {
+  --engine-primary: #c084fc;
+  --engine-border: rgba(192, 132, 252, 0.4);
+  --engine-glow: rgba(192, 132, 252, 0.5);
+  --engine-glow-soft: rgba(192, 132, 252, 0.2);
+  --engine-absorb: #f0abfc;
+  --engine-absorb-glow: rgba(192, 132, 252, 0.8);
+  --engine-text: #f5d0fe;
+  --engine-text-glow: rgba(216, 180, 254, 0.6);
+}
+
+.theme-prism {
+  --engine-primary: #e879f9;
+  --engine-border: rgba(232, 121, 249, 0.4);
+  --engine-glow: rgba(232, 121, 249, 0.5);
+  --engine-glow-soft: rgba(232, 121, 249, 0.2);
+  --engine-absorb: #f5d0fe;
+  --engine-absorb-glow: rgba(232, 121, 249, 0.8);
+  --engine-text: #fae8ff;
+  --engine-text-glow: rgba(232, 121, 249, 0.6);
+}
+
+.theme-cyber {
+  --engine-primary: #00f0ff;
+  --engine-border: rgba(0, 240, 255, 0.4);
+  --engine-glow: rgba(0, 240, 255, 0.5);
+  --engine-glow-soft: rgba(0, 240, 255, 0.2);
+  --engine-absorb: #ffffff;
+  --engine-absorb-glow: rgba(0, 240, 255, 0.8);
+  --engine-text: #5eead4;
+  --engine-text-glow: rgba(94, 234, 212, 0.8);
+}
+
+.theme-supernova {
+  --engine-primary: #f59e0b;
+  --engine-border: rgba(245, 158, 11, 0.4);
+  --engine-glow: rgba(245, 158, 11, 0.5);
+  --engine-glow-soft: rgba(245, 158, 11, 0.2);
+  --engine-absorb: #fde047;
+  --engine-absorb-glow: rgba(245, 158, 11, 0.8);
+  --engine-text: #fef08a;
+  --engine-text-glow: rgba(254, 240, 138, 0.8);
+}

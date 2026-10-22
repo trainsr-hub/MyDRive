@@ -1,0 +1,81 @@
+{
+  "table_name": "users",
+  "columns": [
+    {
+      "name": "User ID",
+      "slug": "id",
+      "type": "hex_id",
+      "metadata": {
+        "prefix": "USER"
+      }
+    },
+    {
+      "name": "Account Username",
+      "slug": "username",
+      "type": "text_single",
+      "metadata": {}
+    },
+    {
+      "name": "Primary Email Address",
+      "slug": "email",
+      "type": "text_single",
+      "metadata": {}
+    },
+    {
+      "name": "Biography & Profile Narrative",
+      "slug": "bio",
+      "type": "text_multi",
+      "metadata": {}
+    },
+    {
+      "name": "Age in Years",
+      "slug": "age",
+      "type": "int_scalar",
+      "metadata": {}
+    },
+    {
+      "name": "Account Balance (USD)",
+      "slug": "balance",
+      "type": "float_scalar",
+      "metadata": {}
+    },
+    {
+      "name": "Is Account Active?",
+      "slug": "is_active",
+      "type": "boolean",
+      "metadata": {}
+    },
+    {
+      "name": "Permission Role",
+      "slug": "role",
+      "type": "enum_single",
+      "metadata": {
+        "options": ["admin", "editor", "viewer", "guest"]
+      }
+    },
+    {
+      "name": "Account Tags",
+      "slug": "tags",
+      "type": "enum_multi",
+      "metadata": {
+        "options": ["premium", "verified", "staff", "beta"]
+      }
+    },
+    {
+      "name": "Reporting Manager",
+      "slug": "manager_id",
+      "type": "relation_single",
+      "metadata": {
+        "target": "users"
+      }
+    },
+    {
+      "name": "Assigned Projects",
+      "slug": "project_ids",
+      "type": "relation_multi",
+      "metadata": {
+        "target": "projects"
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+Vietnamese G2P Test Results
+===========================
+
+Testing Vietnamese text to IPA conversion for Faust TTS integration:
+
+Input: Xin chào Manager
+Has Vietnamese: True
+IPA: sin tʃaːw mˈænədʒɚ
+
+Input: Faust đã sẵn sàng
+Has Vietnamese: True
+IPA: fˈaʊst zaː saːn saːŋ
+
+Input: Tôi là một trợ lý AI
+Has Vietnamese: True
+IPA: tɔj laː mɔːt tʂɔ li ei
+
+Input: Cảm ơn bạn
+Has Vietnamese: True
+IPA: kəm ʔən baːn
+
+Input: Chào buổi sáng
+Has Vietnamese: True
+IPA: tʃaːw bəj i saːŋ
+
+Note: The IPA output uses Kokoro-compatible phonemes that can be synthesized by the existing Faust TTS model (af_bella, speed 0.84, pitch -0.3) without any changes to the voice model or parameters.

@@ -1,0 +1,505 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  TournamentRecord,
+  TournamentProjection,
+  TournamentMatch,
+  SlotInfo,
+} from '../../types/tournament';
+import '@/styles/bracket.css';
+import {
+  Trophy,
+  Dices,
+  RefreshCw,
+  Plus,
+  Play,
+  CheckCircle2,
+  Users,
+  ChevronDown,
+  X,
+  Sparkles,
+  Zap,
+} from 'lucide-react';
+
+const FALLBACK_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231a1f3a'/%3E%3Ctext x='50' y='55' font-size='32' text-anchor='middle' fill='%23d4af37' font-family='monospace'%3E%3F%3C/text%3E%3C/svg%3E";
+
+export const TournamentBracketView: React.FC = () => {
+  const [tournaments, setTournaments] = useState<TournamentRecord[]>([]);
+  const [activeTourneyId, setActiveTourneyId] = useState<string | null>(null);
+  const [projection, setProjection] = useState<TournamentProjection | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<TournamentMatch | null>(null);
+  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [newTourneyName, setNewTourneyName] = useState('');
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [svgPaths, setSvgPaths] = useState<Array<{ d: string; isActive: boolean }>>([]);
+
+  // Load tournaments list
+  const loadTournaments = async () => {
+    try {
+      const res = await fetch('/api/tournaments');
+      const data: TournamentRecord[] = await res.json();
+      setTournaments(data);
+      if (data.length > 0 && !activeTourneyId) {
+        setActiveTourneyId(data[0].id);
+      }
+    } catch (e) {
+      console.error('[Tournament] Failed to load tournament list:', e);
+    }
+  };
+
+  // Load specific tournament projection
+  const loadProjection = async (id: string) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/tournaments/${id}`);
+      if (res.ok) {
+        const data: TournamentProjection = await res.json();
+        setProjection(data);
+      }
+    } catch (e) {
+      console.error('[Tournament] Failed to load bracket projection:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTournaments();
+  }, []);
+
+  useEffect(() => {
+    if (activeTourneyId) {
+      loadProjection(activeTourneyId);
+    }
+  }, [activeTourneyId]);
+
+  // Recalculate SVG Connector Paths
+  const updateConnectors = () => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const getNodeCenter = (slotClass: string) => {
+      const el = container.querySelector(`.bracket-slot-${slotClass}`);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      const c = container.getBoundingClientRect();
+      return {
+        x: r.left - c.left + r.width / 2,
+        y: r.top - c.top + r.height / 2,
+      };
+    };
+
+    const paths: Array<{ d: string; isActive: boolean }> = [];
+
+    const connectNodes = (aClass: string, bClass: string, parentClass: string) => {
+      const a = getNodeCenter(aClass);
+      const b = getNodeCenter(bClass);
+      const p = getNodeCenter(parentClass);
+      if (!p) return;
+
+      if (a) {
+        const midXA = (a.x + p.x) / 2;
+        paths.push({
+          d: `M ${a.x} ${a.y} H ${midXA} V ${p.y} H ${p.x}`,
+          isActive: Boolean(projection?.slots_map[parentClass]?.character_id),
+        });
+      }
+      if (b) {
+        const midXB = (b.x + p.x) / 2;
+        paths.push({
+          d: `M ${b.x} ${b.y} H ${midXB} V ${p.y} H ${p.x}`,
+          isActive: Boolean(projection?.slots_map[parentClass]?.character_id),
+        });
+      }
+    };
+
+    // Left Wing
+    connectNodes('l1', 'l2', 'l9');
+    connectNodes('l3', 'l4', 'l10');
+    connectNodes('l5', 'l6', 'l11');
+    connectNodes('l7', 'l8', 'l12');
+
+    connectNodes('l9', 'l10', 'l13');
+    connectNodes('l11', 'l12', 'l14');
+
+    connectNodes('l13', 'l14', 'l15');
+
+    // Right Wing
+    connectNodes('r1', 'r2', 'r9');
+    connectNodes('r3', 'r4', 'r10');
+    connectNodes('r5', 'r6', 'r11');
+    connectNodes('r7', 'r8', 'r12');
+
+    connectNodes('r9', 'r10', 'r13');
+    connectNodes('r11', 'r12', 'r14');
+
+    connectNodes('r13', 'r14', 'r15');
+
+    // Grand Final (l15 & r15 -> champion)
+    connectNodes('l15', 'r15', 'champion');
+
+    setSvgPaths(paths);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(updateConnectors, 100);
+    window.addEventListener('resize', updateConnectors);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateConnectors);
+    };
+  }, [projection]);
+
+  // Handle Pick Winner in Match
+  const handlePickWinner = async (winnerId: string) => {
+    if (!activeTourneyId || !selectedMatch) return;
+    try {
+      const res = await fetch(
+        `/api/tournaments/${activeTourneyId}/match/${selectedMatch.id}/winner`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ winner_char_id: winnerId }),
+        }
+      );
+      if (res.ok) {
+        const updated = await res.json();
+        setProjection(updated);
+        setSelectedMatch(null);
+      }
+    } catch (e) {
+      console.error('[Tournament] Failed to record winner:', e);
+    }
+  };
+
+  // Create New Tournament
+  const handleCreateTournament = async () => {
+    if (!newTourneyName.trim()) return;
+    try {
+      const res = await fetch('/api/tournaments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newTourneyName.trim(),
+          format: 'single_elimination_32',
+        }),
+      });
+      if (res.ok) {
+        const data: TournamentProjection = await res.json();
+        setNewTourneyName('');
+        setIsNewModalOpen(false);
+        await loadTournaments();
+        setActiveTourneyId(data.tournament.id);
+      }
+    } catch (e) {
+      console.error('[Tournament] Failed to create tournament:', e);
+    }
+  };
+
+  // Node Click Handlers
+  const handleSlotClick = (slotKey: string) => {
+    if (!projection) return;
+    const match = projection.matches.find((m) => m.position_code === slotKey);
+    if (match) {
+      setSelectedMatch(match);
+      return;
+    }
+    // If it's a base seed, find the first round match it feeds into
+    const parentMatch = projection.matches.find(
+      (m) => m.slot_a_char_id === projection.slots_map[slotKey]?.character_id ||
+             m.slot_b_char_id === projection.slots_map[slotKey]?.character_id
+    );
+    if (parentMatch) {
+      setSelectedMatch(parentMatch);
+    }
+  };
+
+  const renderSlotNode = (slotKey: string) => {
+    const slot = projection?.slots_map[slotKey];
+    const isWinner = Boolean(slot?.is_winner);
+    const hasData = Boolean(slot?.character_id);
+
+    return (
+      <div
+        key={slotKey}
+        onClick={() => handleSlotClick(slotKey)}
+        title={slot ? `${slot.display_name} (${slot.character_id})` : slotKey.toUpperCase()}
+        className={`bracket-node bracket-slot-${slotKey} ${
+          isWinner ? 'node-winner' : hasData ? '' : 'node-empty'
+        }`}
+      >
+        {slot ? (
+          <img
+            src={slot.avatar_url || FALLBACK_AVATAR}
+            alt={slot.display_name}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = FALLBACK_AVATAR;
+            }}
+          />
+        ) : (
+          <div className="flex items-center justify-center w-full h-full text-[11px] font-mono text-hazard-textMuted uppercase font-bold">
+            {slotKey}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const allSlots = [
+    'l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8',
+    'l9', 'l10', 'l11', 'l12', 'l13', 'l14', 'l15',
+    'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'r8',
+    'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15',
+    'champion',
+  ];
+
+  return (
+    <div className="flex flex-col gap-6 w-full animate-fadeIn font-sans">
+      {/* Top Header & Tournament Selector Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-3xl bg-hazard-card border border-hazard-border shadow-lg">
+        <div className="flex items-center gap-3.5">
+          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-hazard-gold to-hazard-amber shadow-hazard-glow text-black font-black">
+            <Trophy className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-base font-black uppercase tracking-wider text-hazard-textBright">
+                Hazard Duality Tournaments
+              </h2>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-hazard-gold/15 text-hazard-gold border border-hazard-gold/30 font-bold">
+                16-Player Dual-Wing
+              </span>
+            </div>
+            <p className="text-xs text-hazard-textMuted font-mono mt-0.5">
+              Deterministic Bracket Topology & Character Hazard Advancement
+            </p>
+          </div>
+        </div>
+
+        {/* Center: Tourney Switcher */}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <select
+              value={activeTourneyId || ''}
+              onChange={(e) => setActiveTourneyId(e.target.value)}
+              className="appearance-none bg-hazard-void border border-hazard-border px-4 py-2.5 pr-10 text-xs font-bold text-hazard-textBright rounded-xl outline-none focus:border-hazard-gold cursor-pointer min-w-[240px]"
+            >
+              {tournaments.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} ({t.status.toUpperCase()})
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-4 h-4 text-hazard-textMuted absolute right-3 top-3 pointer-events-none" />
+          </div>
+
+          <button
+            onClick={() => setIsNewModalOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase tracking-wider bg-hazard-gold text-black rounded-xl hover:brightness-110 active:scale-95 transition shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Bracket</span>
+          </button>
+
+          <button
+            onClick={() => activeTourneyId && loadProjection(activeTourneyId)}
+            className="p-2.5 text-hazard-textMuted hover:text-hazard-gold bg-hazard-void border border-hazard-border rounded-xl transition"
+            title="Refresh Bracket"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-hazard-gold' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Grand Champion Winner Banner if Completed */}
+      {projection?.tournament.status === 'completed' && projection.tournament.winner_name && (
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-hazard-gold/20 via-hazard-card to-hazard-gold/20 border-2 border-hazard-gold shadow-hazard-glow">
+          <div className="flex items-center gap-3">
+            <Sparkles className="w-6 h-6 text-hazard-gold animate-bounce" />
+            <div>
+              <span className="text-[11px] font-mono text-hazard-gold font-bold uppercase tracking-widest">
+                GRAND TOURNAMENT CHAMPION
+              </span>
+              <h3 className="text-lg font-black text-white">
+                {projection.tournament.winner_name}
+              </h3>
+            </div>
+          </div>
+          <span className="px-4 py-1.5 rounded-full bg-hazard-gold text-black font-black text-xs uppercase tracking-wider">
+            VICTORY ACHIEVED
+          </span>
+        </div>
+      )}
+
+      {/* Main Visual Bracket Canvas */}
+      <div className="bracket-wrapper" ref={containerRef}>
+        <div className="bracket-canvas">
+          {/* Dynamic SVG Orthogonal Bracket Connectors */}
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none z-0"
+            style={{ width: '100%', height: '100%' }}
+          >
+            {svgPaths.map((p, idx) => (
+              <path
+                key={idx}
+                d={p.d}
+                fill="none"
+                stroke={p.isActive ? '#d4af37' : '#1e2638'}
+                strokeWidth={p.isActive ? '2.5' : '1.5'}
+                strokeOpacity={p.isActive ? 0.9 : 0.6}
+                style={{
+                  transition: 'stroke 0.3s ease, stroke-width 0.3s ease',
+                  filter: p.isActive ? 'drop-shadow(0 0 4px rgba(212, 175, 55, 0.5))' : 'none',
+                }}
+              />
+            ))}
+          </svg>
+
+          {/* Render all 31 dual-wing slot nodes */}
+          {allSlots.map(renderSlotNode)}
+        </div>
+      </div>
+
+      {/* Match Resolution Modal */}
+      {selectedMatch && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-lg p-6 bg-hazard-card border-2 border-hazard-border rounded-3xl shadow-2xl flex flex-col gap-5">
+            <div className="flex items-center justify-between border-b border-hazard-border pb-3">
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-hazard-gold" />
+                <h3 className="text-sm font-black uppercase tracking-wider text-hazard-textBright">
+                  Match Order #{selectedMatch.match_order} — {selectedMatch.round_name} ({selectedMatch.position_code})
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedMatch(null)}
+                className="p-1 text-hazard-textMuted hover:text-white rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-hazard-textMuted font-mono">
+              Declare the match victor. The chosen competitor will automatically advance up the bracket tree into the next round slot.
+            </p>
+
+            {/* Competitor Head-to-Head Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Competitor A */}
+              <div
+                onClick={() => selectedMatch.slot_a_char_id && handlePickWinner(selectedMatch.slot_a_char_id)}
+                className={`flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition cursor-pointer ${
+                  selectedMatch.winner_char_id === selectedMatch.slot_a_char_id
+                    ? 'border-hazard-gold bg-hazard-gold/10 shadow-hazard-glow'
+                    : selectedMatch.slot_a_char_id
+                    ? 'border-hazard-border bg-hazard-void hover:border-hazard-gold/60'
+                    : 'border-dashed border-hazard-border/40 opacity-40 cursor-not-allowed'
+                }`}
+              >
+                <img
+                  src={selectedMatch.slot_a_avatar || FALLBACK_AVATAR}
+                  alt={selectedMatch.slot_a_name || 'Slot A'}
+                  className="w-16 h-16 rounded-xl object-cover border border-hazard-border"
+                />
+                <div className="text-center">
+                  <h4 className="text-xs font-bold text-hazard-textBright">
+                    {selectedMatch.slot_a_name || 'TBD'}
+                  </h4>
+                  <span className="text-[10px] font-mono text-hazard-textMuted">
+                    {selectedMatch.slot_a_char_id || 'Empty'}
+                  </span>
+                </div>
+                {selectedMatch.slot_a_char_id && (
+                  <button
+                    type="button"
+                    className="w-full py-1.5 text-xs font-bold bg-hazard-gold/15 text-hazard-gold border border-hazard-gold/30 rounded-lg hover:bg-hazard-gold hover:text-black transition"
+                  >
+                    {selectedMatch.winner_char_id === selectedMatch.slot_a_char_id ? 'Current Winner' : 'Declare Winner'}
+                  </button>
+                )}
+              </div>
+
+              {/* Competitor B */}
+              <div
+                onClick={() => selectedMatch.slot_b_char_id && handlePickWinner(selectedMatch.slot_b_char_id)}
+                className={`flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition cursor-pointer ${
+                  selectedMatch.winner_char_id === selectedMatch.slot_b_char_id
+                    ? 'border-hazard-gold bg-hazard-gold/10 shadow-hazard-glow'
+                    : selectedMatch.slot_b_char_id
+                    ? 'border-hazard-border bg-hazard-void hover:border-hazard-gold/60'
+                    : 'border-dashed border-hazard-border/40 opacity-40 cursor-not-allowed'
+                }`}
+              >
+                <img
+                  src={selectedMatch.slot_b_avatar || FALLBACK_AVATAR}
+                  alt={selectedMatch.slot_b_name || 'Slot B'}
+                  className="w-16 h-16 rounded-xl object-cover border border-hazard-border"
+                />
+                <div className="text-center">
+                  <h4 className="text-xs font-bold text-hazard-textBright">
+                    {selectedMatch.slot_b_name || 'TBD'}
+                  </h4>
+                  <span className="text-[10px] font-mono text-hazard-textMuted">
+                    {selectedMatch.slot_b_char_id || 'Empty'}
+                  </span>
+                </div>
+                {selectedMatch.slot_b_char_id && (
+                  <button
+                    type="button"
+                    className="w-full py-1.5 text-xs font-bold bg-hazard-gold/15 text-hazard-gold border border-hazard-gold/30 rounded-lg hover:bg-hazard-gold hover:text-black transition"
+                  >
+                    {selectedMatch.winner_char_id === selectedMatch.slot_b_char_id ? 'Current Winner' : 'Declare Winner'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Tournament Modal */}
+      {isNewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-md p-6 bg-hazard-card border-2 border-hazard-border rounded-3xl shadow-2xl flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-hazard-border pb-3">
+              <h3 className="text-sm font-black uppercase tracking-wider text-hazard-textBright">
+                Initialize Tournament Bracket
+              </h3>
+              <button
+                onClick={() => setIsNewModalOpen(false)}
+                className="p-1 text-hazard-textMuted hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <input
+              type="text"
+              placeholder="e.g. Tournament 03 ~ Duality Singularity"
+              value={newTourneyName}
+              onChange={(e) => setNewTourneyName(e.target.value)}
+              className="w-full bg-hazard-void border border-hazard-border px-3.5 py-2.5 text-xs font-bold text-hazard-textBright rounded-xl outline-none focus:border-hazard-gold"
+            />
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setIsNewModalOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-hazard-textMuted hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateTournament}
+                disabled={!newTourneyName.trim()}
+                className="px-5 py-2 text-xs font-bold uppercase tracking-wider bg-hazard-gold text-black rounded-xl hover:brightness-110 disabled:opacity-50 transition"
+              >
+                Generate Bracket
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

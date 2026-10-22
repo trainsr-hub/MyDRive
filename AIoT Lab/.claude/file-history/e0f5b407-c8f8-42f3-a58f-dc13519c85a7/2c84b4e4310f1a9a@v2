@@ -1,0 +1,125 @@
+/* ========================================================================
+   DESIGN SYSTEM TOKENS & BASE RESET
+   ======================================================================== */
+:root {
+  --bg-canvas:      #0a0908;
+  --bg-card:        #15110d;
+  --bg-card-hover:  #1f1813;
+  --bg-input:       #1c1611;
+  --bg-input-focus: #28201a;
+  --bg-row-hover:   #1a1410;
+  --bg-row-active:  #1f1a0f;
+
+  --text-primary:   #fefdfb;
+  --text-secondary: #e8ddd0;
+  --text-tertiary:  #8f7f6e;
+  --text-dim:       #6a5d4f;
+
+  --border-light:   #3a2d23;
+  --border-mid:     #4d3d30;
+  --border-table:   #2a201a;
+
+  --accent:         #ff9e1b;
+  --accent-hover:   #ffb03a;
+  --accent-glow:    rgba(255, 158, 27, 0.3);
+  --accent-bg:      rgba(255, 158, 27, 0.12);
+
+  --success:  #10b981;
+  --warning:  #f59e0b;
+  --danger:   #f43f5e;
+
+  /* Type category colors */
+  --c-pk:      #38bdf8;
+  --c-text:    #10b981;
+  --c-scalar:  #f59e0b;
+  --c-boolean: #a78bfa;
+  --c-enum:    #f43f5e;
+  --c-rel:     #ff9e1b;
+
+  --font-display: "IBM Plex Sans", system-ui, sans-serif;
+  --font-body:    "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono:    "IBM Plex Mono", monospace;
+  --base-font-size: 15px;
+
+  --gap-xs: 0.5rem;
+  --gap-sm: 0.75rem;
+  --gap-md: 1.25rem;
+  --gap-lg: 2rem;
+  --gap-xl: 3rem;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --input-height: 42px;
+
+  --sidebar-width: 420px;
+  --sidebar-anim: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg-canvas:      #faf8f5;
+  --bg-card:        #fff8f3;
+  --bg-card-hover:  #fff0e8;
+  --bg-input:       #f5ede5;
+  --bg-input-focus: #fff8f3;
+  --bg-row-hover:   #fdf4ec;
+  --bg-row-active:  #fff3e0;
+
+  --text-primary:   #18130e;
+  --text-secondary: #382f26;
+  --text-tertiary:  #6b5a49;
+  --text-dim:       #9e8c79;
+
+  --border-light:   #e8dccf;
+  --border-mid:     #d9cabc;
+  --border-table:   #ede4da;
+
+  --accent:         #d97706;
+  --accent-hover:   #b45309;
+  --accent-bg:      rgba(217, 119, 6, 0.10);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg-canvas:      #faf8f5;
+    --bg-card:        #fff8f3;
+    --bg-card-hover:  #fff0e8;
+    --bg-input:       #f5ede5;
+    --bg-input-focus: #fff8f3;
+    --bg-row-hover:   #fdf4ec;
+    --bg-row-active:  #fff3e0;
+    --text-primary:   #18130e;
+    --text-secondary: #382f26;
+    --text-tertiary:  #6b5a49;
+    --text-dim:       #9e8c79;
+    --border-light:   #e8dccf;
+    --border-mid:     #d9cabc;
+    --border-table:   #ede4da;
+    --accent:         #d97706;
+    --accent-hover:   #b45309;
+    --accent-bg:      rgba(217, 119, 6, 0.10);
+    color-scheme: light;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+body {
+  background: var(--bg-canvas);
+  color: var(--text-secondary);
+  font: var(--base-font-size) var(--font-body);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }

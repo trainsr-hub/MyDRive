@@ -1,0 +1,511 @@
+"""
+FastAPI Backend for Google Colab Integration
+Enables Faust to execute code in Manager's Colab notebook via service account authentication.
+"""
+
+import os
+import asyncio
+import json
+import time
+from pathlib import Path
+from typing import Optional
+from contextlib import asynccontextmanager
+
+import httpx
+import torch
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+from pydantic import BaseModel, Field
+
+from config import settings, verify_configuration, PROJECT_ROOT
+from avatar_service import run_avatar_crop_pipeline, get_job_state, OUTPUT_DIR
+from ledger import list_all_batches
+
+
+# =============================================================================
+# Pydantic Models
+# =============================================================================
+
+class ExecuteRequest(BaseModel):
+    """Request model for code execution."""
+    code: str = Field(..., min_length=1, max_length=10000, description="Python code to execute")
+    timeout_seconds: int = Field(default=60, ge=5, le=300)
+
+
+class ExecuteResponse(BaseModel):
+    """Response model for code execution."""
+    success: bool
+    output: str
+    execution_time_ms: int
+    error: Optional[str] = None
+
+
+class StatusResponse(BaseModel):
+    """Response model for connection status."""
+    connected: bool
+    notebook_id: str
+    service_account_email: Optional[str] = None
+    backend_version: str = "1.0.0"
+
+
+class SetTunnelRequest(BaseModel):
+    """Request model for setting tunnel URL manually."""
+    tunnel_url: str = Field(..., description="Cloudflare or Ngrok public tunnel URL")
+
+
+class FolderCropRequest(BaseModel):
+    """Request model for remote GPU avatar cropping."""
+    folder_url: str = Field(..., description="Public Google Drive folder URL")
+    zoom_factor: float = Field(default=1.6, ge=1.0, le=3.0)
+    score_thresh: float = Field(default=0.5, ge=0.1, le=0.95)
+    custom_batch_name: Optional[str] = Field(default=None, description="Optional custom name for batch subfolder")
+
+
+class OpenFolderRequest(BaseModel):
+    """Request model for opening explorer to a specific subfolder."""
+    subfolder: Optional[str] = None
+
+
+# =============================================================================
+# Colab Client (Deterministic - no LLM)
+# =============================================================================
+
+class ColabClient:
+    """
+    Deterministic client for Google Colab execution.
+    Uses Google Auth libraries to authenticate and execute code via Colab runtime.
+    """
+
+    def __init__(self):
+        self.credentials = None
+        self.notebook_id = settings.COLAB_NOTEBOOK_ID
+        self._initialized = False
+
+    def initialize(self) -> bool:
+        """Initialize credentials and verify access."""
+        try:
+            # Load credentials from file
+            from google.oauth2 import service_account
+
+            creds_path = settings.credentials_path
+            if not creds_path.exists():
+                return False
+
+            self.credentials = service_account.Credentials.from_service_account_file(
+                creds_path,
+                scopes=[
+                    "https://www.googleapis.com/auth/drive",
+                    "https://www.googleapis.com/auth/drive.file",
+                ]
+            )
+            self._initialized = True
+            return True
+
+        except Exception as e:
+            print(f"[ColabClient] Initialization failed: {e}")
+            return False
+
+    def get_service_account_email(self) -> Optional[str]:
+        """Get the service account email from credentials."""
+        if self.credentials:
+            return self.credentials.service_account_email
+        return None
+
+    async def execute(self, code: str, timeout: int = 60) -> tuple[bool, str]:
+        """
+        Execute Python code in the Colab notebook.
+
+        Note: This is a simplified implementation. Real Colab execution requires:
+        1. Colab Enterprise (paid) with official API
+        2. Or: Google Drive API to manipulate .ipynb files directly
+        3. Or: Selenium/Playwright automation (fragile)
+
+        For production, we recommend Method 1 (Colab Enterprise) or
+        using Google Cloud Vertex AI / Generative AI directly.
+        """
+        if not self._initialized:
+            if not self.initialize():
+                return False, "Colab client not initialized - check credentials"
+
+        # This is a demonstration implementation
+        # Real implementation would use one of the methods above
+
+        # For now, we simulate execution with local Python
+        # In production, replace with actual Colab API calls
+        try:
+            start_time = time.time()
+
+            # SECURITY: In production, NEVER exec() untrusted code locally
+            # This is only for demonstration with trusted Manager code
+
+            # Capture stdout/stderr
+            import io
+            import sys
+            from contextlib import redirect_stdout, redirect_stderr
+
+            stdout_capture = io.StringIO()
+            stderr_capture = io.StringIO()
+
+            # Create isolated namespace
+            namespace = {}
+
+            with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                try:
+                    exec(code, namespace)
+                except Exception as e:
+                    stderr_capture.write(f"{type(e).__name__}: {e}")
+
+            output = stdout_capture.getvalue()
+            error = stderr_capture.getvalue()
+
+            execution_time_ms = int((time.time() - start_time) * 1000)
+
+            if error and not output:
+                return False, f"Execution error:\n{error}"
+
+            return True, output if output else "(no output)"
+
+        except Exception as e:
+            return False, f"Execution failed: {type(e).__name__}: {e}"
+
+
+# =============================================================================
+# Application Lifecycle
+# =============================================================================
+
+colab_client = ColabClient()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application startup and shutdown."""
+    # Startup
+    print("[Backend] Starting Colab Integration Backend...")
+
+    is_valid, errors = verify_configuration()
+    if is_valid:
+        if colab_client.initialize():
+            print(f"[Backend] [OK] Connected to Colab notebook: {colab_client.notebook_id}")
+            sa_email = colab_client.get_service_account_email()
+            if sa_email:
+                print(f"[Backend] [OK] Service account: {sa_email}")
+        else:
+            print("[Backend] [WARN] Colab client initialization failed - check credentials")
+    else:
+        print("[Backend] [WARN] Configuration errors:")
+        for error in errors:
+            print(f"  - {error}")
+
+    yield
+
+    # Shutdown
+    print("[Backend] Shutting down...")
+
+
+# =============================================================================
+# FastAPI Application
+# =============================================================================
+
+app = FastAPI(
+    title="Colab Connect Backend",
+    description="API for executing code in Google Colab notebooks via Faust",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# CORS for local development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "null", "*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# =============================================================================
+# Exception Handlers
+# =============================================================================
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler - fail loudly with actionable diagnostics."""
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "error": f"Internal server error: {type(exc).__name__}: {exc}",
+            "path": str(request.url),
+        },
+    )
+
+
+# =============================================================================
+# API Endpoints
+# =============================================================================
+
+@app.get("/api/v1/status", response_model=StatusResponse)
+async def get_status():
+    """Check connection status to Colab."""
+    is_valid, _ = verify_configuration()
+
+    if not is_valid:
+        return StatusResponse(
+            connected=False,
+            notebook_id=settings.COLAB_NOTEBOOK_ID,
+        )
+
+    if not colab_client._initialized:
+        colab_client.initialize()
+
+    return StatusResponse(
+        connected=colab_client._initialized,
+        notebook_id=colab_client.notebook_id,
+        service_account_email=colab_client.get_service_account_email(),
+    )
+
+
+@app.post("/api/v1/execute", response_model=ExecuteResponse)
+async def execute_code(request: ExecuteRequest):
+    """
+    Execute Python code in the Colab notebook.
+
+    This endpoint receives code from the UI and executes it.
+    """
+    start_time = time.time()
+
+    if not colab_client._initialized:
+        if not colab_client.initialize():
+            raise HTTPException(
+                status_code=503,
+                detail="Colab client not initialized. Configure credentials and restart."
+            )
+
+    try:
+        success, output = await colab_client.execute(
+            request.code,
+            timeout=request.timeout_seconds
+        )
+
+        execution_time_ms = int((time.time() - start_time) * 1000)
+
+        return ExecuteResponse(
+            success=success,
+            output=output,
+            execution_time_ms=execution_time_ms,
+            error=None if success else output
+        )
+
+    except Exception as e:
+        execution_time_ms = int((time.time() - start_time) * 1000)
+        return ExecuteResponse(
+            success=False,
+            output="",
+            execution_time_ms=execution_time_ms,
+            error=f"{type(e).__name__}: {e}"
+        )
+
+
+# =============================================================================
+# Colab GPU Bridge Endpoints (Remote Deep Learning Acceleration)
+# =============================================================================
+
+TUNNEL_FILE = PROJECT_ROOT / "colab_tunnel_url.txt"
+OVERRIDE_TUNNEL_URL: Optional[str] = None
+
+
+def get_active_tunnel_url() -> Optional[str]:
+    """Retrieve active tunnel URL from file or manual override."""
+    global OVERRIDE_TUNNEL_URL
+    if OVERRIDE_TUNNEL_URL:
+        return OVERRIDE_TUNNEL_URL
+    if TUNNEL_FILE.exists():
+        url = TUNNEL_FILE.read_text(encoding="utf-8").strip()
+        if url.startswith("http"):
+            return url
+    return None
+
+
+@app.get("/api/v1/gpu/status")
+async def get_gpu_status():
+    """Check health and capability of local NVIDIA GPU (GTX 1650)."""
+    cuda_avail = torch.cuda.is_available()
+    gpu_name = torch.cuda.get_device_name(0) if cuda_avail else "Intel i5 CPU"
+    active_job = get_job_state()
+
+    return {
+        "connected": True,
+        "mode": "local_gpu" if cuda_avail else "local_cpu",
+        "device": "cuda:0" if cuda_avail else "cpu",
+        "gpu_name": f"{gpu_name} (Local Hardware)",
+        "cuda_available": cuda_avail,
+        "model_loaded": True,
+        "job_status": active_job["status"]
+    }
+
+
+@app.post("/api/v1/gpu/set-tunnel")
+async def set_tunnel(req: SetTunnelRequest):
+    """Optional tunnel override."""
+    global OVERRIDE_TUNNEL_URL
+    url = req.tunnel_url.strip()
+    OVERRIDE_TUNNEL_URL = url
+    return {"status": "ok", "tunnel_url": url}
+
+
+@app.post("/api/v1/gpu/crop-folder")
+async def trigger_gpu_crop_folder(req: FolderCropRequest, bg_tasks: BackgroundTasks):
+    """Trigger local GPU anime face cropping into an isolated batch subfolder."""
+    active_job = get_job_state()
+    if active_job["status"] in ("downloading", "processing", "packaging"):
+        raise HTTPException(status_code=409, detail="A crop job is already in progress on local GPU")
+
+    bg_tasks.add_task(
+        run_avatar_crop_pipeline,
+        folder_source=req.folder_url,
+        zoom_factor=req.zoom_factor,
+        score_thresh=req.score_thresh,
+        custom_batch_name=req.custom_batch_name
+    )
+    return {
+        "status": "started",
+        "message": "Avatar cropping pipeline started on local NVIDIA GPU (GTX 1650)"
+    }
+
+
+@app.get("/api/v1/gpu/job-status")
+async def get_gpu_job_status():
+    """Poll active cropping job telemetry from local GPU service."""
+    return get_job_state()
+
+
+# =============================================================================
+# Visual Avatar Gallery & Batch Ledger Integration
+# =============================================================================
+
+@app.get("/api/v1/batches")
+async def get_batches():
+    """List all executed batches from SQLite ledger."""
+    return {"batches": list_all_batches()}
+
+
+@app.get("/api/v1/gallery/items")
+async def get_gallery_items(batch_folder: Optional[str] = None):
+    """List all cropped avatars grouped by character folder and batch."""
+    if not OUTPUT_DIR.exists():
+        return {"items": [], "folders": [], "batches": [], "total": 0}
+
+    scan_root = OUTPUT_DIR / batch_folder if batch_folder else OUTPUT_DIR
+    if not scan_root.exists():
+        return {"items": [], "folders": [], "batches": [], "total": 0}
+
+    valid_exts = ('.png', '.jpg', '.jpeg', '.webp')
+    items = []
+    folders = set()
+    batches = set()
+
+    for root, dirs, files in os.walk(scan_root):
+        rel = os.path.relpath(root, OUTPUT_DIR)
+        parts = Path(rel).parts
+
+        # Detect batch subfolder and character subfolder
+        if len(parts) >= 2:
+            current_batch = parts[0]
+            character_folder = "/".join(parts[1:])
+        elif len(parts) == 1 and parts[0] != ".":
+            current_batch = parts[0]
+            character_folder = "Default"
+        else:
+            current_batch = "Default"
+            character_folder = "Default"
+
+        if character_folder != "Default":
+            folders.add(character_folder)
+        if current_batch != "Default":
+            batches.add(current_batch)
+
+        for f in files:
+            if f.lower().endswith(valid_exts):
+                subpath = f if rel == "." else f"{rel}/{f}".replace("\\", "/")
+                items.append({
+                    "filename": f,
+                    "folder": character_folder,
+                    "batch": current_batch,
+                    "subpath": subpath,
+                    "url": f"/api/v1/gallery/image/{subpath}"
+                })
+
+    return {
+        "items": sorted(items, key=lambda x: (x["batch"], x["folder"], x["filename"])),
+        "folders": sorted(list(folders)),
+        "batches": sorted(list(batches), reverse=True),
+        "total": len(items)
+    }
+
+
+@app.get("/api/v1/gallery/image/{subpath:path}")
+async def get_gallery_image(subpath: str):
+    """Serve a single cropped avatar image directly to the browser."""
+    target = OUTPUT_DIR / subpath
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="Image not found")
+    return FileResponse(str(target))
+
+
+@app.post("/api/v1/gallery/open-folder")
+async def open_in_explorer(req: Optional[OpenFolderRequest] = None):
+    """Open the output folder or specific batch subfolder in Windows File Explorer on Disk D:."""
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    target = OUTPUT_DIR
+    if req and req.subfolder:
+        custom_target = OUTPUT_DIR / req.subfolder
+        if custom_target.exists():
+            target = custom_target
+
+    import subprocess
+    subprocess.Popen(f'explorer.exe "{target}"')
+    return {"status": "ok", "path": str(target)}
+    """Open the local output folder in Windows File Explorer on Disk D:."""
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    import subprocess
+    subprocess.Popen(f'explorer.exe "{OUTPUT_DIR}"')
+    return {"status": "ok", "path": str(OUTPUT_DIR)}
+
+
+@app.get("/")
+async def root():
+    """Serve the Colab Connect UI dashboard."""
+    index_file = PROJECT_ROOT / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    return {
+        "service": "Colab Connect Backend",
+        "version": "1.0.0",
+        "endpoints": {
+            "status": "/api/v1/status",
+            "execute": "/api/v1/execute",
+        },
+        "docs": "/docs",
+    }
+
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
+
+if __name__ == "__main__":
+    import uvicorn
+
+    print(f"Starting backend on {settings.BACKEND_HOST}:{settings.BACKEND_PORT}")
+    print(f"API docs: http://{settings.BACKEND_HOST}:{settings.BACKEND_PORT}/docs")
+
+    uvicorn.run(
+        "main:app",
+        host=settings.BACKEND_HOST,
+        port=settings.BACKEND_PORT,
+        reload=True,
+        reload_dirs=[str(PROJECT_ROOT / "backend"), str(PROJECT_ROOT)],
+        reload_includes=["*.py", "*.html", "*.json"],
+        log_level="info",
+    )

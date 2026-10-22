@@ -1,0 +1,17 @@
+# Colab Integration Backend Configuration
+# Copy this file to .env and fill in your values
+
+# Google Cloud Service Account Credentials
+# Path to your downloaded service account JSON file
+GOOGLE_APPLICATION_CREDENTIALS=../../.secrets/colab-service-account.json
+
+# Your Colab Notebook ID (from the URL)
+# https://colab.research.google.com/drive/NOTEBOOK_ID
+COLAB_NOTEBOOK_ID=1iYIe9pNcGO3nFYX2BOVtrLCJoF37PzP6
+
+# Backend Server Configuration
+BACKEND_HOST=127.0.0.1
+BACKEND_PORT=8000
+
+# Enable debug mode for development
+DEBUG=false

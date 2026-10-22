@@ -1,0 +1,124 @@
+"""
+Entropy Rose: Deterministic CQRS Projection Compiler.
+Compiles authoritative SQLite tables into O(1) JSON projection files
+for instant consumption by Obsidian plugins, Web-OS, and edge clients.
+"""
+
+import sqlite3
+import json
+import os
+from typing import Dict, Any, List
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB_PATH = os.path.join(BASE_DIR, "data", "rose_quotes.db")
+DEFAULT_OUT_DIR = os.path.join(BASE_DIR, "data")
+
+
+def compile_projections(db_path: str = DEFAULT_DB_PATH, out_dir: str = DEFAULT_OUT_DIR) -> Dict[str, int]:
+    """
+    Reads authoritative SQLite tables and generates:
+      1. quotes_map.json: { [hex_id]: QuoteObject } (Denormalized with speaker names for O(1) recite)
+      2. taxonomy_index.json: { speakers: [...], tags: [...], sentiments: [...] } (Suggestion pools)
+    """
+    if not os.path.exists(db_path):
+        return {"quotes": 0, "speakers": 0}
+
+    os.makedirs(out_dir, exist_ok=True)
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+
+    # 1. Fetch all speakers into an O(1) map
+    speakers_map = {}
+    speakers_list = []
+    try:
+        cur = conn.execute("SELECT id, name, bio FROM speakers ORDER BY name ASC;")
+        for r in cur.fetchall():
+            spk = {"id": r["id"], "name": r["name"], "bio": r["bio"] or ""}
+            speakers_map[r["id"]] = spk
+            speakers_list.append(spk)
+    except sqlite3.OperationalError:
+        pass
+
+    # 2. Fetch all quotes using the consolidated 10-column schema
+    quotes_map = {}
+    tags_pool = set()
+    sentiments_pool = set()
+
+    cur = conn.execute("""
+        SELECT id, idx, main_content, context, date,
+               COALESCE(speaker_ids, '[]') as speaker_ids,
+               COALESCE(preference, '[]') as preference,
+               COALESCE(backlinks, '[]') as backlinks,
+               COALESCE(tags, '[]') as tags,
+               COALESCE(sentiment, '') as sentiment
+        FROM quotes
+        ORDER BY idx ASC;
+    """)
+
+    for r in cur.fetchall():
+        qid = r["id"]
+
+        # Parse speaker IDs
+        speaker_ids = json.loads(r["speaker_ids"]) if r["speaker_ids"] else []
+        speakers = []
+        for sid in speaker_ids:
+            if sid in speakers_map:
+                speakers.append(speakers_map[sid])
+            else:
+                speakers.append({"id": sid, "name": sid, "bio": ""})
+
+        # Parse preference
+        preference = json.loads(r["preference"]) if r["preference"] else []
+
+        # Parse backlinks
+        backlinks = json.loads(r["backlinks"]) if r["backlinks"] else []
+
+        # Parse tags
+        raw_tags = json.loads(r["tags"]) if r["tags"] else []
+        tags = raw_tags if isinstance(raw_tags, list) else []
+        for t in tags:
+            if isinstance(t, str) and t.strip():
+                tags_pool.add(t.strip())
+
+        # Parse sentiment
+        sentiment = r["sentiment"] or ""
+        if sentiment:
+            sentiments_pool.add(sentiment.strip())
+
+        # Construct denormalized quote document for O(1) recite
+        quotes_map[qid] = {
+            "id": qid,
+            "index": r["idx"],
+            "main_content": r["main_content"],
+            "context": r["context"] or "",
+            "date": r["date"],
+            "speakers": speakers,
+            "preference": preference,
+            "backlinks": backlinks,
+            "tags": tags,
+            "sentiment": sentiment
+        }
+
+    conn.close()
+
+    # 3. Write quotes_map.json (O(1) Hash Map)
+    quotes_map_path = os.path.join(out_dir, "quotes_map.json")
+    with open(quotes_map_path, "w", encoding="utf-8") as f:
+        json.dump(quotes_map, f, ensure_ascii=False, indent=2)
+
+    # 4. Write taxonomy_index.json (Suggestion Pools)
+    taxonomy = {
+        "speakers": speakers_list,
+        "tags": sorted(list(tags_pool)),
+        "sentiments": sorted(list(sentiments_pool))
+    }
+    taxonomy_path = os.path.join(out_dir, "taxonomy_index.json")
+    with open(taxonomy_path, "w", encoding="utf-8") as f:
+        json.dump(taxonomy, f, ensure_ascii=False, indent=2)
+
+    return {"quotes": len(quotes_map), "speakers": len(speakers_list)}
+
+
+if __name__ == "__main__":
+    stats = compile_projections()
+    print(f"[OK] Compiled projections: {stats['quotes']} quotes, {stats['speakers']} speakers.")

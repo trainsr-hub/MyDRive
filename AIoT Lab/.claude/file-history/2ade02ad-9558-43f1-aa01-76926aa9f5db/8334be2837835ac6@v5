@@ -1,0 +1,98 @@
+:: D:\My Drive\Blue AI\Rebased\run.bat
+@echo off
+setlocal EnableDelayedExpansion
+
+echo ==========================================
+echo   Rebased Project Launcher (Background)
+echo ==========================================
+
+REM --- Resolve root as the folder containing this .bat file ---
+set "ROOT=%~dp0"
+if "!ROOT:~-1!" == "\" set "ROOT=!ROOT:~0,-1!"
+
+set "PID_DIR=%TEMP%\FaustRebased"
+set "BACKEND_DIR=!ROOT!\backend"
+set "FRONTEND_DIR=!ROOT!\frontend"
+
+REM ==============================================================================
+REM EXECUTABLE PATH CONFIGURATION
+REM ==============================================================================
+set "PYTHON_EXE=python"
+set "NODE_EXE=node"
+REM ==============================================================================
+
+if not exist "%PID_DIR%" mkdir "%PID_DIR%"
+
+REM ==========================================================
+REM 1. Terminate previous Backend process
+REM ==========================================================
+if exist "%PID_DIR%\backend.pid" (
+    for /f "usebackq delims=" %%i in ("%PID_DIR%\backend.pid") do taskkill /PID %%i /T /F >nul 2>&1
+    del "%PID_DIR%\backend.pid" >nul 2>&1
+)
+taskkill /FI "WINDOWTITLE eq FAUST Rebased Backend*" /T /F >nul 2>&1
+
+REM ==========================================================
+REM 2. Terminate previous Frontend process
+REM ==========================================================
+if exist "%PID_DIR%\frontend.pid" (
+    for /f "usebackq delims=" %%i in ("%PID_DIR%\frontend.pid") do taskkill /PID %%i /T /F >nul 2>&1
+    del "%PID_DIR%\frontend.pid" >nul 2>&1
+)
+taskkill /FI "WINDOWTITLE eq FAUST Rebased Frontend*" /T /F >nul 2>&1
+
+REM ==========================================================
+REM 3. Port Clear Sweep (8081 & 5174)
+REM ==========================================================
+powershell -NoProfile -Command "Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -in 8081, 5174 } | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+
+ping 127.0.0.1 -n 2 >nul
+
+REM ==========================================================
+REM 4. Install frontend dependencies if needed
+REM ==========================================================
+if not exist "!FRONTEND_DIR!\node_modules" (
+    echo [1/4] Installing frontend dependencies...
+    cd /d "!FRONTEND_DIR!"
+    call npm install
+    if errorlevel 1 (
+        echo ERROR: npm install failed
+        pause
+        exit /b 1
+    )
+)
+
+REM ==========================================================
+REM 4.5. Seed database if not initialized
+REM ==========================================================
+if not exist "!BACKEND_DIR!\data\rebased.db" (
+    echo [*] Initializing SQLite database with default Hazard seed data...
+    cd /d "!BACKEND_DIR!"
+    "%PYTHON_EXE%" seed_data.py
+)
+
+REM ==========================================================
+REM 5. Start Backend (FastAPI on port 8081)
+REM ==========================================================
+echo [2/4] Starting Rebased Backend on port 8081...
+powershell -NoProfile -Command "$p = Start-Process -FilePath '%PYTHON_EXE%' -WorkingDirectory '!BACKEND_DIR!' -ArgumentList '-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', '8081' -WindowStyle Hidden -PassThru -RedirectStandardOutput '%PID_DIR%\backend.log' -RedirectStandardError '%PID_DIR%\backend_err.log'; if ($p) { [System.IO.File]::WriteAllText('%PID_DIR%\backend.pid', $p.Id.ToString()) }"
+
+REM ==========================================================
+REM 6. Start Frontend (Vite on port 5174)
+REM ==========================================================
+echo [3/4] Starting Rebased Frontend on port 5174...
+powershell -NoProfile -Command "$p = Start-Process -FilePath 'cmd.exe' -WorkingDirectory '!FRONTEND_DIR!' -ArgumentList '/c npx vite --host 0.0.0.0 --port 5174' -WindowStyle Hidden -PassThru -RedirectStandardOutput '%PID_DIR%\frontend.log' -RedirectStandardError '%PID_DIR%\frontend_err.log'; if ($p) { [System.IO.File]::WriteAllText('%PID_DIR%\frontend.pid', $p.Id.ToString()) }"
+
+echo.
+echo Initializing headless services (waiting for port binding)...
+ping 127.0.0.1 -n 4 >nul
+
+echo ==========================================
+echo   Status: Active Headless Services
+echo ==========================================
+echo Backend  : http://localhost:8081  (Log: %PID_DIR%\backend.log)
+echo Frontend : http://localhost:5174  (Log: %PID_DIR%\frontend.log)
+echo ==========================================
+echo.
+echo Press any key to exit (services keep running)...
+pause >nul

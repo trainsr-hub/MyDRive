@@ -1,0 +1,1774 @@
+// path: src/apps/vinyl-angel/components/VinylIngestion.tsx
+
+// =============================================================================
+// [VINYL ANGEL YOUTUBE PLAYLIST INGESTION LAB & 3-TIER DIAGNOSTIC STREAM]
+// 🟢 Green:  All songs of that playlist are in DB (100% Synced)
+// 🟡 Yellow: Playlist contains uncurled songs that are being/were curled
+// 🔴 Red:    Songs failed to curl (playlist 404 or songs unavailable/private on YouTube)
+// Output Target: backend/data/projects/music_app/app_data/system/_1_static.db
+// =============================================================================
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { executeOrder } from '../../../services/api';
+import {
+  getCurlerPlaylists,
+  saveCurlerPlaylists,
+  streamPlaylistIngestion,
+  fetchUnavailableVideos,
+  clearUnavailableBuffer,
+  deleteUnavailableVideosAndClearBuffer,
+  deleteChannelUnavailableVideos,
+  removeUnavailableTrackFromBuffer,
+  deleteTrackImmediately,
+  fetchChannelMeta,
+  fetchChannelOrigins,
+} from '../services/engine';
+import { useVinylStore } from '../store/useVinylStore';
+import type { CurlerStreamEvent, PlaylistReportItem, UnavailableVideoEntry } from '../types';
+import {
+  DownloadCloud,
+  Terminal,
+  Play,
+  Square,
+  Trash2,
+  ListMusic,
+  Database,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  Save,
+  X,
+  Layers,
+  Disc3,
+  Sliders,
+  Filter,
+  Plus,
+  ExternalLink,
+  Link,
+  Radio,
+  RefreshCw,
+  Search,
+  AlertTriangle,
+  FileWarning,
+  Eraser,
+} from 'lucide-react';
+
+interface VinylIngestionProps {
+  projectId?: string;
+  onNavigateToGameplay?: () => void;
+  onNavigateToGallery?: () => void;
+}
+
+interface LogEntry {
+  id: string;
+  timestamp: string;
+  type: string;
+  message: string;
+  category: 'green' | 'yellow' | 'red' | 'info';
+}
+
+/**
+ * Normalizes YouTube URLs or IDs for Ingestion:
+ * Converts Channel ID (UC...) or Channel URL (/channel/UC...) into the channel's
+ * complete Uploads Playlist (UU...) so all songs from that channel can be ingested.
+ */
+export function normalizeIngestionUrl(raw: string): string {
+  const clean = raw.trim();
+  if (!clean) return clean;
+
+  // 1. Direct Channel ID: UC... (24 chars) -> Convert UC to UU (Uploads playlist)
+  if (/^UC[a-zA-Z0-9_-]{22}$/.test(clean)) {
+    return `https://www.youtube.com/playlist?list=UU${clean.slice(2)}`;
+  }
+
+  // 2. Channel URL: https://www.youtube.com/channel/UC... (with optional subpaths or query params)
+  const channelMatch = clean.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
+  if (channelMatch) {
+    return `https://www.youtube.com/playlist?list=UU${channelMatch[1].slice(2)}`;
+  }
+
+  return clean;
+}
+
+function extractPlaylistId(url: string): string {
+  const clean = url.trim();
+  if (
+    clean.startsWith('PL') ||
+    clean.startsWith('UU') ||
+    clean.startsWith('FL') ||
+    clean.startsWith('RD')
+  ) {
+    return clean;
+  }
+  // Direct Channel ID
+  if (/^UC[a-zA-Z0-9_-]{22}$/.test(clean)) {
+    return 'UU' + clean.slice(2);
+  }
+  try {
+    const parsed = new URL(clean);
+    const list = parsed.searchParams.get('list');
+    if (list) return list;
+    const channelMatch = parsed.pathname.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
+    if (channelMatch) {
+      return 'UU' + channelMatch[1].slice(2);
+    }
+  } catch (_) {}
+  const match = url.match(/[?&]list=([^#&?]+)/);
+  if (match) return match[1];
+  const channelMatch = url.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
+  if (channelMatch) return 'UU' + channelMatch[1].slice(2);
+  return clean.slice(0, 32);
+}
+
+export const VinylIngestion: React.FC<VinylIngestionProps> = ({
+  projectId = 'music_app',
+  onNavigateToGameplay,
+  onNavigateToGallery,
+}) => {
+  const targetProjectId = !projectId || projectId === 'vinyl_angel' ? 'music_app' : projectId;
+
+  // Telemetry state
+  const [totalCatalogCount, setTotalCatalogCount] = useState<number>(0);
+  const [playlists, setPlaylists] = useState<string[]>([]);
+  const [targetDbName, setTargetDbName] = useState<string>('system/_1_static.db');
+
+  // Diagnostic counts
+  const [totalGreen, setTotalGreen] = useState<number>(0);
+  const [totalYellow, setTotalYellow] = useState<number>(0);
+  const [totalRed, setTotalRed] = useState<number>(0);
+
+  // Execution state
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [currentProgress, setCurrentProgress] = useState<{ current: number; total: number }>({
+    current: 0,
+    total: 0,
+  });
+  const [totalScanned, setTotalScanned] = useState<number>(0);
+  const [totalNewAdded, setTotalNewAdded] = useState<number>(0);
+  const [finalReport, setFinalReport] = useState<PlaylistReportItem[]>([]);
+  const [reportFilter, setReportFilter] = useState<'all' | 'green' | 'yellow' | 'red'>('all');
+
+  // Logs state
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [autoScroll, setAutoScroll] = useState<boolean>(true);
+  const terminalBottomRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Playlist Manager Modal state
+  const [showPlaylistModal, setShowPlaylistModal] = useState<boolean>(false);
+  const [managerMode, setManagerMode] = useState<'interactive' | 'raw'>('interactive');
+  const [newPlaylistInput, setNewPlaylistInput] = useState<string>('');
+  const [rawPlaylistText, setRawPlaylistText] = useState<string>('');
+  const [isSavingPlaylists, setIsSavingPlaylists] = useState<boolean>(false);
+  const [modalPlaylists, setModalPlaylists] = useState<string[]>([]);
+
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warn' } | null>(
+    null
+  );
+
+  // Ingestion Mode: Batch (all playlists.txt) vs Single (one-time URL)
+  const [ingestionMode, setIngestionMode] = useState<'batch' | 'single'>('batch');
+  const [singleUrlInput, setSingleUrlInput] = useState<string>('');
+
+  // Settings for execution limit
+  const [executionLimit, setExecutionLimit] = useState<'all' | 'sample'>('all');
+
+  // Subtab Navigation & Unavailable Videos Buffer state
+  const [activeSubTab, setActiveSubTab] = useState<'ingestion' | 'unavailable'>('ingestion');
+  const [unavailableList, setUnavailableList] = useState<UnavailableVideoEntry[]>([]);
+  const [isLoadingUnavailable, setIsLoadingUnavailable] = useState<boolean>(false);
+  const [isClearingBuffer, setIsClearingBuffer] = useState<boolean>(false);
+  const [isDeletingUnavailable, setIsDeletingUnavailable] = useState<boolean>(false);
+  const [unavailableSearchQuery, setUnavailableSearchQuery] = useState<string>('');
+  const [unavailableChannelFilter, setUnavailableChannelFilter] = useState<string>('ALL');
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    confirmStyle: 'danger' | 'warning';
+    onConfirm: () => Promise<void>;
+  } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warn' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const addLog = useCallback(
+    (type: string, message: string, category: LogEntry['category'] = 'info', timestamp?: string) => {
+      const time = timestamp || new Date().toLocaleTimeString();
+      const newEntry: LogEntry = {
+        id: `${Date.now()}-${Math.random()}`,
+        timestamp: time,
+        type: type.toUpperCase(),
+        message,
+        category,
+      };
+
+      setLogs((prev) => [...prev, newEntry]);
+    },
+    []
+  );
+
+  // Fetch initial telemetry
+  const loadInitialData = async () => {
+    try {
+      const [pls, countRes] = await Promise.all([
+        getCurlerPlaylists(targetProjectId),
+        executeOrder<{ count: number }>({
+          project_id: targetProjectId,
+          tier: '1',
+          order: { action: 'count' },
+        }),
+      ]);
+
+      setPlaylists(pls);
+      setModalPlaylists(pls);
+      setRawPlaylistText(pls.join('\n'));
+      if (countRes.data?.count) {
+        setTotalCatalogCount(countRes.data.count);
+      }
+      loadUnavailableData();
+    } catch (e) {
+      console.warn('Failed to load curler initial metadata:', e);
+    }
+  };
+
+  const loadUnavailableData = useCallback(async () => {
+    setIsLoadingUnavailable(true);
+    try {
+      const list = await fetchUnavailableVideos(targetProjectId);
+      setUnavailableList(list);
+    } catch (err: any) {
+      console.warn('[VinylIngestion] Error loading unavailable videos:', err);
+    } finally {
+      setIsLoadingUnavailable(false);
+    }
+  }, [targetProjectId]);
+
+  const handleClearBuffer = async () => {
+    setIsClearingBuffer(true);
+    try {
+      const ok = await clearUnavailableBuffer(targetProjectId);
+      if (ok) {
+        setUnavailableList([]);
+        showToast('🧹 Unavailable videos buffer cleared (database untouched).', 'success');
+      } else {
+        showToast('Failed to clear unavailable buffer', 'error');
+      }
+    } finally {
+      setIsClearingBuffer(false);
+      setConfirmModal(null);
+    }
+  };
+
+  const handleClearAndDeleteUnavailable = async () => {
+    if (unavailableList.length === 0) {
+      showToast('No unavailable videos to delete', 'warn');
+      return;
+    }
+    setIsDeletingUnavailable(true);
+    try {
+      const ids = unavailableList.map((item) => item.id);
+      const res = await deleteUnavailableVideosAndClearBuffer(targetProjectId, ids);
+      if (res.success) {
+        setUnavailableList([]);
+        setTotalCatalogCount((prev) => Math.max(0, prev - res.deletedCount));
+        showToast(
+          `🗑️ Deleted ${res.deletedCount} unavailable song(s) from database and pool! Buffer cleared.`,
+          'success'
+        );
+      } else {
+        showToast('Failed to delete unavailable videos from database', 'error');
+      }
+    } finally {
+      setIsDeletingUnavailable(false);
+      setConfirmModal(null);
+    }
+  };
+
+  const handleDeleteChannelUnavailable = async (channelName: string) => {
+    const channelItems = unavailableList.filter(
+      (item) => (item.channel || 'Unknown Channel') === channelName
+    );
+    if (channelItems.length === 0) return;
+    setIsDeletingUnavailable(true);
+    try {
+      const ids = channelItems.map((item) => item.id);
+      const res = await deleteChannelUnavailableVideos(targetProjectId, ids);
+      if (res.success) {
+        setUnavailableList((prev) =>
+          prev.filter((item) => (item.channel || 'Unknown Channel') !== channelName)
+        );
+        setTotalCatalogCount((prev) => Math.max(0, prev - res.deletedCount));
+        showToast(
+          `🗑️ Deleted ${res.deletedCount} unavailable song(s) for channel "${channelName}"!`,
+          'success'
+        );
+      } else {
+        showToast(`Failed to delete unavailable videos for channel "${channelName}"`, 'error');
+      }
+    } finally {
+      setIsDeletingUnavailable(false);
+      setConfirmModal(null);
+    }
+  };
+
+  const handleRemoveSingleFromBuffer = async (trackId: string) => {
+    const ok = await removeUnavailableTrackFromBuffer(targetProjectId, trackId);
+    if (ok) {
+      setUnavailableList((prev) => prev.filter((item) => item.id !== trackId));
+      showToast(`Dismissed video ${trackId} from buffer`, 'info');
+    }
+  };
+
+  const handleDeleteSingleFromDb = async (trackId: string) => {
+    try {
+      await deleteTrackImmediately(targetProjectId, trackId);
+      await removeUnavailableTrackFromBuffer(targetProjectId, trackId);
+      setUnavailableList((prev) => prev.filter((item) => item.id !== trackId));
+      setTotalCatalogCount((prev) => Math.max(0, prev - 1));
+      showToast(`🗑️ Eradicated ${trackId} from database and buffer`, 'success');
+    } catch (e) {
+      showToast(`Failed to delete track ${trackId}`, 'error');
+    }
+  };
+
+  const unavailableChannels = useMemo(() => {
+    const set = new Set<string>();
+    unavailableList.forEach((item) => {
+      if (item.channel) set.add(item.channel);
+    });
+    return Array.from(set).sort();
+  }, [unavailableList]);
+
+  const filteredUnavailableList = useMemo(() => {
+    return unavailableList.filter((item) => {
+      if (
+        unavailableChannelFilter !== 'ALL' &&
+        (item.channel || 'Unknown Channel') !== unavailableChannelFilter
+      ) {
+        return false;
+      }
+      if (unavailableSearchQuery.trim()) {
+        const q = unavailableSearchQuery.toLowerCase().trim();
+        const matchesTitle = (item.title || '').toLowerCase().includes(q);
+        const matchesId = item.id.toLowerCase().includes(q);
+        const matchesChannel = (item.channel || '').toLowerCase().includes(q);
+        return matchesTitle || matchesId || matchesChannel;
+      }
+      return true;
+    });
+  }, [unavailableList, unavailableChannelFilter, unavailableSearchQuery]);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [targetProjectId]);
+
+  // Auto-scroll terminal to bottom
+  useEffect(() => {
+    if (autoScroll && terminalBottomRef.current) {
+      terminalBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs, autoScroll]);
+
+  // Parse, normalize (Channel ID -> Uploads Playlist), and deduplicate URLs from multi-line text input
+  const parseUrlsFromInput = useCallback((input: string): string[] => {
+    const lines = input
+      .split(/[\r\n]+/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0 && !l.startsWith('#'));
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const raw of lines) {
+      const normalized = normalizeIngestionUrl(raw);
+      if (!seen.has(normalized)) {
+        seen.add(normalized);
+        result.push(normalized);
+      }
+    }
+    return result;
+  }, []);
+
+  const parsedSingleUrls = useMemo(() => {
+    return parseUrlsFromInput(singleUrlInput);
+  }, [singleUrlInput, parseUrlsFromInput]);
+
+  // Start Ingestion Streaming
+  const handleStartIngestion = async () => {
+    if (isRunning) return;
+
+    if (ingestionMode === 'single') {
+      if (parsedSingleUrls.length === 0) {
+        showToast('Please enter at least one YouTube video or playlist link', 'warn');
+        return;
+      }
+    } else if (playlists.length === 0) {
+      showToast('No playlists configured in playlists.txt', 'warn');
+      return;
+    }
+
+    const isSingle = ingestionMode === 'single';
+    const targetUrls = isSingle ? parsedSingleUrls : undefined;
+
+    setIsRunning(true);
+    setCurrentProgress({ current: 0, total: targetUrls ? targetUrls.length : playlists.length });
+    setTotalScanned(0);
+    setTotalNewAdded(0);
+    setTotalGreen(0);
+    setTotalYellow(0);
+    setTotalRed(0);
+    setFinalReport([]);
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    addLog(
+      'INIT',
+      isSingle && targetUrls
+        ? `Starting Direct Ingestion for ${targetUrls.length} link${targetUrls.length > 1 ? 's' : ''}...`
+        : `Starting 3-Tier Diagnostic Playlist Ingestion Pipeline...`,
+      'info'
+    );
+
+    const options: any = {};
+    if (targetUrls) {
+      options.urls = targetUrls;
+    } else if (executionLimit === 'sample') {
+      options.max_playlists = 4;
+      options.max_per_playlist = 10;
+    }
+
+    try {
+      await streamPlaylistIngestion(
+        options,
+        (ev: CurlerStreamEvent) => {
+          if (ev.target_db) {
+            setTargetDbName(ev.target_db);
+          }
+
+          if (ev.type === 'init') {
+            if (ev.total_playlists) {
+              setCurrentProgress({ current: 0, total: ev.total_playlists });
+            }
+            if (ev.initial_catalog_count) {
+              setTotalCatalogCount(ev.initial_catalog_count);
+            }
+          } else if (ev.type === 'playlist_start') {
+            if (ev.index && ev.total) {
+              setCurrentProgress({ current: ev.index, total: ev.total });
+            }
+          } else if (ev.type === 'playlist_done') {
+            if (ev.category === 'green') setTotalGreen((prev) => prev + 1);
+            else if (ev.category === 'yellow') setTotalYellow((prev) => prev + 1);
+            else if (ev.category === 'red') setTotalRed((prev) => prev + 1);
+
+            if (ev.total_new_cumulative !== undefined) {
+              setTotalNewAdded(ev.total_new_cumulative);
+            }
+          } else if (ev.type === 'playlist_error') {
+            setTotalRed((prev) => prev + 1);
+          } else if (ev.type === 'complete') {
+            if (ev.total_green !== undefined) setTotalGreen(ev.total_green);
+            if (ev.total_yellow !== undefined) setTotalYellow(ev.total_yellow);
+            if (ev.total_red !== undefined) setTotalRed(ev.total_red);
+            if (ev.total_scanned_videos) setTotalScanned(ev.total_scanned_videos);
+            if (ev.total_new_added !== undefined) setTotalNewAdded(ev.total_new_added);
+            if (ev.final_catalog_count) setTotalCatalogCount(ev.final_catalog_count);
+            if (ev.reports) setFinalReport(ev.reports);
+
+            // Re-fetch channel metadata & origins so newly ingested channels/playlists reflect 'cleaning' status
+            if ((ev.total_new_added || 0) > 0) {
+              fetchChannelMeta('music_app')
+                .then((meta) => useVinylStore.getState().setChannelMetaMap(meta))
+                .catch((e) => console.warn('[VinylIngestion] Failed to refresh channel meta:', e));
+              fetchChannelOrigins('music_app')
+                .then((chs) => useVinylStore.getState().setChannelList(chs))
+                .catch((e) => console.warn('[VinylIngestion] Failed to refresh channel list:', e));
+            }
+
+            showToast(
+              `✨ Ingestion finished: 🟢 ${ev.total_green || 0} All Taken | 🟡 +${ev.total_new_added || 0} New Songs | 🔴 ${ev.total_red || 0} Issues.`,
+              'success'
+            );
+          }
+
+          if (ev.message) {
+            const cat =
+              ev.category === 'green' || ev.category === 'yellow' || ev.category === 'red'
+                ? ev.category
+                : 'info';
+            addLog(ev.status || ev.type, ev.message, cat, ev.timestamp);
+          }
+        },
+        controller.signal
+      );
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        addLog('ABORT', 'Pipeline execution halted by user.', 'yellow');
+        showToast('Ingestion pipeline stopped.', 'info');
+      } else {
+        addLog('ERROR', `Stream pipeline error: ${err.message}`, 'red');
+        showToast(`Pipeline Error: ${err.message}`, 'error');
+      }
+    } finally {
+      setIsRunning(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  // Stop / Abort Ingestion
+  const handleStopIngestion = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
+
+  // Clear Terminal Logs
+  const handleClearLogs = () => {
+    setLogs([]);
+  };
+
+  // Open Playlist Manager
+  const handleOpenPlaylistManager = () => {
+    setModalPlaylists([...playlists]);
+    setRawPlaylistText(playlists.join('\n'));
+    setNewPlaylistInput('');
+    setShowPlaylistModal(true);
+  };
+
+  // Add a single Playlist to modal list (supports multiple lines)
+  const handleAddPlaylist = () => {
+    const urls = parseUrlsFromInput(newPlaylistInput);
+    if (urls.length === 0) {
+      showToast('Please enter a YouTube playlist URL, Channel ID (UC...), or video link', 'error');
+      return;
+    }
+
+    const toAdd: string[] = [];
+    for (const u of urls) {
+      if (!modalPlaylists.includes(u) && !toAdd.includes(u)) {
+        toAdd.push(u);
+      }
+    }
+
+    if (toAdd.length === 0) {
+      showToast('Entered playlist(s) are already in the list!', 'warn');
+      return;
+    }
+
+    const updated = [...modalPlaylists, ...toAdd];
+    setModalPlaylists(updated);
+    setRawPlaylistText(updated.join('\n'));
+    setNewPlaylistInput('');
+    const hasChannelUploads = toAdd.some((u) => u.includes('list=UU') || u.startsWith('UU'));
+    showToast(
+      toAdd.length === 1
+        ? `Added playlist: ${extractPlaylistId(toAdd[0])}${hasChannelUploads ? ' (Channel Uploads)' : ''}`
+        : `Added ${toAdd.length} playlists to configuration`,
+      'success'
+    );
+  };
+
+  // Delete a Playlist from modal list
+  const handleDeletePlaylist = (indexToDelete: number) => {
+    const updated = modalPlaylists.filter((_, idx) => idx !== indexToDelete);
+    setModalPlaylists(updated);
+    setRawPlaylistText(updated.join('\n'));
+    showToast('Playlist removed from configuration', 'info');
+  };
+
+  // Save Playlists to playlists.txt
+  const handleSavePlaylists = async () => {
+    setIsSavingPlaylists(true);
+    try {
+      let urlsToSave: string[] = [];
+      if (managerMode === 'interactive') {
+        urlsToSave = modalPlaylists;
+      } else {
+        urlsToSave = rawPlaylistText
+          .split('\n')
+          .map((l) => normalizeIngestionUrl(l.trim()))
+          .filter((l) => l.length > 0 && !l.startsWith('#'));
+      }
+
+      // Deduplicate preserving order
+      const seen = new Set<string>();
+      const finalUrls: string[] = [];
+      for (const u of urlsToSave) {
+        if (!seen.has(u)) {
+          seen.add(u);
+          finalUrls.push(u);
+        }
+      }
+
+      const ok = await saveCurlerPlaylists(targetProjectId, finalUrls);
+      if (ok) {
+        setPlaylists(finalUrls);
+        setModalPlaylists(finalUrls);
+        setRawPlaylistText(finalUrls.join('\n'));
+        showToast(`💾 Saved ${finalUrls.length} playlists to playlists.txt!`, 'success');
+        setShowPlaylistModal(false);
+        addLog('CONFIG', `Updated playlists.txt with ${finalUrls.length} unique playlist entries.`, 'info');
+      } else {
+        showToast('Failed to save playlist configurations.', 'error');
+      }
+    } catch (e: any) {
+      showToast(`Error saving playlists: ${e.message}`, 'error');
+    } finally {
+      setIsSavingPlaylists(false);
+    }
+  };
+
+  // Filtered reports for the report drawer
+  const filteredReports = useMemo(() => {
+    if (reportFilter === 'all') return finalReport;
+    return finalReport.filter((r) => r.category === reportFilter);
+  }, [finalReport, reportFilter]);
+
+  const progressPercent =
+    currentProgress.total > 0
+      ? Math.round((currentProgress.current / currentProgress.total) * 100)
+      : 0;
+
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto w-full">
+      {/* Toast Overlay */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3.5 rounded-2xl bg-[#171320] border border-[#d4af37] text-xs font-semibold shadow-2xl flex items-center justify-center gap-2 animate-in fade-in slide-in-from-bottom-2 text-[#ffd86b]">
+          {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+          {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-400" />}
+          {toast.type === 'info' && <Sparkles className="w-4 h-4 text-[#ffd86b]" />}
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      {/* Header & Status Dashboard */}
+      <div className="p-6 rounded-2xl bg-[#120f18] border border-[#2b2238] shadow-2xl space-y-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#291e07] to-[#120f18] border border-[#524124] text-[#ffd86b] shadow-inner">
+              <DownloadCloud className="w-7 h-7" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h2 className="font-cinzel text-xl font-bold text-[#ffd86b]">
+                  Song Ingestion & Diagnostic Lab
+                </h2>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${
+                    isRunning
+                      ? 'bg-amber-950/80 text-amber-300 border-amber-500 animate-pulse'
+                      : 'bg-[#1a1424] text-[#8c7a9e] border-[#3d304f]'
+                  }`}
+                >
+                  {isRunning ? '● Ingesting Stream' : '○ Standby'}
+                </span>
+              </div>
+              <p className="text-xs text-[#8c7a9e] mt-1 leading-relaxed">
+                Outputs directly to{' '}
+                <code className="text-[#ffd86b] font-mono bg-black/50 px-1.5 py-0.5 rounded border border-[#3d304f]">
+                  backend/data/projects/music_app/app_data/{targetDbName}
+                </code>
+                . Live 3-Tier diagnostic feedback per playlist.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Navigation Buttons */}
+          <div className="flex items-center gap-2 self-stretch md:self-auto justify-end">
+            {onNavigateToGameplay && (
+              <button
+                type="button"
+                onClick={onNavigateToGameplay}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-cinzel font-bold bg-[#1a1424] hover:bg-[#251d33] border border-[#3d304f] text-[#cbd5e1] hover:text-[#ffd86b] transition cursor-pointer"
+              >
+                <Disc3 className="w-4 h-4 text-[#ffd86b]" />
+                <span>To Gameplay</span>
+              </button>
+            )}
+            {onNavigateToGallery && (
+              <button
+                type="button"
+                onClick={onNavigateToGallery}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-cinzel font-bold bg-[#1a1424] hover:bg-[#251d33] border border-[#3d304f] text-[#cbd5e1] hover:text-[#ffd86b] transition cursor-pointer"
+              >
+                <Layers className="w-4 h-4 text-[#ffd86b]" />
+                <span>To Gallery</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 3-Tier Diagnostic Diagnostic Bar */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-[#1e1728]">
+          {/* Sound Pool Total */}
+          <div className="p-3.5 rounded-xl bg-[#0f0d14] border border-[#2b2238] space-y-1">
+            <span className="text-[10px] font-mono text-[#8c7a9e] uppercase flex items-center gap-1.5">
+              <Database className="w-3.5 h-3.5 text-[#ffd86b]" /> Sound Pool Total
+            </span>
+            <p className="text-base font-bold font-mono text-white">
+              {totalCatalogCount > 0 ? `${totalCatalogCount.toLocaleString()} Songs` : 'Loading...'}{' '}
+              {totalScanned > 0 && (
+                <span className="text-[11px] font-normal text-[#8c7a9e]">
+                  ({totalScanned} scanned)
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* 🟢 Green State: All Songs Taken */}
+          <div className="p-3.5 rounded-xl bg-[#0b1a12] border border-emerald-900/60 space-y-1">
+            <span className="text-[10px] font-mono text-emerald-400 uppercase flex items-center gap-1.5 font-bold">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> 🟢 All Songs Taken
+            </span>
+            <p className="text-base font-bold font-mono text-emerald-300">
+              {totalGreen} Playlists{' '}
+              <span className="text-xs font-normal text-emerald-500">(100% Synced)</span>
+            </p>
+          </div>
+
+          {/* 🟡 Yellow State: Curled New Songs */}
+          <div className="p-3.5 rounded-xl bg-[#1f1b0a] border border-amber-900/60 space-y-1">
+            <span className="text-[10px] font-mono text-amber-400 uppercase flex items-center gap-1.5 font-bold">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> 🟡 Curled New Songs
+            </span>
+            <p className="text-base font-bold font-mono text-amber-300">
+              {totalYellow} Lists{' '}
+              <span className="text-xs font-normal text-amber-400">(+{totalNewAdded} songs)</span>
+            </p>
+          </div>
+
+          {/* 🔴 Red State: Issues / Unavailable */}
+          <div className="p-3.5 rounded-xl bg-[#1c0d12] border border-rose-900/60 space-y-1">
+            <span className="text-[10px] font-mono text-rose-400 uppercase flex items-center gap-1.5 font-bold">
+              <AlertCircle className="w-3.5 h-3.5 text-rose-400" /> 🔴 Unavailable / Failed
+            </span>
+            <p className="text-base font-bold font-mono text-rose-300">
+              {totalRed} Lists{' '}
+              <span className="text-xs font-normal text-rose-400">(404 or Private)</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Real-time Progress Bar */}
+        {isRunning && (
+          <div className="space-y-1.5 pt-2">
+            <div className="flex items-center justify-between text-xs font-mono text-[#8c7a9e]">
+              <span>Ingestion Progress:</span>
+              <span className="text-[#ffd86b] font-bold">
+                Playlist {currentProgress.current} / {currentProgress.total} ({progressPercent}%)
+              </span>
+            </div>
+            <div className="w-full h-2.5 bg-[#1a1424] rounded-full overflow-hidden border border-[#2b2238]">
+              <div
+                className="h-full bg-gradient-to-r from-[#d4af37] via-[#ffd86b] to-[#f59e0b] rounded-full transition-all duration-300 shadow-gold-sm"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Subtab Navigation: Ingestion Lab vs Unavailable Videos Buffer */}
+      <div className="flex items-center gap-2 p-1.5 bg-[#120f18] rounded-2xl border border-[#2b2238] shadow-md">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('ingestion')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-cinzel font-bold transition cursor-pointer ${
+            activeSubTab === 'ingestion'
+              ? 'bg-gradient-to-r from-[#ffd86b] to-[#d4af37] text-black shadow-gold-sm'
+              : 'text-[#8c7a9e] hover:text-white hover:bg-[#1a1424]'
+          }`}
+        >
+          <DownloadCloud className="w-4 h-4" />
+          <span>Playlist Ingestion Lab</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveSubTab('unavailable');
+            loadUnavailableData();
+          }}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-cinzel font-bold transition cursor-pointer ${
+            activeSubTab === 'unavailable'
+              ? 'bg-gradient-to-r from-rose-600 to-rose-800 text-white shadow-[0_0_15px_rgba(244,63,94,0.3)]'
+              : 'text-[#8c7a9e] hover:text-white hover:bg-[#1a1424]'
+          }`}
+        >
+          <AlertCircle className={`w-4 h-4 ${unavailableList.length > 0 ? 'text-rose-400' : ''}`} />
+          <span>Unavailable Videos Buffer</span>
+          {unavailableList.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-black/60 text-white border border-rose-400/40">
+              {unavailableList.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeSubTab === 'ingestion' && (
+        <>
+          {/* Ingestion Mode Selector: Batch (Library) vs Single (One-Time Link) */}
+          <div className="p-4 rounded-2xl bg-[#120f18] border border-[#2b2238] shadow-lg space-y-3">
+        <div className="flex items-center justify-between border-b border-[#231b2e] pb-2.5">
+          <div className="flex items-center gap-2">
+            <Radio className="w-4 h-4 text-[#ffd86b]" />
+            <span className="font-cinzel text-xs font-bold text-white uppercase tracking-wider">
+              Ingestion Mode
+            </span>
+          </div>
+          <div className="flex items-center gap-1 bg-[#171320] p-0.5 rounded-lg border border-[#2b2238]">
+            <button
+              type="button"
+              disabled={isRunning}
+              onClick={() => setIngestionMode('batch')}
+              className={`px-3 py-1 rounded-md text-xs font-mono font-bold transition cursor-pointer ${
+                ingestionMode === 'batch'
+                  ? 'bg-[#ffd86b] text-black shadow-gold-sm'
+                  : 'text-[#8c7a9e] hover:text-white'
+              }`}
+            >
+              📚 Batch Mode (Library)
+            </button>
+            <button
+              type="button"
+              disabled={isRunning}
+              onClick={() => setIngestionMode('single')}
+              className={`px-3 py-1 rounded-md text-xs font-mono font-bold transition cursor-pointer ${
+                ingestionMode === 'single'
+                  ? 'bg-[#ffd86b] text-black shadow-gold-sm'
+                  : 'text-[#8c7a9e] hover:text-white'
+              }`}
+            >
+              ⚡ Direct / Multi-Link (One-Time)
+            </button>
+          </div>
+        </div>
+
+        {ingestionMode === 'single' ? (
+          /* Multi-Link Ingestion Input */
+          <div className="space-y-2 animate-in fade-in duration-200">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2">
+              <div className="relative flex-1">
+                <div className="absolute left-3.5 top-3 text-[#8c7a9e] pointer-events-none">
+                  <Link className="w-4 h-4" />
+                </div>
+                <textarea
+                  rows={Math.min(6, Math.max(2, singleUrlInput.split('\n').length))}
+                  placeholder={`Paste YouTube playlist URL(s), Channel ID (UC...), channel link, or video link(s)...&#10;Supports multiple links separated by line breaks (Link1&#10;Link2)...`}
+                  value={singleUrlInput}
+                  disabled={isRunning}
+                  onChange={(e) => setSingleUrlInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isRunning) {
+                      e.preventDefault();
+                      handleStartIngestion();
+                    }
+                  }}
+                  className="w-full bg-[#171320] border border-[#3b2b4d] focus:border-[#ffd86b] rounded-xl pl-10 pr-10 py-2.5 text-xs md:text-sm text-white focus:outline-none transition placeholder-[#685c78] font-mono resize-y leading-relaxed"
+                />
+                {singleUrlInput && !isRunning && (
+                  <button
+                    type="button"
+                    onClick={() => setSingleUrlInput('')}
+                    className="absolute right-3 top-3 text-[#8c7a9e] hover:text-white transition p-1 rounded-md hover:bg-[#251d33] cursor-pointer"
+                    title="Clear input"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                disabled={isRunning || parsedSingleUrls.length === 0}
+                onClick={handleStartIngestion}
+                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs font-cinzel font-bold bg-gradient-to-r from-[#ffd86b] to-[#d4af37] text-black hover:brightness-110 shadow-gold-sm transition active:scale-95 disabled:opacity-50 cursor-pointer flex-shrink-0 sm:self-stretch"
+              >
+                <Play className="w-3.5 h-3.5 fill-black" />
+                <span>
+                  {parsedSingleUrls.length > 1
+                    ? `Ingest ${parsedSingleUrls.length} Links`
+                    : parsedSingleUrls.length === 1
+                    ? 'Ingest 1 Link'
+                    : 'Ingest Links'}
+                </span>
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-[#8c7a9e]">
+              <span>
+                💡 One-time use: ingests songs directly into <code className="text-[#ffd86b]">_1_static.db</code> without adding links to <code className="text-[#ffd86b]">playlists.txt</code>. Supports playlists, channel IDs (auto-converted to all uploads), videos, and music links. Press <kbd className="bg-black/50 px-1 py-0.5 rounded border border-[#3b2b4d] text-[#ffd86b] text-[10px]">Ctrl+Enter</kbd> to ingest.
+              </span>
+              {parsedSingleUrls.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-[#1e172a] text-[#ffd86b] border border-[#3d304f] font-bold">
+                  {parsedSingleUrls.length} {parsedSingleUrls.length === 1 ? 'link' : 'links'} detected
+                </span>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Batch Mode Information */
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-[#8c7a9e]">
+            <span>
+              Scanning all <strong className="text-white">{playlists.length}</strong> configured playlists in <code className="text-[#ffd86b]">playlists.txt</code>
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleOpenPlaylistManager}
+                disabled={isRunning}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono bg-[#1a1424] hover:bg-[#251d33] border border-[#3d304f] text-[#cbd5e1] hover:text-white transition disabled:opacity-50 cursor-pointer"
+              >
+                <ListMusic className="w-3.5 h-3.5 text-[#ffd86b]" />
+                <span>Manage Library</span>
+              </button>
+              <div className="flex items-center gap-1 bg-[#171320] px-2.5 py-1 rounded-lg border border-[#332842] text-xs">
+                <Sliders className="w-3.5 h-3.5 text-[#ffd86b]" />
+                <select
+                  value={executionLimit}
+                  disabled={isRunning}
+                  onChange={(e) => setExecutionLimit(e.target.value as 'all' | 'sample')}
+                  className="bg-transparent text-white focus:outline-none cursor-pointer text-xs font-mono"
+                >
+                  <option value="all" className="bg-[#120f18] text-white">
+                    All {playlists.length} Playlists
+                  </option>
+                  <option value="sample" className="bg-[#120f18] text-white">
+                    Test Sample (4 Lists)
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Control Actions Bar */}
+      <div className="p-4 rounded-2xl bg-[#120f18] border border-[#2b2238] flex flex-wrap items-center justify-between gap-3 shadow-lg">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {!isRunning ? (
+            <button
+              type="button"
+              onClick={handleStartIngestion}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-cinzel font-bold bg-gradient-to-r from-[#d4af37] to-[#b38b19] text-black hover:brightness-110 shadow-gold-sm transition active:scale-95 cursor-pointer"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              <span>
+                {ingestionMode === 'single'
+                  ? parsedSingleUrls.length > 1
+                    ? `Ingest ${parsedSingleUrls.length} Links`
+                    : 'Ingest Direct Link(s)'
+                  : 'Start Library Ingestion Stream'}
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStopIngestion}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-cinzel font-bold bg-rose-700 hover:bg-rose-600 text-white shadow-lg transition active:scale-95 cursor-pointer"
+            >
+              <Square className="w-4 h-4 fill-current" />
+              <span>Halt Stream</span>
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1.5 text-xs font-mono text-[#8c7a9e] cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={autoScroll}
+              onChange={(e) => setAutoScroll(e.target.checked)}
+              className="rounded bg-[#1a1424] border-[#3d304f] text-[#d4af37] focus:ring-0"
+            />
+            <span>Auto-scroll</span>
+          </label>
+
+          <button
+            type="button"
+            onClick={handleClearLogs}
+            className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-mono text-[#8c7a9e] hover:text-rose-300 hover:bg-[#1f1522] border border-transparent hover:border-rose-900/40 transition cursor-pointer"
+            title="Clear Console Output"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Clear Logs</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Real-time Streaming Terminal Console with 3-Color Diagnostic Syntax */}
+      <div className="rounded-2xl bg-[#08060c] border border-[#2b2238] shadow-2xl overflow-hidden flex flex-col">
+        {/* Terminal Title Bar */}
+        <div className="px-4 py-3 bg-[#120f18] border-b border-[#2b2238] flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-mono text-[#8c7a9e]">
+            <Terminal className="w-4 h-4 text-[#ffd86b]" />
+            <span>3-TIER LIVE DIAGNOSTIC STREAM</span>
+          </div>
+
+          <div className="flex items-center gap-3 text-[11px] font-mono">
+            <span className="flex items-center gap-1 text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> All Taken ({totalGreen})
+            </span>
+            <span className="flex items-center gap-1 text-amber-400">
+              <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Curled New ({totalYellow})
+            </span>
+            <span className="flex items-center gap-1 text-rose-400">
+              <span className="w-2 h-2 rounded-full bg-rose-400 inline-block" /> Issues ({totalRed})
+            </span>
+          </div>
+        </div>
+
+        {/* Terminal Log Output Window */}
+        <div className="p-4 md:p-5 h-96 overflow-y-auto font-mono text-xs space-y-2 scrollbar-thin select-text bg-[#07050a]">
+          {logs.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center space-y-2 text-[#524124]">
+              <Terminal className="w-8 h-8 opacity-40" />
+              <p className="italic">
+                Console ready. Click "Start Playlist Ingestion Stream" to begin diagnostic sweep.
+              </p>
+            </div>
+          ) : (
+            logs.map((log) => (
+              <div
+                key={log.id}
+                className={`p-2 rounded-lg border text-xs leading-relaxed break-all transition-all duration-200 ${
+                  log.category === 'green'
+                    ? 'bg-[#08170e]/80 border-emerald-900/60 text-emerald-200'
+                    : log.category === 'yellow'
+                    ? 'bg-[#1c1808]/80 border-amber-900/60 text-amber-200'
+                    : log.category === 'red'
+                    ? 'bg-[#1c0a0f]/80 border-rose-900/60 text-rose-200'
+                    : 'bg-[#100c18]/60 border-[#221830] text-[#cbd5e1]'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-[#6d6180] text-[10px]">[{log.timestamp}]</span>
+                  <span
+                    className={`font-bold px-1.5 py-0.2 rounded text-[10px] uppercase font-mono ${
+                      log.category === 'green'
+                        ? 'bg-emerald-950 text-emerald-400 border border-emerald-700/50'
+                        : log.category === 'yellow'
+                        ? 'bg-amber-950 text-amber-400 border border-amber-700/50'
+                        : log.category === 'red'
+                        ? 'bg-rose-950 text-rose-400 border border-rose-700/50'
+                        : 'bg-[#1e172a] text-[#8c7a9e]'
+                    }`}
+                  >
+                    {log.type}
+                  </span>
+                </div>
+                <div className="pl-1 font-sans text-xs md:text-[13px]">{log.message}</div>
+              </div>
+            ))
+          )}
+          <div ref={terminalBottomRef} />
+        </div>
+      </div>
+
+      {/* Summary Report Table with 3-Tier Filter Chips */}
+      {finalReport.length > 0 && (
+        <div className="p-6 rounded-2xl bg-[#120f18] border border-[#2b2238] shadow-lg space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <h3 className="font-cinzel text-sm font-bold text-[#ffd86b] flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              Ingestion Diagnostic Report ({finalReport.length} Playlists)
+            </h3>
+
+            {/* Filter Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto max-w-full text-xs font-mono">
+              <Filter className="w-3.5 h-3.5 text-[#8c7a9e] mr-1 hidden sm:inline" />
+              <button
+                type="button"
+                onClick={() => setReportFilter('all')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                  reportFilter === 'all'
+                    ? 'bg-[#d4af37] text-black shadow-gold-sm'
+                    : 'bg-[#171320] text-[#8c7a9e] border border-[#2b2238]'
+                }`}
+              >
+                All ({finalReport.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setReportFilter('green')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                  reportFilter === 'green'
+                    ? 'bg-emerald-500 text-black'
+                    : 'bg-[#0b1a12] text-emerald-400 border border-emerald-900/60'
+                }`}
+              >
+                🟢 All Taken ({finalReport.filter((r) => r.category === 'green').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setReportFilter('yellow')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                  reportFilter === 'yellow'
+                    ? 'bg-amber-400 text-black'
+                    : 'bg-[#1f1b0a] text-amber-400 border border-amber-900/60'
+                }`}
+              >
+                🟡 Curled New ({finalReport.filter((r) => r.category === 'yellow').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setReportFilter('red')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                  reportFilter === 'red'
+                    ? 'bg-rose-500 text-white'
+                    : 'bg-[#1c0d12] text-rose-400 border border-rose-900/60'
+                }`}
+              >
+                🔴 Issues ({finalReport.filter((r) => r.category === 'red').length})
+              </button>
+            </div>
+          </div>
+
+          <div className="max-h-72 overflow-y-auto space-y-2 scrollbar-thin pr-1 border-t border-[#1f182a] pt-3">
+            {filteredReports.length === 0 ? (
+              <p className="text-center text-xs text-[#8c7a9e] py-4 italic">
+                No playlists match the selected filter.
+              </p>
+            ) : (
+              filteredReports.map((r, idx) => (
+                <div
+                  key={idx}
+                  className={`p-3 rounded-xl border text-xs font-mono flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 transition ${
+                    r.category === 'green'
+                      ? 'bg-[#0a1610] border-emerald-900/50 text-emerald-200'
+                      : r.category === 'yellow'
+                      ? 'bg-[#171408] border-amber-900/50 text-amber-200'
+                      : 'bg-[#17090e] border-rose-900/50 text-rose-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate max-w-xl">
+                    <span className="text-[#8c7a9e] font-bold">#{idx + 1}</span>
+                    <span className="font-semibold truncate text-white" title={r.url}>
+                      {r.playlist_id}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-[11px] self-end md:self-auto flex-wrap">
+                    <span className="text-[#8c7a9e]">
+                      In DB: <strong className="text-white">{r.in_db_count ?? r.total_in_playlist}/{r.total_in_playlist}</strong>
+                    </span>
+
+                    {r.new_added > 0 && (
+                      <span className="text-amber-300 font-bold">
+                        +{r.new_added} Curled
+                      </span>
+                    )}
+
+                    {(r.unavailable_count ?? 0) > 0 && (
+                      <span className="text-rose-400 font-bold">
+                        ⚠️ {r.unavailable_count} Unavailable
+                      </span>
+                    )}
+
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        r.category === 'green'
+                          ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                          : r.category === 'yellow'
+                          ? 'bg-amber-950 text-amber-400 border border-amber-800'
+                          : 'bg-rose-950 text-rose-400 border border-rose-800'
+                      }`}
+                    >
+                      {r.status}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+        </>
+      )}
+
+      {/* ========================================================================= */}
+      {/* UNAVAILABLE VIDEOS BUFFER SUBTAB */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'unavailable' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Summary Telemetry & Quick Action Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Card 1: Total Buffered */}
+            <div className="p-5 rounded-2xl bg-[#140d12] border border-rose-900/60 shadow-lg flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono text-rose-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-400" /> Buffered Dead / Private Tracks
+                </span>
+                <p className="text-2xl font-cinzel font-bold text-white">
+                  {unavailableList.length} <span className="text-sm font-normal text-rose-300">Videos</span>
+                </p>
+                <span className="text-[11px] font-mono text-[#8c7a9e]">
+                  Captured automatically during Gameplay playback
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-800/60 text-rose-300">
+                <FileWarning className="w-6 h-6" />
+              </div>
+            </div>
+
+            {/* Card 2: Affected Channels */}
+            <div className="p-5 rounded-2xl bg-[#120f18] border border-[#2b2238] shadow-lg flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono text-[#8c7a9e] uppercase tracking-wider font-bold flex items-center gap-1.5">
+                  <Radio className="w-3.5 h-3.5 text-[#ffd86b]" /> Impacted Channels
+                </span>
+                <p className="text-2xl font-cinzel font-bold text-[#ffd86b]">
+                  {unavailableChannels.length} <span className="text-sm font-normal text-[#8c7a9e]">Channels</span>
+                </p>
+                <span className="text-[11px] font-mono text-[#8c7a9e]">
+                  {unavailableChannels.slice(0, 2).join(', ') || 'No channels impacted'}
+                  {unavailableChannels.length > 2 ? ` +${unavailableChannels.length - 2} more` : ''}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-[#1c1626] border border-[#3b2b4d] text-[#ffd86b]">
+                <Layers className="w-6 h-6" />
+              </div>
+            </div>
+
+            {/* Card 3: Storage Engine Target */}
+            <div className="p-5 rounded-2xl bg-[#120f18] border border-[#2b2238] shadow-lg flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono text-[#8c7a9e] uppercase tracking-wider font-bold flex items-center gap-1.5">
+                  <Database className="w-3.5 h-3.5 text-emerald-400" /> Buffer Engine File
+                </span>
+                <p className="text-sm font-mono font-bold text-emerald-300 truncate">
+                  unavailable_videos.jsonl
+                </p>
+                <span className="text-[11px] font-mono text-[#8c7a9e]">
+                  Tier <code className="text-[#ffd86b]">unavailable</code> in <code className="text-[#ffd86b]">_1_static.db</code> project
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={loadUnavailableData}
+                disabled={isLoadingUnavailable}
+                title="Refresh unavailable buffer"
+                className="p-3 rounded-xl bg-[#1c1626] hover:bg-[#281f36] border border-[#3b2b4d] text-[#ffd86b] transition cursor-pointer active:scale-95"
+              >
+                <RefreshCw className={`w-5 h-5 ${isLoadingUnavailable ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Primary Management Toolbar with the two requested Core Actions */}
+          <div className="p-5 rounded-2xl bg-[#120f18] border border-[#2b2238] shadow-xl space-y-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-[#231b2e] pb-4">
+              <div>
+                <h3 className="font-cinzel text-sm font-bold text-[#ffd86b] flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  Unavailable Video Buffer Management
+                </h3>
+                <p className="text-xs text-[#8c7a9e] mt-0.5">
+                  Choose whether to clear the telemetry buffer or permanently eradicate dead videos from catalog databases.
+                </p>
+              </div>
+
+              {/* The Two Main Requested Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Action 1: Clear the Buffer */}
+                <button
+                  type="button"
+                  disabled={isClearingBuffer || isDeletingUnavailable || unavailableList.length === 0}
+                  onClick={() => {
+                    setConfirmModal({
+                      isOpen: true,
+                      title: 'Clear Unavailable Videos Buffer',
+                      message:
+                        'This will empty the unavailable_videos.jsonl buffer file. The videos will remain in the database (_1_static.db). Do you want to proceed?',
+                      confirmText: 'Clear Buffer (Keep in DB)',
+                      confirmStyle: 'warning',
+                      onConfirm: handleClearBuffer,
+                    });
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-cinzel font-bold bg-[#1e1728] hover:bg-[#2b203a] border border-[#4d3a63] hover:border-[#ffd86b] text-[#ffd86b] transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-md active:scale-95"
+                  title="Empty the buffer file without deleting videos from the database"
+                >
+                  <Eraser className="w-4 h-4 text-[#ffd86b]" />
+                  <span>Clear the Buffer</span>
+                </button>
+
+                {/* Action 2: Clear the Buffer and Delete Unavailable Videos */}
+                <button
+                  type="button"
+                  disabled={isClearingBuffer || isDeletingUnavailable || unavailableList.length === 0}
+                  onClick={() => {
+                    setConfirmModal({
+                      isOpen: true,
+                      title: 'Clear Buffer & Eradicate Videos from Database',
+                      message: `This will permanently delete all ${unavailableList.length} unavailable video(s) from _1_static.db, cascade deletion to Tier 3 & 4 databases, record them in blocked.db to prevent future re-ingestion, and clear the buffer. Are you sure?`,
+                      confirmText: `Delete ${unavailableList.length} Videos & Clear Buffer`,
+                      confirmStyle: 'danger',
+                      onConfirm: handleClearAndDeleteUnavailable,
+                    });
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-cinzel font-bold bg-gradient-to-r from-rose-700 to-rose-900 hover:from-rose-600 hover:to-rose-800 border border-rose-500 text-white transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(244,63,94,0.3)] active:scale-95"
+                  title="Delete all unavailable videos from _1_static.db and clear the buffer"
+                >
+                  <Trash2 className="w-4 h-4 text-white" />
+                  <span>Clear Buffer & Delete Unavailable Videos</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c7a9e]" />
+                <input
+                  type="text"
+                  placeholder="Search by title, video ID, or channel..."
+                  value={unavailableSearchQuery}
+                  onChange={(e) => setUnavailableSearchQuery(e.target.value)}
+                  className="w-full bg-[#171320] border border-[#2b2238] focus:border-[#ffd86b] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-[#685c78] focus:outline-none transition"
+                />
+                {unavailableSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setUnavailableSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8c7a9e] hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Channel Filter & Channel-Level Delete */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#171320] border border-[#2b2238] text-xs font-mono">
+                  <Radio className="w-3.5 h-3.5 text-[#ffd86b]" />
+                  <span className="text-[#8c7a9e] text-[11px] hidden sm:inline">Channel:</span>
+                  <select
+                    value={unavailableChannelFilter}
+                    onChange={(e) => setUnavailableChannelFilter(e.target.value)}
+                    className="bg-transparent text-[#ffd86b] text-xs font-mono font-bold focus:outline-none cursor-pointer max-w-[200px] truncate"
+                  >
+                    <option value="ALL" className="bg-[#120f18] text-white">
+                      All Channels ({unavailableList.length})
+                    </option>
+                    {unavailableChannels.map((ch) => {
+                      const count = unavailableList.filter(
+                        (item) => (item.channel || 'Unknown Channel') === ch
+                      ).length;
+                      return (
+                        <option key={ch} value={ch} className="bg-[#120f18] text-[#ffd86b]">
+                          {ch} ({count})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* Delete only this channel's unavailable songs */}
+                {unavailableChannelFilter !== 'ALL' && (
+                  <button
+                    type="button"
+                    disabled={isDeletingUnavailable}
+                    onClick={() => {
+                      const count = unavailableList.filter(
+                        (item) => (item.channel || 'Unknown Channel') === unavailableChannelFilter
+                      ).length;
+                      setConfirmModal({
+                        isOpen: true,
+                        title: `Delete Unavailable Videos for "${unavailableChannelFilter}"`,
+                        message: `This will permanently delete all ${count} unavailable video(s) belonging to "${unavailableChannelFilter}" from the database and remove them from the buffer. Proceed?`,
+                        confirmText: `Delete ${count} Videos from "${unavailableChannelFilter}"`,
+                        confirmStyle: 'danger',
+                        onConfirm: () => handleDeleteChannelUnavailable(unavailableChannelFilter),
+                      });
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-rose-950/70 hover:bg-rose-900 border border-rose-700/70 text-rose-200 text-xs font-mono font-bold transition cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete This Channel's Unavailable</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Table / List View */}
+          <div className="p-4 rounded-2xl bg-[#120f18] border border-[#2b2238] shadow-2xl space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-cinzel font-bold text-[#8c7a9e]">
+                Buffered Unavailable Tracks ({filteredUnavailableList.length} of {unavailableList.length})
+              </span>
+              {unavailableList.length > 0 && (
+                <span className="text-[11px] font-mono text-[#8c7a9e]">
+                  Target: <code>backend/data/projects/music_app/app_data/unavailable_videos.jsonl</code>
+                </span>
+              )}
+            </div>
+
+            {filteredUnavailableList.length === 0 ? (
+              <div className="p-12 rounded-xl bg-[#0d0a14] border border-[#221830] text-center space-y-3">
+                <div className="p-4 rounded-full bg-emerald-950/40 border border-emerald-800/40 w-16 h-16 mx-auto flex items-center justify-center text-emerald-400">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-cinzel font-bold text-white">
+                    {unavailableList.length === 0
+                      ? 'No Unavailable Videos Buffered'
+                      : 'No Videos Match Your Filter'}
+                  </h4>
+                  <p className="text-xs text-[#8c7a9e] max-w-md mx-auto">
+                    {unavailableList.length === 0
+                      ? 'All tracks currently streaming in your catalog are playing without error. Any videos that fail to play during Gameplay will be buffered here automatically.'
+                      : 'Try clearing your search query or channel filter to view other buffered tracks.'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs font-mono">
+                  <thead>
+                    <tr className="border-b border-[#231b2e] text-[#8c7a9e] uppercase text-[10px]">
+                      <th className="py-2.5 px-3">#</th>
+                      <th className="py-2.5 px-3">Video / Track</th>
+                      <th className="py-2.5 px-3">Channel</th>
+                      <th className="py-2.5 px-3">Failure Reason</th>
+                      <th className="py-2.5 px-3">Detected At</th>
+                      <th className="py-2.5 px-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1e1728]">
+                    {filteredUnavailableList.map((item, idx) => (
+                      <tr key={`${item.id}-${idx}`} className="hover:bg-[#181320] transition group">
+                        <td className="py-3 px-3 text-[#685c78] font-bold">{idx + 1}</td>
+                        <td className="py-3 px-3">
+                          <div className="space-y-0.5">
+                            <div className="font-semibold text-white truncate max-w-sm" title={item.title}>
+                              {item.title || 'Untitled Track'}
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px]">
+                              <code className="text-[#ffd86b] bg-black/40 px-1 py-0.5 rounded border border-[#3b2b4d]">
+                                {item.id}
+                              </code>
+                              <a
+                                href={`https://www.youtube.com/watch?v=${item.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#8c7a9e] hover:text-[#ffd86b] flex items-center gap-1 transition"
+                                title="Open on YouTube in new tab to test/verify"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span>Verify</span>
+                              </a>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-[#cbd5e1] truncate max-w-xs">
+                          {item.channel || 'Unknown Channel'}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
+                              item.error_code === 100
+                                ? 'bg-rose-950/80 text-rose-300 border-rose-700/60'
+                                : item.error_code === 101 || item.error_code === 150
+                                ? 'bg-amber-950/80 text-amber-300 border-amber-700/60'
+                                : 'bg-[#1e1728] text-[#8c7a9e] border-[#3d304f]'
+                            }`}
+                          >
+                            <AlertCircle className="w-2.5 h-2.5" />
+                            {item.reason || `Error ${item.error_code || 'Unknown'}`}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-[#8c7a9e] text-[11px]">
+                          {new Date(item.timestamp).toLocaleString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* Dismiss from buffer */}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSingleFromBuffer(item.id)}
+                              className="p-1.5 rounded-lg bg-[#1a1424] hover:bg-[#251d33] border border-[#3d304f] text-[#8c7a9e] hover:text-white transition cursor-pointer"
+                              title="Dismiss from buffer (keep in database)"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Delete from database & buffer */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setConfirmModal({
+                                  isOpen: true,
+                                  title: `Delete Track "${item.title || item.id}"`,
+                                  message: `Are you sure you want to delete this track from _1_static.db and all associated state tiers? It will be added to blocked.db and won't re-curl.`,
+                                  confirmText: 'Delete Track from DB',
+                                  confirmStyle: 'danger',
+                                  onConfirm: () => handleDeleteSingleFromDb(item.id),
+                                });
+                              }}
+                              className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 border border-rose-700/60 text-rose-300 hover:text-white transition cursor-pointer"
+                              title="Delete from database and remove from buffer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Buffer & Deletion operations */}
+      {confirmModal && confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#120f18] border border-[#d4af37] w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-[#ffd86b]">
+              {confirmModal.confirmStyle === 'danger' ? (
+                <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-600/70 text-rose-400">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-amber-950/80 border border-amber-600/70 text-amber-400">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+              )}
+              <div>
+                <h3 className="font-cinzel font-bold text-sm text-white">{confirmModal.title}</h3>
+                <span className="text-[10px] font-mono text-[#8c7a9e]">Action Confirmation</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#cbd5e1] leading-relaxed">{confirmModal.message}</p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#231b2e]">
+              <button
+                type="button"
+                onClick={() => setConfirmModal(null)}
+                className="px-4 py-2 bg-[#1a1424] hover:bg-[#251d33] text-xs font-cinzel text-[#cbd5e1] rounded-xl transition cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmModal.onConfirm}
+                className={`px-4 py-2 text-xs font-cinzel font-bold rounded-xl transition cursor-pointer active:scale-95 shadow-md ${
+                  confirmModal.confirmStyle === 'danger'
+                    ? 'bg-gradient-to-r from-rose-600 to-rose-800 text-white hover:brightness-110 shadow-rose-900/50'
+                    : 'bg-gradient-to-r from-[#d4af37] to-[#ffd86b] text-black hover:brightness-110 shadow-gold-sm'
+                }`}
+              >
+                {confirmModal.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Direct Add/Delete Playlist Management Modal */}
+      {showPlaylistModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#120f18] border border-[#d4af37] w-full max-w-3xl rounded-2xl shadow-portal overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200 max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-[#292033] flex items-center justify-between bg-[#181422]">
+              <div className="flex items-center gap-2.5">
+                <ListMusic className="w-5 h-5 text-[#ffd86b]" />
+                <div>
+                  <h3 className="font-cinzel font-bold text-sm text-[#ffd86b]">
+                    Playlist Configuration Manager
+                  </h3>
+                  <span className="text-[11px] font-mono text-[#8c7a9e]">
+                    Direct Add, Delete & Ingestion Control ({modalPlaylists.length} Playlists)
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* View Mode Toggle */}
+                <div className="flex items-center bg-[#0d0a14] rounded-lg p-0.5 border border-[#2b2238] text-xs font-mono">
+                  <button
+                    type="button"
+                    onClick={() => setManagerMode('interactive')}
+                    className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                      managerMode === 'interactive'
+                        ? 'bg-[#d4af37] text-black font-bold'
+                        : 'text-[#8c7a9e] hover:text-white'
+                    }`}
+                  >
+                    List View
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setManagerMode('raw')}
+                    className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                      managerMode === 'raw'
+                        ? 'bg-[#d4af37] text-black font-bold'
+                        : 'text-[#8c7a9e] hover:text-white'
+                    }`}
+                  >
+                    Raw Text
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setShowPlaylistModal(false)}
+                  className="p-1.5 text-[#8c7a9e] hover:text-white rounded-lg hover:bg-[#251d33] transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4 overflow-y-auto flex-1 scrollbar-thin">
+              {managerMode === 'interactive' ? (
+                <>
+                  {/* Quick Add Playlist Bar */}
+                  <div className="p-4 rounded-xl bg-[#0d0a14] border border-[#2b2238] space-y-2">
+                    <span className="text-xs font-cinzel font-bold text-[#ffd86b] flex items-center gap-1.5">
+                      <Plus className="w-4 h-4 text-[#ffd86b]" /> Add New YouTube Playlist or Channel
+                    </span>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Paste Playlist URL, Channel ID (UC...) or Channel URL..."
+                        value={newPlaylistInput}
+                        onChange={(e) => setNewPlaylistInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleAddPlaylist();
+                        }}
+                        className="flex-1 bg-[#171320] border border-[#332842] focus:border-[#d4af37] rounded-xl px-3.5 py-2 text-xs font-mono text-white focus:outline-none transition placeholder-[#524124]"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddPlaylist}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-[#d4af37] hover:bg-[#e6c24d] text-black font-cinzel font-bold text-xs rounded-xl transition active:scale-95 shadow-gold-sm cursor-pointer flex-shrink-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Playlists List with Individual Delete Buttons */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-mono text-[#8c7a9e] px-1">
+                      <span>Configured Playlists ({modalPlaylists.length}):</span>
+                      <span>Target: <code className="text-[#ffd86b]">playlists.txt</code></span>
+                    </div>
+
+                    <div className="max-h-72 overflow-y-auto space-y-2 scrollbar-thin pr-1">
+                      {modalPlaylists.length === 0 ? (
+                        <div className="p-8 rounded-xl bg-[#0d0a14] border border-[#221830] text-center text-xs text-[#8c7a9e] italic">
+                          No playlists configured. Add one above!
+                        </div>
+                      ) : (
+                        modalPlaylists.map((url, idx) => {
+                          const pid = extractPlaylistId(url);
+                          return (
+                            <div
+                              key={idx}
+                              className="p-3 rounded-xl bg-[#0d0a14] hover:bg-[#140f1f] border border-[#221830] hover:border-[#3d304f] transition flex items-center justify-between gap-3 text-xs font-mono group"
+                            >
+                              <div className="flex items-center gap-2.5 truncate max-w-lg">
+                                <span className="text-[#8c7a9e] font-bold w-6 text-right flex-shrink-0">
+                                  #{idx + 1}
+                                </span>
+                                <span className="px-2 py-0.5 rounded bg-[#1a1424] text-[#ffd86b] font-semibold border border-[#3d304f] flex-shrink-0">
+                                  {pid}
+                                </span>
+                                <span className="text-[#8c7a9e] truncate" title={url}>
+                                  {url}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <a
+                                  href={url.startsWith('http') ? url : `https://www.youtube.com/playlist?list=${url}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Open in YouTube"
+                                  className="p-1.5 rounded-lg bg-[#1a1424] hover:bg-[#251d33] text-[#8c7a9e] hover:text-white transition"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeletePlaylist(idx)}
+                                  title="Delete Playlist from Configuration"
+                                  className="p-1.5 rounded-lg bg-[#1a1424] hover:bg-rose-950/80 border border-transparent hover:border-rose-700/60 text-[#8c7a9e] hover:text-rose-300 transition cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Raw Textarea Editor Mode */
+                <div className="space-y-2">
+                  <p className="text-xs text-[#8c7a9e] leading-relaxed">
+                    Edit raw playlist URLs directly (one URL or playlist ID per line):
+                  </p>
+                  <textarea
+                    value={rawPlaylistText}
+                    onChange={(e) => setRawPlaylistText(e.target.value)}
+                    rows={12}
+                    placeholder="https://www.youtube.com/playlist?list=PL...&#10;https://www.youtube.com/watch?v=...&list=PL..."
+                    className="w-full bg-[#0a080f] border border-[#332842] focus:border-[#d4af37] rounded-xl p-3.5 text-xs font-mono text-[#f5f0e8] focus:outline-none transition leading-relaxed placeholder-[#524124]"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-[#292033] bg-[#0d0a12] flex items-center justify-between">
+              <span className="text-xs font-mono text-[#8c7a9e]">
+                {managerMode === 'interactive'
+                  ? `${modalPlaylists.length} Playlists configured`
+                  : `${rawPlaylistText.split('\n').filter((l) => l.trim().length > 0 && !l.trim().startsWith('#')).length} Playlists in text`}
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPlaylistModal(false)}
+                  className="px-4 py-2 bg-[#1a1424] hover:bg-[#251d33] text-xs font-cinzel text-[#cbd5e1] rounded-lg transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSavePlaylists}
+                  disabled={isSavingPlaylists}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-[#d4af37] hover:bg-[#e6c24d] text-black text-xs font-cinzel font-bold rounded-lg transition active:scale-95 disabled:opacity-50 shadow-gold-sm cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSavingPlaylists ? 'Saving...' : 'Save Playlists to Disk'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default VinylIngestion;

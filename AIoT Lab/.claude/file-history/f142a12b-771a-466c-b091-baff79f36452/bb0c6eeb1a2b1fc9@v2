@@ -1,0 +1,22 @@
+@echo off
+title Faust Remote Sovereign Daemon - Launcher
+echo ============================================================
+echo   LAUNCHING FAUST SOVEREIGN REMOTE DAEMON (ZERO-IDE MODE)
+echo ============================================================
+echo.
+
+set "PYTHON_EXE=D:\Program Files\Python\python.exe"
+if not exist "%PYTHON_EXE%" set "PYTHON_EXE=python"
+
+"%PYTHON_EXE%" "D:\My Drive\Blue AI\.agents\scripts\daemon\faust_remote.py" start
+
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo [!] Daemon failed to launch cleanly. Check logs.
+    pause
+) else (
+    echo.
+    echo [+] Daemon background process active.
+    echo [+] Directives can now be sent via Telegram Forum Topics.
+    timeout /t 3 > nul
+)

@@ -1,0 +1,155 @@
+"""
+SQLite ACID Ledger for Avatar Studio - Tier 2 Repository Layer.
+Tracks processed image IDs, batch metadata, and folder isolation.
+Strict Local Disk D: Policy - DB stored in PROJECT_ROOT / "data".
+"""
+
+import os
+import sqlite3
+import datetime
+from pathlib import Path
+from typing import Optional, List, Dict, Any
+
+PROJECT_ROOT = Path(__file__).parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "avatar_ledger.sqlite"
+
+
+def get_connection() -> sqlite3.Connection:
+    """Return a thread-safe connection with WAL mode enabled."""
+    conn = sqlite3.connect(str(DB_PATH), timeout=10.0)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
+    return conn
+
+
+def init_db():
+    """Initialize SQLite database schema."""
+    with get_connection() as conn:
+        conn.executescript("""
+        CREATE TABLE IF NOT EXISTS batches (
+            batch_id TEXT PRIMARY KEY,
+            folder_name TEXT NOT NULL,
+            source_path TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            total_images INTEGER DEFAULT 0,
+            total_avatars INTEGER DEFAULT 0,
+            total_skipped INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'processing'
+        );
+
+        CREATE TABLE IF NOT EXISTS processed_images (
+            file_id TEXT PRIMARY KEY,
+            file_name TEXT NOT NULL,
+            character_folder TEXT NOT NULL,
+            batch_id TEXT NOT NULL,
+            processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            avatar_count INTEGER DEFAULT 0,
+            threshold_used REAL,
+            FOREIGN KEY (batch_id) REFERENCES batches (batch_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_batch_created ON batches(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_processed_batch ON processed_images(batch_id);
+        """)
+
+
+def create_batch(source_path: str, custom_name: Optional[str] = None) -> tuple[str, str]:
+    """
+    Generate and record a new isolated batch.
+    Returns (batch_id, folder_name).
+    """
+    init_db()
+    now = datetime.datetime.now()
+    timestamp_slug = now.strftime("%Y%m%d_%H%M%S")
+    batch_id = f"batch_{timestamp_slug}"
+
+    if custom_name and custom_name.strip():
+        # Sanitize custom folder name
+        clean_custom = "".join(c for c in custom_name if c.isalnum() or c in ("-", "_", " ")).strip()
+        folder_name = f"{batch_id}_{clean_custom}" if clean_custom else batch_id
+    else:
+        folder_name = batch_id
+
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO batches (batch_id, folder_name, source_path, status)
+            VALUES (?, ?, ?, 'processing')
+            """,
+            (batch_id, folder_name, source_path)
+        )
+    return batch_id, folder_name
+
+
+def is_file_processed(file_id: str) -> bool:
+    """Instant O(1) check if a Google Drive File ID has already been cropped."""
+    if not DB_PATH.exists():
+        return False
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM processed_images WHERE file_id = ? LIMIT 1",
+            (file_id,)
+        ).fetchone()
+        return row is not None
+
+
+def record_processed_image(
+    file_id: str,
+    file_name: str,
+    character_folder: str,
+    batch_id: str,
+    avatar_count: int,
+    threshold_used: float
+):
+    """Insert or update record for a successfully processed image ID."""
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO processed_images
+            (file_id, file_name, character_folder, batch_id, avatar_count, threshold_used, processed_at)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            """,
+            (file_id, file_name, character_folder, batch_id, avatar_count, threshold_used)
+        )
+
+
+def complete_batch(
+    batch_id: str,
+    total_images: int,
+    total_avatars: int,
+    total_skipped: int,
+    status: str = "completed"
+):
+    """Finalize batch metadata in SQLite ledger."""
+    with get_connection() as conn:
+        conn.execute(
+            """
+            UPDATE batches
+            SET total_images = ?, total_avatars = ?, total_skipped = ?, status = ?
+            WHERE batch_id = ?
+            """,
+            (total_images, total_avatars, total_skipped, status, batch_id)
+        )
+
+
+def list_all_batches() -> List[Dict[str, Any]]:
+    """List all batches in descending chronological order."""
+    if not DB_PATH.exists():
+        return []
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT batch_id, folder_name, source_path, created_at,
+                   total_images, total_avatars, total_skipped, status
+            FROM batches
+            ORDER BY created_at DESC
+            """
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+# Auto-initialize DB on import
+init_db()

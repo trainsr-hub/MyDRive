@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hazard Level Scaling · Time Mastery & Buff Matrix</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #040308; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #f8fafc; user-select: none;
+}
+canvas { position: fixed; inset: 0; display: block; }
+.hud {
+  position: fixed; inset: 0; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 20px; z-index: 10;
+}
+.header { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; }
+.brand-group { display: flex; flex-direction: column; gap: 2px; }
+.sub-title { font-size: 10px; letter-spacing: .35em; text-transform: uppercase; color: #ffd86b; font-weight: 700; }
+.main-title { font-size: 20px; font-weight: 800; letter-spacing: .12em; color: #fff; text-shadow: 0 0 16px rgba(255,216,107,0.5); }
+.telemetry-widget {
+  pointer-events: auto; display: flex; align-items: center; gap: 16px;
+  background: rgba(14, 10, 20, 0.9); border: 1.5px solid rgba(255,216,107,0.4);
+  border-radius: 14px; padding: 10px 18px; box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+}
+.tel-col { display: flex; flex-direction: column; }
+.tel-lbl { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: #9c93a8; font-weight: 700; }
+.tel-val { font-size: 20px; font-weight: 900; font-family: monospace; color: #fff; }
+.hazard-badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border-radius: 8px; font-size: 12px; font-weight: 800; font-family: monospace;
+  background: #1e1726; border: 1.5px solid #524124; color: #ffd86b; box-shadow: 0 0 12px rgba(255,216,107,0.3);
+}
+.milestone-deck {
+  pointer-events: auto; width: 100%; display: flex; flex-direction: column; gap: 10px;
+  background: rgba(8, 6, 12, 0.88); border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 14px 20px; backdrop-filter: blur(12px); box-shadow: 0 -8px 32px rgba(0,0,0,0.6);
+}
+.track-header { display: flex; justify-content: space-between; align-items: center; }
+.track-title { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #ffd86b; font-weight: 700; }
+.track-next { font-size: 12px; font-family: monospace; color: #38bdf8; font-weight: 700; }
+.milestone-bar { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; }
+.milestone-node {
+  flex: 1; min-width: 95px; min-height: 56px; padding: 8px 10px;
+  background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.08);
+  border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between;
+  cursor: pointer; transition: all .15s ease;
+}
+.milestone-node:hover { background: rgba(255,255,255,0.08); border-color: #ffd86b; transform: translateY(-2px); }
+.milestone-node.unlocked {
+  background: linear-gradient(135deg, rgba(255,216,107,0.18), rgba(255,216,107,0.04));
+  border-color: #ffd86b; box-shadow: 0 0 14px rgba(255,216,107,0.25);
+}
+.node-top { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; font-family: monospace; }
+.node-buff { font-size: 9px; color: #e2e8f0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.controls { pointer-events: auto; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.btn {
+  min-height: 48px; padding: 0 18px; background: rgba(22, 16, 32, 0.9);
+  border: 1.5px solid rgba(255,216,107,0.35); border-radius: 10px; color: #fef08a;
+  font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer; transition: all .15s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn:hover { background: #38244a; border-color: #ffd86b; color: #fff; box-shadow: 0 0 20px rgba(255,216,107,0.5); transform: translateY(-2px); }
+.btn:active { transform: translateY(1px); }
+.btn.active { background: #b45309; border-color: #fde68a; color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <div class="header">
+    <div class="brand-group">
+      <div class="sub-title">Universe 25 Core Engine</div>
+      <div class="main-title">Hazard Level Scaling & Milestone Matrix</div>
+    </div>
+    <div class="telemetry-widget">
+      <div class="tel-col"><span class="tel-lbl">TIME INVESTED</span><span class="tel-val" id="timeDisplay">00:00:00</span></div>
+      <div class="tel-col"><span class="tel-lbl">HAZARD SCORE</span>
+        <div class="hazard-badge" id="hazardBadge">
+          <span id="rankTier">D</span><span style="opacity:0.4;">~</span><span id="hazardScore">0.00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="milestone-deck">
+    <div class="track-header">
+      <span class="track-title">Accumulated Milestones & Advantage Buffs</span>
+      <span class="track-next" id="nextUnlockText">Next Unlock in 19.1 Hours</span>
+    </div>
+    <div class="milestone-bar" id="milestoneBar"></div>
+    <div class="controls">
+      <button class="btn" onclick="addHours(2)">⏱ Focus (+2h)</button>
+      <button class="btn" onclick="addHours(24)">⚡ Deep Sprint (+24h)</button>
+      <button class="btn" onclick="addHours(100)">📜 Century Block (+100h)</button>
+      <button class="btn" onclick="addHours(500)">👑 Epoch Jump (+500h)</button>
+      <button class="btn" id="flowBtn" onclick="toggleFlow()">🌌 Live Focus Flow</button>
+      <button class="btn" onclick="resetVoid()">🔄 Reset Horizon</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+const timeDisplayEl = document.getElementById('timeDisplay'), hazardScoreEl = document.getElementById('hazardScore');
+const rankTierEl = document.getElementById('rankTier'), nextUnlockTextEl = document.getElementById('nextUnlockText');
+const milestoneBarEl = document.getElementById('milestoneBar');
+let W, H, cx, cy, timeSeconds = 0, targetSeconds = 0, isFlowing = false, flowTimer = null, audioCtx = null;
+
+// ── Universe 25 Calibrated Hazard Thresholds: hazard = ln(goldenHours + 1)
+const MILESTONES = [
+  { rank: 'D',  score: 2.00, hrs: 0,    buff: 'Baseline Perception',      color: '#ef4444' },
+  { rank: 'C',  score: 3.00, hrs: 19,   buff: '+25% Kinetic Haste',       color: '#94a3b8' },
+  { rank: 'B',  score: 4.00, hrs: 54,   buff: '+50% Particle Magnetism',   color: '#60a5fa' },
+  { rank: 'A',  score: 5.00, hrs: 147,  buff: '2.0x Cognitive Overdrive', color: '#4ade80' },
+  { rank: 'S₁', score: 6.00, hrs: 402,  buff: 'Ember Pulse Aura',         color: '#fbbf24' },
+  { rank: 'S₂', score: 6.25, hrs: 517,  buff: 'Resonant Energy Sweep',    color: '#f59e0b' },
+  { rank: 'S₃', score: 6.50, hrs: 664,  buff: 'Molten Flare x4 Crit',     color: '#f97316' },
+  { rank: 'S₄', score: 6.75, hrs: 853,  buff: 'Apex Transmutation',       color: '#ea580c' },
+  { rank: 'Ψ',  score: 7.00, hrs: 1096, buff: 'Ψ Unfrozen Ocean Tides',   color: '#38bdf8' },
+  { rank: 'Ø',  score: 7.50, hrs: 1807, buff: 'Ø Event Horizon Singularity', color: '#ffffff' },
+  { rank: '✦',  score: 8.00, hrs: 2980, buff: '✦ Polaris Solar Zenith',    color: '#ffd86b' }
+];
+
+function calcHazard(hours) { return hours <= 0 ? 0 : Math.round(Math.log(hours + 1) * 100) / 100; }
+function getRank(score) {
+  for (let i = MILESTONES.length - 1; i >= 0; i--) if (score >= MILESTONES[i].score) return MILESTONES[i].rank;
+  return 'D';
+}
+
+function playUnlockSound(isApex = false) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = isApex ? 'sine' : 'triangle'; osc.frequency.setValueAtTime(isApex ? 440 : 880, t);
+    osc.frequency.exponentialRampToValueAtTime(isApex ? 1320 : 440, t + (isApex ? 0.45 : 0.08));
+    gain.gain.setValueAtTime(0.12, t); gain.gain.exponentialRampToValueAtTime(0.001, t + (isApex ? 0.45 : 0.08));
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + (isApex ? 0.45 : 0.08));
+  } catch(e) {}
+}
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; cx = W / 2; cy = H / 2 - 40; }
+window.addEventListener('resize', resize);
+resize();
+
+function addHours(h) { targetSeconds += h * 3600; playUnlockSound(h >= 100); }
+function toggleFlow() {
+  isFlowing = !isFlowing;
+  document.getElementById('flowBtn').classList.toggle('active', isFlowing);
+  if (isFlowing) flowTimer = setInterval(() => addHours(5), 110);
+  else clearInterval(flowTimer);
+}
+function resetVoid() { targetSeconds = 0; timeSeconds = 0; }
+function formatHMS(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60);
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+function renderMilestones(currentHours) {
+  milestoneBarEl.innerHTML = '';
+  let nextMs = null;
+  MILESTONES.forEach(m => {
+    const isUnlocked = currentHours >= m.hrs;
+    if (!isUnlocked && !nextMs) nextMs = m;
+    const div = document.createElement('div');
+    div.className = `milestone-node ${isUnlocked ? 'unlocked' : ''}`;
+    div.onclick = () => addHours(Math.max(1, m.hrs - currentHours));
+    div.innerHTML = `
+      <div class="node-top"><span style="color:${m.color}">${m.rank}</span><span style="color:#94a3b8">${m.hrs}h</span></div>
+      <div class="node-buff" title="${m.buff}">${m.buff}</div>
+    `;
+    milestoneBarEl.appendChild(div);
+  });
+  nextUnlockTextEl.textContent = nextMs
+    ? `Next Unlock [${nextMs.rank}]: ${(nextMs.hrs - currentHours).toFixed(1)}h needed (${nextMs.buff})`
+    : '✦ MAXIMUM HAZARD LEVEL REACHED (POLARIS TRANSCENDENCE)';
+}
+
+function draw() {
+  ctx.fillStyle = 'rgba(4, 3, 8, 0.28)'; ctx.fillRect(0, 0, W, H);
+  timeSeconds += (targetSeconds - timeSeconds) * 0.08;
+  const goldenHours = timeSeconds / 3600, score = calcHazard(goldenHours), rank = getRank(score);
+
+  timeDisplayEl.textContent = formatHMS(timeSeconds);
+  hazardScoreEl.textContent = score.toFixed(2);
+  rankTierEl.textContent = rank;
+  renderMilestones(goldenHours);
+  const t = Date.now() * 0.002;
+
+  // 1. Tier Ψ: Unfrozen Ocean Tides
+  if (score >= 7.0) {
+    ctx.save();
+    for (let wave = 0; wave < 3; wave++) {
+      ctx.beginPath(); ctx.strokeStyle = `rgba(56, 189, 248, ${0.2 + wave * 0.15})`; ctx.lineWidth = 2;
+      for (let x = 0; x < W; x += 15) {
+        const y = cy + 120 + Math.sin(x * 0.015 + t * 2 + wave) * (18 + wave * 6);
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 2. Tier Ø: Black Hole Event Horizon & Penrose Jets
+  if (score >= 7.5) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, cy - 180); ctx.lineTo(cx, cy + 180); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, 46, 0, Math.PI * 2);
+    ctx.fillStyle = '#000000'; ctx.fill();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.shadowColor = '#fff'; ctx.shadowBlur = 18; ctx.stroke();
+    ctx.restore();
+  }
+
+  // 3. Tier ✦: Polaris Solar Zenith Corona
+  const coreRadius = 40 + Math.min(40, score * 5), pulse = Math.sin(t * 3) * 3;
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, coreRadius + pulse, 0, Math.PI * 2);
+  if (score >= 8.0) {
+    const gGrad = ctx.createRadialGradient(cx, cy, 5, cx, cy, coreRadius + pulse);
+    gGrad.addColorStop(0, '#ffffff'); gGrad.addColorStop(0.5, '#ffd86b'); gGrad.addColorStop(1, '#d97706');
+    ctx.fillStyle = gGrad; ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 35;
+  } else {
+    ctx.fillStyle = score >= 6.0 ? '#fbbf24' : (score >= 4.0 ? '#60a5fa' : '#ef4444');
+    ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 16;
+  }
+  ctx.fill();
+
+  ctx.beginPath(); ctx.arc(cx, cy, coreRadius + 30, t, t + Math.PI * 1.5);
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
