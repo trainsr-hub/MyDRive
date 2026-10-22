@@ -13,12 +13,21 @@
       },
       {
         "scope": "project",
+        "projectPath": "D:\\My Drive\\SandBox Projetcs",
         "installPath": "C:\\Users\\Admin\\.claude\\plugins\\cache\\ecc\\ecc\\2.2.3",
         "version": "2.2.3",
         "installedAt": "2026-10-22T07:11:10.956Z",
         "lastUpdated": "2026-10-22T07:11:10.956Z",
+        "gitCommitSha": "90606c8315ee09cafc303515c5f33024db6b9882"
+      },
+      {
+        "scope": "project",
+        "installPath": "C:\\Users\\Admin\\.claude\\plugins\\cache\\ecc\\ecc\\2.2.3",
+        "version": "2.2.3",
+        "installedAt": "2026-10-22T07:48:51.410Z",
+        "lastUpdated": "2026-10-22T07:48:51.410Z",
         "gitCommitSha": "90606c8315ee09cafc303515c5f33024db6b9882",
-        "projectPath": "D:\\My Drive\\SandBox Projetcs"
+        "projectPath": "d:\\My Drive\\AIoT Lab"
       }
     ]
   }

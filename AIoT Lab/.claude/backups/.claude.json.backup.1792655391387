@@ -1,5 +1,5 @@
 {
-  "numStartups": 381,
+  "numStartups": 383,
   "installMethod": "native",
   "autoUpdates": false,
   "hasSeenTasksHint": true,
@@ -28,14 +28,14 @@
     "image-paste": 380,
     "agent-flag": 343,
     "no-flicker": 237,
-    "subagent-fanout-nudge": 379,
+    "subagent-fanout-nudge": 382,
     "dynamic-workflows": 238,
     "workflow-size-prompting-ambient": 380,
-    "loop-command-nudge": 379,
-    "default-permission-mode-config": 373,
+    "loop-command-nudge": 382,
+    "default-permission-mode-config": 383,
     "auto-copy-config-hint": 372,
     "focus-view": 371,
-    "desktop-third-party": 368,
+    "desktop-third-party": 383,
     "ide-upsell-external-terminal": 338,
     "custom-commands": 346
   },
@@ -1627,24 +1627,34 @@
       "hasClaudeMdExternalIncludesApproved": true,
       "hasClaudeMdExternalIncludesWarningShown": true,
       "localSettingsSeenGitTracked": true,
-      "lastGracefulShutdown": false,
+      "lastGracefulShutdown": true,
       "lastVersionBase": "2.1.308",
       "hasUnseenTeamArtifacts": false,
-      "lastCost": 0,
-      "lastAPIDuration": 0,
-      "lastAPIDurationWithoutRetries": 0,
-      "lastToolDuration": 0,
-      "lastDuration": 12424,
-      "lastStartTime": 1792652108015,
-      "lastLinesAdded": 0,
-      "lastLinesRemoved": 0,
-      "lastTotalInputTokens": 0,
-      "lastTotalOutputTokens": 0,
+      "lastCost": 40.2651986,
+      "lastAPIDuration": 1028967,
+      "lastAPIDurationWithoutRetries": 992647,
+      "lastToolDuration": 87335,
+      "lastDuration": 6784096,
+      "lastStartTime": 1792645821523,
+      "lastLinesAdded": 462,
+      "lastLinesRemoved": 127,
+      "lastTotalInputTokens": 9478187,
+      "lastTotalOutputTokens": 42508,
       "lastTotalCacheCreationInputTokens": 0,
-      "lastTotalCacheReadInputTokens": 0,
+      "lastTotalCacheReadInputTokens": 7511453,
       "lastTotalWebSearchRequests": 0,
-      "lastModelUsage": {},
-      "lastSessionId": "490e7a74-995d-45a5-96a5-066e454cd5fc",
+      "lastModelUsage": {
+        "Faust-ST": {
+          "inputTokens": 9478187,
+          "outputTokens": 42508,
+          "thinkingTokens": 0,
+          "cacheReadInputTokens": 7511453,
+          "cacheCreationInputTokens": 0,
+          "webSearchRequests": 0,
+          "costUSD": 40.2651986
+        }
+      },
+      "lastSessionId": "41252335-1a10-4e64-b666-b430687ca0d9",
       "lastSessionMetrics": {
         "frame_duration_ms_count": 16,
         "frame_duration_ms_min": 0.7255999999997584,
@@ -1672,7 +1682,9 @@
         "sessionId": "d39bcc22-7698-4a72-8fde-ca685481a7b3",
         "creationDurationMs": 1316,
         "usedSparsePaths": false
-      }
+      },
+      "lastFpsAverage": 2.22,
+      "lastFpsLow1Pct": 349.04
     },
     "d:/My Drive/Blue AI": {
       "allowedTools": [],
@@ -1843,32 +1855,32 @@
       "hasClaudeMdExternalIncludesApproved": true,
       "hasClaudeMdExternalIncludesWarningShown": true,
       "lastGracefulShutdown": true,
-      "lastVersionBase": "2.1.304",
-      "lastCost": 86.34122900000001,
-      "lastAPIDuration": 1548863,
-      "lastAPIDurationWithoutRetries": 1548547,
-      "lastToolDuration": 67483,
-      "lastDuration": 2924431,
-      "lastStartTime": 1792543779771,
-      "lastLinesAdded": 1442,
-      "lastLinesRemoved": 599,
-      "lastTotalInputTokens": 20238541,
-      "lastTotalOutputTokens": 97310,
+      "lastVersionBase": "2.1.308",
+      "lastCost": 1.18158,
+      "lastAPIDuration": 171507,
+      "lastAPIDurationWithoutRetries": 171420,
+      "lastToolDuration": 1514,
+      "lastDuration": 635524,
+      "lastStartTime": 1792653070656,
+      "lastLinesAdded": 76,
+      "lastLinesRemoved": 5,
+      "lastTotalInputTokens": 291315,
+      "lastTotalOutputTokens": 816,
       "lastTotalCacheCreationInputTokens": 0,
-      "lastTotalCacheReadInputTokens": 17204325,
+      "lastTotalCacheReadInputTokens": 0,
       "lastTotalWebSearchRequests": 0,
       "lastModelUsage": {
         "Faust-ST": {
-          "inputTokens": 20238541,
-          "outputTokens": 97310,
+          "inputTokens": 291315,
+          "outputTokens": 816,
           "thinkingTokens": 0,
-          "cacheReadInputTokens": 17204325,
+          "cacheReadInputTokens": 0,
           "cacheCreationInputTokens": 0,
           "webSearchRequests": 0,
-          "costUSD": 86.34122900000001
+          "costUSD": 1.18158
         }
       },
-      "lastSessionId": "28c00fcb-73b0-4dcd-8ac9-44ad84b0dd50",
+      "lastSessionId": "331e97df-da34-4e70-ad2b-ff4c5b48238e",
       "lastSessionMetrics": {
         "frame_duration_ms_count": 31,
         "frame_duration_ms_min": 0.6369000000413507,
@@ -1878,8 +1890,8 @@
         "frame_duration_ms_p95": 4.691500000062547,
         "frame_duration_ms_p99": 5.062619999952517
       },
-      "lastFpsAverage": 6.85,
-      "lastFpsLow1Pct": 436.32
+      "lastFpsAverage": 4.7,
+      "lastFpsLow1Pct": 486.88
     },
     "D:/My Drive/AIoT Lab": {
       "allowedTools": [],
@@ -1974,14 +1986,14 @@
     "image-paste": 8,
     "agent-flag": 7,
     "no-flicker": 3,
-    "subagent-fanout-nudge": 27,
+    "subagent-fanout-nudge": 28,
     "dynamic-workflows": 5,
     "workflow-size-prompting-ambient": 11,
-    "loop-command-nudge": 23,
-    "default-permission-mode-config": 12,
+    "loop-command-nudge": 24,
+    "default-permission-mode-config": 13,
     "auto-copy-config-hint": 11,
     "focus-view": 7,
-    "desktop-third-party": 6,
+    "desktop-third-party": 7,
     "ide-upsell-external-terminal": 2,
     "custom-commands": 1
   },
@@ -2095,8 +2107,8 @@
       "numStartups": 292
     },
     "config": {
-      "tipId": "workflow-size-prompting-ambient",
-      "numStartups": 380
+      "tipId": "default-permission-mode-config",
+      "numStartups": 383
     },
     "statusline": {
       "tipId": "status-line",
